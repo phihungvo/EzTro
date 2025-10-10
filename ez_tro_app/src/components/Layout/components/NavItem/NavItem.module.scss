@@ -1,0 +1,87 @@
+.nav-item {
+    padding: 0 24px;
+    margin: 4px 0;
+    transition: all 0.3s ease; /* Thêm ease để chuyển động mượt */
+    cursor: pointer;
+    border-radius: 6px; /* Bo góc để đồng bộ với sidebar-menu */
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.15); /* Nền sáng hơn khi hover */
+        transform: translateX(4px); /* Dịch nhẹ sang phải */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Bóng nhẹ */
+    }
+
+    &.active {
+        background: #40c4ff; /* Đổi sang #40c4ff để đồng bộ với sidebar */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Bóng khi active */
+    }
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    color: rgba(255, 255, 255, 0.65);
+    transition: all 0.3s ease;
+
+    &:hover {
+        color: #fff;
+    }
+
+    .logo-item {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        transition: all 0.3s ease; /* Đảm bảo icon chuyển màu mượt */
+    }
+
+    .title {
+        margin-left: 12px;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        opacity: 1;
+        transition: all 0.3s ease;
+
+        p {
+            margin: 0;
+            color: inherit;
+            font-size: 14px;
+        }
+    }
+
+    &.collapsed {
+        .title {
+            width: 0;
+            opacity: 0;
+        }
+    }
+}
+
+.permission-icons {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+
+    .icon {
+        font-size: 12px;
+        
+        &.role {
+            color: #52c41a; /* Xanh lá cho role */
+        }
+        
+        &.permission {
+            color: #40c4ff; /* Đổi sang #40c4ff để đồng bộ */
+        }
+    }
+
+    &.collapsed {
+        opacity: 0;
+        width: 0;
+    }
+}

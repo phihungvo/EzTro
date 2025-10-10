@@ -1,0 +1,80 @@
+export const personalInfoTranslations = {
+    vi: {
+        title: 'Thông tin cá nhân',
+        avatar: 'Ảnh đại diện',
+        uploadButton: 'Tải ảnh lên',
+        username: 'Tên đăng nhập',
+        firstName: 'Tên',
+        lastName: 'Họ',
+        email: 'Email',
+        phoneNumber: 'Số điện thoại',
+        updateButton: 'Cập nhật thông tin',
+        errorImageOnly: 'Bạn chỉ có thể tải lên tập tin hình ảnh!',
+        errorFileSize: 'Hình ảnh phải nhỏ hơn 5MB!'
+    },
+    en: {
+        title: 'Personal Information',
+        avatar: 'Avatar',
+        uploadButton: 'Upload Image',
+        username: 'Username',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        email: 'Email',
+        phoneNumber: 'Phone Number',
+        updateButton: 'Update Information',
+        errorImageOnly: 'You can only upload image files!',
+        errorFileSize: 'Image must be smaller than 5MB!'
+    },
+    fr: {
+        title: 'Informations Personnelles',
+        avatar: 'Avatar',
+        uploadButton: 'Télécharger une Image',
+        username: "Nom d'utilisateur",
+        firstName: 'Prénom',
+        lastName: 'Nom',
+        email: 'Email',
+        phoneNumber: 'Numéro de Téléphone',
+        updateButton: 'Mettre à Jour',
+        errorImageOnly: 'Vous ne pouvez télécharger que des fichiers image!',
+        errorFileSize: "L'image doit être inférieure à 5MB!"
+    },
+    ja: {
+        title: '個人情報',
+        avatar: 'アバター',
+        uploadButton: '画像をアップロード',
+        username: 'ユーザー名',
+        firstName: '名',
+        lastName: '姓',
+        email: 'メール',
+        phoneNumber: '電話番号',
+        updateButton: '更新',
+        errorImageOnly: '画像ファイルのみアップロード可能です！',
+        errorFileSize: '画像は5MB未満である必要があります！'
+    },
+    ko: {
+        title: '개인 정보',
+        avatar: '아바타',
+        uploadButton: '이미지 업로드',
+        username: '사용자 이름',
+        firstName: '이름',
+        lastName: '성',
+        email: '이메일',
+        phoneNumber: '전화번호',
+        updateButton: '정보 업데이트',
+        errorImageOnly: '이미지 파일만 업로드할 수 있습니다!',
+        errorFileSize: '이미지는 5MB보다 작아야 합니다!'
+    },
+    zh: {
+        title: '个人信息',
+        avatar: '头像',
+        uploadButton: '上传图片',
+        username: '用户名',
+        firstName: '名',
+        lastName: '姓',
+        email: '邮箱',
+        phoneNumber: '电话号码',
+        updateButton: '更新信息',
+        errorImageOnly: '只能上传图片文件！',
+        errorFileSize: '图片必须小于5MB！'
+    }
+};

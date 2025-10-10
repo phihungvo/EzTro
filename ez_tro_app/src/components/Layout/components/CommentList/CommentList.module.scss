@@ -1,0 +1,311 @@
+// Variables for consistent theming
+$primary-color: #1890ff;
+$primary-hover: #40a9ff;
+$background-dark: rgba(0, 0, 0, 0.5);
+$background-light: rgba(255, 255, 255, 0.05);
+$border-color: rgba(255, 255, 255, 0.2);
+$text-color: white;
+$text-secondary: rgba(255, 255, 255, 0.65);
+$text-light: rgba(255, 255, 255, 0.5);
+$border-radius: 8px;
+
+// Mixins for reusable styles
+@mixin input-style {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: $border-color;
+    color: $text-color;
+
+    &::placeholder {
+        color: $text-light;
+    }
+
+    &:focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+}
+
+@mixin button-style {
+    background-color: $primary-color;
+    border: none;
+
+    &:hover {
+        background-color: $primary-hover;
+    }
+}
+
+// Common styles for edit containers
+.edit-container {
+    margin: 8px 0;
+    width: 100%;
+
+    .edit-input {
+        @include input-style;
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        resize: none;
+
+        &:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 8px;
+
+        button {
+            min-width: 60px;
+        }
+    }
+}
+
+// Main comment container
+.comment-container {
+    margin: 20px 0;
+    padding: 16px;
+    background-color: $background-dark;
+    border-radius: $border-radius;
+
+    .divider {
+        background-color: rgba(255, 255, 255, 0.1);
+        margin: 16px 0;
+    }
+
+    // New comment input section
+    .new-comment {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        .avatar {
+            flex-shrink: 0;
+        }
+
+        .comment-input {
+            flex-grow: 1;
+            @include input-style;
+        }
+
+        .submit-button {
+            flex-shrink: 0;
+            @include button-style;
+        }
+    }
+
+    // Comment list section
+    .comment-list {
+        margin-bottom: 16px;
+
+        .comment-item {
+            position: relative;
+            padding: 16px 16px 0 16px;
+            margin-bottom: 12px;
+            background-color: $background-light;
+            border-radius: $border-radius;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+            .comment-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 8px;
+
+                .avatar {
+                    margin-right: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                }
+
+                .comment-info {
+                    .author {
+                        color: $text-color;
+                        display: block;
+                        font-weight: 600;
+                    }
+
+                    .datetime {
+                        color: $text-light;
+                        font-size: 12px;
+                    }
+                }
+
+                .more-actions {
+                    margin-left: auto;
+                    color: $text-light;
+                    padding: 4px 8px;
+
+                    &:hover {
+                        color: $primary-color;
+                        background: rgba(24, 144, 255, 0.1);
+                    }
+
+                    .anticon {
+                        font-size: 16px;
+                    }
+                }
+            }
+
+            .comment-content {
+                margin-bottom: 12px;
+                color: $text-color;
+                padding-left: 40px;
+                line-height: 1.5;
+            }
+
+            .comment-actions {
+                padding-left: 40px;
+                margin-bottom: 8px;
+
+                .action-button {
+                    color: $text-secondary;
+
+                    &:hover {
+                        color: $primary-color;
+                    }
+                }
+            }
+
+            .reply-input-container {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                margin-top: 12px;
+                padding-left: 40px;
+
+                .reply-input {
+                    flex-grow: 1;
+                    @include input-style;
+                }
+
+                .reply-button {
+                    flex-shrink: 0;
+                    @include button-style;
+                }
+            }
+        }
+    }
+
+    // Pagination styles
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+
+        .pagination {
+            :global {
+                .ant-pagination-item {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    border-color: $border-color;
+
+                    a {
+                        color: $text-color;
+                    }
+
+                    &-active {
+                        background-color: $primary-color;
+                        border-color: $primary-color;
+
+                        a {
+                            color: $text-color;
+                        }
+                    }
+                }
+
+                .ant-pagination-prev,
+                .ant-pagination-next {
+                    button {
+                        background-color: rgba(255, 255, 255, 0.1);
+                        color: $text-color;
+
+                        &:hover {
+                            border-color: $primary-color;
+                        }
+                    }
+                }
+
+                .ant-select-selector {
+                    background-color: rgba(255, 255, 255, 0.1) !important;
+                    color: $text-color !important;
+                    border-color: $border-color !important;
+                }
+
+                .ant-select-arrow {
+                    color: $text-light;
+                }
+            }
+        }
+    }
+}
+
+// Nested replies styles
+.replies-section {
+    margin-top: 16px;
+    margin-left: 40px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+
+    &.level-2 {
+        margin-left: 40px;
+    }
+
+    &.level-3 {
+        margin-left: 60px;
+    }
+
+    .replies-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding-left: 40px;
+
+        .toggle-replies {
+            color: $text-secondary;
+            font-size: 13px;
+            padding: 4px 8px;
+
+            &:hover {
+                color: $primary-color;
+            }
+
+            .anticon {
+                margin-right: 4px;
+            }
+        }
+    }
+
+    .reply-item {
+        padding: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 8px;
+
+        &:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .reply-content {
+            margin-bottom: 8px;
+            color: $text-color;
+            padding-left: 32px;
+        }
+    }
+}
+
+// Textarea with word count
+.textarea-wrapper {
+    position: relative;
+    width: 100%;
+
+    .word-count {
+        position: absolute;
+        bottom: 6px;
+        right: 10px;
+        font-size: 12px;
+        color: #999;
+        pointer-events: none;
+    }
+}

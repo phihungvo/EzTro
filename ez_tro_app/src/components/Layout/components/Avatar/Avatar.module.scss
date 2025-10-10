@@ -1,0 +1,34 @@
+.avatar-wrapper {
+    width: 135px;
+    height: 65px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.container {
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+}
+
+.avatar-container {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px; 
+}
+
+.avatar-container img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-container p {
+    font-size: 15px;
+    margin: 0; 
+}

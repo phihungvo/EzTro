@@ -1,0 +1,96 @@
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+    background-color: #ffffff;
+}
+
+.side-bar {
+    width: 15%; /* Chiếm 15% chiều rộng để sidebar dài hơn một chút */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0, 0, 0, 0.0625);
+    background: #001529;
+    transition: all 0.3s ease;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+
+    &.collapsed {
+        width: 5%; /* Thu gọn còn 5% chiều rộng */
+    }
+}
+
+.sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; /* Tắt thanh cuộn dọc và ngang */
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.04);
+
+    .logo {
+        width: 32px;
+        height: 32px;
+        img { width: 100%; }
+    }
+
+    .logo-text {
+        margin-left: 12px;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 600;
+        opacity: 1;
+        transition: opacity 0.3s;
+    }
+
+    &.collapsed .logo-text {
+        opacity: 0;
+        width: 0;
+    }
+}
+
+.sidebar-menu {
+    flex: 1;
+    margin-top: 30px;
+    overflow: hidden;
+
+    a {
+        color: #fff;
+        text-decoration: none;
+        display: block;
+        padding: 10px 0;
+        
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+}
+
+.collapse-btn {
+    position: absolute;
+    right: 5px;
+    bottom: 20px;
+    width: 30px;
+    height: 30px;
+    // background: #ae1111;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 101;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: #663535;
+    }
+}

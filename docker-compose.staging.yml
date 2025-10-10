@@ -1,0 +1,102 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./tevc_cms_api
+    image: tevc_cms_api:latest
+    container_name: tevc_cms_backend
+    platform: linux/amd64
+    expose:
+      - "8080" # chỉ lộ ra trong internal network
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tevc_cms_dev
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: QQU0Alvur6b2dBvD5pcC4C3mlRgSm9OUTfrGJMFtFlU=
+      JWT_EXPIRATION: 360000000
+      FILE_UPLOAD_DIR: /uploads
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
+    volumes:
+      - tevc_cms_uploads:/uploads:rw
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - tevc_cms_network
+
+  nginx:
+    build:
+      context: ./tevc_cms_app
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: /api
+    image: tevc_cms_app:latest
+    container_name: tevc_cms_nginx
+    platform: linux/amd64
+    ports:
+      - "80:80" # Public website
+    volumes:
+      - ./tevc_cms_app/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - tevc_cms_uploads:/uploads:ro
+    depends_on:
+      - backend
+    networks:
+      - tevc_cms_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: tevc_cms_mysql
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tevc_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tevc_cms_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: tevc_cms_minio
+    platform: linux/amd64
+    ports:
+      - "19000:9000"   # API
+      - "19001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - tevc_cms_network
+
+  redis:
+    image: redis:7.0
+    container_name: tevc_cms_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - tevc_cms_network
+
+volumes:
+  mysql_data:
+    driver: local
+  tevc_cms_uploads:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  tevc_cms_network:
+    driver: bridge

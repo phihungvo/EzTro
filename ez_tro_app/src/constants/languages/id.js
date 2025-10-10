@@ -1,0 +1,110 @@
+export default {
+  common: {
+    search: 'Cari',
+    cancel: 'Batal',
+    submit: 'Kirim',
+    edit: 'Edit',
+    delete: 'Hapus',
+    back: 'Kembali',
+    next: 'Selanjutnya',
+  },
+  auth: {
+    login: 'Masuk',
+    register: 'Daftar',
+    logout: 'Keluar',
+    email: 'Email',
+    password: 'Kata Sandi',
+    forgotPassword: 'Lupa Kata Sandi?',
+  },
+  header: {
+    home: 'Beranda',
+    movies: 'Film',
+    series: 'Serial TV',
+    myList: 'Daftar Saya',
+  },
+  notifications: {
+    title: 'Notifikasi',
+    all: 'Semua',
+    emailOnly: 'Email Saja',
+    pushOnly: 'Notifikasi Push Saja',
+    off: 'Matikan Notifikasi',
+  },
+  homepage: {
+    trending: 'Sedang Tren',
+    popular: 'Film Populer',
+    latest: 'Rilis Terbaru',
+    watchlist: 'Daftar Tonton',
+    koreanMovies: 'Film Korea',
+    vietnameseMovies: 'Film Vietnam',
+    suggested: 'Disarankan Untuk Anda',
+    famousActor: 'Aktor Terkenal'
+  },
+  movie: {
+    watchNow: 'Tonton Sekarang',
+    addToWatchlist: 'Tambah ke Daftar Tonton',
+    cast: 'Pemeran',
+    genres: 'Genre',
+    releaseDate: 'Tanggal Rilis',
+    duration: 'Durasi',
+    rating: 'Rating',
+    overview: 'Ringkasan',
+    trailer: 'Tonton Trailer',
+    similar: 'Film Serupa',
+    reviews: 'Ulasan',
+    writeReview: 'Tulis Ulasan'
+  },
+  user: {
+    profile: 'Profil',
+    settings: 'Pengaturan',
+    logout: 'Keluar',
+    login: 'Masuk',
+    register: 'Daftar',
+    watchHistory: 'Riwayat Tontonan',
+    myCollection: 'Koleksi Saya',
+    notifications: 'Notifikasi',
+    language: 'Bahasa',
+    search: 'Cari...',
+  },
+  buttons: {
+    loadMore: 'Muat Lainnya',
+    apply: 'Terapkan',
+    cancel: 'Batal',
+    save: 'Simpan',
+    edit: 'Edit',
+    delete: 'Hapus',
+    confirm: 'Konfirmasi',
+  },
+  footer: {
+    about: 'Tentang Kami',
+    contact: 'Kontak',
+    terms: 'Ketentuan Layanan',
+    privacy: 'Kebijakan Privasi',
+    followUs: 'Ikuti Kami',
+    copyright: '© 2024 MovieNest. Hak Cipta Dilindungi.',
+    newMovies: 'Film Baru',
+    popularMovies: 'Film Populer',
+    information: 'Informasi',
+    tagline: 'MovieNest dan Santai',
+    description: 'MovieNest - Platform menonton film online dengan antarmuka baru yang dirancang ramah pengguna. Film dikumpulkan dari berbagai sumber dengan genre yang beragam (Situs web ini untuk tujuan pendidikan)',
+    movieCategories: {
+      science: 'Film Fiksi Ilmiah',
+      horror: 'Film Horor',
+      theater: 'Film Bioskop',
+      crime: 'Film Kriminal',
+      action: 'Film Aksi'
+    },
+    regions: {
+      hollywood: 'Film Hollywood',
+      korean: 'Film Korea',
+      chinese: 'Film Cina',
+      japanese: 'Film Jepang',
+      thai: 'Film Thailand'
+    }
+  },
+  navigation: {
+    movies: 'Film',
+    tvShows: 'Acara TV',
+    people: 'Aktor',
+    more: 'Selengkapnya'
+  }
+};

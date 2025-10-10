@@ -1,0 +1,55 @@
+.dashboard-wrapper {
+    width: 100%;
+    padding: 0 23px;
+    display: block;
+}
+
+.dashboard-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 19px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #1f1f1f;
+}
+
+.sub-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 17px 0;
+}
+
+.features {
+    display: flex;
+    gap: 10px;
+}
+
+.ant-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+    &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.ant-card-head {
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-statistic-title {
+    font-size: 14px;
+    color: #595959;
+}
+
+.ant-statistic-content {
+    font-size: 24px;
+    font-weight: 600;
+}

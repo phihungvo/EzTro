@@ -1,0 +1,42 @@
+.notification-wrapper {
+    width: 48px;
+    height: 65px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.count {
+    position: absolute;
+    top: 15px;
+    right: 7px;
+    min-width: 17px; /* Chiều rộng tối thiểu */
+    height: 17px;
+    background-color: #ff3c7e;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    padding: 0 5px; /* Thêm padding ngang để mở rộng */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap; /* Đảm bảo số không bị xuống dòng */
+}
+
+.icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+}

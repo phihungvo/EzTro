@@ -1,0 +1,218 @@
+name: Notify Discord on All Changes
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, closed, reopened, synchronize]
+  issues:
+    types: [opened, edited, closed, reopened, assigned, unassigned, labeled, unlabeled, locked, unlocked]
+  issue_comment:
+    types: [created, edited, deleted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord embed via curl
+        run: |
+          AUTHOR="${{ github.actor }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          EVENT="${{ github.event_name }}"
+          AVATAR_URL="https://avatars.githubusercontent.com/u/${{ github.actor }}?v=4"  
+          FALLBACK_AVATAR="https://github.com/${AUTHOR}.png"  # Avatar mặc định
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          if [ "$EVENT" = "push" ]; then
+            COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+            COMMIT_URL="${{ github.event.head_commit.url }}"
+            COMMITTER="${{ github.event.head_commit.author.name }}"
+            PAYLOAD=$(jq -n \
+              --arg author "$AUTHOR" \
+              --arg avatar "$AVATAR_URL" \
+              --arg fallback_avatar "$FALLBACK_AVATAR" \
+              --arg repo "$REPO" \
+              --arg branch "$BRANCH" \
+              --arg commit_message "$COMMIT_MESSAGE" \
+              --arg commit_url "$COMMIT_URL" \
+              --arg committer "$COMMITTER" \
+              --arg event "$EVENT" \
+              --arg timestamp "$TIMESTAMP" \
+              '{
+                "username": "GitHub Bot 🤖",
+                "embeds": [
+                  {
+                    "author": {
+                      "name": $author,
+                      "icon_url": (if $avatar != "" then $avatar else $fallback_avatar end),
+                      "url": "https://github.com/\($author)"
+                    },
+                    "title": "🚀 Push Event in \($repo)",
+                    "description": "📌 Branch: **\($branch)**",
+                    "color": 3447003,
+                    "fields": [
+                      {
+                        "name": "👤 Committer",
+                        "value": $committer,
+                        "inline": true
+                      },
+                      {
+                        "name": "📝 Commit Message",
+                        "value": $commit_message,
+                        "inline": false
+                      },
+                      {
+                        "name": "🔗 Commit URL",
+                        "value": "[View Commit](\($commit_url))",
+                        "inline": false
+                      }
+                    ],
+                    "footer": {
+                      "text": "GitHub Actions • \($event)"
+                    },
+                    "timestamp": $timestamp
+                  }
+                ]
+              }'
+            )
+          elif [ "$EVENT" = "pull_request" ]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_URL="${{ github.event.pull_request.html_url }}"
+            PR_STATE="${{ github.event.pull_request.state }}"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            PAYLOAD=$(jq -n \
+              --arg author "$AUTHOR" \
+              --arg avatar "$AVATAR_URL" \
+              --arg fallback_avatar "$FALLBACK_AVATAR" \
+              --arg repo "$REPO" \
+              --arg branch "$BRANCH" \
+              --arg pr_title "$PR_TITLE" \
+              --arg pr_url "$PR_URL" \
+              --arg pr_state "$PR_STATE" \
+              --arg pr_number "$PR_NUMBER" \
+              --arg pr_body "$PR_BODY" \
+              --arg event "$EVENT" \
+              --arg timestamp "$TIMESTAMP" \
+              '{
+                "username": "GitHub Bot 🤖",
+                "embeds": [
+                  {
+                    "author": {
+                      "name": $author,
+                      "icon_url": (if $avatar != "" then $avatar else $fallback_avatar end),
+                      "url": "https://github.com/\($author)"
+                    },
+                    "title": "📥 Pull Request #\($pr_number): \($pr_title)",
+                    "url": $pr_url,
+                    "description": (if $pr_body != "" then $pr_body else "No description provided" end),
+                    "color": (if $pr_state == "open" then 5763719 else 15548997 end),
+                    "fields": [
+                      {
+                        "name": "📌 Repository",
+                        "value": $repo,
+                        "inline": true
+                      },
+                      {
+                        "name": "🌿 Branch",
+                        "value": $branch,
+                        "inline": true
+                      },
+                      {
+                        "name": "🔗 PR URL",
+                        "value": "[View PR](\($pr_url))",
+                        "inline": false
+                      }
+                    ],
+                    "footer": {
+                      "text": "GitHub Actions • \($event)"
+                    },
+                    "timestamp": $timestamp
+                  }
+                ]
+              }'
+            )
+          elif [ "$EVENT" = "issues" ]; then
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            ISSUE_ACTION="${{ github.event.action }}"
+            ISSUE_BODY="${{ github.event.issue.body }}"
+            PAYLOAD=$(jq -n \
+              --arg author "$AUTHOR" \
+              --arg avatar "$AVATAR_URL" \
+              --arg fallback_avatar "$FALLBACK_AVATAR" \
+              --arg repo "$REPO" \
+              --arg issue_title "$ISSUE_TITLE" \
+              --arg issue_url "$ISSUE_URL" \
+              --arg issue_action "$ISSUE_ACTION" \
+              --arg issue_body "$ISSUE_BODY" \
+              --arg event "$EVENT" \
+              --arg timestamp "$TIMESTAMP" \
+              '{
+                "username": "GitHub Bot 🤖",
+                "embeds": [
+                  {
+                    "author": {
+                      "name": $author,
+                      "icon_url": (if $avatar != "" then $avatar else $fallback_avatar end),
+                      "url": "https://github.com/\($author)"
+                    },
+                    "title": "📌 Issue \($issue_action): \($issue_title)",
+                    "url": $issue_url,
+                    "description": (if $issue_body != "" then $issue_body else "No description provided" end),
+                    "color": 16711680,
+                    "footer": {
+                      "text": "GitHub Actions • \($event)"
+                    },
+                    "timestamp": $timestamp
+                  }
+                ]
+              }'
+            )
+          elif [ "$EVENT" = "issue_comment" ]; then
+            COMMENT_BODY="${{ github.event.comment.body }}"
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            PAYLOAD=$(jq -n \
+              --arg author "$AUTHOR" \
+              --arg avatar "$AVATAR_URL" \
+              --arg fallback_avatar "$FALLBACK_AVATAR" \
+              --arg repo "$REPO" \
+              --arg comment_body "$COMMENT_BODY" \
+              --arg issue_url "$ISSUE_URL" \
+              --arg event "$EVENT" \
+              --arg timestamp "$TIMESTAMP" \
+              '{
+                "username": "GitHub Bot 🤖",
+                "embeds": [
+                  {
+                    "author": {
+                      "name": $author,
+                      "icon_url": (if $avatar != "" then $avatar else $fallback_avatar end),
+                      "url": "https://github.com/\($author)"
+                    },
+                    "title": "💬 New Comment on Issue",
+                    "url": $issue_url,
+                    "description": $comment_body,
+                    "color": 16776960,
+                    "footer": {
+                      "text": "GitHub Actions • \($event)"
+                    },
+                    "timestamp": $timestamp
+                  }
+                ]
+              }'
+            )
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "${{ secrets.DISCORD_WEBHOOK }}"
+
+
+
+# This workflow sends a notification to a Discord channel whenever there is a push, pull request, issue, or issue comment event in the repository.
+# It uses a JSON payload to create an embed message that includes details about the commit, pull request, issue, or comment.
+# Make sure to set the DISCORD_WEBHOOK secret in your repository settings with your Discord webhook URL.
+# The workflow uses jq to construct the JSON payload dynamically based on the event type.

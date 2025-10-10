@@ -1,0 +1,224 @@
+package carevn.luv2code.ez_tro.util;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.BeanUtils;
+
+public class ExcelGenerator {
+    private final List<ExcelColumn> columns;
+    private final List<?> data;
+    private final String entityType;
+    private final XSSFWorkbook workbook;
+    private final CellStyle headerStyle;
+    private final CellStyle dataStyle;
+    private final CellStyle titleStyle;
+    private static final int START_ROW = 3; // Bắt đầu từ dòng 4 (index 3)
+    private static final int START_COLUMN = 3; // Bắt đầu từ cột D (index 3)
+    private static final int STT_COLUMN_WIDTH = 5 * 256; // Độ rộng cố định cho cột STT (5 ký tự)
+
+    public ExcelGenerator(List<ExcelColumn> columns, List<?> data, String entityType) {
+        this.columns = columns;
+        this.data = data;
+        this.entityType = entityType;
+        this.workbook = new XSSFWorkbook();
+        this.headerStyle = createHeaderStyle();
+        this.dataStyle = createDataStyle();
+        this.titleStyle = createTitleStyle();
+    }
+
+    private CellStyle createHeaderStyle() {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 12);
+        font.setFontName("Arial");
+        font.setColor(IndexedColors.WHITE.getIndex()); // Chữ trắng
+        style.setFont(font);
+        style.setFillForegroundColor(IndexedColors.SEA_GREEN.getIndex()); // Xanh lá cây đậm
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        // Add borders
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        return style;
+    }
+
+    private CellStyle createDataStyle() {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 11);
+        font.setFontName("Arial");
+        style.setFont(font);
+        style.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex()); // Vàng nhạt
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        // Add borders
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        return style;
+    }
+
+    private CellStyle createTitleStyle() {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 16);
+        font.setFontName("Arial");
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        return style;
+    }
+
+    public ByteArrayInputStream generate() {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XSSFSheet sheet = workbook.createSheet(capitalize(entityType)); // Tên sheet dựa trên entityType
+            writeTitleAndInfo(sheet);
+            writeHeader(sheet);
+            writeData(sheet);
+            autoSizeColumns(sheet);
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate Excel file", e);
+        }
+    }
+
+    private void writeTitleAndInfo(XSSFSheet sheet) {
+        // Tiêu đề chính
+        Row titleRow = sheet.createRow(0);
+        Cell titleCell = titleRow.createCell(START_COLUMN);
+        titleCell.setCellValue("Export Excel for " + capitalize(entityType));
+        titleCell.setCellStyle(titleStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, START_COLUMN, START_COLUMN + columns.size() - 1));
+
+        // Thông tin bổ sung
+        Row infoRow1 = sheet.createRow(1);
+        Cell infoCell1 = infoRow1.createCell(START_COLUMN);
+        infoCell1.setCellValue(
+                "Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+        infoCell1.setCellStyle(dataStyle);
+
+        Row infoRow2 = sheet.createRow(2);
+        Cell infoCell2 = infoRow2.createCell(START_COLUMN);
+        infoCell2.setCellValue("Generated by: System Admin");
+        infoCell2.setCellStyle(dataStyle);
+    }
+
+    private void writeHeader(XSSFSheet sheet) {
+        Row row = sheet.createRow(START_ROW);
+        for (int i = 0; i < columns.size(); i++) {
+            Cell cell = row.createCell(START_COLUMN + i);
+            cell.setCellValue(columns.get(i).getHeader());
+            cell.setCellStyle(headerStyle);
+        }
+    }
+
+    private void writeData(XSSFSheet sheet) {
+        int rowNum = START_ROW + 1;
+        int stt = 1; // Số thứ tự bắt đầu từ 1
+        for (Object obj : data) {
+            Row row = sheet.createRow(rowNum++);
+            for (int i = 0; i < columns.size(); i++) {
+                Cell cell = row.createCell(START_COLUMN + i);
+                ExcelColumn column = columns.get(i);
+                try {
+                    Object value;
+                    if (column.getFieldName().equals("stt")) {
+                        value = stt; // Gán số thứ tự
+                    } else {
+                        value = getFieldValue(obj, column.getFieldName());
+                    }
+                    setCellValue(cell, value, column.getFieldType());
+                    cell.setCellStyle(dataStyle);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to write data for field: " + column.getFieldName(), e);
+                }
+            }
+            stt++; // Tăng số thứ tự
+        }
+    }
+
+    private void autoSizeColumns(XSSFSheet sheet) {
+        for (int i = 0; i < columns.size(); i++) {
+            if (i == 0 && columns.get(i).getFieldName().equals("stt")) {
+                sheet.setColumnWidth(START_COLUMN, STT_COLUMN_WIDTH); // Độ rộng cố định cho cột STT
+            } else {
+                sheet.autoSizeColumn(START_COLUMN + i);
+                // Set minimum width to ensure readability
+                int columnWidth = sheet.getColumnWidth(START_COLUMN + i) / 256;
+                if (columnWidth < 15) {
+                    sheet.setColumnWidth(START_COLUMN + i, 15 * 256); // Minimum width of 15 characters
+                }
+            }
+        }
+    }
+
+    private Object getFieldValue(Object obj, String fieldName) throws Exception {
+        try {
+            return BeanUtils.getPropertyDescriptor(obj.getClass(), fieldName)
+                    .getReadMethod()
+                    .invoke(obj);
+        } catch (Exception e) {
+            Field field = obj.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(obj);
+        }
+    }
+
+    private void setCellValue(Cell cell, Object value, Class<?> fieldType) {
+        if (value == null) {
+            cell.setCellValue("");
+            return;
+        }
+        if (fieldType == Integer.class) {
+            cell.setCellValue(((Number) value).doubleValue());
+        } else if (fieldType == String.class) {
+            // Format mobile number if the field is mobileNo or phone or phoneNumber
+            if ((cell.getRow().getCell(START_COLUMN + 4) == cell
+                            || // Student: mobileNo
+                            cell.getRow().getCell(START_COLUMN + 5) == cell
+                            || // User: phoneNumber
+                            cell.getRow().getCell(START_COLUMN + 8) == cell)
+                    && // Employee: phone
+                    value.toString().matches("\\d{10}")) {
+                cell.setCellValue("+84" + value.toString().substring(1));
+            } else {
+                cell.setCellValue((String) value);
+            }
+        } else if (fieldType == UUID.class) {
+            cell.setCellValue(value.toString());
+        } else if (fieldType == Boolean.class) {
+            cell.setCellValue((Boolean) value ? "Yes" : "No");
+        } else if (fieldType == java.util.Date.class) {
+            cell.setCellValue(DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                    .format(new java.sql.Date(((java.util.Date) value).getTime()).toLocalDate()));
+        } else {
+            cell.setCellValue(value.toString());
+        }
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+}

@@ -1,0 +1,86 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f2f5;
+    position: relative;
+
+    .logo {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        cursor: pointer;
+        
+        img {
+            margin-top: -60px;
+            width: 150px;
+        }
+    }
+
+    .login-box {
+        padding: 30px;
+        border-radius: 8px;
+        width: 400px;
+        height: auto;
+        text-align: center;
+        background: #fff;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+        h1 {
+            color: #262626;
+            font-size: 24px;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+    }
+
+    // .login-form {
+    //     display: flex;
+    //     flex-direction: column;
+    //     padding-top: 20px;
+    // }
+
+    // .ant-input,
+    // .ant-input-password {
+    //     height: 45px;
+    //     font-size: 16px;
+    // }
+
+    // .ant-form-item {
+    //     margin-bottom: 20px !important; // Đảm bảo khoảng cách đều
+    // }
+
+    // .login-button {
+    //     width: 100%;
+    // }
+
+    // p {
+    //     margin-bottom: 10px;
+    // }
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #555;
+    margin: 20px 0;
+    
+    &::before,
+    &::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #ccc;
+        margin: 0 10px;
+    }
+}
+
+.or-buttons{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 20px;
+}

@@ -1,0 +1,25 @@
+.trailer-wrapper {
+    width: 100%;
+    display: block;
+}
+.trailer-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.trailer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 19px;
+}
+
+.sub_header {
+    display: flex;
+    justify-content: space-between;
+    padding: 17px 0px;
+}
+.features {
+    display: flex; 
+    gap: 10px;
+}
