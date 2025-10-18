@@ -55,6 +55,8 @@ public enum ErrorCode {
     CONTRACT_ALREADY_EXISTS(1038, "Contract already exists", HttpStatus.CONFLICT),
     BILL_ALREADY_EXISTS(1039, "Bill already exists", HttpStatus.CONFLICT),
     ELECTRIC_WATER_RECORD_ALREADY_EXISTS(1040, "Electric water record already exists", HttpStatus.CONFLICT),
+    BUILDING_NOT_FOUND(1041, "Building not found", HttpStatus.NOT_FOUND),
+
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);
 

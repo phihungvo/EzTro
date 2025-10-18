@@ -13,7 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
@@ -29,6 +28,12 @@ public class Room {
     @Column(name = "room_number", nullable = false, length = 50)
     String roomNumber;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "building_id", nullable = false)
+    @ToString.Exclude
+    Building building;
+
+    // Kế thừa để biết thuộc khu nhà trọ nào
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "boarding_house_id", nullable = false)
     @ToString.Exclude
@@ -46,6 +51,24 @@ public class Room {
 
     @Column(columnDefinition = "TEXT")
     String note;
+
+    @Column(name = "floor_number")
+    Integer floorNumber;
+
+    @Column(name = "max_occupants")
+    Integer maxOccupants;
+
+    @Column(name = "has_air_conditioner", nullable = false)
+    Boolean hasAirConditioner = false;
+
+    @Column(name = "has_bathroom", nullable = false)
+    Boolean hasBathroom = true;
+
+    @Column(name = "has_kitchen", nullable = false)
+    Boolean hasKitchen = false;
+
+    @Column(name = "is_deleted", nullable = false)
+    Boolean isDeleted = false;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)

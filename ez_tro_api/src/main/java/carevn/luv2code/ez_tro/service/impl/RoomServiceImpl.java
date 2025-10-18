@@ -2,6 +2,8 @@ package carevn.luv2code.ez_tro.service.impl;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
@@ -22,7 +24,7 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final BoardingHouseRepository boardingHouseRepository;
-    private final RoomMapper mapper;
+    private final RoomMapper roomMapper;
 
     @Override
     public RoomResponse create(RoomRequest request) {
@@ -30,11 +32,11 @@ public class RoomServiceImpl implements RoomService {
                 .findById(request.getBoardingHouseId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
 
-        Room room = mapper.toEntity(request);
+        Room room = roomMapper.toEntity(request);
         room.setBoardingHouse(boardingHouse);
 
         roomRepository.save(room);
-        return mapper.toResponse(room);
+        return roomMapper.toResponse(room);
     }
 
     @Override
@@ -48,7 +50,7 @@ public class RoomServiceImpl implements RoomService {
         room.setNote(request.getNote());
 
         roomRepository.save(room);
-        return mapper.toResponse(room);
+        return roomMapper.toResponse(room);
     }
 
     @Override
@@ -60,11 +62,17 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public RoomResponse getById(Integer id) {
         Room room = roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-        return mapper.toResponse(room);
+        return roomMapper.toResponse(room);
     }
 
     @Override
     public List<RoomResponse> getAll() {
-        return roomRepository.findAll().stream().map(mapper::toResponse).toList();
+        return roomRepository.findAll().stream().map(roomMapper::toResponse).toList();
+    }
+
+    @Override
+    public Page<RoomResponse> getAllRoomsPaged(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return roomRepository.findAll(pageRequest).map(roomMapper::toResponse);
     }
 }

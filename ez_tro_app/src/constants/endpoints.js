@@ -35,6 +35,16 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/permissions`,
         UPDATE: (permissionId) => `${BASE_URL}/permissions/${permissionId}`,
     },
+    BUILDING: {
+        GET_ALL: `${BASE_URL}/buildings/paged`,
+    },
+    ROOM: {
+        GET_ALL: `${BASE_URL}/rooms/paged`,
+    },
+    TENANTS: {
+        GET_ALL: `${BASE_URL}/tenants/paged`,
+        DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
+    }
 };
 
 export default API_ENDPOINTS;

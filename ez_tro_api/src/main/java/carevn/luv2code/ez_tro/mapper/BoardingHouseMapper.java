@@ -14,6 +14,6 @@ public interface BoardingHouseMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "owner", ignore = true)
-    @Mapping(target = "rooms", ignore = true)
+    @Mapping(target = "buildings", ignore = true)
     BoardingHouse toEntity(BoardingHouseRequest request);
 }

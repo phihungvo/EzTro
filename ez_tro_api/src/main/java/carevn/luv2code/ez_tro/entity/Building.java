@@ -1,42 +1,37 @@
 package carevn.luv2code.ez_tro.entity;
 
-import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+@Entity
+@Table(name = "buildings")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Entity
-@Table(name = "bills")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Bill {
+public class Building {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
     Integer id;
 
+    @Column(nullable = false, length = 100)
+    String name;
+
+    @Column(length = 255)
+    String description;
+
+    @Column(name = "total_floors")
+    Integer totalFloors;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_id", nullable = false)
-    @ToString.Exclude
-    Contract contract;
-
-    @Column(name = "amount", nullable = false)
-    BigDecimal amount;
-
-    @Column(name = "paid", nullable = false)
-    Boolean paid = false;
-
-    @Temporal(TemporalType.DATE)
-    @Column(name = "payment_date")
-    Date paymentDate;
+    @JoinColumn(name = "boarding_house_id", nullable = false)
+    BoardingHouse boardingHouse;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)
@@ -56,4 +51,7 @@ public class Bill {
     protected void onUpdate() {
         updatedAt = new Date();
     }
+
+    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Room> rooms;
 }

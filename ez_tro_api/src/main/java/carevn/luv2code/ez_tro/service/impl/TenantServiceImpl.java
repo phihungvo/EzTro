@@ -2,6 +2,8 @@ package carevn.luv2code.ez_tro.service.impl;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
@@ -66,5 +68,11 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public List<TenantResponse> getAll() {
         return tenantRepository.findAll().stream().map(tenantMapper::toResponse).toList();
+    }
+
+    @Override
+    public Page<TenantResponse> getAllTenantsPaged(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return tenantRepository.findAll(pageRequest).map(tenantMapper::toResponse);
     }
 }

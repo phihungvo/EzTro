@@ -2,7 +2,9 @@ package carevn.luv2code.ez_tro.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
@@ -56,6 +58,13 @@ public class RoomController {
                 .message("Get room successfully")
                 .result(response)
                 .build();
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<RoomResponse>> getAllRoomsPaged(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<RoomResponse> rooms = roomService.getAllRoomsPaged(page, size);
+        return ResponseEntity.ok(rooms);
     }
 
     @GetMapping

@@ -11,7 +11,6 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
@@ -33,13 +32,16 @@ public class BoardingHouse {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     @ToString.Exclude
-    User owner; // Chủ trọ
+    User owner; // Chủ nhà trọ
 
     @Column(columnDefinition = "TEXT")
     String description;
 
     @Column(name = "total_rooms")
     Integer totalRooms = 0;
+
+    @Column(name = "total_buildings")
+    Integer totalBuildings = 0;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)
@@ -60,7 +62,8 @@ public class BoardingHouse {
         updatedAt = new Date();
     }
 
+    // Một nhà trọ có nhiều tòa nhà
     @OneToMany(mappedBy = "boardingHouse", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    List<Room> rooms;
+    List<Building> buildings;
 }

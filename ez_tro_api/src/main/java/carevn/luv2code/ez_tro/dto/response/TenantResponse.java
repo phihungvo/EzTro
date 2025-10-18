@@ -13,9 +13,13 @@ import lombok.*;
 public class TenantResponse {
     Integer id;
 
+    Integer userId;
+
     String fullName;
 
     String email;
+
+    String phoneNumber;
 
     String identityNumber;
 
