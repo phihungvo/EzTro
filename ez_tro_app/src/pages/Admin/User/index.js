@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import styles from '~/pages/AdminDashboard/User/User.module.scss';
+import styles from '~/pages/Admin/User/User.module.scss';
 import moment from 'moment';
 import SmartTable from '~/components/Layout/components/SmartTable';
 import {

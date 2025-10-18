@@ -1,96 +1,73 @@
-import { jwtDecode } from 'jwt-decode';
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {jwtDecode} from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
-import { message } from 'antd';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [user, setUser] = useState(null);
 
-  const checkTokenExpiration = (token) => {
-    try {
-      const decodedToken = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      if (decodedToken.exp && decodedToken.exp - 60 < currentTime) { // Buffer 60s
-        logout();
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Error checking token:', error);
-      logout();
-      return false;
-    }
-  };
+    // Khi app load, check token
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                const role = decoded.roles ? decoded.roles[0] : 'USER';
+                setUser({
+                    token,
+                    roles: decoded.roles || [],
+                    role,
+                    permissions: decoded.authorities || [],
+                    username: decoded.sub,
+                    userId: decoded.userId,
+                });
+            } catch (err) {
+                console.error('Invalid token', err);
+                localStorage.removeItem('token');
+            }
+        }
+    }, []);
 
-  const initializeAuth = () => {
-    const token = localStorage.getItem('token');
-    if (token && checkTokenExpiration(token)) {
-      try {
-        const decodedToken = jwtDecode(token);
-        const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
-        const roles = JSON.parse(localStorage.getItem('roles') || '[]');
+    const login = (token) => {
+        localStorage.setItem('token', token);
+        const decoded = jwtDecode(token);
+        const role = decoded.roles ? decoded.roles[0] : 'USER';
+        const userData = {
+            token,
+            roles: decoded.roles || [],
+            role,
+            permissions: decoded.authorities || [],
+            username: decoded.sub,
+            userId: decoded.userId,
+        };
+        setUser(userData);
 
-        setUser({
-          token,
-          role: roles.includes('ADMIN') || roles.includes('MANAGER') ? 'ADMIN' : 'USER',
-          userId: decodedToken.userId,
-          roles,
-          permissions,
-          username: decodedToken.username || decodedToken.sub,
-          email: decodedToken.email || decodedToken.sub,
-          tokenExpiration: decodedToken.exp
-        });
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        logout();
-      }
-    } else {
-      logout();
-    }
-  };
+        // Navigate theo role sau login
+        switch (role) {
+            case 'ADMIN':
+                navigate('/admin/dashboard');
+                break;
+            case 'OWNER':
+                navigate('/owner/dashboard');
+                break;
+            default:
+                navigate('/user/dashboard');
+        }
+    };
 
-  useEffect(() => {
-    initializeAuth();
-    const interval = setInterval(() => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        checkTokenExpiration(token);
-      }
-    }, 60000); // Kiểm tra mỗi phút
+    const logout = () => {
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+    };
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('permissions', JSON.stringify(userData.permissions || []));
-    localStorage.setItem('roles', JSON.stringify(userData.roles || []));
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('permissions');
-    sessionStorage.clear();
-    setUser(null);
-    message.info('Đã đăng xuất.');
-    navigate('/login');
-  };
-
-  return (
-      <AuthContext.Provider value={{ user, login, logout }}>
-        {children}
-      </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={{ user, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

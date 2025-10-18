@@ -1,7 +1,7 @@
 // ~/pages/AdminDashboard/UserManagement/RoleList.js
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import styles from '~/pages/AdminDashboard/Role/Role.module.scss';
+import styles from '~/pages/Admin/Role/Role.module.scss';
 import SmartTable from '~/components/Layout/components/SmartTable';
 import {
     SearchOutlined,

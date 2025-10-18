@@ -2,6 +2,9 @@ package carevn.luv2code.ez_tro.service.impl;
 
 import java.util.List;
 
+import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
@@ -21,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final UserRepository userRepository;
-    private final BoardingHouseMapper mapper;
+    private final BoardingHouseMapper boardingHouseMapper;
 
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
@@ -29,11 +32,11 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
                 .findById(request.getOwnerId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        BoardingHouse house = mapper.toEntity(request);
+        BoardingHouse house = boardingHouseMapper.toEntity(request);
         house.setOwner(owner);
 
         boardingHouseRepository.save(house);
-        return mapper.toResponse(house);
+        return boardingHouseMapper.toResponse(house);
     }
 
     @Override
@@ -48,7 +51,7 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         house.setTotalRooms(request.getTotalRooms());
 
         boardingHouseRepository.save(house);
-        return mapper.toResponse(house);
+        return boardingHouseMapper.toResponse(house);
     }
 
     @Override
@@ -64,13 +67,19 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         BoardingHouse house = boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
-        return mapper.toResponse(house);
+        return boardingHouseMapper.toResponse(house);
     }
 
     @Override
     public List<BoardingHouseResponse> getAll() {
         return boardingHouseRepository.findAll().stream()
-                .map(mapper::toResponse)
+                .map(boardingHouseMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<BoardingHouseResponse> getAllBoardingHousesPaged(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return boardingHouseRepository.findAll(pageRequest).map(boardingHouseMapper::toResponse);
     }
 }

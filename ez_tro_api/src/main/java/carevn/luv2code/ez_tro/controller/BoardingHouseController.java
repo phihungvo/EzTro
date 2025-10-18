@@ -2,7 +2,10 @@ package carevn.luv2code.ez_tro.controller;
 
 import java.util.List;
 
+import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
@@ -17,11 +20,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BoardingHouseController {
 
-    private final BoardingHouseService service;
+    private final BoardingHouseService boardingHouseService;
 
     @PostMapping
     public ApiResponse<BoardingHouseResponse> create(@Valid @RequestBody BoardingHouseRequest request) {
-        BoardingHouseResponse response = service.create(request);
+        BoardingHouseResponse response = boardingHouseService.create(request);
         return ApiResponse.<BoardingHouseResponse>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("Boarding house created successfully")
@@ -32,7 +35,7 @@ public class BoardingHouseController {
     @PutMapping("/{id}")
     public ApiResponse<BoardingHouseResponse> update(
             @PathVariable Integer id, @Valid @RequestBody BoardingHouseRequest request) {
-        BoardingHouseResponse response = service.update(id, request);
+        BoardingHouseResponse response = boardingHouseService.update(id, request);
         return ApiResponse.<BoardingHouseResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Boarding house updated successfully")
@@ -42,7 +45,7 @@ public class BoardingHouseController {
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Integer id) {
-        service.delete(id);
+        boardingHouseService.delete(id);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.NO_CONTENT.value())
                 .message("Boarding house deleted successfully")
@@ -51,7 +54,7 @@ public class BoardingHouseController {
 
     @GetMapping("/{id}")
     public ApiResponse<BoardingHouseResponse> get(@PathVariable Integer id) {
-        BoardingHouseResponse response = service.getById(id);
+        BoardingHouseResponse response = boardingHouseService.getById(id);
         return ApiResponse.<BoardingHouseResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get boarding house successfully")
@@ -61,11 +64,18 @@ public class BoardingHouseController {
 
     @GetMapping
     public ApiResponse<List<BoardingHouseResponse>> getAll() {
-        List<BoardingHouseResponse> responses = service.getAll();
+        List<BoardingHouseResponse> responses = boardingHouseService.getAll();
         return ApiResponse.<List<BoardingHouseResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get all boarding houses successfully")
                 .result(responses)
                 .build();
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<BoardingHouseResponse>> getAllBuildings(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<BoardingHouseResponse> responses = boardingHouseService.getAllBoardingHousesPaged(page, size);
+        return ResponseEntity.ok(responses);
     }
 }
