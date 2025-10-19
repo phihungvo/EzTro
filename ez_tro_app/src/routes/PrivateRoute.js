@@ -1,34 +1,15 @@
-import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from '~/routes/AuthContext';
+import React from 'react';
+import {Navigate} from 'react-router-dom';
+import {useAuth} from './AuthContext';
 
-const PrivateRoute = ({ element, role, title }) => {
-    const { user } = useAuth();
-    const location = useLocation();
+const PrivateRoute = ({children, allowedRoles}) => {
+    const {user} = useAuth();
 
-    const elementWithTitle = React.cloneElement(element, { pageTitle: title });
+    if (!user) return <Navigate to="/login"/>;
 
-    if (!user || !user.token) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
+    if (!allowedRoles.includes(user.role)) return <Navigate to="/unauthorized"/>;
 
-    const currentTime = Date.now() / 1000;
-    if (user.tokenExpiration && user.tokenExpiration < currentTime) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-
-    if (role === 'admin') {
-        const hasAdminAccess =
-            user.roles?.includes('ADMIN') ||
-            user.roles?.includes('MANAGER') ||  // Thêm dựa trên response API
-            user.permissions?.includes('ADMIN:MANAGE');
-
-        if (!hasAdminAccess) {
-            return <Navigate to="/" replace />;
-        }
-    }
-
-    return elementWithTitle;
+    return children;
 };
 
 export default PrivateRoute;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import styles from '~/pages/AdminDashboard/Permission/Permission.module.scss';
+import styles from '~/pages/Admin/Permission/Permission.module.scss';
 import SmartTable from '~/components/Layout/components/SmartTable';
 import {
     SearchOutlined,

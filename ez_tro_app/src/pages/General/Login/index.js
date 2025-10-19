@@ -1,69 +1,35 @@
-import React, { useState } from 'react';
-import { Button, Form, Input, message } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { login } from '~/service/admin/user';
-import {jwtDecode} from 'jwt-decode'; // Sửa import nếu cần
+import React, {useState} from 'react';
+import {Form, Input, Button, message} from 'antd';
+import {useAuth} from '~/routes/AuthContext';
+import {login as loginService} from '~/service/admin/user';
 import classNames from 'classnames/bind';
 import styles from './Login.module.scss';
-import SmartButton from '~/components/Layout/components/SmartButton';
+import { useNavigate } from 'react-router-dom';
+import SmartButton from "~/components/Layout/components/SmartButton";
 import { PhoneOutlined, AppleOutlined, GoogleOutlined } from '@ant-design/icons';
-import { useAuth } from '~/routes/AuthContext';
-
 const cx = classNames.bind(styles);
-
-function Login() {
+const Login = () => {
+    const {login} = useAuth();
     const navigate = useNavigate();
-    const { login: authLogin } = useAuth();
     const [loading, setLoading] = useState(false);
 
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            const token = await login(values.username, values.password);
-
+            const token = await loginService(values.username, values.password);
             if (!token) {
-                message.error('Đăng nhập thất bại. Vui lòng kiểm tra thông tin.');
+                message.error('Đăng nhập thất bại. Kiểm tra lại thông tin.');
                 return;
             }
 
-            localStorage.setItem('token', token);
-            const decodedToken = jwtDecode(token);
-
-            const permissions = decodedToken.authorities || []; // Dựa trên response API của bạn
-            const roles = decodedToken.roles || [];
-            const isAdmin = roles.includes('ADMIN') || roles.includes('MANAGER') || permissions.includes('ADMIN:MANAGE');
-
-            localStorage.setItem('roles', JSON.stringify(roles));
-            localStorage.setItem('permissions', JSON.stringify(permissions));
-
-            authLogin({
-                token,
-                role: isAdmin ? 'ADMIN' : 'USER',
-                permissions,
-                roles,
-                userId: decodedToken.userId,
-                username: decodedToken.username || decodedToken.sub,
-                email: decodedToken.email || decodedToken.sub,
-                tokenExpiration: decodedToken.exp
-            });
-
+            login(token);
             message.success('Đăng nhập thành công!');
-
-            if (isAdmin) {
-                navigate('/admin/dashboard');
-            } else {
-                navigate('/');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            message.error('Đăng nhập thất bại. Vui lòng thử lại.');
+        } catch (err) {
+            console.error(err);
+            message.error('Có lỗi xảy ra. Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
-    };
-
-    const onFinishFailed = (errorInfo) => {
-        console.log('Failed:', errorInfo);
     };
 
     return (
@@ -77,7 +43,6 @@ function Login() {
                     name="basic"
                     className={cx('login-form')}
                     onFinish={onFinish}
-                    onFinishFailed={onFinishFailed}
                     autoComplete="off"
                 >
                     <Form.Item
@@ -146,6 +111,6 @@ function Login() {
             </div>
         </div>
     );
-}
+};
 
 export default Login;

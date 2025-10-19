@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
 import {useNavigate} from 'react-router-dom';
-import styles from '~/pages/AdminDashboard/Tenant/Tenant.module.scss';
+import styles from '~/pages/Admin/Tenant/Tenant.module.scss';
 import SmartTable from '~/components/Layout/components/SmartTable';
 import {
     SearchOutlined,

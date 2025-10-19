@@ -44,7 +44,10 @@ const API_ENDPOINTS = {
     TENANTS: {
         GET_ALL: `${BASE_URL}/tenants/paged`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
-    }
+    },
+    BOARDING_HOUSE: {
+        GET_ALL: `${BASE_URL}/boarding-houses/paged`,
+    },
 };
 
 export default API_ENDPOINTS;

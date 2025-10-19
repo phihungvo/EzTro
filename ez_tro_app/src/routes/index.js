@@ -1,14 +1,14 @@
-import HomeDashboard from '~/pages/AdminDashboard/HomeDashboard';
+import HomeDashboard from '~/pages/Admin/HomeDashboard';
 import Login from '../pages/General/Login';
 import Register from '../pages/General/Register';
-import Role from '~/pages/AdminDashboard/Role';
-import Permission from '~/pages/AdminDashboard/Permission';
+import Role from '~/pages/Admin/Role';
+import Permission from '~/pages/Admin/Permission';
 import RootRedirect from '~/components/RootRedirect';
-import UserManagement from "~/pages/AdminDashboard/User/UserManagement";
-import Building from "~/pages/AdminDashboard/Building";
-import Room from "~/pages/AdminDashboard/Room";
-import Tenant from "~/pages/AdminDashboard/Tenant";
-import TenantDetail from "~/pages/AdminDashboard/Tenant/detail";
+import UserManagement from "~/pages/Admin/User/UserManagement";
+import Building from "~/pages/Admin/Building";
+import Room from "~/pages/Admin/Room";
+import Tenant from "~/pages/Admin/Tenant";
+import TenantDetail from "~/pages/Admin/Tenant/detail";
 
 const publicRoutes = [
     { path: '/login', component: Login, title: 'Login' },
