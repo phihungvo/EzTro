@@ -48,6 +48,12 @@ public class BuildingServiceImpl implements BuildingService {
         building.setDescription(request.getDescription());
         building.setTotalFloors(request.getTotalFloors());
 
+        BoardingHouse existedBoardingHouse = boardingHouseRepository
+                .findById(request.getBoardingHouseId())
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+
+        building.setBoardingHouse(existedBoardingHouse);
+
         return buildingMapper.toResponse(buildingRepository.save(building));
     }
 
