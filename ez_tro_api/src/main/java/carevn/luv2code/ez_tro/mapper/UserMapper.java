@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import carevn.luv2code.ez_tro.dto.UserDTO;
 import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
 import carevn.luv2code.ez_tro.entity.User;
 
 @Component
@@ -25,4 +26,7 @@ public interface UserMapper {
 
     @Mapping(target = "roles", ignore = true)
     User toEntity(CreateUserRequest request);
+
+    @Mapping(target = "fullName", expression = "java(user.getFirstName() + \" \" + user.getLastName())")
+    UserInfoDTO toBasicInfoDTO(User user);
 }

@@ -17,6 +17,7 @@ import carevn.luv2code.ez_tro.dto.UserDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignRoleRequest;
 import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
 import carevn.luv2code.ez_tro.entity.Role;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.exception.AppException;
@@ -180,6 +181,18 @@ public class UserServiceImpl implements UserService {
     public Page<UserDTO> findAll(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return userRepository.findAll(pageable).map(this::convertToDTO);
+    }
+
+    @Override
+    public List<UserInfoDTO> getAllOwners() {
+        List<User> owners = userRepository.findAllOwners();
+        return owners.stream().map(userMapper::toBasicInfoDTO).toList();
+    }
+
+    @Override
+    public List<UserInfoDTO> getAllBasicUserInfo() {
+        List<User> users = userRepository.findAll();
+        return users.stream().map(userMapper::toBasicInfoDTO).toList();
     }
 
     //    @Override

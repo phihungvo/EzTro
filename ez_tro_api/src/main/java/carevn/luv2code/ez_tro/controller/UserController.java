@@ -1,5 +1,7 @@
 package carevn.luv2code.ez_tro.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +11,7 @@ import carevn.luv2code.ez_tro.dto.UserDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignRoleRequest;
 import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
 import carevn.luv2code.ez_tro.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +53,18 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         Page<UserDTO> users = userService.findAll(page, size);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/basic-info")
+    public ResponseEntity<List<UserInfoDTO>> getAllUserBasicInfo() {
+        List<UserInfoDTO> users = userService.getAllBasicUserInfo();
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/owners")
+    public ResponseEntity<List<UserInfoDTO>> getAllOwners() {
+        List<UserInfoDTO> owners = userService.getAllOwners();
+        return ResponseEntity.ok(owners);
     }
 
     //    @PostMapping("/createUser")

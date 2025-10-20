@@ -1,11 +1,14 @@
 package carevn.luv2code.ez_tro.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.UserDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignRoleRequest;
 import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
 
 public interface UserService {
 
@@ -22,6 +25,10 @@ public interface UserService {
     //    void updateUser(UUID userId, UserUpdateRequest request);
 
     Page<UserDTO> findAll(int page, int size);
+
+    List<UserInfoDTO> getAllOwners();
+
+    List<UserInfoDTO> getAllBasicUserInfo();
 
     //    void deleteUser(UUID userId);
 

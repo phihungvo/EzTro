@@ -1,7 +1,11 @@
 import React from "react";
 import classNames from "classnames/bind";
 import styles from "./AdminSidebar.module.scss";
-import {MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined} from "@ant-design/icons";
+import {
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    LogoutOutlined
+} from "@ant-design/icons";
 
 const cx = classNames.bind(styles);
 
@@ -14,53 +18,91 @@ const AdminSidebar = ({
                           onLogout,
                       }) => {
     return (
-        <div className={cx("sidebar", {collapsed})}>
+        <aside className={cx("sidebar", { collapsed })} role="navigation">
             {/* Header */}
             <div className={cx("sidebarHeader")}>
-                <h2 className={cx("title")}>{!collapsed && "Admin Panel"}</h2>
+                {!collapsed && <h2 className={cx("title")}>Admin Panel</h2>}
                 <button
                     className={cx("collapseBtn")}
                     onClick={onCollapse}
-                    title={collapsed ? "Expand" : "Collapse"}
+                    title={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+                    aria-label={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
                 >
-                    {collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
+                    {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                 </button>
             </div>
 
-            {/* Menu Items */}
-            <ul className={cx("menu")}>
-                {menu.map((item) => (
-                    <li
-                        key={item.key}
-                        className={cx("menuItem", {active: selected === item.key})}
-                        onClick={() => onSelect(item.key)}
-                        title={collapsed ? item.label : ""}
-                    >
-            <span
-                className={cx("icon")}
-                style={{color: item.color}}
-            >
-              {item.icon}
-            </span>
-                        {!collapsed && <span className={cx("label")}>{item.label}</span>}
-                    </li>
+            {/* Menu Groups */}
+            <div className={cx("menuContainer")}>
+                {menu.map((group, groupIndex) => (
+                    <div key={group.group || groupIndex} className={cx("menuGroup")}>
+                        {!collapsed && group.group && (
+                            <div className={cx("groupTitle")} role="presentation">
+                                {group.group}
+                            </div>
+                        )}
+
+                        <ul className={cx("menu")} role="menu">
+                            {group.items.map((item) => (
+                                <li
+                                    key={item.key}
+                                    className={cx("menuItem", { active: selected === item.key })}
+                                    onClick={() => onSelect(item.key)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            onSelect(item.key);
+                                        }
+                                    }}
+                                    title={collapsed ? item.label : undefined}
+                                    role="menuitem"
+                                    tabIndex={0}
+                                    aria-current={selected === item.key ? "page" : undefined}
+                                >
+                  <span
+                      className={cx("icon")}
+                      style={{ color: item.color }}
+                      aria-hidden="true"
+                  >
+                    {item.icon}
+                  </span>
+                                    {!collapsed && (
+                                        <>
+                                            <span className={cx("label")}>{item.label}</span>
+                                            {item.badge && (
+                                                <span className={cx("badge")}>{item.badge}</span>
+                                            )}
+                                        </>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 ))}
-            </ul>
+            </div>
 
             {/* Logout Button */}
             <div className={cx("bottom")}>
-                <li
-                    className={cx("menuItem")}
-                    onClick={onLogout}
-                    title={collapsed ? "Logout" : ""}
-                >
-          <span className={cx("icon", "logoutIcon")}>
-            <LogoutOutlined/>
-          </span>
-                    {!collapsed && <span className={cx("label")}>Đăng xuất</span>}
-                </li>
+                <ul className={cx("menu")} role="menu">
+                    <li
+                        className={cx("menuItem")}
+                        onClick={onLogout}
+                        onKeyPress={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                onLogout();
+                            }
+                        }}
+                        title={collapsed ? "Đăng xuất" : undefined}
+                        role="menuitem"
+                        tabIndex={0}
+                    >
+            <span className={cx("icon")} aria-hidden="true">
+              <LogoutOutlined />
+            </span>
+                        {!collapsed && <span className={cx("label")}>Đăng xuất</span>}
+                    </li>
+                </ul>
             </div>
-        </div>
+        </aside>
     );
 };
 

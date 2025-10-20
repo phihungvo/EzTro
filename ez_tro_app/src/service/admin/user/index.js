@@ -68,6 +68,31 @@ export const getAllUser = async ({ page = 0, pageSize = 5 }) => {
     }
 };
 
+
+export const getAllUserNoPaged = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.USER.BASIC_INFO);
+        return response.data;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message || 'Lỗi lấy danh sách người dùng',
+        );
+        throw error;
+    }
+};
+
+export const getAllOwners = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.USER.GET_OWNERS);
+        return response.data;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message || 'Lỗi lấy danh sách người dùng',
+        );
+        throw error;
+    }
+};
+
 export const createUser = async (formData) => {
     try {
         const processedData = {

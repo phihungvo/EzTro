@@ -2,10 +2,10 @@ package carevn.luv2code.ez_tro.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
 import carevn.luv2code.ez_tro.dto.response.BoardingHouseResponse;
-import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
-import org.springframework.data.domain.Page;
 
 public interface BoardingHouseService {
     BoardingHouseResponse create(BoardingHouseRequest request);
