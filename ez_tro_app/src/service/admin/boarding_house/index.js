@@ -15,6 +15,18 @@ export const getAllBoardingHouses = async ({ page, pageSize }) => {
     }
 };
 
+export const getAllBoardingHousesNoPaged = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.BOARDING_HOUSE.GET_ALL_NO_PAGING);
+
+        return response.data;
+    } catch (error) {
+        message.error('Error get all boarding house: ');
+        return null;
+    }
+};
+
+
 export const createBoardingHouse = async (formData) => {
     try {
         const response = await apiClient.post(

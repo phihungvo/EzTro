@@ -39,6 +39,9 @@ const API_ENDPOINTS = {
     },
     BUILDING: {
         GET_ALL: `${BASE_URL}/buildings/paged`,
+        CREATE: `${BASE_URL}/buildings`,
+        UPDATE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,
+        DELETE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,
     },
     ROOM: {
         GET_ALL: `${BASE_URL}/rooms/paged`,
@@ -49,6 +52,7 @@ const API_ENDPOINTS = {
     },
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,
+        GET_ALL_NO_PAGING: `${BASE_URL}/boarding-houses`,
         CREATE: `${BASE_URL}/boarding-houses`,
         UPDATE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         DELETE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,

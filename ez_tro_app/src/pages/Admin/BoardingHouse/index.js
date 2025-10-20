@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/BoardingHouse/BoardingHouse.module.scss';
 import SmartTable from '~/components/Layout/components/SmartTable';
@@ -16,8 +16,14 @@ import {
 import SmartInput from '~/components/Layout/components/SmartInput';
 import SmartButton from '~/components/Layout/components/SmartButton';
 import PopupModal from '~/components/Layout/components/PopupModal';
-import { Form, message, Row, Col, Pagination, Segmented } from 'antd';
-import { getAllBoardingHouses, createBoardingHouse, updateBoardingHouse, deleteBoardingHouse } from '~/service/admin/boarding_house';
+import {Form, message, Row, Col, Pagination, Segmented} from 'antd';
+import {exportExcelFile} from '~/service/admin/export_service';
+import {
+    getAllBoardingHouses,
+    createBoardingHouse,
+    updateBoardingHouse,
+    deleteBoardingHouse
+} from '~/service/admin/boarding_house';
 import {getAllOwners} from "~/service/admin/user";
 
 const cx = classNames.bind(styles);
@@ -104,16 +110,16 @@ function BoardingHouses() {
                 <>
                     <SmartButton
                         type="primary"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleEditBoardingHouses(record)}
                     />
                     <SmartButton
                         type="danger"
-                        icon={<DeleteOutlined />}
+                        icon={<DeleteOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleDeleteBoardingHouses(record)}
-                        style={{ marginLeft: '8px' }}
+                        style={{marginLeft: '8px'}}
                     />
                 </>
             ),
@@ -125,7 +131,7 @@ function BoardingHouses() {
             label: 'Tên khu nhà',
             name: 'name',
             type: 'text',
-            rules: [{ required: true, message: 'Tên khu nhà là bắt buộc!' }],
+            rules: [{required: true, message: 'Tên khu nhà là bắt buộc!'}],
         },
         {
             label: 'Chủ nhà',
@@ -182,7 +188,7 @@ function BoardingHouses() {
     const handleGetBoardingHouses = async (page = 1, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            const response = await getAllBoardingHouses({ page: page - 1, pageSize });
+            const response = await getAllBoardingHouses({page: page - 1, pageSize});
 
             if (response && Array.isArray(response.content)) {
                 setBoardingHouses(response.content);
@@ -258,6 +264,34 @@ function BoardingHouses() {
         setIsModalOpen(false);
     };
 
+    const handleExportFile = async () => {
+        try {
+            const response = await exportExcelFile('boarding_house');
+            if (
+                !response.headers['content-type'].includes(
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                )
+            ) {
+                throw new Error('Định dạng file không hợp lệ');
+            }
+            const url = window.URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute(
+                'download',
+                `employee_${new Date()
+                    .toISOString()
+                    .replace(/[-:]/g, '')}.xlsx`,
+            );
+            link.click();
+            window.URL.revokeObjectURL(url);
+            message.success('Tải file Excel thành công!');
+        } catch (error) {
+            console.error('Lỗi khi xuất file Excel:', error);
+            message.error('Không thể tải file Excel');
+        }
+    };
+
     const handleFormSubmit = (formData) => {
         if (modalMode === 'create') {
             handleCallCreateBoardingHouse(formData);
@@ -297,20 +331,23 @@ function BoardingHouses() {
         <div className={cx('boardingHouses-wrapper')}>
             {/* Header */}
             <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm khu nhà" icon={<SearchOutlined />} />
+                <SmartInput size="large" placeholder="Tìm kiếm khu nhà" icon={<SearchOutlined/>}/>
                 <div className={cx('features')}>
                     <Segmented
                         value={viewMode}
                         onChange={setViewMode}
                         options={[
-                            { label: 'Bảng', value: 'table', icon: <TableOutlined /> },
-                            { label: 'Thẻ', value: 'card', icon: <AppstoreOutlined /> },
+                            {label: 'Bảng', value: 'table', icon: <TableOutlined/>},
+                            {label: 'Thẻ', value: 'card', icon: <AppstoreOutlined/>},
                         ]}
                         className={cx('view-toggle')}
                     />
-                    <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddBoardingHouses} />
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddBoardingHouses}/>
+                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
+                    <SmartButton
+                        title="Excel"
+                        icon={<CloudUploadOutlined/>}
+                        onClick={handleExportFile}/>
                 </div>
             </div>
 
