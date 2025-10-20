@@ -29,6 +29,9 @@ public class BoardingHouse {
     @Column(nullable = false, length = 255)
     String address;
 
+    @Column(nullable = false, length = 20)
+    String contactPhone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     @ToString.Exclude

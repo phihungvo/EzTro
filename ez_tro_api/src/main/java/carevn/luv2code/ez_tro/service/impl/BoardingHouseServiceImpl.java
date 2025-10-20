@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.service.impl;
 
 import java.util.List;
 
-import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;

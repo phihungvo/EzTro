@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -28,7 +29,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     boolean existsByUserName(String userName);
 
-    //    boolean existsByEmail(String email);
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = 'OWNER'")
+    List<User> findAllOwners();
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles r LEFT JOIN FETCH r.permissions WHERE u.userName = :userName")
     Optional<User> findByUserNameWithRolesAndPermissions(@Param("userName") String userName);

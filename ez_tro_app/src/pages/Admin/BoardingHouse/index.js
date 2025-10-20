@@ -17,12 +17,14 @@ import SmartInput from '~/components/Layout/components/SmartInput';
 import SmartButton from '~/components/Layout/components/SmartButton';
 import PopupModal from '~/components/Layout/components/PopupModal';
 import { Form, message, Row, Col, Pagination, Segmented } from 'antd';
-import { getAllBoardingHouses } from '~/service/admin/boarding_house';
+import { getAllBoardingHouses, createBoardingHouse, updateBoardingHouse, deleteBoardingHouse } from '~/service/admin/boarding_house';
+import {getAllOwners} from "~/service/admin/user";
 
 const cx = classNames.bind(styles);
 
 function BoardingHouses() {
     const [boardingHouses, setBoardingHouses] = useState([]);
+    const [userOptionSource, setUserOptionSource] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
@@ -59,6 +61,20 @@ function BoardingHouses() {
             width: 250,
         },
         {
+            title: 'Số điện thoại liên hệ',
+            dataIndex: 'contactPhone',
+            key: 'contactPhone',
+            align: 'center',
+            width: 200,
+        },
+        {
+            title: 'Số toà nhà',
+            dataIndex: 'totalBuildings',
+            key: 'totalBuildings',
+            width: 150,
+            align: 'center',
+        },
+        {
             title: 'Số phòng',
             dataIndex: 'totalRooms',
             key: 'totalRooms',
@@ -66,17 +82,17 @@ function BoardingHouses() {
             align: 'center',
         },
         {
-            title: 'Số phòng',
+            title: 'Tên chủ nhà',
             dataIndex: 'ownerName',
             key: 'ownerName',
             width: 150,
             align: 'center',
         },
         {
-            title: 'Số phòng',
+            title: 'Email chủ nhà',
             dataIndex: 'ownerEmail',
             key: 'ownerEmail',
-            width: 150,
+            width: 200,
             align: 'center',
         },
         {
@@ -112,20 +128,56 @@ function BoardingHouses() {
             rules: [{ required: true, message: 'Tên khu nhà là bắt buộc!' }],
         },
         {
-            label: 'Mô tả',
-            name: 'description',
+            label: 'Chủ nhà',
+            name: 'ownerId',
+            type: 'select',
+            options: userOptionSource,
+        },
+        {
+            label: 'Địa chỉ',
+            name: 'address',
             type: 'text',
         },
         {
-            label: 'Số tầng',
-            name: 'totalFloors',
+            label: 'Số điện thoại liên hệ',
+            name: 'contactPhone',
+            type: 'text',
+        },
+        {
+            label: 'Số toà nhà',
+            name: 'totalBuildings',
             type: 'number',
+        },
+        {
+            label: 'Số phòng',
+            name: 'totalRooms',
+            type: 'number',
+        },
+        {
+            label: 'Mô tả',
+            name: 'description',
+            type: 'textarea',
         },
     ];
 
     useEffect(() => {
+        handleGetAllUsers();
         handleGetBoardingHouses();
     }, []);
+
+    const handleGetAllUsers = async () => {
+        try {
+            const response = await getAllOwners();
+            const mappedUsers = response.map(usr => ({
+                value: usr.id,
+                label: usr.fullName,
+            }));
+            setUserOptionSource(mappedUsers);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            setUserOptionSource([]);
+        }
+    };
 
     const handleGetBoardingHouses = async (page = 1, pageSize = pagination.pageSize) => {
         setLoading(true);
@@ -158,6 +210,20 @@ function BoardingHouses() {
         setIsModalOpen(true);
     };
 
+    const handleCallCreateBoardingHouse = async (formData) => {
+        try {
+            await createBoardingHouse(formData);
+            handleGetBoardingHouses();
+            setIsModalOpen(false);
+        } catch (error) {
+            message.error(
+                `Lỗi khi tạo khu nhà: ${
+                    error.response?.data?.message || error.message
+                }`,
+            );
+        }
+    };
+
     const handleEditBoardingHouses = (record) => {
         setSelectedBoardingHouses(record);
         setModalMode('edit');
@@ -165,19 +231,40 @@ function BoardingHouses() {
         setIsModalOpen(true);
     };
 
+    const handleCallUpdateBoardingHouse = async (formData) => {
+        try {
+            await updateBoardingHouse(selectedBoardingHouses.id, formData);
+            handleGetBoardingHouses();
+            setIsModalOpen(false);
+        } catch (error) {
+            message.error(
+                `Lỗi khi cập nhật khu nhà: ${
+                    error.response?.data?.message || error.message
+                }`,
+            );
+        }
+    };
+
     const handleDeleteBoardingHouses = (record) => {
         setModalMode('delete');
-        setSelectedBoardingHouses(record.id);
+        setSelectedBoardingHouses(record);
+        form.resetFields();
         setIsModalOpen(true);
+    };
+
+    const handleCallDeleteBoardingHouse = async () => {
+        await deleteBoardingHouse(selectedBoardingHouses.id);
+        handleGetBoardingHouses();
+        setIsModalOpen(false);
     };
 
     const handleFormSubmit = (formData) => {
         if (modalMode === 'create') {
-            message.success('Tạo khu nhà thành công (demo)');
+            handleCallCreateBoardingHouse(formData);
         } else if (modalMode === 'edit') {
-            message.success('Cập nhật khu nhà thành công (demo)');
+            handleCallUpdateBoardingHouse(formData);
         } else if (modalMode === 'delete') {
-            message.success('Xóa khu nhà thành công (demo)');
+            handleCallDeleteBoardingHouse();
         }
         setIsModalOpen(false);
     };

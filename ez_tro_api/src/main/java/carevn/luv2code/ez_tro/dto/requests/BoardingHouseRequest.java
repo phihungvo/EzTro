@@ -12,9 +12,13 @@ public class BoardingHouseRequest {
 
     String address;
 
+    String contactPhone;
+
     Integer ownerId;
 
     String description;
+
+    Integer totalBuildings = 0;
 
     Integer totalRooms;
 }

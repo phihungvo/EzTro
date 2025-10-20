@@ -18,6 +18,8 @@ const API_ENDPOINTS = {
     },
     USER: {
         GET_ALL: `${BASE_URL}/user/getAll`,
+        BASIC_INFO: `${BASE_URL}/user/basic-info`,
+        GET_OWNERS: `${BASE_URL}/user/owners`,
         CREATE: `${BASE_URL}/user/createUser`,
         UPDATE: (userId) => `${BASE_URL}/user/${userId}`,
         DELETE: `${BASE_URL}/user`,    
@@ -47,6 +49,9 @@ const API_ENDPOINTS = {
     },
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,
+        CREATE: `${BASE_URL}/boarding-houses`,
+        UPDATE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
+        DELETE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
     },
 };
 

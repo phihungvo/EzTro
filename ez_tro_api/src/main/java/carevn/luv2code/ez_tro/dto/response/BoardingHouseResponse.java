@@ -9,10 +9,20 @@ import lombok.*;
 @Builder
 public class BoardingHouseResponse {
     Integer id;
+
     String name;
+
     String address;
+
+    String contactPhone;
+
     String description;
+
+    Integer totalBuildings;
+
     Integer totalRooms;
+
     String ownerName;
+
     String ownerEmail;
 }
