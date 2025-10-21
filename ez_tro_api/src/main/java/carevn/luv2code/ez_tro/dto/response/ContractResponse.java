@@ -13,12 +13,36 @@ import lombok.*;
 @Builder
 public class ContractResponse {
     Integer id;
+
+    String contractCode;
+
+    Integer roomId;
+
     String roomNumber;
+
+    String boardingHouseName;
+
+    Integer tenantId;
+
+    Integer userId;
+
     String tenantName;
+
+    String tenantFullName;
+
     Date startDate;
+
     Date endDate;
+
     BigDecimal deposit;
+
     BigDecimal rentPrice;
+
     ContractStatus status;
+
     String note;
+
+    Date createdAt;
+
+    Date updatedAt;
 }

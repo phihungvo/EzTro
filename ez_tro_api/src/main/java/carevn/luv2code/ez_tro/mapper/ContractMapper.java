@@ -8,13 +8,18 @@ import carevn.luv2code.ez_tro.entity.Contract;
 
 @Mapper(componentModel = "spring")
 public interface ContractMapper {
+    @Mapping(source = "room.id", target = "roomId")
     @Mapping(source = "room.roomNumber", target = "roomNumber")
-    @Mapping(source = "tenant.user.fullName", target = "tenantName")
+    @Mapping(source = "tenant.id", target = "tenantId")
+    @Mapping(source = "tenant.user.id", target = "userId")
+    @Mapping(source = "tenant.user.fullName", target = "tenantFullName")
+    @Mapping(source = "room.boardingHouse.name", target = "boardingHouseName")
     ContractResponse toResponse(Contract entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "tenant", ignore = true)
-    @Mapping(target = "bills", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Contract toEntity(ContractRequest request);
 }
