@@ -188,6 +188,27 @@ $active-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 2
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 0;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.menuContainer::-webkit-scrollbar {
+  //width: 1px;
+}
+
+.menuContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menuContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.menuContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 // ===== MENU GROUP =====

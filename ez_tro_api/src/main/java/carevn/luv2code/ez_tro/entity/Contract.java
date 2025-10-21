@@ -26,6 +26,9 @@ public class Contract {
     @EqualsAndHashCode.Include
     Integer id;
 
+    @Column(name = "contract_code", unique = true, nullable = false, length = 30)
+    String contractCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     @ToString.Exclude

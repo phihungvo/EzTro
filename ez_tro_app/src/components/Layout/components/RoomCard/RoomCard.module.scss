@@ -1,0 +1,199 @@
+.room-card {
+  border-radius: 16px !important;
+  border: 2px solid #e6f7ff !important;
+  overflow: hidden;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.4s ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(24, 144, 255, 0.2) !important;
+    border-color: #91d5ff !important;
+  }
+}
+
+/* ================= Header ================= */
+.card-header {
+  background: #fff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.room-id {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1890ff;
+  letter-spacing: 0.5px;
+}
+
+.room-id-label {
+  font-size: 13px;
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+.status-tag {
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 10px !important;
+  padding: 4px 12px !important;
+  border: none;
+}
+
+/* ================= Body ================= */
+.card-body {
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fafafa;
+}
+
+/* Info row */
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+
+  .icon {
+    color: #595959 !important;
+    font-size: 16px !important;
+    min-width: 20px;
+  }
+
+  .text {
+    font-size: 14px;
+    color: #262626;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+}
+
+/* Bottom info section */
+.bottom-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.price-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .price-icon {
+    color: #52c41a !important;
+    font-size: 18px !important;
+  }
+
+  .price-value {
+    font-size: 16px;
+    color: #262626;
+    font-weight: 700;
+  }
+}
+
+.capacity-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+
+  .capacity-icon {
+    color: #1890ff !important;
+    font-size: 16px !important;
+  }
+
+  .capacity-value {
+    font-size: 14px;
+    color: #262626;
+    font-weight: 600;
+  }
+}
+
+/* ================= Footer ================= */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.hold-button {
+  background: #faad14 !important;
+  border-color: #faad14 !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 13px;
+
+  &:hover {
+    background: #ffc53d !important;
+    border-color: #ffc53d !important;
+  }
+}
+
+.hold-icon {
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 576px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .room-id {
+    font-size: 18px;
+  }
+
+  .bottom-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-footer {
+    flex-wrap: wrap;
+  }
+}
+
+/* ================= Animation ================= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

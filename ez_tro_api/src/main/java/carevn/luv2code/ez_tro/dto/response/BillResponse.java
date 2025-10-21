@@ -12,8 +12,18 @@ import lombok.*;
 @Builder
 public class BillResponse {
     Integer id;
+
     String tenantName;
+
     BigDecimal amount;
+
     Boolean paid;
+
     Date paymentDate;
+
+    Integer contractId;
+
+    Date createdAt;
+
+    Date updatedAt;
 }

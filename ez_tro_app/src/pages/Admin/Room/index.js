@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/Room/Room.module.scss';
 import SmartTable from '~/components/Layout/components/SmartTable';
-import RoomCard from 'src/components/Layout/components/BuildingCard';
+import RoomCard from 'src/components/Layout/components/RoomCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -235,16 +235,7 @@ function Room() {
                             {roomSource.map((room) => (
                                 <Col xs={24} sm={24} md={12} lg={8} xl={6} key={room.id}>
                                     <RoomCard
-                                        room={{
-                                            id: room.id,
-                                            name: room.boardingHouseName || 'N/A',
-                                            address: room.note || 'Chưa có địa chỉ',
-                                            floors: room.area || 0,
-                                            totalRooms: room.roomNumber || 0,
-                                            owner: room.status
-                                                ? statusRoom[room.status]?.label
-                                                : 'N/A',
-                                        }}
+                                        room={room}
                                         onView={() => handleViewRoom(room)}
                                         onEdit={() => handleEditRoom(room)}
                                         onDelete={() => handleDeleteRoom(room)}

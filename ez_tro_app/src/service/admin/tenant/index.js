@@ -16,6 +16,19 @@ export const getAllTenants = async ({ page, pageSize }) => {
     }
 };
 
+export const getAllTenantNoPaged = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.TENANTS.GET_ALL_NO_PAGING);
+        return response.data.result;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message || 'Lỗi lấy danh sách người dùng',
+        );
+        throw error;
+    }
+};
+
+
 export const tenantDetail = async (tenantId) => {
     try {
         const response = await apiClient.get(

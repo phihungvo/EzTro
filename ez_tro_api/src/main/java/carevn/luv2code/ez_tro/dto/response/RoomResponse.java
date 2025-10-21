@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.dto.response;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import lombok.*;
@@ -12,10 +13,20 @@ import lombok.*;
 @Builder
 public class RoomResponse {
     Integer id;
+
     String roomNumber;
+
     BigDecimal area;
+
     BigDecimal price;
+
     RoomStatus status;
+
     String note;
+
     String boardingHouseName;
+
+    Date startDate;
+
+    Date endDate;
 }

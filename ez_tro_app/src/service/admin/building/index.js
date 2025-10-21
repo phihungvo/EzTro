@@ -16,7 +16,6 @@ export const getAllBuildings = async ({ page, pageSize }) => {
     }
 };
 
-
 export const createBuilding = async (formData) => {
     try {
         const response = await apiClient.post(

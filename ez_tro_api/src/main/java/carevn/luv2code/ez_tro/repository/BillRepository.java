@@ -12,5 +12,7 @@ import carevn.luv2code.ez_tro.entity.Contract;
 public interface BillRepository extends JpaRepository<Bill, Integer> {
     List<Bill> findByContract(Contract contract);
 
+    List<Bill> findByContractId(Integer contractId);
+
     List<Bill> findByPaid(Boolean paid);
 }
