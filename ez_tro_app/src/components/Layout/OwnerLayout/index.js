@@ -1,6 +1,6 @@
 import React from "react";
 import styles from "./OwnerLayout.module.scss";
-import OwnerSidebar from "~/components/Layout/components/Sidebar/OwnerSidebar";
+import OwnerSidebar from "~/components/Layout/AdminLayout/components/Sidebar/OwnerSidebar";
 
 const OwnerLayout = ({ children }) => {
     return (

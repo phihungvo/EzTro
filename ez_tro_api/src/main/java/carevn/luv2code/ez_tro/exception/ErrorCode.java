@@ -56,6 +56,9 @@ public enum ErrorCode {
     BILL_ALREADY_EXISTS(1039, "Bill already exists", HttpStatus.CONFLICT),
     ELECTRIC_WATER_RECORD_ALREADY_EXISTS(1040, "Electric water record already exists", HttpStatus.CONFLICT),
     BUILDING_NOT_FOUND(1041, "Building not found", HttpStatus.NOT_FOUND),
+    AMENITY_NOT_FOUND(1042, "Amenity not found", HttpStatus.NOT_FOUND),
+    AMENITY_NAME_ALREADY_EXISTS(1043, " Amenity name already exists in this boarding house", HttpStatus.CONFLICT),
+    INVALID_ROOM_FOR_BOARDING_HOUSE(1044, "INVALID_ROOM_FOR_BOARDING_HOUSE", HttpStatus.CONFLICT),
 
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);

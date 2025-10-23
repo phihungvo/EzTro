@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.entity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -46,6 +47,10 @@ public class BoardingHouse {
     @Column(name = "total_buildings")
     Integer totalBuildings = 0;
 
+    // Phí quản lý hàng tháng
+    @Column(precision = 10, scale = 2)
+    BigDecimal managementFee = BigDecimal.ZERO;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)
     Date createdAt;
@@ -65,8 +70,10 @@ public class BoardingHouse {
         updatedAt = new Date();
     }
 
-    // Một nhà trọ có nhiều tòa nhà
     @OneToMany(mappedBy = "boardingHouse", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     List<Building> buildings;
+
+    @OneToMany(mappedBy = "boardingHouse", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Amenity> services; // Dịch vụ chung của khu
 }

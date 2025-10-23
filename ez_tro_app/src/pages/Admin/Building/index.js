@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/Building/Building.module.scss';
-import SmartTable from '~/components/Layout/components/SmartTable';
-import BuildingCard from 'src/components/Layout/components/BuildingCard';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
+import BuildingCard from '~/components/Layout/AdminLayout/components/BuildingCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -13,9 +13,9 @@ import {
     TableOutlined,
     AppstoreOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/components/SmartInput';
-import SmartButton from '~/components/Layout/components/SmartButton';
-import PopupModal from '~/components/Layout/components/PopupModal';
+import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
+import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
+import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import { Form, message, Row, Col, Pagination, Segmented } from 'antd';
 import {getAllBuildings, createBuilding, updateBuilding, deleteBuilding} from '~/service/admin/building';
 import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
@@ -234,13 +234,13 @@ function Building() {
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm khu nhà mới';
+                return 'Thêm toà nhà mới';
             case 'edit':
-                return 'Chỉnh sửa khu nhà';
+                return 'Chỉnh sửa toà nhà';
             case 'delete':
-                return 'Xóa khu nhà';
+                return 'Xóa toà nhà';
             default:
-                return 'Chi tiết khu nhà';
+                return 'Chi tiết toà nhà';
         }
     };
 

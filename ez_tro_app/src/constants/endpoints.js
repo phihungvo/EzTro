@@ -65,6 +65,12 @@ const API_ENDPOINTS = {
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
         DELETE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
     },
+    AMENITY: {
+        GET_ALL: `${BASE_URL}/amenities/paged`,
+        CREATE: `${BASE_URL}/amenities`,
+        UPDATE: (amenityId) => `${BASE_URL}/amenities/${amenityId}`,
+        DELETE: (amenityId) => `${BASE_URL}/amenities/${amenityId}`,
+    }
 };
 
 export default API_ENDPOINTS;

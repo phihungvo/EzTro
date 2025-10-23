@@ -1,5 +1,5 @@
 import React from 'react';
-import CustomTabs from '~/components/Layout/components/Tab';
+import CustomTabs from '~/components/Layout/AdminLayout/components/Tab';
 import UserList from "~/pages/Admin/User/index";
 import RoleList from "~/pages/Admin/Role";
 import PermissionList from "~/pages/Admin/Permission";

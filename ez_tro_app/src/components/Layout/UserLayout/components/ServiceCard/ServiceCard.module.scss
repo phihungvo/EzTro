@@ -1,0 +1,35 @@
+.serviceCard {
+  text-align: center;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+
+  &:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+    transform: translateY(-4px);
+
+    .icon {
+      transform: scale(1.1);
+    }
+  }
+
+  &:active {
+    transform: translateY(-2px);
+  }
+
+  .icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    transition: transform 0.3s ease;
+  }
+
+  .label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+}

@@ -67,6 +67,20 @@ public class Room {
     @Column(name = "has_kitchen", nullable = false)
     Boolean hasKitchen = false;
 
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<Contract> contracts;
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<ElectricWaterRecord> electricWaterRecords;
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<RoomAmenity> roomAmenities; // Dịch vụ đăng ký
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Bill> bills;
+
     @Column(name = "is_deleted", nullable = false)
     Boolean isDeleted = false;
 
@@ -88,12 +102,4 @@ public class Room {
     protected void onUpdate() {
         updatedAt = new Date();
     }
-
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    List<Contract> contracts;
-
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    List<ElectricWaterRecord> electricWaterRecords;
 }

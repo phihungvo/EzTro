@@ -5,7 +5,7 @@ import {login as loginService} from '~/service/admin/user';
 import classNames from 'classnames/bind';
 import styles from './Login.module.scss';
 import { useNavigate } from 'react-router-dom';
-import SmartButton from "~/components/Layout/components/SmartButton";
+import SmartButton from "~/components/Layout/AdminLayout/components/SmartButton";
 import { PhoneOutlined, AppleOutlined, GoogleOutlined } from '@ant-design/icons';
 const cx = classNames.bind(styles);
 const Login = () => {

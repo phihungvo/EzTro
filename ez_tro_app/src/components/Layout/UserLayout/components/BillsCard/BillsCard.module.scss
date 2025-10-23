@@ -1,0 +1,20 @@
+.billsCard {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  :global {
+    .ant-card-head {
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ant-card-body {
+      padding: 24px;
+    }
+  }
+}
+
+.billsList {
+  display: flex;
+  flex-direction: column;
+}

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import carevn.luv2code.ez_tro.entity.Permission;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.HttpMethod;
-import carevn.luv2code.ez_tro.service.PermissionService;
+import carevn.luv2code.ez_tro.service.admin.PermissionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
