@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/BoardingHouse/BoardingHouse.module.scss';
-import SmartTable from '~/components/Layout/components/SmartTable';
-import BoardingHousesCard from 'src/components/Layout/components/BoardingHousesCard';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
+import BoardingHousesCard from '~/components/Layout/AdminLayout/components/BoardingHousesCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -13,9 +13,9 @@ import {
     TableOutlined,
     AppstoreOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/components/SmartInput';
-import SmartButton from '~/components/Layout/components/SmartButton';
-import PopupModal from '~/components/Layout/components/PopupModal';
+import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
+import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
+import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented} from 'antd';
 import {exportExcelFile} from '~/service/admin/export_service';
 import {
@@ -50,13 +50,6 @@ function BoardingHouses() {
             key: 'name',
             width: 200,
             fixed: 'left',
-            align: 'center',
-        },
-        {
-            title: 'Mô tả',
-            dataIndex: 'description',
-            key: 'description',
-            width: 250,
             align: 'center',
         },
         {

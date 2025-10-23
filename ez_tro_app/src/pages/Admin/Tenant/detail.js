@@ -31,7 +31,7 @@ import {tenantDetail} from '~/service/admin/tenant';
 import {uploadFile, getPresignedUrl} from '~/service/admin/uploadFile';
 import {useAuth} from '~/routes/AuthContext';
 import 'moment/locale/vi';
-import CustomTabs from "~/components/Layout/components/Tab";
+import CustomTabs from "~/components/Layout/AdminLayout/components/Tab";
 // import WorkHistory from "~/pages/AdminDashboard/WorkHistory";
 // import Skill from "~/pages/AdminDashboard/Skill";
 // import Education from "~/pages/AdminDashboard/Education";

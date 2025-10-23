@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./AdminLayout.module.scss";
 import Header from "../Header";
-import AdminSidebar from "~/components/Layout/components/Sidebar/AdminSidebar";
+import AdminSidebar from "~/components/Layout/AdminLayout/components/Sidebar/AdminSidebar";
 
 import Dashboard from "~/pages/Admin/HomeDashboard";
 import UserManagement from "~/pages/Admin/User/UserManagement";
@@ -30,9 +30,9 @@ import Tenant from "~/pages/Admin/Tenant";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
+import Amenity from "~/pages/Admin/Amenity";
 
 const cx = classNames.bind(styles);
-
 
 const adminMenuConfig = [
     {
@@ -104,7 +104,7 @@ const adminMenuConfig = [
                 title: "Quản lý dịch vụ (điện, nước, internet...)",
                 icon: <ToolOutlined />,
                 color: "#6366f1",
-                // component: <Service />,
+                component: <Amenity />,
             },
         ],
     },

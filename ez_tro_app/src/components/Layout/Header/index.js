@@ -1,7 +1,7 @@
 import classNames from 'classnames/bind';
 import styles from './Header.module.scss';
-import Avatar from '../components/Avatar';
-import Notification from '../components/Notification';
+import Avatar from '~/components/Layout/AdminLayout/components/Avatar';
+import Notification from '~/components/Layout/AdminLayout/components/Notification';
 import { MailOutlined, BellOutlined } from '@ant-design/icons';
 
 const cx = classNames.bind(styles);

@@ -1,0 +1,14 @@
+.bills {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  .header {
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+  }
+}

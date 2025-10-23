@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/User/User.module.scss';
 import moment from 'moment';
-import SmartTable from '~/components/Layout/components/SmartTable';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -11,9 +11,9 @@ import {
     EditOutlined,
     DeleteOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/components/SmartInput';
-import SmartButton from '~/components/Layout/components/SmartButton';
-import PopupModal from '~/components/Layout/components/PopupModal';
+import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
+import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
+import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import { Form, message, Tag } from 'antd';
 import { getAllUser, createUser, updateUser, deleteUser } from '~/service/admin/user';
 import { getAllRolesNoPaging } from '~/service/admin/role';

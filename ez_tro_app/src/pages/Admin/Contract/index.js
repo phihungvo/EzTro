@@ -2,8 +2,8 @@ import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import moment from 'moment';
 import styles from '~/pages/Admin/Contract/Contract.module.scss';
-import SmartTable from '~/components/Layout/components/SmartTable';
-import ContractCard from 'src/components/Layout/components/ContractCard';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
+import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -14,9 +14,9 @@ import {
     TableOutlined,
     AppstoreOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/components/SmartInput';
-import SmartButton from '~/components/Layout/components/SmartButton';
-import PopupModal from '~/components/Layout/components/PopupModal';
+import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
+import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
+import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag, DatePicker} from 'antd';
 import {getAllContracts, createContract, updateContract, deleteContract} from '~/service/admin/contract';
 import {getAllRoomNoPaged} from "~/service/admin/room";

@@ -39,6 +39,10 @@ public class Contract {
     @ToString.Exclude
     Tenant tenant;
 
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<Bill> bills;
+
     @Temporal(TemporalType.DATE)
     @Column(name = "start_date", nullable = false)
     Date startDate;
@@ -78,8 +82,4 @@ public class Contract {
     protected void onUpdate() {
         updatedAt = new Date();
     }
-
-    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    List<Bill> bills;
 }

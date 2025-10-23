@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/Room/Room.module.scss';
-import SmartTable from '~/components/Layout/components/SmartTable';
-import RoomCard from 'src/components/Layout/components/RoomCard';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
+import RoomCard from '~/components/Layout/AdminLayout/components/RoomCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -13,9 +13,9 @@ import {
     TableOutlined,
     AppstoreOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/components/SmartInput';
-import SmartButton from '~/components/Layout/components/SmartButton';
-import PopupModal from '~/components/Layout/components/PopupModal';
+import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
+import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
+import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Tag, Row, Col, Segmented, Pagination} from 'antd';
 import {getAllRooms} from '~/service/admin/room';
 

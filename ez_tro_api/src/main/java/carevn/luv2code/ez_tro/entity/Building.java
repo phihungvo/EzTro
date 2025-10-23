@@ -33,6 +33,9 @@ public class Building {
     @JoinColumn(name = "boarding_house_id", nullable = false)
     BoardingHouse boardingHouse;
 
+    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Room> rooms;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)
     Date createdAt;
@@ -51,7 +54,4 @@ public class Building {
     protected void onUpdate() {
         updatedAt = new Date();
     }
-
-    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Room> rooms;
 }
