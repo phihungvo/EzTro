@@ -3,263 +3,262 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    width: 100vw;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    position: relative;
     padding: 20px;
+    overflow: hidden;
+    position: relative;
 
-    // Hiệu ứng nền động
     &::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
         background:
-                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-        pointer-events: none;
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+        animation: shimmer 4s ease-in-out infinite alternate;
     }
 
-    .logo {
-        position: absolute;
-        top: 40px;
-        left: 40px;
-        cursor: pointer;
-        z-index: 10;
-        transition: transform 0.3s ease;
-
-        &:hover {
-            transform: scale(1.05);
-        }
-
-        img {
-            width: 180px;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-        }
+    @keyframes shimmer {
+        0% { opacity: 0.8; }
+        100% { opacity: 1; }
     }
 
     .login-box {
         position: relative;
-        padding: 50px 45px;
-        border-radius: 20px;
         width: 100%;
-        max-width: 460px;
+        max-width: 440px;
+        padding: 48px 40px;
+        border-radius: 20px;
         text-align: center;
         background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(20px) saturate(180%);
         box-shadow:
                 0 20px 60px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1);
-        animation: slideUp 0.6s ease-out;
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        animation: slideUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(40px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
 
         h1 {
-            color: #1a1a2e;
             font-size: 28px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #1a1a2e, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        // Subtitle text
-        & > p:first-of-type {
+        > p {
             color: #6b7280;
             font-size: 15px;
             margin-bottom: 32px;
             font-weight: 400;
         }
-    }
 
-    .login-form {
-        :global {
-            .ant-form-item {
-                margin-bottom: 20px;
-            }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
 
-            .ant-input,
-            .ant-input-password {
-                height: 50px;
-                font-size: 15px;
-                border-radius: 12px;
-                border: 2px solid #e5e7eb;
-                padding: 12px 16px;
-                transition: all 0.3s ease;
-                background: #fafbfc;
-
-                &:hover {
-                    border-color: #667eea;
-                    background: #fff;
-                }
-
-                &:focus,
-                &:focus-within {
-                    border-color: #667eea;
-                    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-                    background: #fff;
-                }
-
-                &::placeholder {
-                    color: #9ca3af;
-                    font-size: 14px;
-                }
-            }
-
-            .ant-input-password {
-                padding: 0;
+            .input-wrapper {
+                position: relative;
+                width: 100%;
 
                 input {
-                    height: 46px;
+                    width: 100%;
+                    height: 50px;
+                    font-size: 15px;
+                    border-radius: 10px;
+                    border: 1.5px solid #e5e7eb;
                     padding: 0 16px;
+                    background: #fafbfc;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    font-family: inherit;
+                    box-sizing: border-box;
+
+                    &:focus {
+                        outline: none;
+                        border-color: #667eea;
+                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                        background: #fff;
+                    }
+
+                    &::placeholder {
+                        color: #9ca3af;
+                        font-weight: 400;
+                    }
                 }
 
-                .ant-input-suffix {
-                    margin-right: 12px;
+                &.password-field {
+                    input {
+                        padding-right: 48px;
+                    }
+
+                    .toggle-password {
+                        position: absolute;
+                        right: 14px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        font-size: 20px;
+                        color: #9ca3af;
+                        padding: 4px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: color 0.2s ease;
+
+                        &:hover {
+                            color: #667eea;
+                        }
+
+                        &:focus {
+                            outline: none;
+                        }
+                    }
                 }
             }
 
-            .ant-btn {
-                height: 52px;
-                font-size: 16px;
+            button[type="submit"] {
+                height: 50px;
+                font-size: 15px;
                 font-weight: 600;
-                border-radius: 12px;
+                border-radius: 10px;
                 border: none;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-                transition: all 0.3s ease;
-                margin-top: 8px;
+                color: #fff;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                margin-top: 6px;
+                font-family: inherit;
+
+                &:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+                }
+
+                &:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+
+                &:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                }
+            }
+
+            .signup-link {
+                font-size: 14px;
+                color: #6b7280;
+                margin-top: 20px;
+                font-weight: 400;
+
+                a {
+                    color: #667eea;
+                    font-weight: 600;
+                    text-decoration: none;
+                    transition: color 0.2s ease;
+
+                    &:hover {
+                        color: #764ba2;
+                        text-decoration: underline;
+                    }
+                }
+            }
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            font-size: 13px;
+            color: #9ca3af;
+            margin: 28px 0 24px;
+
+            &::before,
+            &::after {
+                content: "";
+                flex: 1;
+                height: 1px;
+                background: #e5e7eb;
+            }
+
+            span {
+                padding: 0 16px;
+                background: rgba(255, 255, 255, 0.98);
+                font-weight: 500;
+            }
+        }
+
+        .social-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            button {
+                height: 46px;
+                border-radius: 10px;
+                border: 1.5px solid #e5e7eb;
+                background: #fff;
+                font-size: 14px;
+                font-weight: 500;
+                color: #374151;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                font-family: inherit;
 
                 &:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-                    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+                    border-color: #667eea;
+                    background: #fafbfc;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
                 }
 
                 &:active {
                     transform: translateY(0);
                 }
-            }
-        }
 
-        // Link đăng ký
-        & > p {
-            margin-top: 24px;
-            margin-bottom: 0;
-            color: #6b7280;
-            font-size: 14px;
-
-            a {
-                color: #667eea;
-                font-weight: 600;
-                text-decoration: none;
-                cursor: pointer;
-                transition: color 0.3s ease;
-
-                &:hover {
-                    color: #764ba2;
-                    text-decoration: underline;
+                .icon {
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
                 }
             }
         }
     }
 }
 
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 500;
-    color: #9ca3af;
-    margin: 28px 0 24px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &::before,
-    &::after {
-        content: "";
-        flex: 1;
-        border-bottom: 1px solid #e5e7eb;
-        margin: 0 16px;
-    }
-}
-
-.or-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    :global {
-        button {
-            height: 48px;
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
-            background: #fff;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            transition: all 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-            &:hover {
-                border-color: #667eea;
-                background: #fafbfc;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            }
-
-            .anticon {
-                font-size: 18px;
-            }
-        }
-    }
-}
-
-// Responsive design
-@media (max-width: 768px) {
+// Responsive
+@media (max-width: 480px) {
     .login-container {
-        .logo {
-            top: 20px;
-            left: 20px;
-
-            img {
-                width: 140px;
-            }
-        }
-
         .login-box {
-            padding: 40px 30px;
+            padding: 36px 28px;
             max-width: 100%;
 
             h1 {
                 font-size: 24px;
             }
-        }
-    }
-}
 
-@media (max-width: 480px) {
-    .login-container {
-        .login-box {
-            padding: 35px 25px;
-            border-radius: 16px;
-        }
-
-        .or-buttons {
-            :global {
-                button {
-                    font-size: 13px;
-                }
+            > p {
+                font-size: 14px;
             }
         }
     }

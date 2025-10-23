@@ -1,4 +1,3 @@
-// src/pages/General/Register.jsx
 import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { register as registerService } from '~/service/admin/user';
