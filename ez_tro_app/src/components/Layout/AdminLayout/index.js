@@ -215,7 +215,7 @@ const AdminLayout = ({ onLogout }) => {
 
         navigate("/login");
 
-        message.warning("Đăng xuất thành công");
+        message.success("Đăng xuất thành công");
     };
 
     return (
