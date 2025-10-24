@@ -70,6 +70,11 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/amenities`,
         UPDATE: (amenityId) => `${BASE_URL}/amenities/${amenityId}`,
         DELETE: (amenityId) => `${BASE_URL}/amenities/${amenityId}`,
+    },
+    BILL: {
+        GET_ALL: `${BASE_URL}/bills`,
+        CREATE: `${BASE_URL}/bills`,
+        GET_MY_BILL: `${BASE_URL}/user/bills`,
     }
 };
 

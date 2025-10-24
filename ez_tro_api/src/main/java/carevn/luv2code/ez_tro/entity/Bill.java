@@ -26,6 +26,8 @@ public class Bill {
     @EqualsAndHashCode.Include
     Integer id;
 
+    String billTitle;
+
     @Column(length = 50, unique = true)
     String billCode;
 
@@ -39,8 +41,8 @@ public class Bill {
     Room room;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    User tenant;
+    @JoinColumn(name = "tenant_id", nullable = true)
+    Tenant tenant;
 
     @Column(name = "amount", nullable = false)
     BigDecimal amount;

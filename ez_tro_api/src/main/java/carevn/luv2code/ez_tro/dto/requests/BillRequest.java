@@ -11,11 +11,18 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class BillRequest {
+
+    String billTitle;
+
     Integer contractId;
+
+    Integer tenantId;
 
     BigDecimal amount;
 
     Boolean paid;
 
     Date paymentDate;
+
+    Date dueDate;
 }

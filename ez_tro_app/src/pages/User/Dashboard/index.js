@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import { Alert } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 
@@ -7,7 +7,26 @@ import StatsGrid from "~/components/Layout/UserLayout/components/StatsGrid";
 import BillsCard from "~/components/Layout/UserLayout/components/BillsCard";
 import ServicesCard from "~/components/Layout/UserLayout/components/ServicesCard";
 
+import {getMyBills} from "~/service/user/bill";
+
 const Dashboard = () => {
+
+    const [myBills, setMyBills] = React.useState([]);
+
+    const handleGetMyBills = async () => {
+        try {
+            const response = await getMyBills();
+            setMyBills(response.result);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            setMyBills([]);
+        }
+    };
+
+    useEffect(() => {
+        handleGetMyBills();
+    }, []);
+
     const statsData = [
         { label: "PHÒNG HIỆN TẠI", value: "101" },
         { label: "TIỀN THUÊ THÁNG NÀY", value: "3.0M đ" },
@@ -75,7 +94,7 @@ const Dashboard = () => {
 
             {/* Bills Card */}
             <BillsCard
-                bills={billsData}
+                bills={myBills}
                 onViewAll={handleViewAllBills}
             />
 

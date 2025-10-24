@@ -1,5 +1,7 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import static carevn.luv2code.ez_tro.security.SecurityUtils.getCurrentUser;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -8,11 +10,14 @@ import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.Contract;
+import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
+import carevn.luv2code.ez_tro.repository.TenantRepository;
+import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.service.admin.BillService;
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +27,9 @@ public class BillServiceImpl implements BillService {
 
     private final BillRepository billRepository;
     private final ContractRepository contractRepository;
+    private final TenantRepository tenantRepository;
     private final BillMapper mapper;
+    private final UserRepository userRepository;
 
     @Override
     public BillResponse create(BillRequest request) {
@@ -32,6 +39,12 @@ public class BillServiceImpl implements BillService {
 
         Bill bill = mapper.toEntity(request);
         bill.setContract(contract);
+        bill.setRoom(contract.getRoom());
+        Tenant tenant = tenantRepository
+                .findByUserId(getCurrentUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+
+        bill.setTenant(tenant);
 
         billRepository.save(bill);
         return mapper.toResponse(bill);
