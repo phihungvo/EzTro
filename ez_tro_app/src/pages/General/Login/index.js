@@ -1,22 +1,31 @@
-import React, {useState} from 'react';
-import {Form, Input, Button, message} from 'antd';
-import {useAuth} from '~/routes/AuthContext';
-import {login as loginService} from '~/service/admin/user';
-import classNames from 'classnames/bind';
-import styles from './Login.module.scss';
+import React, { useState } from 'react';
+import { useAuth } from '~/routes/AuthContext';
+import { login as loginService } from '~/service/admin/user';
 import { useNavigate } from 'react-router-dom';
-import SmartButton from "~/components/Layout/AdminLayout/components/SmartButton";
-import { PhoneOutlined, AppleOutlined, GoogleOutlined } from '@ant-design/icons';
-const cx = classNames.bind(styles);
-const Login = () => {
-    const {login} = useAuth();
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+import { message } from 'antd';
+import classNames from 'classnames/bind';
+import styles from '~/pages/General/Login/Login.module.scss';
 
-    const onFinish = async (values) => {
+const cx = classNames.bind(styles);
+
+const Login = () => {
+    const [loading, setLoading] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!username || !password) {
+            message.error('Vui lòng nhập đầy đủ thông tin!');
+            return;
+        }
+
         setLoading(true);
         try {
-            const token = await loginService(values.username, values.password);
+            const token = await loginService(username, password);
             if (!token) {
                 message.error('Đăng nhập thất bại. Kiểm tra lại thông tin.');
                 return;
@@ -24,6 +33,7 @@ const Login = () => {
 
             login(token);
             message.success('Đăng nhập thành công!');
+            navigate('/dashboard');
         } catch (err) {
             console.error(err);
             message.error('Có lỗi xảy ra. Vui lòng thử lại.');
@@ -34,80 +44,65 @@ const Login = () => {
 
     return (
         <div className={cx('login-container')}>
-            <div className={cx('logo')} onClick={() => navigate('/')}>
-                {/*<img src="https://i.imgur.com/ZEbJI8l.png" alt="MovieNest Logo" />*/}
-            </div>
             <div className={cx('login-box')}>
                 <h1>Chào mừng trở lại</h1>
-                <Form
-                    name="basic"
-                    className={cx('login-form')}
-                    onFinish={onFinish}
-                    autoComplete="off"
-                >
-                    <Form.Item
-                        name="username"
-                        rules={[
-                            {
-                                required: true,
-                                message: 'Vui lòng nhập username!',
-                            },
-                        ]}
-                    >
-                        <Input placeholder="Username" />
-                    </Form.Item>
+                <p>Đăng nhập để tiếp tục</p>
 
-                    <Form.Item
-                        name="password"
-                        rules={[
-                            {
-                                required: true,
-                                message: 'Vui lòng nhập password!',
-                            },
-                        ]}
-                    >
-                        <Input.Password placeholder="Password" />
-                    </Form.Item>
-
-                    <Form.Item label={null}>
-                        <Button
-                            htmlType="submit"
-                            block
-                            loading={loading}
-                            style={{
-                                backgroundColor: '#0ca37f',
-                                color: '#fff',
-                                padding: '16px 0',
-                            }}
-                        >
-                            Đăng nhập
-                        </Button>
-                    </Form.Item>
-
-                    <p>
-                        Chưa có tài khoản?{' '}
-                        <a onClick={() => navigate('/register')}> Đăng ký</a>
-                    </p>
-                    <div className="divider">Hoặc</div>
-
-                    <div className={cx('or-buttons')}>
-                        <SmartButton
-                            title="Tiếp tục với Google"
-                            buttonWidth={340}
-                            icon={<GoogleOutlined />}
-                        />
-                        <SmartButton
-                            title="Tiếp tục với Tài khoản Apple"
-                            buttonWidth={340}
-                            icon={<AppleOutlined />}
-                        />
-                        <SmartButton
-                            title="Tiếp tục với Điện thoại"
-                            buttonWidth={340}
-                            icon={<PhoneOutlined />}
+                <form onSubmit={handleSubmit}>
+                    <div className={cx('input-wrapper')}>
+                        <input
+                            type="text"
+                            placeholder="Tên đăng nhập"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                         />
                     </div>
-                </Form>
+
+                    <div className={cx('input-wrapper', 'password-field')}>
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Mật khẩu"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <button
+                            type="button"
+                            className={cx('toggle-password')}
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        >
+                            {showPassword ? '👁️' : '👁️‍🗨️'}
+                        </button>
+                    </div>
+
+                    <button type="submit" disabled={loading}>
+                        {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                    </button>
+
+                    <p className={cx('signup-link')}>
+                        Chưa có tài khoản?{' '}
+                        <a href="#" onClick={(e) => e.preventDefault()}>Đăng ký ngay</a>
+                    </p>
+                </form>
+
+                <div className={cx('divider')}>
+                    <span>Hoặc đăng nhập với</span>
+                </div>
+
+                <div className={cx('social-buttons')}>
+                    <button type="button">
+                        <span className={cx('icon')}>G</span>
+                        <span>Tiếp tục với Google</span>
+                    </button>
+                    <button type="button">
+                        <span className={cx('icon')}>🍎</span>
+                        <span>Tiếp tục với Apple</span>
+                    </button>
+                    <button type="button">
+                        <span className={cx('icon')}>📱</span>
+                        <span>Tiếp tục với Số điện thoại</span>
+                    </button>
+                </div>
             </div>
         </div>
     );
