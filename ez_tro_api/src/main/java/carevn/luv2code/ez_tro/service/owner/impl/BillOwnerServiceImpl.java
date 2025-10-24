@@ -34,16 +34,13 @@ public class BillOwnerServiceImpl implements BillOwnerService {
 
     @Override
     public List<BillResponse> getBillsByUserId(Integer userId) {
-        // Bước 1: Lấy Tenant từ userId
         Tenant tenant = tenantRepository
                 .findByUserId(userId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " + userId));
 
-        // Bước 2: Lấy tenantId và query bills
         Integer tenantId = tenant.getId();
         List<Bill> bills = billRepository.findByTenantId(tenantId);
 
-        // Bước 3: Map và return
         return bills.stream().map(billMapper::toResponse).collect(Collectors.toList());
     }
 }

@@ -6,7 +6,6 @@ import PaymentMethods from "~/components/Layout/UserLayout/components/PaymentMet
 import UserTable from "src/components/Layout/UserLayout/components/UserTable";
 
 const Bills = () => {
-    // Mock data - replace with API call
     const [bills] = useState([
         {
             billId: "HD0001",

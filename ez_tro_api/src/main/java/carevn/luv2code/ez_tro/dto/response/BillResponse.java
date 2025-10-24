@@ -13,6 +13,8 @@ import lombok.*;
 public class BillResponse {
     Integer id;
 
+    String billTitle;
+
     String tenantName;
 
     BigDecimal amount;
@@ -20,6 +22,8 @@ public class BillResponse {
     Boolean paid;
 
     Date paymentDate;
+
+    Date dueDate;
 
     Integer contractId;
 

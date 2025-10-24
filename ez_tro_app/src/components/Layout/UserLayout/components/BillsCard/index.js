@@ -18,7 +18,7 @@ const BillsCard = ({ bills, onViewAll }) => {
         >
             <div className={styles.billsList}>
                 {bills.map((bill, index) => (
-                    <BillItem key={index} {...bill} />
+                    <BillItem key={index} bill={bill} />
                 ))}
             </div>
         </Card>
