@@ -13,5 +13,7 @@ public interface CronJobService {
 
     boolean isJobScheduled(String jobId);
 
-    public String getJobDetails(String jobId);
+    String getJobDetails(String jobId);
+
+    void scheduleBillGenerationJob(String cronExpression);
 }

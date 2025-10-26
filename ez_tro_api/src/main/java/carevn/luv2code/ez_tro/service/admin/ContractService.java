@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.service.admin;
 
 import java.util.List;
 
-import carevn.luv2code.ez_tro.entity.Contract;
 import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
