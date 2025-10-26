@@ -7,7 +7,7 @@ const RoomInfoCard = ({roomData}) => {
 
     const getStatusConfig = (status) => {
         switch (status) {
-            case 'available':
+            case 'Đang Ở':
                 return {color: 'success', text: 'Đang Ở'};
             case 'maintenance':
                 return {color: 'warning', text: 'Bảo Trì'};
@@ -48,7 +48,8 @@ const RoomInfoCard = ({roomData}) => {
                 <div className={styles.infoItem}>
                     <div className={styles.label}>GIÁ THUÊ</div>
                     <div className={styles.value}>
-                        {price.toLocaleString('vi-VN')} đ
+                        {/*{price.toLocaleString('vi-VN')} đ*/}
+                        {price }đ
                     </div>
                 </div>
 

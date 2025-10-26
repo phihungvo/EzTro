@@ -1,0 +1,26 @@
+package carevn.luv2code.ez_tro.dto.response;
+
+import java.math.BigDecimal;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class UserRoomInfoResponse {
+    String roomNumber;
+
+    String buildingName;
+
+    Integer floor;
+
+    BigDecimal area;
+
+    BigDecimal rentPrice;
+
+    String status;
+}
