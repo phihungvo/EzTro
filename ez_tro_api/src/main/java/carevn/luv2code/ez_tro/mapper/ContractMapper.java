@@ -14,6 +14,7 @@ public interface ContractMapper {
     @Mapping(source = "tenant.user.id", target = "userId")
     @Mapping(source = "tenant.user.fullName", target = "tenantFullName")
     @Mapping(source = "room.boardingHouse.name", target = "boardingHouseName")
+    @Mapping(target = "fileCount", expression = "java(entity.getFiles() != null ? entity.getFiles().size() : 0)")
     ContractResponse toResponse(Contract entity);
 
     @Mapping(target = "id", ignore = true)

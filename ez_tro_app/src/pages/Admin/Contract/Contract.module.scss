@@ -1,14 +1,14 @@
-.room-wrapper {
+.contract-wrapper {
   width: 100%;
   display: block;
 }
 
-.room-container {
+.contract-container {
   width: 100%;
   overflow-x: auto;
 }
 
-.room-header {
+.contract-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -30,4 +30,72 @@
   display: flex;
   justify-content: right;
   margin-top: 24px;
+}
+
+.file-count-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background-color: #e6f4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+
+    .file-icon {
+      color: #0050b3;
+      transform: scale(1.1);
+    }
+
+    .file-number {
+      color: #0050b3;
+      font-weight: 600;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .file-icon {
+    font-size: 16px;
+    color: #1890ff;
+    transition: all 0.3s ease;
+  }
+
+  .file-number {
+    font-weight: 500;
+    color: #262626;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  .date-start,
+  .date-end {
+    font-size: 13px;
+    color: #595959;
+  }
+
+  .date-arrow {
+    color: #1890ff;
+    font-weight: 600;
+  }
+}
+
+.salary-value {
+  font-weight: 600;
+  color: #52c41a;
 }

@@ -1,6 +1,27 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
+import axios from "axios";
+
+export const uploadContractFile = async (file, contractId) => {
+    const formData = new FormData();
+    formData.append('files', file);
+
+    try {
+        const response = await apiClient.post(
+            API_ENDPOINTS.FILE.UPLOAD_CONTRACT(contractId),
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
 
 export const getAllContracts = async ({ page, pageSize }) => {
     try {

@@ -43,6 +43,10 @@ public class Contract {
     @ToString.Exclude
     List<Bill> bills;
 
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<File> files;
+
     @Temporal(TemporalType.DATE)
     @Column(name = "start_date", nullable = false)
     Date startDate;
