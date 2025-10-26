@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
-import carevn.luv2code.ez_tro.entity.Contract;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

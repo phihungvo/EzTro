@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "tenants")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Tenant {
 
     @Id

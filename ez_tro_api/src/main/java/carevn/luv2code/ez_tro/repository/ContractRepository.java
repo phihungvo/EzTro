@@ -26,23 +26,14 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
 
     List<Contract> findByStatus(String status);
 
-    @Query("""
-        SELECT c FROM Contract c
-        WHERE c.status = :status
-          AND c.startDate <= :today
-          AND c.endDate >= :today
-    """)
+    @Query(
+            """
+		SELECT c FROM Contract c
+		WHERE c.status = :status
+		AND c.startDate <= :today
+		AND c.endDate >= :today
+	""")
     List<Contract> findAllActiveContracts(ContractStatus status, LocalDate today);
-
-    //    @Query(
-    //            "SELECT c FROM Contract c WHERE c.tenant.id = :tenantId AND c.status =
-    // carevn.luv2code.ez_tro.enums.ContractStatus.ACTIVE")
-    //    Optional<Contract> findActiveContractByTenantId(Integer tenantId);
-
-    //    @Query("SELECT c FROM Contract c WHERE c.tenant.id = :tenantId AND c.status = :status AND c.startDate <=
-    // :today AND (c.endDate IS NULL OR c.endDate >= :today)")
-    //    Optional<Contract> findActiveContractByTenantId(@Param("tenantId") Integer tenantId, @Param("status")
-    // ContractStatus status, @Param("today") LocalDate today);
 
     @Query("SELECT c FROM Contract c WHERE c.tenant.id = :tenantId AND c.status = 'ACTIVE'")
     Optional<Contract> findActiveContractByTenantId(@Param("tenantId") Integer tenantId);
@@ -54,4 +45,15 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
             "SELECT c FROM Contract c WHERE c.tenant.user.id = :userId AND c.status = :status AND c.startDate <= :today AND (c.endDate IS NULL OR c.endDate >= :today)")
     Optional<Contract> findActiveContractByUserId(
             @Param("userId") Integer userId, @Param("status") ContractStatus status, @Param("today") LocalDate today);
+
+    @Query("SELECT c FROM Contract c WHERE c.status = 'ACTIVE' "
+            + "AND c.startDate <= :endOfMonth AND (c.endDate IS NULL OR c.endDate >= :startOfMonth)")
+    List<Contract> findActiveContractsForBilling(
+            @Param("startOfMonth") LocalDate startOfMonth, @Param("endOfMonth") LocalDate endOfMonth);
+
+    default List<Contract> findActiveContractsForBilling(int month, int year) {
+        LocalDate startOfMonth = LocalDate.of(year, month, 1);
+        LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+        return findActiveContractsForBilling(startOfMonth, endOfMonth);
+    }
 }

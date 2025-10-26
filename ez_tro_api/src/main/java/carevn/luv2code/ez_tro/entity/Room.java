@@ -18,6 +18,7 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "rooms")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Room {
 
     @Id

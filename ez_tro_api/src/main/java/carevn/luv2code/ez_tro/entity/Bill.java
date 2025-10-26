@@ -19,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "bills")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Bill {
 
     @Id

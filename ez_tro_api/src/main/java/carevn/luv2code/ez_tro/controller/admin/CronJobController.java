@@ -2,10 +2,13 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
+import carevn.luv2code.ez_tro.service.admin.impl.CronJobServiceImpl;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -45,5 +48,22 @@ public class CronJobController {
     @GetMapping("/{jobId}/details")
     public ResponseEntity<String> getJobDetails(@PathVariable String jobId) {
         return ResponseEntity.ok(cronJobService.getJobDetails(jobId));
+    }
+
+    @PostMapping("/generate-bills/manual")
+    public ApiResponse<String> manualGenerateBills() {
+        try {
+            ((CronJobServiceImpl) cronJobService).generateMonthlyBills();
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Manual bill generation completed for current month")
+                    .result("Bills generated successfully")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message("Failed to generate bills: " + e.getMessage())
+                    .build();
+        }
     }
 }
