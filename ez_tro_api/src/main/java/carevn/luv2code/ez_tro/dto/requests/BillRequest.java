@@ -1,8 +1,9 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter
@@ -12,17 +13,14 @@ import lombok.*;
 @Builder
 public class BillRequest {
 
-    String billTitle;
+    private String billTitle;
 
-    Integer contractId;
+    @NotNull(message = "Contract ID không được để trống")
+    private Integer contractId;
 
-    Integer tenantId;
+    private BigDecimal serviceAmount;
 
-    BigDecimal amount;
+    private String note;
 
-    Boolean paid;
-
-    Date paymentDate;
-
-    Date dueDate;
+    private LocalDateTime dueDate;
 }

@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.service.owner.impl;
 import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
+
 import carevn.luv2code.ez_tro.dto.response.TenantRoomInfoResponse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.enums.ContractStatus;

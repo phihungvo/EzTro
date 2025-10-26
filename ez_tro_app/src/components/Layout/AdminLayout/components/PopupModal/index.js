@@ -207,13 +207,18 @@ function PopupModal({
         let row = [];
 
         processedFields.forEach((field) => {
-            if (field.fullWidth || row.length >= 2) {
+            if (field.fullWidth) {
                 if (row.length > 0) {
                     groupedFields.push([...row]);
+                    row = [];
                 }
-                row = [field];
+                groupedFields.push([field]);
             } else {
                 row.push(field);
+                if (row.length === 2) {
+                    groupedFields.push([...row]);
+                    row = [];
+                }
             }
         });
 

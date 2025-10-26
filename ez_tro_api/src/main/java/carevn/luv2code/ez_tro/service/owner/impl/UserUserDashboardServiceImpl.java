@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.response.DashboardSummaryResponse;
 import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.owner.UserDashboardService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,8 @@ public class UserUserDashboardServiceImpl implements UserDashboardService {
     private final BillRepository billRepository;
 
     /**
-     *  Lấy thông tin hóa đơn tổng hợp cho dashboard của người thuê.
+     * Lấy thông tin hóa đơn tổng hợp cho dashboard của người thuê.
+     *
      * @param userId ID của người thuê
      * @return Thông tin tổng hợp hiển thị trên dashboard
      */
@@ -39,10 +41,9 @@ public class UserUserDashboardServiceImpl implements UserDashboardService {
         Bill bill =
                 billRepository.findTopByContractOrderByCreatedAtDesc(contract).orElse(null);
 
-        String paymentStatus = "Chưa Thanh Toán";
-        if (bill != null && Boolean.TRUE.equals(bill.getPaid())) {
-            paymentStatus = "Đã Thanh Toán";
-        }
+        String paymentStatus = bill != null
+                ? (bill.getStatus() == BillStatus.PAID ? "Đã Thanh Toán" : "Chưa Thanh Toán")
+                : "Chưa Thanh Toán";
 
         return DashboardSummaryResponse.builder()
                 .roomNumber(contract.getRoom().getRoomNumber())

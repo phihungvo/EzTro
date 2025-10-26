@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.service.admin;
 
 import java.util.List;
 
+import carevn.luv2code.ez_tro.entity.Contract;
 import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
@@ -18,6 +19,8 @@ public interface ContractService {
     ContractResponse getById(Integer id);
 
     List<ContractResponse> getAll();
+
+    List<ContractResponse> getAllActiveContracts();
 
     Page<ContractResponse> getAllContractPaged(int page, int size);
 

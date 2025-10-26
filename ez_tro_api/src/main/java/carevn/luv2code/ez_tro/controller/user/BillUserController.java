@@ -2,6 +2,8 @@ package carevn.luv2code.ez_tro.controller.user;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +28,18 @@ public class BillUserController {
                 .code(HttpStatus.OK.value())
                 .message("Lấy danh sách hóa đơn thành công")
                 .result(responses)
+                .build();
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<Page<BillResponse>> getUserBills(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        Page<BillResponse> bills = billService.getBillsByCurrentUser(userId, PageRequest.of(page, size));
+        return ApiResponse.<Page<BillResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Lấy danh sách hóa đơn thành công")
+                .result(bills)
                 .build();
     }
 }

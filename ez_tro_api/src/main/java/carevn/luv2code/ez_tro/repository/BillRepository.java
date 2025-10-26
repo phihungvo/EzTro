@@ -3,6 +3,8 @@ package carevn.luv2code.ez_tro.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +18,8 @@ public interface BillRepository extends JpaRepository<Bill, Integer> {
     List<Bill> findByContractId(Integer contractId);
 
     List<Bill> findByTenantId(Integer tenantId);
+
+    Page<Bill> findByTenant_User_Id(Integer userId, Pageable pageable);
 
     List<Bill> findByPaid(Boolean paid);
 

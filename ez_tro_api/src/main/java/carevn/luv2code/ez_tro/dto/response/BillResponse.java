@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.dto.response;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import carevn.luv2code.ez_tro.enums.BillStatus;
 import lombok.*;
 
 @Getter
@@ -15,6 +16,8 @@ public class BillResponse {
 
     String billTitle;
 
+    String billCode;
+
     String tenantName;
 
     BigDecimal amount;
@@ -24,6 +27,8 @@ public class BillResponse {
     Date paymentDate;
 
     Date dueDate;
+
+    BillStatus status;
 
     Integer contractId;
 

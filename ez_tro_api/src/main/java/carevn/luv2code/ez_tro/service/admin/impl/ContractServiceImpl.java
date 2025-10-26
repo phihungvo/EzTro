@@ -4,10 +4,12 @@ import static carevn.luv2code.ez_tro.constants.AppConstants.CODE_TIMESTAMP_FORMA
 import static carevn.luv2code.ez_tro.constants.AppConstants.CONTRACT_CODE_PREFIX;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import carevn.luv2code.ez_tro.enums.ContractStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -108,6 +110,14 @@ public class ContractServiceImpl implements ContractService {
         Contract contract =
                 contractRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         return contractMapper.toResponse(contract);
+    }
+
+    @Override
+    public List<ContractResponse> getAllActiveContracts() {
+        LocalDate today = LocalDate.now();
+        return contractRepository.findAllActiveContracts(ContractStatus.ACTIVE, today).stream()
+                .map(contractMapper::toResponse)
+                .toList();
     }
 
     @Override
