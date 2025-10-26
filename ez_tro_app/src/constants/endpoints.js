@@ -61,6 +61,7 @@ const API_ENDPOINTS = {
     },
     CONTRACT: {
         GET_ALL: `${BASE_URL}/contracts/paged`,
+        GET_ACTIVE: `${BASE_URL}/contracts/active`,
         CREATE: `${BASE_URL}/contracts`,
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
         DELETE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
@@ -83,6 +84,9 @@ const API_ENDPOINTS = {
     },
     MY_ROOM: {
         GET_ROOM_INFO: `${BASE_URL}/user/room/current`,
+    },
+    MY_BILL: {
+        GET_ALL: `${BASE_URL}/user/bills/paged`,
     }
 };
 

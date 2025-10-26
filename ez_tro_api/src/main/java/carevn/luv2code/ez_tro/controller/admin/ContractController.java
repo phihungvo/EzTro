@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
+import carevn.luv2code.ez_tro.entity.Contract;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +70,16 @@ public class ContractController {
                 .code(HttpStatus.OK.value())
                 .message("Get all contracts successfully")
                 .result(responses)
+                .build();
+    }
+
+    @GetMapping("/active")
+    public ApiResponse<List<ContractResponse>> getAllActiveContracts() {
+        List<ContractResponse> activeContracts = contractService.getAllActiveContracts();
+        return ApiResponse.<List<ContractResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get all contracts successfully")
+                .result(activeContracts)
                 .build();
     }
 

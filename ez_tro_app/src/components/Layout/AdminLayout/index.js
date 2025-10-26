@@ -31,6 +31,7 @@ import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
 import Amenity from "~/pages/Admin/Amenity";
+import Bill from "~/pages/Admin/Bill";
 
 const cx = classNames.bind(styles);
 
@@ -92,16 +93,24 @@ const adminMenuConfig = [
         items: [
             {
                 key: "contracts",
-                label: "Hợp đồng thuê",
-                title: "Quản lý hợp đồng thuê trọ",
+                label: "Hợp đồng thuê trọ",
+                title: "Quản lý thông tin hợp đồng thuê trọ",
                 icon: <FileTextOutlined />,
                 color: "#8b5cf6",
                 component: <Contract />,
             },
             {
+                key: "bills",
+                label: "Hoá đơn thanh toán",
+                title: "Quản lý hoá đơn tiền phòng và dịch vụ của người thuê",
+                icon: <FileTextOutlined />,
+                color: "#f59e0b",
+                component: <Bill />,
+            },
+            {
                 key: "services",
-                label: "Dịch vụ",
-                title: "Quản lý dịch vụ (điện, nước, internet...)",
+                label: "Dịch vụ phòng trọ",
+                title: "Quản lý các dịch vụ đi kèm (điện, nước, internet, vệ sinh...)",
                 icon: <ToolOutlined />,
                 color: "#6366f1",
                 component: <Amenity />,

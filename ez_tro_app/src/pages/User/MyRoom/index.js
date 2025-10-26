@@ -26,7 +26,7 @@ const MyRoom = () => {
 
     useEffect(() => {
         fetchMyRoom();
-    }, []); // 👈 Chỉ chạy 1 lần, không để [myRoom] (nếu để sẽ lặp vô hạn)
+    }, []);
 
     const [incidents] = useState([
         {

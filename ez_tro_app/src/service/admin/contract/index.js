@@ -16,6 +16,18 @@ export const getAllContracts = async ({ page, pageSize }) => {
     }
 };
 
+export const getAllActiveContracts = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.CONTRACT.GET_ACTIVE);
+
+        return response.data.result;
+    } catch (error) {
+        console.log('Error when fetching all contracts ! Error: ', error);
+        message.error('Error get all contracts: ');
+        return null;
+    }
+};
+
 export const createContract = async (formData) => {
     try {
         const response = await apiClient.post(

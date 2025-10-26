@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
@@ -42,5 +44,11 @@ public class BillOwnerServiceImpl implements BillOwnerService {
         List<Bill> bills = billRepository.findByTenantId(tenantId);
 
         return bills.stream().map(billMapper::toResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<BillResponse> getBillsByCurrentUser(Integer userId, Pageable pageable) {
+        Page<Bill> bills = billRepository.findByTenant_User_Id(userId, pageable);
+        return bills.map(billMapper::toResponse);
     }
 }

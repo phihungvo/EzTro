@@ -1,11 +1,34 @@
-import React, { useState } from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import { message } from "antd";
-
 import styles from "./Bills.module.scss";
 import PaymentMethods from "~/components/Layout/UserLayout/components/PaymentMethods";
 import UserTable from "src/components/Layout/UserLayout/components/UserTable";
+import {getMyBills} from "~/service/user/my-bill";
 
 const Bills = () => {
+
+    const [myBills, setMyBills] = useState(null);
+
+    const fetchMyBills = useCallback(async () => {
+        try {
+            const response = await getMyBills();
+
+            if (!response?.content) {
+                message.warning("Không thể lấy thông tin phòng của bạn");
+                return;
+            }
+
+            setMyBills(response.content);
+        } catch (error) {
+            console.error("❌ Error fetching room info:", error);
+            message.error("Lỗi khi tải dữ liệu phòng");
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchMyBills();
+    }, []);
+
     const [bills] = useState([
         {
             billId: "HD0001",
@@ -74,7 +97,7 @@ const Bills = () => {
 
             {/* Bills Table */}
             <UserTable
-                bills={bills}
+                bills={myBills}
                 onPayment={handlePayment}
                 onViewDetail={handleViewDetail}
             />
