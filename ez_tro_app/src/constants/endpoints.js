@@ -74,7 +74,15 @@ const API_ENDPOINTS = {
     BILL: {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
+    },
+
+    // FOR USER ROLE
+    DASHBOARD: {
+        SUMMARY:  `${BASE_URL}/user/dashboard/summary`,
         GET_MY_BILL: `${BASE_URL}/user/bills`,
+    },
+    MY_ROOM: {
+        GET_ROOM_INFO: `${BASE_URL}/user/room/current`,
     }
 };
 
