@@ -7,8 +7,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import carevn.luv2code.ez_tro.configuration.MinioService;
+import carevn.luv2code.ez_tro.dto.FileDTO;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.entity.File;
 import carevn.luv2code.ez_tro.exception.AppException;
@@ -52,6 +54,53 @@ public class FileController {
     //                .result(savedFile)
     //                .build();
     //    }
+
+    @PostMapping("/upload/contract/{contractId}")
+    public ResponseEntity<ApiResponse<List<FileDTO>>> uploadContractFiles(
+            @PathVariable Integer contractId, @RequestParam("files") MultipartFile[] files) {
+
+        if (files == null || files.length == 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<List<FileDTO>>builder()
+                            .code(HttpStatus.BAD_REQUEST.value())
+                            .message("No files uploaded. Please attach at least one file.")
+                            .result(null)
+                            .build());
+        }
+
+        try {
+            // Lấy user hiện tại (người upload)
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                    .getAuthentication();
+            var uploadedBy = userRepository
+                    .findByUserName(auth.getName())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+            // Gọi service upload
+            List<FileDTO> uploadedFiles = minioService.uploadFilesForContract(files, uploadedBy, contractId);
+
+            return ResponseEntity.ok(ApiResponse.<List<FileDTO>>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Upload contract files successfully")
+                    .result(uploadedFiles)
+                    .build());
+
+        } catch (AppException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.<List<FileDTO>>builder()
+                            .code(e.getErrorCode().getCode())
+                            .message(e.getErrorCode().getMessage())
+                            .result(null)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<List<FileDTO>>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Unexpected error: " + e.getMessage())
+                            .result(null)
+                            .build());
+        }
+    }
 
     @GetMapping("/presigned-url/{fileId}")
     public ResponseEntity<ApiResponse<String>> getPresignedUrl(@PathVariable Integer fileId) {

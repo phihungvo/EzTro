@@ -47,6 +47,10 @@ public class File {
     @JoinColumn(name = "uploaded_by", nullable = false)
     User uploadedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_id")
+    Contract contract;
+
     @Column(name = "is_deleted", nullable = false)
     boolean isDeleted = false;
 

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
@@ -21,6 +20,7 @@ import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.enums.ServiceType;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -56,7 +56,7 @@ public class CronJobServiceImpl implements CronJobService {
 
     @PostConstruct
     public void initDefaultBillJob() {
-        scheduleBillGenerationJob("0 * * * * ?");  // Mỗi phút (giây 0)
+        scheduleBillGenerationJob("0 * * * * ?"); // Mỗi phút (giây 0)
         log.info("Auto-scheduled bill generation job every minute for testing");
     }
 

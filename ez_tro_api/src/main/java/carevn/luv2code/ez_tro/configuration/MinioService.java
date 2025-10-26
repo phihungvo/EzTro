@@ -11,11 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import carevn.luv2code.ez_tro.dto.FileDTO;
+import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.File;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.FileMapper;
+import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.FileRepository;
 import io.minio.*;
 import io.minio.CopySource;
@@ -44,8 +47,8 @@ public class MinioService {
     //    @Autowired
     //    private EmployeeRepository employeeRepository;
     //
-    //    @Autowired
-    //    private ContractRepository contractRepository;
+    @Autowired
+    private ContractRepository contractRepository;
 
     @Autowired
     private FileMapper fileMapper;
@@ -63,8 +66,10 @@ public class MinioService {
         }
     }
 
-    /** Uploads a file to MinIO and saves its metadata in the database.
-     * @param file the MultipartFile to upload
+    /**
+     * Uploads a file to MinIO and saves its metadata in the database.
+     *
+     * @param file       the MultipartFile to upload
      * @param uploadedBy the User who is uploading the file
      * @return the name of the uploaded file in MinIO
      */
@@ -96,8 +101,46 @@ public class MinioService {
         }
     }
 
+    public List<FileDTO> uploadFilesForContract(MultipartFile[] files, User uploadedBy, Integer contractId) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+
+        List<FileDTO> result = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try (InputStream inputStream = file.getInputStream()) {
+                LocalDate today = LocalDate.now();
+                String relativePath = minioBasePath + "/" + today.getYear() + "/"
+                        + String.format("%02d", today.getMonthValue()) + "/";
+                String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+                String fullObjectName = relativePath + fileName;
+
+                minioClient.putObject(PutObjectArgs.builder().bucket(bucket).object(fullObjectName).stream(
+                                inputStream, file.getSize(), -1)
+                        .contentType(file.getContentType())
+                        .build());
+
+                File fileEntity = new File(
+                        fullObjectName,
+                        file.getOriginalFilename(),
+                        file.getContentType(),
+                        relativePath,
+                        file.getSize(),
+                        uploadedBy);
+                fileEntity.setContract(contract);
+                File savedFile = fileRepository.save(fileEntity);
+
+                result.add(fileMapper.toDTO(savedFile));
+            } catch (Exception e) {
+                throw new AppException(ErrorCode.MINIO_UPLOAD_ERROR);
+            }
+        }
+        return result;
+    }
+
     /**
      * Generates a presigned URL for accessing a file, valid for 24 hours.
+     *
      * @param fileName the name of the file in the MinIO bucket
      * @return the presigned URL as a String
      */
@@ -118,6 +161,7 @@ public class MinioService {
 
     /**
      * Download a file from the MinIO bucket.
+     *
      * @param fileName the name of the file in the MinIO bucket
      * @return InputStream of the downloaded file
      */
@@ -132,6 +176,7 @@ public class MinioService {
 
     /**
      * Delete a file from the MinIO bucket and mark it as deleted in the database.
+     *
      * @param fileName the name of the file in the MinIO bucket
      */
     public void deleteFile(String fileName) {
@@ -150,6 +195,7 @@ public class MinioService {
 
     /**
      * List all files in the MinIO bucket.
+     *
      * @return List of file names
      */
     public List<String> listFiles() {
@@ -178,6 +224,7 @@ public class MinioService {
 
     /**
      * Get metadata of a file in the MinIO bucket.
+     *
      * @param fileName the name of the file in the MinIO bucket
      * @return StatObjectResponse containing file metadata
      */
@@ -192,6 +239,7 @@ public class MinioService {
 
     /**
      * Copy a file within the MinIO bucket and create a new database record for the copied file.
+     *
      * @param sourceFileName the name of the source file in the MinIO bucket
      * @param targetFileName the name of the target file in the MinIO bucket
      */
@@ -228,6 +276,7 @@ public class MinioService {
     /**
      * Move a file within the MinIO bucket by copying it to the new location and deleting the original.
      * Update the database record to reflect the new file name.
+     *
      * @param sourceFileName the name of the source file in the MinIO bucket
      * @param targetFileName the name of the target file in the MinIO bucket
      */

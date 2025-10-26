@@ -7,6 +7,7 @@ const API_ENDPOINTS = {
     },
     FILE: {
         UPLOAD: `${BASE_URL}/files/upload`,
+        UPLOAD_CONTRACT: (contractId) =>  `${BASE_URL}/files/upload/contract/${contractId}`,
         CHECK_EXISTED: (file) =>
             `${BASE_URL}/storage/checkFileExists/${file.name}`,
         PRESIGNED_URL: (fileId) => `${BASE_URL}/files/presigned-url/${fileId}`,

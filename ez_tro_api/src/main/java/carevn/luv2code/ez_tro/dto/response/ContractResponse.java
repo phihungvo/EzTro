@@ -42,6 +42,8 @@ public class ContractResponse {
 
     String note;
 
+    Integer fileCount;
+
     Date createdAt;
 
     Date updatedAt;

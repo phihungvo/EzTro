@@ -1,0 +1,206 @@
+.fileListModal {
+  :global {
+    .ant-modal {
+      .ant-modal-content {
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .ant-modal-header {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 20px 24px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 12px 12px 0 0;
+      }
+
+      .ant-modal-body {
+        padding: 24px;
+        max-height: 70vh;
+        overflow-y: auto;
+
+        // Custom scrollbar
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+
+          &:hover {
+            background: #a8a8a8;
+          }
+        }
+      }
+    }
+  }
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+
+  .titleIcon {
+    font-size: 24px;
+    color: #1890ff;
+  }
+
+  .titleContent {
+    flex: 1;
+
+    .titleMain {
+      font-size: 18px;
+      font-weight: 600;
+      color: #262626;
+      margin-bottom: 2px;
+    }
+
+    .titleSub {
+      font-size: 14px;
+      color: #8c8c8c;
+    }
+  }
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  gap: 16px;
+
+  .loadingText {
+    color: #8c8c8c;
+    font-size: 16px;
+  }
+}
+
+.fileList {
+  :global {
+    .ant-list {
+      background: transparent;
+
+      .ant-list-item {
+        padding: 0;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
+
+        &:hover {
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          transform: translateY(-1px);
+          border-color: #1890ff;
+        }
+
+        .ant-list-item-meta {
+          align-items: flex-start;
+
+          .ant-list-item-meta-avatar {
+            margin-right: 16px;
+            margin-top: 4px;
+            flex-shrink: 0;
+          }
+
+          .ant-list-item-meta-title {
+            margin: 0 0 4px 0;
+
+            .fileTitle {
+              font-size: 15px;
+              font-weight: 500;
+              color: #262626;
+              word-break: break-all;
+              line-height: 1.4;
+            }
+          }
+
+          .ant-list-item-meta-description {
+            margin: 0;
+            font-size: 13px;
+
+            .fileDescription {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex-wrap: wrap;
+
+              .fileSize {
+                color: #595959;
+                font-weight: 500;
+              }
+
+              .separator {
+                color: #bfbfbf;
+              }
+
+              .uploadDate {
+                color: #8c8c8c;
+              }
+            }
+          }
+        }
+
+        .ant-list-item-action {
+          margin-left: 16px;
+          flex-wrap: nowrap;
+
+          > li {
+            padding: 0 4px;
+            margin: 0;
+
+            .ant-btn {
+              border-radius: 6px;
+              font-size: 12px;
+              height: 32px;
+              min-width: 32px;
+              padding: 0 8px;
+            }
+          }
+        }
+      }
+
+      .ant-list-empty {
+        .ant-empty {
+          .ant-empty-image {
+            height: 80px;
+          }
+
+          .ant-empty-description {
+            font-size: 16px;
+            color: #8c8c8c;
+          }
+        }
+      }
+    }
+  }
+}
+
+.fileItem {
+  // Style thêm cho hover (nếu cần)
+}
+
+.fileAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e6f4ff 0%, #d9f0ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .avatarIcon {
+    font-size: 20px;
+    color: #1890ff;
+  }
+}
