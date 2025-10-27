@@ -70,6 +70,14 @@ function Contract() {
 
     const columns = [
         {
+            title: 'Mã hợp đồng',
+            dataIndex: 'contractCode',
+            key: 'contractCode',
+            width: 150,
+            fixed: 'left',
+            align: 'center',
+        },
+        {
             title: 'Mã phòng',
             dataIndex: 'roomId',
             key: 'roomId',

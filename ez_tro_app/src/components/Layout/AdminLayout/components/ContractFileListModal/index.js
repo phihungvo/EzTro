@@ -1,107 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, List, Empty, Spin, message } from 'antd';
-import { FileTextOutlined, EyeOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, {useState, useEffect} from 'react';
+import {Modal, List, Empty, Spin, message} from 'antd';
+import {FileTextOutlined, EyeOutlined, DownloadOutlined, DeleteOutlined} from '@ant-design/icons';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import styles from './ContractFileListModal.module.scss';
-// import { getContractFiles, deleteContractFile } from '~/service/admin/contract';
+import {getContractFiles, getPresignedUrl, deleteContractFile} from '~/service/admin/contract';
 
-const ContractFileListModal = ({ isOpen, onClose, contract }) => {
+const ContractFileListModal = ({isOpen, onClose, contract}) => {
     const [fileList, setFileList] = useState([]);
     const [loadingFiles, setLoadingFiles] = useState(false);
-
-    const mockFiles = [
-        {
-            id: 1,
-            fileName: 'hop-dong-thue-nha.pdf',
-            fileSize: '2.4 MB',
-            fileUrl: 'https://example.com/file1.pdf',
-            uploadedAt: 1735664400000,
-        },
-        {
-            id: 2,
-            fileName: 'phu-luc-01.pdf',
-            fileSize: '1.2 MB',
-            fileUrl: 'https://example.com/file2.pdf',
-            uploadedAt: 1735750800000,
-        },
-        {
-            id: 3,
-            fileName: 'chung-minh-nhan-dan.jpg',
-            fileSize: '850 KB',
-            fileUrl: 'https://example.com/file3.jpg',
-            uploadedAt: 1735837200000,
-        },
-    ];
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize] = useState(10);
 
     useEffect(() => {
-        if (isOpen) {
-            fetchFiles();
+        if (isOpen && contract?.id) {
+            fetchFiles(currentPage);
+        } else {
+            setFileList([]);
         }
-    }, [isOpen]);
+    }, [isOpen, contract?.id, currentPage]);
 
-    const fetchFiles = async () => {
+    const fetchFiles = async (page = 0) => {
         setLoadingFiles(true);
         setFileList([]);
 
         try {
-            // const response = await getContractFiles(contract.id);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const response = mockFiles;
+            const params = {page, size: pageSize};
+            const response = await getContractFiles(contract.id, params);
 
-            if (response && Array.isArray(response)) {
-                setFileList(response);
-            } else if (response && Array.isArray(response.data)) {
-                setFileList(response.data);
-            } else if (response && Array.isArray(response.content)) {
-                setFileList(response.content);
+            if (response && response.content) {
+                const formattedFiles = response.content.map(file => ({
+                    id: file.id,
+                    fileName: file.originalName,
+                    fileSize: bytesToSize(file.size),
+                    uploadedAt: file.uploadDate ? new Date(file.uploadDate).getTime() : null,
+                }));
+                setFileList(formattedFiles);
+
             } else {
                 setFileList([]);
             }
         } catch (error) {
-            message.error(`Lỗi khi tải danh sách file: ${error.response?.data?.message || error.message}`);
+            message.error(`Lỗi khi tải danh sách file: ${error.message || 'Unknown error'}`);
             setFileList([]);
         } finally {
             setLoadingFiles(false);
         }
     };
 
+    const bytesToSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
     const handleViewOrDownloadFile = async (file, action = 'view') => {
         try {
+            const url = await getPresignedUrl(file.id, action);
+
             if (action === 'view') {
+                window.open(url, '_blank', 'noopener,noreferrer');
                 message.success(`Đang mở file: ${file.fileName}`);
-                // ✅ TODO: Implement xem file
-                // window.open(file.fileUrl, '_blank');
             } else {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = file.fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 message.success(`Đang tải xuống: ${file.fileName}`);
-                // ✅ TODO: Implement download
-                // const link = document.createElement('a');
-                // link.href = file.fileUrl;
-                // link.download = file.fileName;
-                // link.click();
             }
-            console.log(`${action === 'view' ? 'View' : 'Download'} file:`, file);
         } catch (error) {
             message.error(`Lỗi khi ${action === 'view' ? 'mở' : 'tải xuống'} file: ${error.message}`);
         }
     };
 
     const handleDeleteFile = async (file) => {
-        const { confirm } = Modal;
+        const {confirm} = Modal;
         confirm({
             title: 'Xác nhận xóa file',
             content: `Bạn có chắc chắn muốn xóa file "${file.fileName}"? Hành động này không thể hoàn tác.`,
             okText: 'Xóa',
             okType: 'danger',
             cancelText: 'Hủy',
-            icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+            icon: <DeleteOutlined style={{color: '#ff4d4f'}}/>,
             onOk: async () => {
                 try {
-                    // ✅ TODO: Implement xóa file
-                    // await deleteContractFile(file.id);
+                    await deleteContractFile(file.id);
                     message.success('Xóa file thành công');
-                    fetchFiles(); // Refresh danh sách
+                    fetchFiles(currentPage);
                 } catch (error) {
-                    message.error(`Lỗi khi xóa file: ${error.response?.data?.message || error.message}`);
+                    message.error(`Lỗi khi xóa file: ${error.message}`);
                 }
             },
         });
@@ -111,21 +101,21 @@ const ContractFileListModal = ({ isOpen, onClose, contract }) => {
         <>
             <SmartButton
                 type="primary"
-                icon={<EyeOutlined />}
+                icon={<EyeOutlined/>}
                 buttonWidth={40}
                 onClick={() => handleViewOrDownloadFile(file, 'view')}
-                style={{ marginRight: 8 }}
+                style={{marginRight: 8}}
             />
             <SmartButton
                 type="success"
-                icon={<DownloadOutlined />}
+                icon={<DownloadOutlined/>}
                 buttonWidth={40}
                 onClick={() => handleViewOrDownloadFile(file, 'download')}
-                style={{ marginRight: 8 }}
+                style={{marginRight: 8}}
             />
             <SmartButton
                 type="danger"
-                icon={<DeleteOutlined />}
+                icon={<DeleteOutlined/>}
                 buttonWidth={40}
                 onClick={() => handleDeleteFile(file)}
             />
@@ -136,7 +126,7 @@ const ContractFileListModal = ({ isOpen, onClose, contract }) => {
         <Modal
             title={
                 <div className={styles.modalTitle}>
-                    <FileTextOutlined className={styles.titleIcon} />
+                    <FileTextOutlined className={styles.titleIcon}/>
                     <div className={styles.titleContent}>
                         <div className={styles.titleMain}>Danh sách file hợp đồng</div>
                         <div className={styles.titleSub}>
@@ -155,14 +145,14 @@ const ContractFileListModal = ({ isOpen, onClose, contract }) => {
         >
             {loadingFiles ? (
                 <div className={styles.loadingContainer}>
-                    <Spin size="large" />
+                    <Spin size="large"/>
                     <div className={styles.loadingText}>Đang tải danh sách file...</div>
                 </div>
             ) : fileList.length === 0 ? (
                 <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description={
-                        <span style={{ fontSize: '16px', color: '#8c8c8c' }}>
+                        <span style={{fontSize: '16px', color: '#8c8c8c'}}>
                             Chưa có file nào được tải lên cho hợp đồng này
                         </span>
                     }
@@ -172,6 +162,13 @@ const ContractFileListModal = ({ isOpen, onClose, contract }) => {
                     itemLayout="horizontal"
                     dataSource={fileList}
                     className={styles.fileList}
+                    pagination={{
+                        current: currentPage + 1,
+                        pageSize,
+                        total: fileList.length * (currentPage + 1),
+                        onChange: (page) => setCurrentPage(page - 1),
+                        showSizeChanger: false,
+                    }}
                     renderItem={(file) => (
                         <List.Item
                             actions={[renderFileActions(file)]}
@@ -180,18 +177,18 @@ const ContractFileListModal = ({ isOpen, onClose, contract }) => {
                             <List.Item.Meta
                                 avatar={
                                     <div className={styles.fileAvatar}>
-                                        <FileTextOutlined className={styles.avatarIcon} />
+                                        <FileTextOutlined className={styles.avatarIcon}/>
                                     </div>
                                 }
                                 title={
                                     <div className={styles.fileTitle}>
-                                        {file.fileName || file.name || 'Unnamed file'}
+                                        {file.fileName || 'Unnamed file'}
                                     </div>
                                 }
                                 description={
                                     <div className={styles.fileDescription}>
                                         <span className={styles.fileSize}>
-                                            {file.fileSize || file.size || 'N/A'}
+                                            {file.fileSize}
                                         </span>
                                         <span className={styles.separator}>•</span>
                                         <span className={styles.uploadDate}>

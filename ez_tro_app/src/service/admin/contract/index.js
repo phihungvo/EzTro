@@ -1,7 +1,6 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
-import axios from "axios";
 
 export const uploadContractFile = async (file, contractId) => {
     const formData = new FormData();
@@ -19,6 +18,44 @@ export const uploadContractFile = async (file, contractId) => {
         );
         return response.data;
     } catch (error) {
+        throw error;
+    }
+};
+
+export const getContractFiles = async (contractId, params = { page: 0, size: 20 }) => {
+    try {
+        const response = await apiClient.get(`${API_ENDPOINTS.CONTRACT.GET_FILES(contractId)}`, {
+            params,
+        });
+        return response.data.result;
+    } catch (error) {
+        console.error('Error fetching contract files:', error);
+        message.error('Lỗi khi lấy danh sách file hợp đồng');
+        throw error;
+    }
+};
+
+export const getPresignedUrl = async (fileId, action = 'view') => {
+    try {
+        const response = await apiClient.get(`${API_ENDPOINTS.FILE.PRESIGNED_URL(fileId)}`, {
+            params: { action },
+        });
+        message.success('Xóa file thành công');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error generating presigned URL:', error);
+        message.error('Lỗi khi tạo liên kết file');
+        throw error;
+    }
+};
+
+export const deleteContractFile = async (fileId) => {
+    try {
+        const response = await apiClient.delete(API_ENDPOINTS.FILE.DELETE(fileId));
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting contract file:', error);
+        message.error('Lỗi khi xóa file hợp đồng');
         throw error;
     }
 };

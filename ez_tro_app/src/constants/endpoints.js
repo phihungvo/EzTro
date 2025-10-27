@@ -10,9 +10,10 @@ const API_ENDPOINTS = {
         UPLOAD_CONTRACT: (contractId) =>  `${BASE_URL}/files/upload/contract/${contractId}`,
         CHECK_EXISTED: (file) =>
             `${BASE_URL}/storage/checkFileExists/${file.name}`,
-        PRESIGNED_URL: (fileId) => `${BASE_URL}/files/presigned-url/${fileId}`,
+        PRESIGNED_URL: (fileId) => `${BASE_URL}/files/${fileId}/presigned-url`,
         GET_INFO: `${BASE_URL}/storage/files`,
         GET_FILE: (filePath) => `${BASE_URL}/storage/files/${filePath}`,
+        DELETE: (fileId) => `${BASE_URL}/files/${fileId}`,
     },
     SERVICE: {
         EXPORT_EXCEL: `${BASE_URL}/export/excel`,
@@ -63,6 +64,7 @@ const API_ENDPOINTS = {
     CONTRACT: {
         GET_ALL: `${BASE_URL}/contracts/paged`,
         GET_ACTIVE: `${BASE_URL}/contracts/active`,
+        GET_FILES: (contractId) => `${BASE_URL}/contracts/files/${contractId}`,
         CREATE: `${BASE_URL}/contracts`,
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
         DELETE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
