@@ -64,6 +64,7 @@ const API_ENDPOINTS = {
     CONTRACT: {
         GET_ALL: `${BASE_URL}/contracts/paged`,
         GET_ACTIVE: `${BASE_URL}/contracts/active`,
+        FILTER: `${BASE_URL}/contracts/filter`,
         GET_FILES: (contractId) => `${BASE_URL}/contracts/files/${contractId}`,
         CREATE: `${BASE_URL}/contracts`,
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,

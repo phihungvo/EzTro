@@ -60,6 +60,25 @@ export const deleteContractFile = async (fileId) => {
     }
 };
 
+export const filterContracts = async ({ startDate, endDate, status, search, page, pageSize }) => {
+    try {
+        const params = {
+            startDate,
+            endDate,
+            status,
+            search,  // tenantFullName, roomNumber, contractCode
+            page,
+            pageSize,
+        };
+        const response = await apiClient.get(API_ENDPOINTS.CONTRACT.FILTER, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error when filtering contracts: ', error);
+        message.error('Lỗi khi lọc hợp đồng');
+        return null;
+    }
+};
+
 export const getAllContracts = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.CONTRACT.GET_ALL, {

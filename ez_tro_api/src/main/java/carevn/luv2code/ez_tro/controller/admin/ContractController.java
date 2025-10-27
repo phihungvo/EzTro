@@ -171,6 +171,18 @@ public class ContractController {
         }
     }
 
+    @GetMapping("/filter")
+    public ResponseEntity<Page<ContractResponse>> filterContracts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ContractResponse> result = contractService.filterContracts(search, startDate, endDate, status, page, size);
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/{contractId}/bills")
     public ApiResponse<BillResponse> createBill(@PathVariable Integer contractId, @RequestBody BillRequest request) {
         BillResponse resp = contractService.createBillForContract(contractId, request);

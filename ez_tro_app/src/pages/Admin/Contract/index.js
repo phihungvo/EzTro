@@ -5,7 +5,7 @@ import styles from '~/pages/Admin/Contract/Contract.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
 import ContractFileUploadModal from '~/components/Layout/AdminLayout/components/ContractFileUploadModal';
-import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal'; // ✅ Import modal mới
+import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -15,18 +15,45 @@ import {
     DeleteOutlined,
     TableOutlined,
     AppstoreOutlined,
+    CloseCircleOutlined,
     UploadOutlined,
     FileTextOutlined,
 } from '@ant-design/icons';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Pagination, Segmented, Tag, DatePicker} from 'antd';
-import {getAllContracts, createContract, updateContract, deleteContract} from '~/service/admin/contract';
+import {
+    Form,
+    message,
+    Row,
+    Col,
+    Pagination,
+    Segmented,
+    Tag,
+    DatePicker,
+    Card,
+    Option,
+    Space,
+    Empty,
+    Select,
+    Spin,
+    Statistic,
+    ConfigProvider,
+} from 'antd';
+import {
+    getAllContracts,
+    filterContracts,
+    createContract,
+    updateContract,
+    deleteContract
+} from '~/service/admin/contract';
 import {getAllRoomNoPaged} from "~/service/admin/room";
 import {getAllTenantNoPaged} from "~/service/admin/tenant";
+import useDebounce from '~/hooks/useDebounce';
+import dayjs from 'dayjs';
 
 const cx = classNames.bind(styles);
+const {RangePicker} = DatePicker;
 
 function Contract() {
     const [contractSource, setContractSource] = useState([]);
@@ -51,6 +78,17 @@ function Contract() {
     const [isFileListModalOpen, setIsFileListModalOpen] = useState(false);
     const [selectedContractForViewFiles, setSelectedContractForViewFiles] = useState(null);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+    const [dateRange, setDateRange] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+
+    const [statistics, setStatistics] = useState({
+        active: 0,
+        expired: 0,
+        cancelled: 0,
+    });
+
     const disabledWhenEdit = modalMode === 'edit';
 
     const getStatusTag = (status) => {
@@ -66,6 +104,40 @@ function Contract() {
     const handleViewFileList = (contract) => {
         setSelectedContractForViewFiles(contract);
         setIsFileListModalOpen(true);
+    };
+
+    const calculateStatistics = (data) => {
+        const stats = {
+            active: 0,
+            expired: 0,
+            cancelled: 0,
+        };
+
+        data.forEach(item => {
+            switch (item.status) {
+                case 'ACTIVE':
+                    stats.active++;
+                    break;
+                case 'EXPIRED':
+                    stats.expired++;
+                    break;
+                case 'CANCELLED':
+                    stats.cancelled++;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        setStatistics(stats);
+    };
+
+    const handleResetFilters = () => {
+        setSearchTerm('');
+        setDateRange(null);
+        setStatusFilter('ALL');
+        setPagination(prev => ({...prev, current: 1}));
+        message.success('Đã reset bộ lọc!');
     };
 
     const columns = [
@@ -181,7 +253,7 @@ function Contract() {
                     onClick={() => handleViewFileList(record)}
                     title="Click để xem danh sách file"
                 >
-                    <FileTextOutlined className={cx('file-icon')} />
+                    <FileTextOutlined className={cx('file-icon')}/>
                     <span className={cx('file-number')}>
                         {fileCount || 0}
                     </span>
@@ -197,23 +269,23 @@ function Contract() {
                 <>
                     <SmartButton
                         type="primary"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleEditContract(record)}
                     />
                     <SmartButton
                         type="success"
-                        icon={<UploadOutlined />}
+                        icon={<UploadOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleUploadContract(record)}
-                        style={{ marginLeft: '8px' }}
+                        style={{marginLeft: '8px'}}
                     />
                     <SmartButton
                         type="danger"
-                        icon={<DeleteOutlined />}
+                        icon={<DeleteOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleDeleteContract(record)}
-                        style={{ marginLeft: '8px' }}
+                        style={{marginLeft: '8px'}}
                     />
                 </>
             ),
@@ -240,7 +312,7 @@ function Contract() {
             name: 'startDate',
             type: 'date',
             render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}} />
+                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
             ),
         },
         {
@@ -248,7 +320,7 @@ function Contract() {
             name: 'endDate',
             type: 'date',
             render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}} />
+                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
             ),
         },
         {
@@ -280,8 +352,13 @@ function Contract() {
 
     useEffect(() => {
         fetchRoomAndTenantOptions();
-        handleGetContracts();
+        handleFilterContracts();
     }, []);
+
+    useEffect(() => {
+        setPagination(prev => ({...prev, current: 1}));
+        handleFilterContracts();
+    }, [debouncedSearchTerm, dateRange, statusFilter, pagination.current, pagination.pageSize]);
 
     const fetchRoomAndTenantOptions = async () => {
         try {
@@ -307,25 +384,44 @@ function Contract() {
         }
     };
 
-    const handleGetContracts = async (page = 1, pageSize = pagination.pageSize) => {
+    const handleFilterContracts = async () => {
         setLoading(true);
         try {
-            const response = await getAllContracts({page: page - 1, pageSize});
+            const params = {
+                page: pagination.current - 1,
+                pageSize: pagination.pageSize,
+            };
+
+            if (debouncedSearchTerm) {
+                params.search = debouncedSearchTerm;
+            }
+
+            if (dateRange && dateRange.length === 2) {
+                params.startDate = dateRange[0].format('YYYY-MM-DD');
+                params.endDate = dateRange[1].format('YYYY-MM-DD');
+            }
+
+            if (statusFilter !== 'ALL') {
+                params.status = statusFilter;
+            }
+
+            const response = await filterContracts(params);
 
             if (response && Array.isArray(response.content)) {
                 setContractSource(response.content);
                 setPagination({
-                    current: page,
-                    pageSize: pageSize,
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
                     total: response.totalElements,
                 });
-                console.log('Contract sources: ', response.content);
+                calculateStatistics(response.content);
             } else {
                 setContractSource([]);
-                message.error('Dữ liệu hợp đồng không hợp lệ');
+                setStatistics({active: 0, expired: 0, cancelled: 0});
             }
         } catch (error) {
-            message.error(`Lỗi khi lấy danh sách hợp đồng: ${error.response?.data?.message || error.message}`);
+            console.error('Error filtering contracts:', error);
+            message.error(`Lỗi khi lọc hợp đồng: ${error.response?.data?.message || error.message}`);
             setContractSource([]);
         } finally {
             setLoading(false);
@@ -342,7 +438,7 @@ function Contract() {
     const handleCallCreateContract = async (formData) => {
         try {
             await createContract(formData);
-            handleGetContracts();
+            handleFilterContracts();
             setIsModalOpen(false);
         } catch (error) {
             message.error(
@@ -368,7 +464,7 @@ function Contract() {
     const handleCallUpdateContract = async (formData) => {
         try {
             await updateContract(selectedContract.id, formData);
-            handleGetContracts();
+            handleFilterContracts();
             setIsModalOpen(false);
         } catch (error) {
             message.error(
@@ -387,9 +483,13 @@ function Contract() {
     };
 
     const handleCallDeleteContract = async () => {
-        await deleteContract(selectedContract.id);
-        handleGetContracts();
-        setIsModalOpen(false);
+        try {
+            await deleteContract(selectedContract.id);
+            handleFilterContracts();
+            setIsModalOpen(false);
+        } catch (error) {
+            message.error(`Lỗi khi xóa hợp đồng: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     const handleUploadContract = (record) => {
@@ -415,13 +515,17 @@ function Contract() {
     };
 
     const handleTableChange = (pagination) => {
-        handleGetContracts(pagination.current, pagination.pageSize);
+        setPagination(prev => ({
+            ...prev,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+        }));
     };
 
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm khu hợp đồng';
+                return 'Thêm hợp đồng mới';
             case 'edit':
                 return 'Chỉnh sửa hợp đồng';
             case 'delete':
@@ -438,93 +542,192 @@ function Contract() {
         setIsModalOpen(true);
     };
 
+    const handlePaginationChange = (page, pageSize) => {
+        setPagination(prev => ({
+            ...prev,
+            current: page,
+            pageSize,
+        }));
+    };
+
     return (
-        <div className={cx('contract-wrapper')}>
-            <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm hợp đồng" icon={<SearchOutlined />} />
-                <div className={cx('features')}>
-                    <Segmented
-                        value={viewMode}
-                        onChange={setViewMode}
-                        options={[
-                            {label: 'Bảng', value: 'table', icon: <TableOutlined />},
-                            {label: 'Thẻ', value: 'card', icon: <AppstoreOutlined />},
-                        ]}
-                        className={cx('view-toggle')}
-                    />
-                    <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddContract} />
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
-                </div>
-            </div>
+        <ConfigProvider>
+            <div className={cx('contract-wrapper')}>
+                {/* ✅ Statistics Cards (tương tự Attendance) */}
+                <Row gutter={16} className={cx('stats-row')}>
+                    <Col span={8}>
+                        <Card className={cx('stat-card')}>
+                            <Statistic
+                                title="Đang hiệu lực"
+                                value={statistics.active}
+                                valueStyle={{color: '#3f8600'}}
+                                prefix={<FileTextOutlined/>}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card className={cx('stat-card')}>
+                            <Statistic
+                                title="Hết hạn"
+                                value={statistics.expired}
+                                valueStyle={{color: '#cf1322'}}
+                                prefix={<CloseCircleOutlined/>}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card className={cx('stat-card')}>
+                            <Statistic
+                                title="Đã hủy"
+                                value={statistics.cancelled}
+                                valueStyle={{color: '#faad14'}}
+                                prefix={<DeleteOutlined/>}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
 
-            {/* Nội dung */}
-            <div className={cx('contract-container')}>
-                {viewMode === 'table' ? (
-                    <SmartTable
-                        columns={columns}
-                        dataSources={contractSource}
-                        loading={loading}
-                        pagination={pagination}
-                        onTableChange={handleTableChange}
-                    />
-                ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {contractSource.map((contract) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={contract.id}>
-                                    <ContractCard
-                                        contract={contract}
-                                        onView={() => handleViewContract(contract)}
-                                        onEdit={() => handleEditContract(contract)}
-                                        onDelete={() => handleDeleteContract(contract)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
+                <div className={cx('filter-section')}>
+                    <Space direction="vertical" size="middle" className={cx('filter-space')}>
+                        <div className={cx('filter-inputs')}>
+                            <SmartInput
+                                size="large"
+                                placeholder="Tìm kiếm theo tên người thuê, số phòng, mã hợp đồng..."
+                                icon={<SearchOutlined/>}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={cx('search-input')}
+                            />
+                            <RangePicker
+                                size="large"
+                                placeholder={['Từ ngày', 'Đến ngày']}
+                                format="DD/MM/YYYY"
+                                onChange={(dates) => setDateRange(dates)}
+                                className={cx('date-picker')}
+                            />
+                            <Select
+                                size="large"
+                                placeholder="Lọc theo trạng thái"
+                                value={statusFilter}
+                                onChange={(value) => setStatusFilter(value)}
+                                className={cx('status-select')}
+                                options={[
+                                    {value: 'ALL', label: 'Tất cả'},
+                                    {value: 'ACTIVE', label: 'Đang hiệu lực'},
+                                    {value: 'EXPIRED', label: 'Đã hết hạn'},
+                                    {value: 'CANCELLED', label: 'Đã hủy'},
+                                ]}
+                            />
 
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['10', '20', '30']}
-                                onChange={(page, pageSize) => handleGetContracts(page, pageSize)}
+                            <SmartButton
+                                title="Thêm mới"
+                                icon={<PlusOutlined/>}
+                                type="primary"
+                                onClick={handleAddContract}
+                            />
+                            <SmartButton
+                                title="Excel"
+                                icon={<CloudUploadOutlined/>}
+                                onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
+                            />
+
+                            <SmartButton
+                                title="Reset"
+                                type="default"
+                                icon={<CloseCircleOutlined/>}
+                                onClick={handleResetFilters}
+                                style={{marginLeft: 8}}
                             />
                         </div>
-                    </>
-                )}
+                    </Space>
+                </div>
+
+                {/* Nội dung */}
+                <div className={cx('contract-container')}>
+                    <div className={cx('pagination-wrapper')}>
+                        <Pagination
+                            current={pagination.current}
+                            pageSize={pagination.pageSize}
+                            total={pagination.total}
+                            onChange={handlePaginationChange}
+                            showSizeChanger
+                            showTotal={(total) => `Tổng ${total} hợp đồng`}
+                            pageSizeOptions={['10', '20', '30']}
+                        />
+                    </div>
+
+                    {viewMode === 'table' ? (
+                        <SmartTable
+                            columns={columns}
+                            dataSources={contractSource}
+                            loading={loading}
+                            pagination={false}
+                            onTableChange={handleTableChange}
+                        />
+                    ) : (
+                        <>
+                            <Spin spinning={loading}>
+                                {contractSource.length === 0 ? (
+                                    <Empty description="Không có hợp đồng nào phù hợp với bộ lọc"/>
+                                ) : (
+                                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                                        {contractSource.map((contract) => (
+                                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={contract.id}>
+                                                <ContractCard
+                                                    contract={contract}
+                                                    onView={() => handleViewContract(contract)}
+                                                    onEdit={() => handleEditContract(contract)}
+                                                    onDelete={() => handleDeleteContract(contract)}
+                                                />
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                )}
+                            </Spin>
+                            {/* Pagination bottom for card view */}
+                            <div className={cx('pagination-wrapper')}>
+                                <Pagination
+                                    current={pagination.current}
+                                    pageSize={pagination.pageSize}
+                                    total={pagination.total}
+                                    onChange={handlePaginationChange}
+                                    showSizeChanger
+                                    showQuickJumper
+                                    pageSizeOptions={['10', '20', '30']}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <PopupModal
+                    isModalOpen={isModalOpen}
+                    setIsModalOpen={setIsModalOpen}
+                    title={getModalTitle()}
+                    fields={modalMode === 'delete' ? [] : contractModalFields}
+                    onSubmit={handleFormSubmit}
+                    initialValues={selectedContract}
+                    isDeleteMode={modalMode === 'delete'}
+                    formInstance={form}
+                />
+
+                <ContractFileUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    contractId={selectedContractForUpload?.id}
+                    tenantName={selectedContractForUpload?.tenantFullName || 'N/A'}
+                    onSuccess={() => {
+                        handleFilterContracts();
+                    }}
+                />
+
+                <ContractFileListModal
+                    isOpen={isFileListModalOpen}
+                    onClose={() => setIsFileListModalOpen(false)}
+                    contract={selectedContractForViewFiles}
+                />
             </div>
-
-            <PopupModal
-                isModalOpen={isModalOpen}
-                setIsModalOpen={setIsModalOpen}
-                title={getModalTitle()}
-                fields={modalMode === 'delete' ? [] : contractModalFields}
-                onSubmit={handleFormSubmit}
-                initialValues={selectedContract}
-                isDeleteMode={modalMode === 'delete'}
-                formInstance={form}
-            />
-
-            <ContractFileUploadModal
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                contractId={selectedContractForUpload?.id}
-                tenantName={selectedContractForUpload?.tenantFullName || 'N/A'}
-                onSuccess={() => {
-                    handleGetContracts();
-                }}
-            />
-
-            <ContractFileListModal
-                isOpen={isFileListModalOpen}
-                onClose={() => setIsFileListModalOpen(false)}
-                contract={selectedContractForViewFiles}
-            />
-        </div>
+        </ConfigProvider>
     );
 }
 

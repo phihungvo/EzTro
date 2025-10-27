@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import carevn.luv2code.ez_tro.dto.response.ContractResponse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
+import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
@@ -31,10 +35,15 @@ import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ContractServiceImpl implements ContractService {
 
     private final ContractRepository contractRepository;
@@ -174,5 +183,51 @@ public class ContractServiceImpl implements ContractService {
         bill.setUpdatedAt(new Date());
 
         return billMapper.toResponse(billRepository.save(bill));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ContractResponse> filterContracts(
+            String search, String startDate, String endDate, String status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Specification<Contract> spec = Specification.where(null);
+
+        if (search != null && !search.trim().isEmpty()) {
+            String lowerSearch = search.toLowerCase().trim();
+
+            spec = spec.and((root, query, cb) -> {
+                Predicate codePred = cb.like(cb.lower(root.get("contractCode")), "%" + lowerSearch + "%");
+
+                Predicate roomPred = cb.like(cb.lower(root.join("room").get("roomNumber")), "%" + lowerSearch + "%");
+
+                Join<Contract, Tenant> tenantJoin = root.join("tenant", JoinType.LEFT);
+                Join<Tenant, User> userJoin = tenantJoin.join("user", JoinType.LEFT);
+                Predicate tenantPred = cb.like(
+                        cb.lower(cb.concat(
+                                cb.coalesce(userJoin.get("firstName"), cb.literal("")),
+                                cb.concat(cb.literal(" "), cb.coalesce(userJoin.get("lastName"), cb.literal(""))))),
+                        "%" + lowerSearch + "%");
+
+                return cb.or(codePred, roomPred, tenantPred);
+            });
+        }
+
+        if (startDate != null && endDate != null && !startDate.isEmpty() && !endDate.isEmpty()) {
+            try {
+                LocalDate start = LocalDate.parse(startDate);
+                LocalDate end = LocalDate.parse(endDate);
+                spec = spec.and((root, query, cb) -> cb.between(root.get("startDate"), start, end));
+            } catch (Exception e) {
+                log.warn("Invalid date format in filter: {}", e.getMessage());
+            }
+        }
+
+        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), ContractStatus.valueOf(status)));
+        }
+
+        Page<Contract> pageResult = contractRepository.findAll(spec, pageable);
+        Page<ContractResponse> dtoPage = pageResult.map(contractMapper::toResponse);
+        return dtoPage;
     }
 }
