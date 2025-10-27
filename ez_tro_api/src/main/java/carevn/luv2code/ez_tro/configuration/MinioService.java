@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +111,7 @@ public class MinioService {
         for (MultipartFile file : files) {
             try (InputStream inputStream = file.getInputStream()) {
                 LocalDate today = LocalDate.now();
-                String relativePath = minioBasePath + "/" + today.getYear() + "/"
+                String relativePath = minioBasePath + "/contracts/" + contractId + "/" + today.getYear() + "/"
                         + String.format("%02d", today.getMonthValue()) + "/";
                 String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
                 String fullObjectName = relativePath + fileName;
@@ -144,15 +145,21 @@ public class MinioService {
      * @param fileName the name of the file in the MinIO bucket
      * @return the presigned URL as a String
      */
-    public String generatePresignedUrl(String fileName) {
+    public String generatePresignedUrl(String fileName, String action, int expirySeconds) {
         try {
-            GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs.builder()
+            GetPresignedObjectUrlArgs.Builder argsBuilder = GetPresignedObjectUrlArgs.builder()
                     .bucket(bucket)
                     .object(fileName)
                     .method(Method.GET)
-                    .expiry(24 * 60 * 60)
-                    .build();
+                    .expiry(expirySeconds);
 
+            // Add extra headers for download if needed (MinIO supports query params better)
+            if ("download".equalsIgnoreCase(action)) {
+                argsBuilder.extraQueryParams(
+                        Map.of("response-content-disposition", "attachment; filename=\"" + fileName + "\""));
+            }
+
+            GetPresignedObjectUrlArgs args = argsBuilder.build();
             return minioClient.getPresignedObjectUrl(args);
         } catch (Exception e) {
             throw new AppException(ErrorCode.MINIO_PRESIGNED_URL_ERROR);

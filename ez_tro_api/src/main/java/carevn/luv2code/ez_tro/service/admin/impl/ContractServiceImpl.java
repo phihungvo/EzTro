@@ -57,6 +57,7 @@ public class ContractServiceImpl implements ContractService {
         Contract contract = contractMapper.toEntity(request);
         contract.setRoom(room);
         contract.setTenant(tenant);
+        contract.setStatus(ContractStatus.ACTIVE);
 
         if (contract.getContractCode() == null) {
             String timestamp = new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date());

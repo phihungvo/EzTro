@@ -14,7 +14,10 @@ public interface ContractMapper {
     @Mapping(source = "tenant.user.id", target = "userId")
     @Mapping(source = "tenant.user.fullName", target = "tenantFullName")
     @Mapping(source = "room.boardingHouse.name", target = "boardingHouseName")
-    @Mapping(target = "fileCount", expression = "java(entity.getFiles() != null ? entity.getFiles().size() : 0)")
+    @Mapping(
+            target = "fileCount",
+            expression =
+                    "java(entity.getFiles() == null ? 0 : (int) entity.getFiles().stream().filter(f -> !Boolean.TRUE.equals(f.isDeleted())).count())")
     ContractResponse toResponse(Contract entity);
 
     @Mapping(target = "id", ignore = true)

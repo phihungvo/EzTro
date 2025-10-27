@@ -31,30 +31,6 @@ public class FileController {
 
     private final FileRepository fileRepository;
 
-    //    @PostMapping("/upload")
-    //    public ApiResponse<FileDTO> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam Integer
-    // employeeId) {
-    //        if (file.isEmpty()) {
-    //            return ApiResponse.<FileDTO>builder()
-    //                    .code(HttpStatus.BAD_REQUEST.value())
-    //                    .message("File is empty. Please upload a valid file.")
-    //                    .result(null)
-    //                    .build();
-    //        }
-    //
-    //        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    //        User uploadedBy = userRepository
-    //                .findByUserName(auth.getName())
-    //                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-    //
-    //        FileDTO savedFile = minioService.uploadFileForEmployee(file, uploadedBy, employeeId);
-    //        return ApiResponse.<FileDTO>builder()
-    //                .code(HttpStatus.OK.value())
-    //                .message("Upload successful")
-    //                .result(savedFile)
-    //                .build();
-    //    }
-
     @PostMapping("/upload/contract/{contractId}")
     public ResponseEntity<ApiResponse<List<FileDTO>>> uploadContractFiles(
             @PathVariable Integer contractId, @RequestParam("files") MultipartFile[] files) {
@@ -102,56 +78,84 @@ public class FileController {
         }
     }
 
-    @GetMapping("/presigned-url/{fileId}")
-    public ResponseEntity<ApiResponse<String>> getPresignedUrl(@PathVariable Integer fileId) {
+    @GetMapping("/{fileId}/presigned-url")
+    public ResponseEntity<ApiResponse<String>> getPresignedUrl(
+            @PathVariable Integer fileId, @RequestParam(defaultValue = "view") String action) { // "view" or "download"
+
         try {
-            File existingFile =
-                    fileRepository.findById(fileId).orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
-            String fileName = existingFile.getFileName();
-            if (!minioService.fileExists(fileName)) {
+            File existingFile = fileRepository
+                    .findByIdAndIsDeletedFalse(fileId)
+                    .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
+            if (!minioService.fileExists(existingFile.getFileName())) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.<String>builder()
                                 .code(HttpStatus.NOT_FOUND.value())
-                                .message("File not found: " + fileName)
+                                .message("File not found in storage: " + existingFile.getFileName())
                                 .result(null)
                                 .build());
             }
-            String presignedUrl = minioService.generatePresignedUrl(fileName);
+
+            int expirySeconds = 3600; // 1 hour
+            String presignedUrl = minioService.generatePresignedUrl(existingFile.getFileName(), action, expirySeconds);
+
             return ResponseEntity.ok(ApiResponse.<String>builder()
                     .code(HttpStatus.OK.value())
                     .message("Presigned URL generated successfully")
                     .result(presignedUrl)
                     .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getErrorCode().getCode())
                     .body(ApiResponse.<String>builder()
-                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .message("Error generating presigned URL: " + e.getMessage())
+                            .code(e.getErrorCode().getCode())
+                            .message(e.getErrorCode().getMessage())
                             .result(null)
                             .build());
         }
     }
 
-    @GetMapping("/download/{fileName}")
-    public ResponseEntity<?> downloadFile(@PathVariable String fileName) {
-        try (InputStream inputStream = minioService.downloadFile(fileName)) {
-            byte[] fileContent = inputStream.readAllBytes();
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                    .body(fileContent);
+    @GetMapping("/{fileId}/download")
+    public ResponseEntity<?> downloadFile(@PathVariable Integer fileId) {
+        try {
+            File file = fileRepository
+                    .findByIdAndIsDeletedFalse(fileId)
+                    .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
+
+            try (InputStream inputStream = minioService.downloadFile(file.getFileName())) {
+                byte[] fileContent = inputStream.readAllBytes();
+                return ResponseEntity.ok()
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"" + file.getOriginalName() + "\"")
+                        .header(HttpHeaders.CONTENT_TYPE, file.getContentType())
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
+                        .body(fileContent);
+            }
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getErrorCode().getCode()).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error downloading file: " + fileName + ". " + e.getMessage());
+                    .body("Error downloading file: " + e.getMessage());
         }
     }
 
-    @DeleteMapping("/delete/{fileName}")
-    public ResponseEntity<String> deleteFile(@PathVariable String fileName) {
-        if (!minioService.fileExists(fileName)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found: " + fileName);
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable Integer fileId) {
+        try {
+            File file = fileRepository
+                    .findByIdAndIsDeletedFalse(fileId)
+                    .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
+
+            minioService.deleteFile(file.getFileName());
+
+            return ResponseEntity.noContent().build();
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getErrorCode().getCode())
+                    .body(ApiResponse.<Void>builder()
+                            .code(e.getErrorCode().getCode())
+                            .message(e.getErrorCode().getMessage())
+                            .result(null)
+                            .build());
         }
-        minioService.deleteFile(fileName);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/list")
