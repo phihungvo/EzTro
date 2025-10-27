@@ -30,4 +30,7 @@ public interface ContractService {
     List<BillResponse> getBillsByContract(Integer contractId);
 
     BillResponse createBillForContract(Integer contractId, Object billRequestObj);
+
+    Page<ContractResponse> filterContracts(
+            String search, String startDate, String endDate, String status, int page, int size);
 }

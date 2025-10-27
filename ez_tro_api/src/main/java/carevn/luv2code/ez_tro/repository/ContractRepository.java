@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,7 +16,7 @@ import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 
 @Repository
-public interface ContractRepository extends JpaRepository<Contract, Integer> {
+public interface ContractRepository extends JpaRepository<Contract, Integer>, JpaSpecificationExecutor<Contract> {
     List<Contract> findByTenant(Tenant tenant);
 
     List<Contract> findByRoom(Room room);

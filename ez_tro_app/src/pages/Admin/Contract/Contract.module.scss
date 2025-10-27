@@ -1,11 +1,18 @@
 .contract-wrapper {
   width: 100%;
   display: block;
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: 100vh;
 }
 
 .contract-container {
   width: 100%;
   overflow-x: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .contract-header {
@@ -26,12 +33,225 @@
   gap: 10px;
 }
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: right;
-  margin-top: 24px;
+/* ===== STATISTICS CARDS ===== */
+.stats-row {
+  margin-bottom: 24px;
+
+  .stat-card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #1890ff, #52c41a);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    :global(.ant-statistic-title) {
+      font-size: 14px;
+      font-weight: 600;
+      color: #8c8c8c;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    :global(.ant-statistic-content) {
+      font-size: 32px;
+      font-weight: 700;
+
+      :global(.ant-statistic-content-prefix) {
+        margin-right: 12px;
+        font-size: 28px;
+      }
+    }
+  }
 }
 
+/* ===== FILTER SECTION ===== */
+.filter-section {
+  margin-bottom: 24px;
+  background: white;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    //background: linear-gradient(90deg, #1890ff, #52c41a, #faad14);
+  }
+}
+
+.filter-space {
+  width: 100%;
+}
+
+.filter-inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .search-input {
+    flex: 1;
+    min-width: 380px;
+
+    :global(.ant-input) {
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid #e8e8e8;
+      font-size: 14px;
+      padding: 0 16px 0 42px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #40a9ff;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+      }
+
+      &:focus {
+        border-color: #1890ff;
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+      }
+    }
+
+    :global(.ant-input-prefix) {
+      font-size: 18px;
+      color: #8c8c8c;
+      margin-right: 8px;
+    }
+  }
+
+  .date-picker {
+    min-width: 280px;
+
+    :global(.ant-picker) {
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid #e8e8e8;
+      padding: 0 16px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #40a9ff;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+      }
+
+      &.ant-picker-focused {
+        border-color: #1890ff;
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+      }
+    }
+  }
+
+  .status-select {
+    min-width: 200px;
+
+    :global(.ant-select-selector) {
+      height: 44px !important;
+      border-radius: 12px !important;
+      border: 2px solid #e8e8e8 !important;
+      padding: 0 16px !important;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #40a9ff !important;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+      }
+    }
+
+    &:global(.ant-select-focused) :global(.ant-select-selector) {
+      border-color: #1890ff !important;
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25) !important;
+    }
+  }
+
+  /* ===== COMPACT & RESPONSIVE BUTTONS ===== */
+  /* Buttons styling - Compact base */
+  :global(.ant-btn) {
+    height: 44px;  // Base height
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;  // Base font-size
+    padding: 0 20px;  // Compact padding
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &.ant-btn-primary {
+      background: linear-gradient(135deg, #1890ff, #096dd9);
+
+      &:hover {
+        background: linear-gradient(135deg, #40a9ff, #1890ff);
+      }
+    }
+
+    &.ant-btn-default {
+      background: white;
+      border: 2px solid #d9d9d9;
+      color: #595959;
+
+      &:hover {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
+        background: #fff1f0;
+      }
+    }
+  }
+}
+
+/* ===== PAGINATION ===== */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* ===== FILE COUNT ===== */
 .file-count-wrapper {
   display: inline-flex;
   align-items: center;
@@ -77,6 +297,7 @@
   }
 }
 
+/* ===== DATE RANGE ===== */
 .date-range {
   display: flex;
   align-items: center;
@@ -95,7 +316,129 @@
   }
 }
 
+/* ===== SALARY VALUE ===== */
 .salary-value {
   font-weight: 600;
   color: #52c41a;
+}
+
+/* ===== CARD GRID ===== */
+.card-grid {
+  margin-top: 20px;
+}
+
+/* ===== RESPONSIVE ===== */
+/* Tablet & Desktop */
+@media (min-width: 769px) {
+  .filter-inputs {
+    .search-input {
+      min-width: 380px;
+    }
+
+    .date-picker,
+    .status-select {
+      min-width: 200px;
+    }
+
+    :global(.ant-btn) {
+      height: 44px;
+      font-size: 14px;
+      padding: 0 20px;  // Compact padding for larger screens
+      min-width: 120px;  // Min width for buttons
+    }
+  }
+}
+
+/* Mobile (max 768px) */
+@media (max-width: 768px) {
+  .contract-wrapper {
+    padding: 16px;
+  }
+
+  .filter-section {
+    padding: 20px;
+  }
+
+  .filter-inputs {
+    flex-direction: column;  // Stack vertically
+    gap: 12px;
+
+    .search-input,
+    .date-picker,
+    .status-select {
+      width: 100%;
+      min-width: 100%;  // Full width
+    }
+
+    :global(.ant-btn) {
+      width: 100%;  // Full width buttons
+      justify-content: center;
+      height: 40px;  // Slightly smaller height
+      font-size: 13px;  // Smaller font
+      padding: 0 16px;  // Compact padding
+    }
+  }
+
+  .stats-row {
+    :global(.ant-col) {
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      :global(.ant-statistic-content) {
+        font-size: 24px;  // Smaller stats on mobile
+      }
+    }
+  }
+
+  .pagination-wrapper {
+    :global(.ant-pagination) {
+      .ant-pagination-item {
+        min-width: 32px;  // Compact pagination items
+        height: 32px;
+        line-height: 32px;
+      }
+
+      .ant-pagination-prev,
+      .ant-pagination-next {
+        min-width: 32px;
+        height: 32px;
+      }
+    }
+  }
+}
+
+/* Small Mobile (max 576px) */
+@media (max-width: 576px) {
+  .contract-container {
+    padding: 16px;
+  }
+
+  .stats-row {
+    .stat-card {
+      :global(.ant-statistic-content) {
+        font-size: 20px;  // Even smaller
+      }
+
+      :global(.ant-statistic-title) {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .filter-inputs {
+    gap: 8px;
+
+    :global(.ant-btn) {
+      height: 36px;  // Compact height
+      font-size: 12px;
+      padding: 0 12px;  // Very compact padding
+    }
+  }
+
+  .card-grid {
+    :global(.ant-col) {
+      width: 100%;  // Full width cards on tiny screens
+    }
+  }
 }
