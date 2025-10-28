@@ -386,12 +386,6 @@ function Contract() {
         fetchOptions();
     }, []);
 
-    useEffect(() => {
-        loadRoomsForBoardingHouse(boardingHouseFilter);
-        // Clear room filter when boarding house changes to avoid invalid selection
-        setRoomFilter(null);
-    }, [boardingHouseFilter]);
-
     const fetchOptions = async () => {
         try {
             // Fetch boarding houses first
