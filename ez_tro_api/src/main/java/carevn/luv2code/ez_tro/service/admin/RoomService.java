@@ -19,4 +19,6 @@ public interface RoomService {
     List<RoomResponse> getAll();
 
     Page<RoomResponse> getAllRoomsPaged(int page, int size);
+
+    List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId);
 }

@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -74,5 +75,11 @@ public class RoomServiceImpl implements RoomService {
     public Page<RoomResponse> getAllRoomsPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         return roomRepository.findAll(pageRequest).map(roomMapper::toResponse);
+    }
+
+    @Override
+    public List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId) {
+        List<Room> rooms = roomRepository.findByBoardingHouseId(boardingHouseId);
+        return rooms.stream().map(roomMapper::toResponse).collect(Collectors.toList());
     }
 }
