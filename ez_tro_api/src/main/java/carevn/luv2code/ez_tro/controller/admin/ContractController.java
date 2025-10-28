@@ -171,15 +171,19 @@ public class ContractController {
         }
     }
 
+    // In ContractController.java (or relevant controller)
     @GetMapping("/filter")
     public ResponseEntity<Page<ContractResponse>> filterContracts(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer boardingHouseId,
+            @RequestParam(required = false) Integer roomId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<ContractResponse> result = contractService.filterContracts(search, startDate, endDate, status, page, size);
+        Page<ContractResponse> result = contractService.filterContracts(
+                search, startDate, endDate, status, boardingHouseId, roomId, page, size);
         return ResponseEntity.ok(result);
     }
 

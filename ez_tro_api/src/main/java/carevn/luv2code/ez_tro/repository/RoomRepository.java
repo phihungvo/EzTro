@@ -8,4 +8,6 @@ import carevn.luv2code.ez_tro.entity.Room;
 
 public interface RoomRepository extends JpaRepository<Room, Integer> {
     List<Room> findAllByBoardingHouse_IdIn(List<Integer> boardingHouseIds);
+
+    List<Room> findByBoardingHouseId(Integer boardingHouseId);
 }

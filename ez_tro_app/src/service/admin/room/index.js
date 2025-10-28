@@ -28,3 +28,14 @@ export const getAllRoomNoPaged = async () => {
         throw error;
     }
 };
+
+export const getRoomsByBoardingHouse = async (boardingHouseId) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.BY_BOARDING_HOUSE(boardingHouseId));
+        return response.data.result;
+    } catch (error) {
+        console.error('Error fetching rooms by boarding house:', error);
+        message.error('Lỗi khi lấy danh sách phòng');
+        return [];
+    }
+};

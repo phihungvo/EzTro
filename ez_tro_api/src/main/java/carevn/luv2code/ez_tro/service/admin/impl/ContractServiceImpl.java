@@ -188,7 +188,14 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @Transactional(readOnly = true)
     public Page<ContractResponse> filterContracts(
-            String search, String startDate, String endDate, String status, int page, int size) {
+            String search,
+            String startDate,
+            String endDate,
+            String status,
+            Integer boardingHouseId,
+            Integer roomId,
+            int page,
+            int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Specification<Contract> spec = Specification.where(null);
 
@@ -224,6 +231,19 @@ public class ContractServiceImpl implements ContractService {
 
         if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), ContractStatus.valueOf(status)));
+        }
+
+        // New: Filter by boarding house ID
+        if (boardingHouseId != null) {
+            spec = spec.and((root, query, cb) -> {
+                Join<Contract, Room> roomJoin = root.join("room", JoinType.LEFT);
+                return cb.equal(roomJoin.get("boardingHouse").get("id"), boardingHouseId);
+            });
+        }
+
+        // New: Filter by room ID
+        if (roomId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("room").get("id"), roomId));
         }
 
         Page<Contract> pageResult = contractRepository.findAll(spec, pageable);

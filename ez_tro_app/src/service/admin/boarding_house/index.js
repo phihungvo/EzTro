@@ -19,7 +19,7 @@ export const getAllBoardingHousesNoPaged = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.BOARDING_HOUSE.GET_ALL_NO_PAGING);
 
-        return response.data;
+        return response.data.result;
     } catch (error) {
         message.error('Error get all boarding house: ');
         return null;

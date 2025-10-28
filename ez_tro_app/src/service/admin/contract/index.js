@@ -1,5 +1,5 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
-import { message } from 'antd';
+import {message} from 'antd';
 import apiClient from '~/service/api/api';
 
 export const uploadContractFile = async (file, contractId) => {
@@ -22,7 +22,7 @@ export const uploadContractFile = async (file, contractId) => {
     }
 };
 
-export const getContractFiles = async (contractId, params = { page: 0, size: 20 }) => {
+export const getContractFiles = async (contractId, params = {page: 0, size: 20}) => {
     try {
         const response = await apiClient.get(`${API_ENDPOINTS.CONTRACT.GET_FILES(contractId)}`, {
             params,
@@ -38,7 +38,7 @@ export const getContractFiles = async (contractId, params = { page: 0, size: 20 
 export const getPresignedUrl = async (fileId, action = 'view') => {
     try {
         const response = await apiClient.get(`${API_ENDPOINTS.FILE.PRESIGNED_URL(fileId)}`, {
-            params: { action },
+            params: {action},
         });
         message.success('Xóa file thành công');
         return response.data.result;
@@ -60,13 +60,15 @@ export const deleteContractFile = async (fileId) => {
     }
 };
 
-export const filterContracts = async ({ startDate, endDate, status, search, page, pageSize }) => {
+export const filterContracts = async ({ startDate, endDate, status, search, boardingHouseId, roomId, page, pageSize }) => {
     try {
         const params = {
             startDate,
             endDate,
             status,
             search,  // tenantFullName, roomNumber, contractCode
+            boardingHouseId,
+            roomId,
             page,
             pageSize,
         };
@@ -79,10 +81,10 @@ export const filterContracts = async ({ startDate, endDate, status, search, page
     }
 };
 
-export const getAllContracts = async ({ page, pageSize }) => {
+export const getAllContracts = async ({page, pageSize}) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.CONTRACT.GET_ALL, {
-            params: { page, pageSize },
+            params: {page, pageSize},
         });
 
         return response.data;

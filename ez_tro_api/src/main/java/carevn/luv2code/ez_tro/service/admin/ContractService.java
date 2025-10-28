@@ -31,6 +31,16 @@ public interface ContractService {
 
     BillResponse createBillForContract(Integer contractId, Object billRequestObj);
 
+    //    Page<ContractResponse> filterContracts(
+    //            String search, String startDate, String endDate, String status, int page, int size);
+
     Page<ContractResponse> filterContracts(
-            String search, String startDate, String endDate, String status, int page, int size);
+            String search,
+            String startDate,
+            String endDate,
+            String status,
+            Integer boardingHouseId,
+            Integer roomId,
+            int page,
+            int size);
 }

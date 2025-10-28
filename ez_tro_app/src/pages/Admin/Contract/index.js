@@ -32,7 +32,6 @@ import {
     Tag,
     DatePicker,
     Card,
-    Option,
     Space,
     Empty,
     Select,
@@ -45,12 +44,13 @@ import {
     filterContracts,
     createContract,
     updateContract,
-    deleteContract
+    deleteContract,
 } from '~/service/admin/contract';
-import {getAllRoomNoPaged} from "~/service/admin/room";
+import {getAllRoomNoPaged, getRoomsByBoardingHouse} from "~/service/admin/room";
 import {getAllTenantNoPaged} from "~/service/admin/tenant";
 import useDebounce from '~/hooks/useDebounce';
 import dayjs from 'dayjs';
+import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
 
 const cx = classNames.bind(styles);
 const {RangePicker} = DatePicker;
@@ -59,6 +59,7 @@ function Contract() {
     const [contractSource, setContractSource] = useState([]);
     const [roomOptions, setRoomOptions] = useState([]);
     const [tenantOptions, setTenantOptions] = useState([]);
+    const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
@@ -82,6 +83,9 @@ function Contract() {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const [dateRange, setDateRange] = useState(null);
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [boardingHouseFilter, setBoardingHouseFilter] = useState(null);
+    const [roomFilter, setRoomFilter] = useState(null);
+    const [roomsLoading, setRoomsLoading] = useState(false);
 
     const [statistics, setStatistics] = useState({
         active: 0,
@@ -136,6 +140,9 @@ function Contract() {
         setSearchTerm('');
         setDateRange(null);
         setStatusFilter('ALL');
+        setBoardingHouseFilter(null);
+        setRoomFilter(null);
+        setRoomOptions([]);
         setPagination(prev => ({...prev, current: 1}));
         message.success('Đã reset bộ lọc!');
     };
@@ -350,27 +357,62 @@ function Contract() {
         },
     ];
 
+    const loadRoomsForBoardingHouse = async (boardingHouseId) => {
+        if (!boardingHouseId) {
+            setRoomOptions([]);
+            return;
+        }
+        setRoomsLoading(true);
+        try {
+            const rooms = await getRoomsByBoardingHouse(boardingHouseId);
+            if (rooms && Array.isArray(rooms)) {
+                const roomOpts = rooms.map((room) => ({
+                    label: `${room.id} - ${room.roomNumber || 'N/A'}`,
+                    value: room.id,
+                }));
+                setRoomOptions(roomOpts);
+            } else {
+                setRoomOptions([]);
+            }
+        } catch (error) {
+            console.error('Error loading rooms:', error);
+            setRoomOptions([]);
+        } finally {
+            setRoomsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        fetchRoomAndTenantOptions();
-        handleFilterContracts();
+        fetchOptions();
     }, []);
 
     useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-        handleFilterContracts();
-    }, [debouncedSearchTerm, dateRange, statusFilter, pagination.current, pagination.pageSize]);
+        if (boardingHouseOptions.length > 0 && !boardingHouseFilter) {
+            // Set first boarding house as default
+            const firstBoardingHouseId = boardingHouseOptions[0].value;
+            setBoardingHouseFilter(firstBoardingHouseId);
+        }
+    }, [boardingHouseOptions]);
 
-    const fetchRoomAndTenantOptions = async () => {
+    useEffect(() => {
+        loadRoomsForBoardingHouse(boardingHouseFilter);
+        // Clear room filter when boarding house changes to avoid invalid selection
+        setRoomFilter(null);
+    }, [boardingHouseFilter]);
+
+    const fetchOptions = async () => {
         try {
-            const roomResponse = await getAllRoomNoPaged();
-            if (roomResponse && Array.isArray(roomResponse)) {
-                const rooms = roomResponse.map((room) => ({
-                    label: `${room.roomNumber} - ${room.boardingHouseName}`,
-                    value: room.id,
+            // Fetch boarding houses first
+            const boardingHouseResponse = await getAllBoardingHousesNoPaged();
+            if (boardingHouseResponse && Array.isArray(boardingHouseResponse)) {
+                const boardingHouses = boardingHouseResponse.map((bh) => ({
+                    label: bh.name,
+                    value: bh.id,
                 }));
-                setRoomOptions(rooms);
+                setBoardingHouseOptions(boardingHouses);
             }
 
+            // Fetch tenants (unchanged)
             const tenantResponse = await getAllTenantNoPaged();
             if (tenantResponse && Array.isArray(tenantResponse)) {
                 const tenants = tenantResponse.map((tenant) => ({
@@ -379,6 +421,8 @@ function Contract() {
                 }));
                 setTenantOptions(tenants);
             }
+
+            // Note: Rooms are now loaded dynamically via loadRoomsForBoardingHouse
         } catch (error) {
             console.error('Error fetching options:', error);
         }
@@ -405,6 +449,15 @@ function Contract() {
                 params.status = statusFilter;
             }
 
+            // New params
+            if (boardingHouseFilter) {
+                params.boardingHouseId = boardingHouseFilter;
+            }
+
+            if (roomFilter) {
+                params.roomId = roomFilter;
+            }
+
             const response = await filterContracts(params);
 
             if (response && Array.isArray(response.content)) {
@@ -427,6 +480,15 @@ function Contract() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        setPagination(prev => ({...prev, current: 1}));
+        handleFilterContracts();
+    }, [debouncedSearchTerm, dateRange, statusFilter, boardingHouseFilter, roomFilter]);
+
+    useEffect(() => {
+        handleFilterContracts();
+    }, [pagination.current, pagination.pageSize]);
 
     const handleAddContract = () => {
         setModalMode('create');
@@ -550,53 +612,24 @@ function Contract() {
         }));
     };
 
+    const handleViewModeChange = (value) => {
+        setViewMode(value);
+    };
+
     return (
         <ConfigProvider>
             <div className={cx('contract-wrapper')}>
-                {/* ✅ Statistics Cards (tương tự Attendance) */}
-                <Row gutter={16} className={cx('stats-row')}>
-                    <Col span={8}>
-                        <Card className={cx('stat-card')}>
-                            <Statistic
-                                title="Đang hiệu lực"
-                                value={statistics.active}
-                                valueStyle={{color: '#3f8600'}}
-                                prefix={<FileTextOutlined/>}
-                            />
-                        </Card>
-                    </Col>
-                    <Col span={8}>
-                        <Card className={cx('stat-card')}>
-                            <Statistic
-                                title="Hết hạn"
-                                value={statistics.expired}
-                                valueStyle={{color: '#cf1322'}}
-                                prefix={<CloseCircleOutlined/>}
-                            />
-                        </Card>
-                    </Col>
-                    <Col span={8}>
-                        <Card className={cx('stat-card')}>
-                            <Statistic
-                                title="Đã hủy"
-                                value={statistics.cancelled}
-                                valueStyle={{color: '#faad14'}}
-                                prefix={<DeleteOutlined/>}
-                            />
-                        </Card>
-                    </Col>
-                </Row>
-
                 <div className={cx('filter-section')}>
                     <Space direction="vertical" size="middle" className={cx('filter-space')}>
                         <div className={cx('filter-inputs')}>
                             <SmartInput
                                 size="large"
-                                placeholder="Tìm kiếm theo tên người thuê, số phòng, mã hợp đồng..."
+                                placeholder="Tìm kiếm..."
                                 icon={<SearchOutlined/>}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className={cx('search-input')}
+                                inputWidth={230}
                             />
                             <RangePicker
                                 size="large"
@@ -604,6 +637,7 @@ function Contract() {
                                 format="DD/MM/YYYY"
                                 onChange={(dates) => setDateRange(dates)}
                                 className={cx('date-picker')}
+                                style={{ width: 270 }}
                             />
                             <Select
                                 size="large"
@@ -618,7 +652,68 @@ function Contract() {
                                     {value: 'CANCELLED', label: 'Đã hủy'},
                                 ]}
                             />
+                            <Select
+                                size="large"
+                                placeholder="Chọn khu nhà trọ"
+                                value={boardingHouseFilter}
+                                onChange={(value) => setBoardingHouseFilter(value)}
+                                className={cx('boarding-house-select')}
+                                allowClear
+                                options={boardingHouseOptions}
+                                loading={roomsLoading}
+                            />
+                            <Select
+                                size="large"
+                                placeholder="Chọn phòng"
+                                value={roomFilter}
+                                onChange={(value) => setRoomFilter(value)}
+                                className={cx('room-select')}
+                                allowClear
+                                options={roomOptions}
+                                loading={roomsLoading}
+                                disabled={!boardingHouseFilter}
+                            />
 
+                            <SmartButton
+                                title="Reset"
+                                type="default"
+                                icon={<CloseCircleOutlined/>}
+                                onClick={handleResetFilters}
+                            />
+                        </div>
+                    </Space>
+                </div>
+
+                {/* Nội dung */}
+                <div className={cx('contract-container')}>
+                    <div className={cx('pagination-wrapper')}>
+                        <div className={cx('left-actions')}>
+                            <div className={cx('view-mode-toggle')}>
+                                <Segmented
+                                    options={[
+                                        {
+                                            label: (
+                                                <>
+                                                    <TableOutlined/>
+                                                    Bảng
+                                                </>
+                                            ),
+                                            value: 'table',
+                                        },
+                                        {
+                                            label: (
+                                                <>
+                                                    <AppstoreOutlined/>
+                                                    Thẻ
+                                                </>
+                                            ),
+                                            value: 'card',
+                                        },
+                                    ]}
+                                    value={viewMode}
+                                    onChange={handleViewModeChange}
+                                />
+                            </div>
                             <SmartButton
                                 title="Thêm mới"
                                 icon={<PlusOutlined/>}
@@ -630,21 +725,7 @@ function Contract() {
                                 icon={<CloudUploadOutlined/>}
                                 onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
                             />
-
-                            <SmartButton
-                                title="Reset"
-                                type="default"
-                                icon={<CloseCircleOutlined/>}
-                                onClick={handleResetFilters}
-                                style={{marginLeft: 8}}
-                            />
                         </div>
-                    </Space>
-                </div>
-
-                {/* Nội dung */}
-                <div className={cx('contract-container')}>
-                    <div className={cx('pagination-wrapper')}>
                         <Pagination
                             current={pagination.current}
                             pageSize={pagination.pageSize}
@@ -686,6 +767,34 @@ function Contract() {
                             </Spin>
                             {/* Pagination bottom for card view */}
                             <div className={cx('pagination-wrapper')}>
+                                <div className={cx('left-actions')}>
+                                    <div className={cx('view-mode-toggle')}>
+                                        <Segmented
+                                            options={[
+                                                {
+                                                    label: (
+                                                        <>
+                                                            <TableOutlined/>
+                                                            Bảng
+                                                        </>
+                                                    ),
+                                                    value: 'table',
+                                                },
+                                                {
+                                                    label: (
+                                                        <>
+                                                            <AppstoreOutlined/>
+                                                            Thẻ
+                                                        </>
+                                                    ),
+                                                    value: 'card',
+                                                },
+                                            ]}
+                                            value={viewMode}
+                                            onChange={handleViewModeChange}
+                                        />
+                                    </div>
+                                </div>
                                 <Pagination
                                     current={pagination.current}
                                     pageSize={pagination.pageSize}
