@@ -175,14 +175,14 @@ function Contract() {
             title: 'Người thuê',
             dataIndex: 'tenantFullName',
             key: 'tenantFullName',
-            width: 250,
+            width: 150,
             align: 'center',
         },
         {
             title: 'Thời hạn hợp đồng',
             dataIndex: 'contractDuration',
             key: 'contractDuration',
-            width: 200,
+            width: 250,
             align: 'center',
             render: (_, record) => {
                 const start = record.startDate ? new Date(record.startDate).toLocaleDateString('vi-VN') : 'N/A';
@@ -385,14 +385,6 @@ function Contract() {
     useEffect(() => {
         fetchOptions();
     }, []);
-
-    useEffect(() => {
-        if (boardingHouseOptions.length > 0 && !boardingHouseFilter) {
-            // Set first boarding house as default
-            const firstBoardingHouseId = boardingHouseOptions[0].value;
-            setBoardingHouseFilter(firstBoardingHouseId);
-        }
-    }, [boardingHouseOptions]);
 
     useEffect(() => {
         loadRoomsForBoardingHouse(boardingHouseFilter);

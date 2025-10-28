@@ -68,10 +68,8 @@
   gap: 12px;
   align-items: stretch;
 
-  /* Search Input - Remove fixed width, let grid handle it */
   .search-input {
     grid-column: 1 / 2;
-    /* Remove width: 100px; */
 
     :global(.ant-input-affix-wrapper) {
       height: 42px;
@@ -389,13 +387,6 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100px !important;
-
-  //.date-start,
-  //.date-end {
-  //  font-size: 13px;
-  //  color: #595959;
-  //}
 
   .date-arrow {
     color: #1890ff;
@@ -421,6 +412,7 @@
   .filter-inputs {
     grid-template-columns: 230px 1.5fr 1fr 1fr 1fr auto auto auto;
     gap: 14px;
+    padding-bottom: 10px;
   }
 
   .left-actions {
