@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import classNames from "classnames/bind";
+import { Routes, Route, useLocation } from 'react-router-dom';  // Add useLocation for dynamic active
 import styles from "./AdminLayout.module.scss";
 import Header from "../Header";
 import AdminSidebar from "~/components/Layout/AdminLayout/components/Sidebar/AdminSidebar";
@@ -27,11 +28,13 @@ import { useNavigate } from "react-router-dom";
 
 import Building from "~/pages/Admin/Building";
 import Tenant from "~/pages/Admin/Tenant";
+// import TenantDetail from "~/pages/Admin/Tenant/TenantDetail";  // Import TenantDetail
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
 import Amenity from "~/pages/Admin/Amenity";
 import Bill from "~/pages/Admin/Bill";
+import TenantDetail from "~/pages/Admin/Tenant/detail";
 
 const cx = classNames.bind(styles);
 
@@ -45,7 +48,7 @@ const adminMenuConfig = [
                 title: "Tổng quan hệ thống",
                 icon: <DashboardOutlined />,
                 color: "#3b82f6",
-                component: <Dashboard />,
+                path: "/admin/dashboard",  // Add path for routing
             },
         ],
     },
@@ -59,7 +62,7 @@ const adminMenuConfig = [
                 title: "Quản lý khu nhà trọ",
                 icon: <AppstoreOutlined />,
                 color: "#10b981",
-                component: <BoardingHouses />,
+                path: "/admin/boarding-houses",
             },
             {
                 key: "buildings",
@@ -67,7 +70,7 @@ const adminMenuConfig = [
                 title: "Quản lý tòa nhà",
                 icon: <BankOutlined />,
                 color: "#14b8a6",
-                component: <Building />,
+                path: "/admin/buildings",
             },
             {
                 key: "rooms",
@@ -75,7 +78,7 @@ const adminMenuConfig = [
                 title: "Quản lý phòng trọ",
                 icon: <HomeOutlined />,
                 color: "#ec4899",
-                component: <Room />,
+                path: "/admin/rooms",
             },
             {
                 key: "tenants",
@@ -83,7 +86,7 @@ const adminMenuConfig = [
                 title: "Quản lý người thuê",
                 icon: <UserSwitchOutlined />,
                 color: "#f59e0b",
-                component: <Tenant />,
+                path: "/admin/tenants",
             },
         ],
     },
@@ -97,7 +100,7 @@ const adminMenuConfig = [
                 title: "Quản lý thông tin hợp đồng thuê trọ",
                 icon: <FileTextOutlined />,
                 color: "#8b5cf6",
-                component: <Contract />,
+                path: "/admin/contracts",
             },
             {
                 key: "bills",
@@ -105,7 +108,7 @@ const adminMenuConfig = [
                 title: "Quản lý hoá đơn tiền phòng và dịch vụ của người thuê",
                 icon: <FileTextOutlined />,
                 color: "#f59e0b",
-                component: <Bill />,
+                path: "/admin/bills",
             },
             {
                 key: "services",
@@ -113,7 +116,7 @@ const adminMenuConfig = [
                 title: "Quản lý các dịch vụ đi kèm (điện, nước, internet, vệ sinh...)",
                 icon: <ToolOutlined />,
                 color: "#6366f1",
-                component: <Amenity />,
+                path: "/admin/services",
             },
         ],
     },
@@ -127,7 +130,7 @@ const adminMenuConfig = [
                 title: "Thống kê doanh thu và lợi nhuận",
                 icon: <DollarOutlined />,
                 color: "#16a34a",
-                // component: <Revenue />,
+                path: "/admin/revenues",
             },
             {
                 key: "assets",
@@ -135,7 +138,7 @@ const adminMenuConfig = [
                 title: "Quản lý tài sản, thiết bị trong khu trọ",
                 icon: <GoldOutlined />,
                 color: "#ca8a04",
-                // component: <Asset />,
+                path: "/admin/assets",
             },
             {
                 key: "expenses",
@@ -143,7 +146,7 @@ const adminMenuConfig = [
                 title: "Theo dõi chi phí vận hành",
                 icon: <BankOutlined />,
                 color: "#22d3ee",
-                // component: <Expense />,
+                path: "/admin/expenses",
             },
         ],
     },
@@ -157,7 +160,7 @@ const adminMenuConfig = [
                 title: "Xử lý yêu cầu dọn phòng, trả phòng từ người thuê",
                 icon: <AlertOutlined />,
                 color: "#ef4444",
-                // component: <RoomRequest />,
+                path: "/admin/room-requests",
             },
             {
                 key: "appointments",
@@ -165,7 +168,7 @@ const adminMenuConfig = [
                 title: "Quản lý lịch hẹn và khách xem phòng",
                 icon: <CalendarOutlined />,
                 color: "#3b82f6",
-                // component: <Appointment />,
+                path: "/admin/appointments",
             },
             {
                 key: "incidents",
@@ -173,7 +176,7 @@ const adminMenuConfig = [
                 title: "Quản lý và xử lý sự cố phòng trọ",
                 icon: <AlertOutlined />,
                 color: "#f97316",
-                // component: <Incident />,
+                path: "/admin/incidents",
             },
         ],
     },
@@ -187,7 +190,7 @@ const adminMenuConfig = [
                 title: "Tổng hợp và xuất báo cáo thống kê",
                 icon: <BarChartOutlined />,
                 color: "#a855f7",
-                // component: <Report />,
+                path: "/admin/reports",
             },
             {
                 key: "users",
@@ -195,7 +198,7 @@ const adminMenuConfig = [
                 title: "Quản lý tài khoản người dùng",
                 icon: <TeamOutlined />,
                 color: "#0ea5e9",
-                component: <UserManagement />,
+                path: "/admin/users",
             },
             {
                 key: "settings",
@@ -203,7 +206,7 @@ const adminMenuConfig = [
                 title: "Thiết lập và tùy chỉnh hệ thống",
                 icon: <SettingOutlined />,
                 color: "#475569",
-                // component: <Settings />,
+                path: "/admin/settings",
             },
         ],
     },
@@ -211,19 +214,26 @@ const adminMenuConfig = [
 
 const AdminLayout = ({ onLogout }) => {
     const navigate = useNavigate();
-    const [selected, setSelected] = useState("dashboard");
+    const location = useLocation();  // Use location to determine active menu dynamically
     const [collapsed, setCollapsed] = useState(false);
+
+    // Function to find active menu key based on current path
+    const getActiveKey = (pathname) => {
+        const activeItem = adminMenuConfig
+            .flatMap((group) => group.items)
+            .find((item) => pathname.startsWith(item.path) || pathname === item.path);
+        return activeItem?.key || 'dashboard';
+    };
+
+    const selected = getActiveKey(location.pathname);
 
     const activeMenu = adminMenuConfig
         .flatMap((group) => group.items)
         .find((item) => item.key === selected);
 
     const handleLogout = () => {
-
         localStorage.clear();
-
         navigate("/login");
-
         message.success("Đăng xuất thành công");
     };
 
@@ -232,7 +242,10 @@ const AdminLayout = ({ onLogout }) => {
             <AdminSidebar
                 menu={adminMenuConfig}
                 selected={selected}
-                onSelect={setSelected}
+                onSelect={(key) => {
+                    const item = adminMenuConfig.flatMap(g => g.items).find(i => i.key === key);
+                    if (item) navigate(item.path);
+                }}
                 collapsed={collapsed}
                 onCollapse={() => setCollapsed(!collapsed)}
                 onLogout={handleLogout}
@@ -241,7 +254,20 @@ const AdminLayout = ({ onLogout }) => {
             <div className={cx("rightContainer", { collapsed })}>
                 <Header title={activeMenu?.title || "Trang quản trị"} />
                 <div className={cx("content")}>
-                    {activeMenu?.component || <div>Không tìm thấy trang</div>}
+                    <Routes>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/tenants" element={<Tenant />} />
+                        <Route path="/tenants/:id" element={<TenantDetail />} />  // Add detail route
+                        <Route path="/boarding-houses" element={<BoardingHouses />} />
+                        <Route path="/buildings" element={<Building />} />
+                        <Route path="/rooms" element={<Room />} />
+                        <Route path="/contracts" element={<Contract />} />
+                        <Route path="/bills" element={<Bill />} />
+                        <Route path="/services" element={<Amenity />} />
+                        <Route path="/users" element={<UserManagement />} />
+                        {/* Add other routes as needed */}
+                        <Route path="/" element={<Dashboard />} />  // Default route
+                    </Routes>
                 </div>
             </div>
         </div>

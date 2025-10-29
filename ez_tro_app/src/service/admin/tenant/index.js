@@ -35,8 +35,20 @@ export const tenantDetail = async (tenantId) => {
             API_ENDPOINTS.TENANTS.DETAIL(tenantId),
         );
 
-        return response.data;
+        return response.data.result;
     } catch (error) {
-        console.error('Error when creating tenant: ', error);
+        console.error('Error when tenant detail: ', error);
+    }
+};
+
+export const tenantRentalDetail = async (tenantId) => {
+    try {
+        const response = await apiClient.get(
+            API_ENDPOINTS.TENANTS.RENTAL_DETAIL(tenantId),
+        );
+
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when get rental detail: ', error);
     }
 };
