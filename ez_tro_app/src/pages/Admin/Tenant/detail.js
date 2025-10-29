@@ -11,7 +11,8 @@ import {
     Badge,
     Typography,
     Spin,
-    Tag
+    Tag,
+    Divider
 } from 'antd';
 import {
     UserOutlined,
@@ -19,7 +20,10 @@ import {
     ArrowLeftOutlined,
     PhoneOutlined,
     MailOutlined,
-    IdcardOutlined
+    IdcardOutlined,
+    HomeOutlined,
+    EnvironmentOutlined,
+    CheckCircleOutlined
 } from '@ant-design/icons';
 import moment from 'moment';
 import classNames from 'classnames/bind';
@@ -30,7 +34,7 @@ import styles from './TenantDetail.module.scss';
 import 'moment/locale/vi';
 
 const cx = classNames.bind(styles);
-const {Title, Text} = Typography;
+const {Title, Text, Link} = Typography;
 
 moment.locale('vi');
 
@@ -39,11 +43,13 @@ function TenantDetail() {
     const navigate = useNavigate();
     const {user} = useAuth();
     const [tenant, setTenant] = useState(null);
+    const [rentalInfo, setRentalInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [avatarUrl, setAvatarUrl] = useState(null);
 
     const statusMap = {
         "Đang thuê": { color: "green" },
+        "Đang Hiệu Lực": { color: "green" },
         "Đã kết thúc": { color: "gold" },
         "Chưa thuê": { color: "red" },
     };
@@ -55,22 +61,27 @@ function TenantDetail() {
             return;
         }
 
-        const fetchTenant = async () => {
+        const fetchData = async () => {
             try {
-                const response = await tenantDetail(id);
-                if (response) {
+                const tenantResponse = await tenantDetail(id);
+                if (tenantResponse) {
                     setTenant({
-                        ...response,
-                        dateOfBirth: response.dateOfBirth ? moment(response.dateOfBirth).format('YYYY-MM-DD') : null,
-                        hireDate: response.hireDate ? moment(response.hireDate).format('YYYY-MM-DD') : null,
+                        ...tenantResponse,
+                        dateOfBirth: tenantResponse.dateOfBirth ? moment(tenantResponse.dateOfBirth).format('YYYY-MM-DD') : null,
+                        hireDate: tenantResponse.hireDate ? moment(tenantResponse.hireDate).format('YYYY-MM-DD') : null,
                     });
 
-                    if (response.profilePictureId) {
-                        const presignedUrl = await getPresignedUrl(response.profilePictureId);
+                    if (tenantResponse.profilePictureId) {
+                        const presignedUrl = await getPresignedUrl(tenantResponse.profilePictureId);
                         setAvatarUrl(presignedUrl);
                     }
-                } else {
-                    throw new Error('Không tìm thấy người thuê');
+                }
+
+                try {
+                    const rentalResponse = await tenantRentalDetail(id);
+                    setRentalInfo(rentalResponse);
+                } catch (rentalError) {
+                    console.log('Không có thông tin thuê:', rentalError);
                 }
             } catch (error) {
                 message.error(`Lỗi khi load chi tiết người thuê: ${error.message}`);
@@ -79,7 +90,7 @@ function TenantDetail() {
                 setLoading(false);
             }
         };
-        fetchTenant();
+        fetchData();
     }, [id, user, navigate]);
 
     const handleAvatarUpload = async (file) => {
@@ -116,6 +127,14 @@ function TenantDetail() {
             <Text className={cx('value')}>{value || 'Chưa cập nhật'}</Text>
         </div>
     );
+
+    const formatCurrency = (value) => {
+        if (!value) return 'Chưa cập nhật';
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value);
+    };
 
     return (
         <div className={cx('tenant-detail')}>
@@ -288,6 +307,121 @@ function TenantDetail() {
                         </Col>
                     </Row>
                 </Card>
+
+                {/* Rental Information - Only show if exists */}
+                {rentalInfo && (
+                    <Card className={cx('rental-card')} bordered={false}>
+                        <div className={cx('rental-header')}>
+                            <HomeOutlined className={cx('rental-icon')} />
+                            <Title level={5} className={cx('rental-title')}>
+                                Thông Tin Thuê Hiện Tại
+                            </Title>
+                            {rentalInfo.isContractRepresentative && (
+                                <Tag color="blue" icon={<CheckCircleOutlined />}>Đại diện hợp đồng</Tag>
+                            )}
+                        </div>
+
+                        <Divider style={{ margin: '16px 0' }} />
+
+                        {/* Contract Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <IdcardOutlined /> Hợp Đồng ({rentalInfo.contractCode})
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/contracts/${rentalInfo.contractCode}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Trạng thái HĐ"
+                                    value={
+                                        <Tag color={statusMap[rentalInfo.contractStatus]?.color || "default"}>
+                                            {rentalInfo.contractStatus}
+                                        </Tag>
+                                    }
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày bắt đầu"
+                                    value={moment(rentalInfo.startDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày kết thúc"
+                                    value={moment(rentalInfo.endDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Giá thuê (lúc ký)"
+                                    value={formatCurrency(rentalInfo.rentPrice)}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Tiền cọc"
+                                    value={formatCurrency(rentalInfo.deposit)}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày vào ở"
+                                    value={moment(rentalInfo.moveInDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                        </Row>
+
+                        <Divider style={{ margin: '20px 0' }} />
+
+                        {/* Room Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <HomeOutlined /> Phòng Thuê
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/rooms/${rentalInfo.roomName}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Tên phòng" value={rentalInfo.roomName} />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Tầng" value={rentalInfo.floorNumber} />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Diện tích" value={`${rentalInfo.area} m²`} />
+                            </Col>
+                        </Row>
+
+                        <Divider style={{ margin: '20px 0' }} />
+
+                        {/* Boarding House Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <EnvironmentOutlined /> Khu Nhà
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/boarding-houses/${rentalInfo.boardingHouseName}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={24} sm={12}>
+                                <InfoField label="Tên khu nhà" value={rentalInfo.boardingHouseName} />
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <InfoField label="Địa chỉ" value={rentalInfo.boardingHouseAddress} />
+                            </Col>
+                        </Row>
+                    </Card>
+                )}
             </div>
         </div>
     );

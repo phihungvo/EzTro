@@ -61,6 +61,7 @@ $transition: all 0.3s ease;
   margin-bottom: 24px;
   overflow: hidden;
   background: $white;
+  border-left: 4px solid $primary-color;
 
   :global(.ant-card-body) {
     padding: 32px;
@@ -207,6 +208,7 @@ $transition: all 0.3s ease;
   box-shadow: $shadow-md;
   margin-bottom: 20px;
   background: $white;
+  border-left: 4px solid $primary-color;
 
   :global(.ant-card-body) {
     padding: 24px;
@@ -220,6 +222,54 @@ $transition: all 0.3s ease;
   color: $text-primary;
   padding-bottom: 12px;
   border-bottom: 2px solid $bg-gray;
+}
+
+// Rental Card
+.rental-card {
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  margin-bottom: 24px;
+  background: $white;
+  border-left: 4px solid $primary-color;
+
+  :global(.ant-card-body) {
+    padding: 24px;
+  }
+}
+
+.rental-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rental-icon {
+  font-size: 24px;
+  color: $primary-color;
+}
+
+.rental-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: $text-primary;
+  flex: 1;
+}
+
+.rental-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rental-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-primary;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 // Info Field
