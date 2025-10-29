@@ -386,9 +386,13 @@ function Contract() {
         fetchOptions();
     }, []);
 
+    useEffect(() => {
+        loadRoomsForBoardingHouse(boardingHouseFilter);
+        setRoomFilter(null);
+    }, [boardingHouseFilter]);
+
     const fetchOptions = async () => {
         try {
-            // Fetch boarding houses first
             const boardingHouseResponse = await getAllBoardingHousesNoPaged();
             if (boardingHouseResponse && Array.isArray(boardingHouseResponse)) {
                 const boardingHouses = boardingHouseResponse.map((bh) => ({
@@ -398,7 +402,6 @@ function Contract() {
                 setBoardingHouseOptions(boardingHouses);
             }
 
-            // Fetch tenants (unchanged)
             const tenantResponse = await getAllTenantNoPaged();
             if (tenantResponse && Array.isArray(tenantResponse)) {
                 const tenants = tenantResponse.map((tenant) => ({
@@ -408,7 +411,6 @@ function Contract() {
                 setTenantOptions(tenants);
             }
 
-            // Note: Rooms are now loaded dynamically via loadRoomsForBoardingHouse
         } catch (error) {
             console.error('Error fetching options:', error);
         }
