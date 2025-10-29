@@ -60,6 +60,8 @@ public enum ErrorCode {
     AMENITY_NAME_ALREADY_EXISTS(1043, " Amenity name already exists in this boarding house", HttpStatus.CONFLICT),
     INVALID_ROOM_FOR_BOARDING_HOUSE(1044, "INVALID_ROOM_FOR_BOARDING_HOUSE", HttpStatus.CONFLICT),
     UTILITY_NOT_FOUND(1045, "Utility not found", HttpStatus.NOT_FOUND),
+    ROOM_UTILITY_NOT_FOUND(1046, "Room utility not found", HttpStatus.NOT_FOUND),
+    ROOM_UTILITY_ALREADY_EXISTS(1047, "Room utility already exists", HttpStatus.CONFLICT),
 
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);
