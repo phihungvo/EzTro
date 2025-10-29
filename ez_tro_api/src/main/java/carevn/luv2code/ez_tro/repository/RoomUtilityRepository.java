@@ -25,4 +25,7 @@ public interface RoomUtilityRepository extends JpaRepository<RoomUtility, RoomUt
 
     @Query("SELECT ru FROM RoomUtility ru WHERE ru.room.id = :roomId")
     Page<RoomUtility> findByRoomIdPaged(@Param("roomId") Integer roomId, Pageable pageable);
+
+    @Query("SELECT ru FROM RoomUtility ru")
+    Page<RoomUtility> findAllPaged(Pageable pageable);
 }

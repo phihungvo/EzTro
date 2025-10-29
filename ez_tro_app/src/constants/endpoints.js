@@ -85,9 +85,21 @@ const API_ENDPOINTS = {
     },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,
+        GET_ALL_NO_PAGING: `${BASE_URL}/utilities`,
         CREATE: `${BASE_URL}/utilities`,
         UPDATE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
         DELETE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
+    },
+    ROOM_UTILITY: {
+        GET_ALL: `${BASE_URL}/room-utilities/all-paged`,
+        CREATE: `${BASE_URL}/room-utilities`,
+        UPDATE: (roomId, utilityId) => `${BASE_URL}/room-utilities/${roomId}/${utilityId}`,
+        DELETE: (roomId, utilityId) => `${BASE_URL}/room-utilities/${roomId}/${utilityId}`,
+        GET_BY_ID: (roomId, utilityId) => `${BASE_URL}/room-utilities/${roomId}/${utilityId}`,
+        GET_BY_ROOM: (roomId) => `${BASE_URL}/room-utilities/room/${roomId}`,
+        GET_ACTIVE_BY_ROOM: (roomId) => `${BASE_URL}/room-utilities/room/${roomId}/active`,
+        GET_BY_UTILITY: (utilityId) => `${BASE_URL}/room-utilities/utility/${utilityId}`,
+        GET_PAGED_BY_ROOM: (roomId, page, size) => `${BASE_URL}/room-utilities/room/${roomId}/paged?page=${page}&size=${size}`,
     },
 
     // FOR USER ROLE
