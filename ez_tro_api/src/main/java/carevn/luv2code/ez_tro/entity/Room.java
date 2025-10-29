@@ -77,7 +77,8 @@ public class Room {
     List<ElectricWaterRecord> electricWaterRecords;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<RoomAmenity> roomAmenities; // Dịch vụ đăng ký
+    @ToString.Exclude
+    List<RoomUtility> roomUtilities;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Bill> bills;

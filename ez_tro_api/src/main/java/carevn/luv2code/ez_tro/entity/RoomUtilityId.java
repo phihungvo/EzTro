@@ -14,10 +14,10 @@ import lombok.experimental.FieldDefaults;
 @EqualsAndHashCode
 @Embeddable
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RoomAmenityId implements Serializable {
+public class RoomUtilityId implements Serializable {
     @Column(name = "room_id")
     Integer roomId;
 
-    @Column(name = "amenity_id")
-    Integer amenityId;
+    @Column(name = "utility_id")
+    Integer utilityId;
 }

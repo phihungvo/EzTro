@@ -23,9 +23,9 @@ import lombok.experimental.FieldDefaults;
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "amenities")
+@Table(name = "utilities")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Amenity {
+public class Utility {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,11 +35,12 @@ public class Amenity {
 
     @NotBlank(message = "Tên tiện ích bắt buộc")
     @Column(nullable = false, length = 100)
-    String name; // Ví dụ: "Điện", "Internet"
+    String name; // e.g., "Điện", "Internet"
 
     @Column(length = 255)
     String description;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     ServiceType type = ServiceType.FIXED;
@@ -47,12 +48,12 @@ public class Amenity {
     @Min(value = 0, message = "Giá phải >= 0")
     @NotNull
     @Column(nullable = false, precision = 10, scale = 2)
-    BigDecimal unitPrice; // Giá/đơn vị (kWh cho điện, tháng cho internet)
+    BigDecimal unitPrice;
 
     @Column(length = 50)
-    String unit;
+    String unit; // e.g., "kWh", "m³", "tháng"
 
-    @Column
+    @Column(nullable = false)
     Boolean isActive = true;
 
     @CreationTimestamp
@@ -64,8 +65,9 @@ public class Amenity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "boarding_house_id")
-    BoardingHouse boardingHouse; // Tiện ích thuộc khu (optional)
+    BoardingHouse boardingHouse;
 
-    @OneToMany(mappedBy = "amenity", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<RoomAmenity> roomAmenities;
+    @OneToMany(mappedBy = "utility", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<RoomUtility> roomUtilities;
 }

@@ -3,7 +3,6 @@ package carevn.luv2code.ez_tro.dto.response;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import carevn.luv2code.ez_tro.enums.ServiceType;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,24 +12,24 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AmenityResponse {
+public class UtilityResponse {
     Integer id;
 
     String name;
 
-    ServiceType type;
+    String description;
 
-    BigDecimal price;
+    String type;
+
+    BigDecimal unitPrice;
 
     String unit;
 
-    String description;
+    Boolean isActive;
 
     Integer boardingHouseId;
 
     String boardingHouseName;
-
-    Boolean isActive;
 
     LocalDateTime createdAt;
 

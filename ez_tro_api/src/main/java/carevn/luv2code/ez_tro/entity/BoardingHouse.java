@@ -75,5 +75,6 @@ public class BoardingHouse {
     List<Building> buildings;
 
     @OneToMany(mappedBy = "boardingHouse", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Amenity> services; // Dịch vụ chung của khu
+    @ToString.Exclude
+    List<Utility> utilities;
 }
