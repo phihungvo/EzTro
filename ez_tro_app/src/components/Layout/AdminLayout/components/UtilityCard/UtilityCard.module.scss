@@ -1,0 +1,296 @@
+// UtilityCard.module.scss
+
+.utility-card {
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.4s ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  &.inactive {
+    opacity: 0.7;
+
+    .card-header {
+      background: linear-gradient(135deg, #9ca3af, #6b7280) !important;
+    }
+  }
+}
+
+/* ================= Header ================= */
+.card-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+
+  &.electric {
+    background: linear-gradient(135deg, #fbbf24, #f97316);
+  }
+
+  &.water {
+    background: linear-gradient(135deg, #60a5fa, #06b6d4);
+  }
+
+  &.internet {
+    background: linear-gradient(135deg, #a78bfa, #6366f1);
+  }
+
+  &.parking {
+    background: linear-gradient(135deg, #f472b6, #f43f5e);
+  }
+}
+
+.icon-wrapper {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+
+  :global {
+    .anticon {
+      font-size: 20px !important;
+    }
+  }
+}
+
+.header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.utility-title {
+  margin: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.type-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 6px;
+  color: #fff;
+  letter-spacing: 0.3px;
+
+  &.electric {
+    background-color: #f97316;
+  }
+
+  &.water {
+    background-color: #3b82f6;
+  }
+
+  &.internet {
+    background-color: #8b5cf6;
+  }
+
+  &.parking {
+    background-color: #ec4899;
+  }
+}
+
+/* ================= Body ================= */
+.card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.price-section {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.25s ease;
+
+  //&:hover {
+  //  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  //  transform: scale(1.02);
+  //}
+}
+
+.price-label {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.price-currency {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  gap: 8px;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================= Footer ================= */
+.card-footer {
+  padding: 0 20px 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+
+  :global {
+    .anticon {
+      font-size: 16px !important;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.edit {
+    background-color: #f97316;
+    color: #fff;
+
+    &:disabled {
+      background-color: #fed7aa;
+      cursor: not-allowed;
+    }
+  }
+
+  &.delete {
+    background-color: #ef4444;
+    color: #fff;
+
+    &:disabled {
+      background-color: #fecaca;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 576px) {
+  .utility-card {
+    max-width: 100%;
+  }
+
+  .card-header {
+    padding: 14px;
+  }
+
+  .utility-title {
+    font-size: 16px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .price-amount {
+    font-size: 28px;
+  }
+
+  .action-button {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-footer {
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+  }
+}
+
+/* ================= Animation ================= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -32,7 +32,7 @@ import Tenant from "~/pages/Admin/Tenant";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
-import Amenity from "~/pages/Admin/Amenity";
+import Amenity from "src/pages/Admin/Utility";
 import Bill from "~/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 

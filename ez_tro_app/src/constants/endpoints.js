@@ -83,6 +83,12 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
     },
+    UTILITY: {
+        GET_ALL: `${BASE_URL}/utilities/paged`,
+        CREATE: `${BASE_URL}/utilities`,
+        UPDATE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
+        DELETE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {
