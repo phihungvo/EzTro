@@ -15,6 +15,7 @@ export default function InputNumberField({ field }) {
                 max={field.max}
                 step={field.step}
                 disabled={field.disabled}
+                placeholder={field.placeholder ?? `Nhập ${field.label.toLowerCase()}`}
                 addonBefore={field.addonBefore}
                 addonAfter={field.addonAfter}
                 formatter={field.formatter}

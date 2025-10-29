@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import styles from '~/pages/Admin/Amenity/Amenity.module.scss';
+import styles from '~/pages/Admin/Utility/Utility.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
-import AmenityCard from '~/components/Layout/AdminLayout/components/AmenityCard';
+import UtilityCard from '~/components/Layout/AdminLayout/components/UtilityCard';
 import {
     SearchOutlined,
     PlusOutlined,
@@ -19,13 +19,13 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
-import {getAllAmenities, createAmenity, updateAmenity, deleteAmenity} from '~/service/admin/amenity';
+import {getAllUtilities, createUtility, updateUtility, deleteUtility} from '~/service/admin/utility';
 import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
 
-function Amenity() {
-    const [amenitySource, setAmenitySource] = useState([]);
+function Utility() {
+    const [utilitySource, setUtilitySource] = useState([]);
     const [boardingHouseOptionSource, setBoardingHouseOptionSource] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
@@ -35,7 +35,7 @@ function Amenity() {
     });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedAmenity, setSelectedAmenity] = useState(null);
+    const [selectedUtility, setSelectedUtility] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
 
@@ -52,7 +52,7 @@ function Amenity() {
 
     const columns = [
         {
-            title: 'Tên dịch vụ',
+            title: 'Tên tiện ích',
             dataIndex: 'name',
             key: 'name',
             width: 200,
@@ -60,31 +60,38 @@ function Amenity() {
             align: 'center',
         },
         {
-            title: 'Loại',
+            title: 'Loại tiện ích',
             dataIndex: 'type',
             key: 'type',
-            width: 250,
+            width: 200,
             align: 'center',
             render: (status) => getStatusTag(status),
         },
         {
-            title: 'Giá',
-            dataIndex: 'price',
-            key: 'price',
-            width: 250,
+            title: 'Giá áp dụng',
+            dataIndex: 'unitPrice',
+            key: 'unitPrice',
+            width: 200,
             align: 'center',
         },
         {
-            title: 'Đơn vị',
+            title: 'Đơn vị tính',
             dataIndex: 'unit',
             key: 'unit',
-            width: 250,
+            width: 180,
             align: 'center',
         },
         {
-            title: 'Tên khu nhà trọ',
+            title: 'Nhà trọ áp dụng',
             dataIndex: 'boardingHouseName',
             key: 'boardingHouseName',
+            align: 'center',
+            width: 250,
+        },
+        {
+            title: 'Khu tòa/Block',
+            dataIndex: 'buildingName', // <-- sửa đúng dữ liệu trả về nếu có
+            key: 'buildingName',
             align: 'center',
             width: 250,
         },
@@ -111,13 +118,13 @@ function Amenity() {
                         type="primary"
                         icon={<EditOutlined />}
                         buttonWidth={40}
-                        onClick={() => handleEditAmenity(record)}
+                        onClick={() => handleEditUtility(record)}
                     />
                     <SmartButton
                         type="danger"
                         icon={<DeleteOutlined />}
                         buttonWidth={40}
-                        onClick={() => handleDeleteAmenity(record)}
+                        onClick={() => handleDeleteUtility(record)}
                         style={{ marginLeft: '8px' }}
                     />
                 </>
@@ -125,62 +132,65 @@ function Amenity() {
         },
     ];
 
-    const amenityModalFields = [
+    const utilityModalFields = [
         {
-            label: 'Tên Dịch Vụ',
+            label: 'Tên tiện ích',
             name: 'name',
             type: 'text',
-            rules: [{ required: true, message: 'Tên dịch vụ là bắt buộc!' }],
+            rules: [{ required: true, message: 'Tên tiện ích là bắt buộc!' }],
+            placeholder: 'VD: Điện, Nước, Internet...',
         },
         {
-            label: 'Đơn Vị Tính',
+            label: 'Áp dụng cho nhà trọ',
+            name: 'boardingHouseId',
+            type: 'select',
+            options: boardingHouseOptionSource
+        },
+        {
+            label: 'Đơn vị tính',
             name: 'unit',
             type: 'text',
+            placeholder: 'VD: kWh, m³, chiếc...',
         },
         {
-            label: 'Đơn Giá (VND)',
-            name: 'price',
+            label: 'Đơn giá (VND)',
+            name: 'unitPrice',
             type: 'number',
+            placeholder: '3.500',
         },
         {
-            label: 'Cách Tính Phí',
+            label: 'Cách tính phí',
             name: 'type',
             type: 'select',
             options: [
                 {value: 'FIXED', label: 'Cố định'},
-                {value: 'PER_PERSON', label: 'Theo người'},
-                {value: 'PER_VEHICLE', label: 'Theo phương tiện'},
-                {value: 'USAGE_BASED', label: 'Theo tiêu thụ'},
+                {value: 'PER_PERSON', label: 'Theo số người'},
+                {value: 'PER_VEHICLE', label: 'Theo số phương tiện'},
+                {value: 'USAGE_BASED', label: 'Theo mức tiêu thụ'},
             ]
         },
         {
-            label: 'Áp dụng cho Khu Nhà',
-            name: 'boardingHouseId',
-            type: 'select',
-            multiple: true,
-            options: boardingHouseOptionSource
+            label: 'Trạng thái hoạt động',
+            name: 'isActive',
+            type: 'yesno',
         },
-        // {
-        //     label: 'Áp dụng cho Phòng',
-        //     name: 'totalFloors',
-        //     type: 'number',
-        // },
         {
-            label: 'Mô Tả',
+            label: 'Mô tả',
             name: 'description',
             type: 'textarea',
+            placeholder: 'Nhập mô tả tiện ích...',
         },
     ];
 
     useEffect(() => {
         handleGetAllBoardingHouses();
-        handleGetAmenities();
+        handleGetUtilities();
     }, []);
 
     const handleGetAllBoardingHouses = async () => {
         try {
             const response = await getAllBoardingHousesNoPaged();
-            const mappedUsers = response.result.map(usr => ({
+            const mappedUsers = response.map(usr => ({
                 value: usr.id,
                 label: usr.name,
             }));
@@ -191,126 +201,128 @@ function Amenity() {
         }
     };
 
-    const handleGetAmenities = async (page = 1, pageSize = pagination.pageSize) => {
+    const handleGetUtilities = async (page = 1, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            const response = await getAllAmenities({ page: page - 1, pageSize });
+            const response = await getAllUtilities({ page: page - 1, pageSize });
 
             if (response && Array.isArray(response.content)) {
-                setAmenitySource(response.content);
+                setUtilitySource(response.content);
                 setPagination({
                     current: page,
                     pageSize: pageSize,
                     total: response.totalElements,
                 });
-                console.log('Amenity sources: ',response.content);
+                console.log('Utility sources: ',response.content);
             } else {
-                setAmenitySource([]);
-                message.error('Dữ liệu khu nhà không hợp lệ');
+                setUtilitySource([]);
+                message.error('Dữ liệu tiện ích không hợp lệ');
             }
         } catch (error) {
-            message.error(`Lỗi khi lấy danh sách khu nhà: ${error.response?.data?.message || error.message}`);
-            setAmenitySource([]);
+            message.error(`Lỗi khi lấy danh sách tiện ích: ${error.response?.data?.message || error.message}`);
+            setUtilitySource([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAddAmenity = () => {
+    const handleAddUtility = () => {
         setModalMode('create');
-        setSelectedAmenity(null);
+        setSelectedUtility(null);
         form.resetFields();
         setIsModalOpen(true);
     };
 
-    const handleCallCreateAmenity = async (formData) => {
+    const handleCallCreateUtility = async (formData) => {
         try {
-            // await createAmenity(formData);
-            handleGetAmenities();
+            await createUtility(formData);
+            handleGetUtilities();
             setIsModalOpen(false);
         } catch (error) {
             message.error(
-                `Lỗi khi tạo khu nhà: ${
+                `Lỗi khi tạo tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
         }
     };
 
-    const handleEditAmenity = (record) => {
-        setSelectedAmenity(record);
+    const handleEditUtility = (record) => {
+        setSelectedUtility(record);
         setModalMode('edit');
         form.setFieldsValue(record);
         setIsModalOpen(true);
     };
 
-    const handleCallUpdateAmenity = async (formData) => {
+    const handleCallUpdateUtility = async (formData) => {
         try {
-            // await updateAmenity(selectedAmenity.id, formData);
-            handleGetAmenities();
+            await updateUtility(selectedUtility.id, formData);
+            handleGetUtilities();
             setIsModalOpen(false);
         } catch (error) {
             message.error(
-                `Lỗi khi cập nhật khu nhà: ${
+                `Lỗi khi cập nhật tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
         }
     };
 
-    const handleDeleteAmenity = (record) => {
+    const handleDeleteUtility = (record) => {
         setModalMode('delete');
-        setSelectedAmenity(record);
+        setSelectedUtility(record);
         form.resetFields();
         setIsModalOpen(true);
     };
 
-    const handleCallDeleteAmenity = async () => {
-        // await deleteAmenity(selectedAmenity.id);
-        handleGetAmenities();
+    const handleCallDeleteUtility = async () => {
+        await deleteUtility(selectedUtility.id);
+        handleGetUtilities();
         setIsModalOpen(false);
     };
 
     const handleFormSubmit = (formData) => {
+        formData.isActive = formData.isActive === 'Yes';
+
         if (modalMode === 'create') {
-            handleCallCreateAmenity(formData);
+            handleCallCreateUtility(formData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateAmenity(formData);
+            handleCallUpdateUtility(formData);
         } else if (modalMode === 'delete') {
-            handleCallDeleteAmenity();
+            handleCallDeleteUtility();
         }
         setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
-        handleGetAmenities(pagination.current, pagination.pageSize);
+        handleGetUtilities(pagination.current, pagination.pageSize);
     };
 
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm dịch vụ mới';
+                return 'Thêm tiện ích mới';
             case 'edit':
-                return 'Chỉnh sửa dịch vụ';
+                return 'Chỉnh sửa tiện ích';
             case 'delete':
-                return 'Xóa dịch vụ';
+                return 'Xóa tiện ích';
             default:
-                return 'Chi tiết dịch vụ';
+                return 'Chi tiết tiện ích';
         }
     };
 
-    const handleViewAmenity = (record) => {
-        setSelectedAmenity(record);
+    const handleViewUtility = (record) => {
+        setSelectedUtility(record);
         setModalMode('view');
         form.setFieldsValue(record);
         setIsModalOpen(true);
     };
 
     return (
-        <div className={cx('amenity-wrapper')}>
+        <div className={cx('utility-wrapper')}>
             {/* Header */}
             <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm dịch vụ" icon={<SearchOutlined />} />
+                <SmartInput size="large" placeholder="Tìm kiếm tiện ích" icon={<SearchOutlined />} />
                 <div className={cx('features')}>
                     <Segmented
                         value={viewMode}
@@ -321,18 +333,18 @@ function Amenity() {
                         ]}
                         className={cx('view-toggle')}
                     />
-                    <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddAmenity} />
+                    <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddUtility} />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
                 </div>
             </div>
 
             {/* Nội dung */}
-            <div className={cx('amenity-container')}>
+            <div className={cx('utility-container')}>
                 {viewMode === 'table' ? (
                     <SmartTable
                         columns={columns}
-                        dataSources={amenitySource}
+                        dataSources={utilitySource}
                         loading={loading}
                         pagination={pagination}
                         onTableChange={handleTableChange}
@@ -340,13 +352,13 @@ function Amenity() {
                 ) : (
                     <>
                         <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {amenitySource.map((amenity) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={amenity.id}>
-                                    <AmenityCard
-                                        amenity={amenity}
-                                        onView={() => handleViewAmenity(amenity)}
-                                        onEdit={() => handleEditAmenity(amenity)}
-                                        onDelete={() => handleDeleteAmenity(amenity)}
+                            {utilitySource.map((utility) => (
+                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
+                                    <UtilityCard
+                                        utility={utility}
+                                        onView={() => handleViewUtility(utility)}
+                                        onEdit={() => handleEditUtility(utility)}
+                                        onDelete={() => handleDeleteUtility(utility)}
                                     />
                                 </Col>
                             ))}
@@ -361,7 +373,7 @@ function Amenity() {
                                 showSizeChanger
                                 showQuickJumper
                                 pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetAmenities(page, pageSize)}
+                                onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
                             />
                         </div>
                     </>
@@ -373,9 +385,9 @@ function Amenity() {
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
                 title={getModalTitle()}
-                fields={modalMode === 'delete' ? [] : amenityModalFields}
+                fields={modalMode === 'delete' ? [] : utilityModalFields}
                 onSubmit={handleFormSubmit}
-                initialValues={selectedAmenity}
+                initialValues={selectedUtility}
                 isDeleteMode={modalMode === 'delete'}
                 formInstance={form}
             />
@@ -383,4 +395,4 @@ function Amenity() {
     );
 }
 
-export default Amenity;
+export default Utility;
