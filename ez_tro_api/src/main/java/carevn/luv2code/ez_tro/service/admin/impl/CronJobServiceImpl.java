@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
-import carevn.luv2code.ez_tro.enums.ServiceType;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
 import jakarta.annotation.PostConstruct;
@@ -28,8 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 public class CronJobServiceImpl implements CronJobService {
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
-    private final AmenityRepository amenityRepository;
-    private final RoomAmenityRepository roomAmenityRepository;
+    //    private final AmenityRepository amenityRepository;
+    //    private final RoomAmenityRepository roomAmenityRepository;
     private final ElectricWaterRecordRepository electricWaterRecordRepository;
     private final BillRepository billRepository;
 
@@ -39,15 +38,15 @@ public class CronJobServiceImpl implements CronJobService {
     public CronJobServiceImpl(
             ContractRepository contractRepository,
             RoomRepository roomRepository,
-            AmenityRepository amenityRepository,
-            RoomAmenityRepository roomAmenityRepository,
+            //            AmenityRepository amenityRepository,
+            //            RoomAmenityRepository roomAmenityRepository,
             ElectricWaterRecordRepository electricWaterRecordRepository,
             BillRepository billRepository)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
-        this.amenityRepository = amenityRepository;
-        this.roomAmenityRepository = roomAmenityRepository;
+        //        this.amenityRepository = amenityRepository;
+        //        this.roomAmenityRepository = roomAmenityRepository;
         this.electricWaterRecordRepository = electricWaterRecordRepository;
         this.billRepository = billRepository;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
@@ -206,34 +205,34 @@ public class CronJobServiceImpl implements CronJobService {
         BigDecimal total = BigDecimal.ZERO;
 
         // Amenities (fixed/usage)
-        List<RoomAmenity> roomAmens = roomAmenityRepository.findActiveByRoomId(room.getId(), month, year);
-        for (RoomAmenity ra : roomAmens) {
-            Amenity amen = ra.getAmenity();
-            if (amen == null) continue;
-            BigDecimal price;
-            if (amen.getType() == ServiceType.USAGE_BASED) {
-                if ("Điện".equals(amen.getName()) || "Nước".equals(amen.getName())) {
-                    Optional<ElectricWaterRecord> recordOpt =
-                            electricWaterRecordRepository.findByRoomAndMonthYear(room, month, year);
-                    if (recordOpt.isPresent()) {
-                        ElectricWaterRecord record = recordOpt.get();
-                        int usage = "Điện".equals(amen.getName())
-                                ? (record.getElectricEnd() - record.getElectricStart())
-                                : (record.getWaterEnd() - record.getWaterStart());
-                        price = BigDecimal.valueOf(Math.max(0, usage)).multiply(amen.getUnitPrice());
-                    } else {
-                        price = BigDecimal.ZERO;
-                    }
-                } else {
-                    price = (ra.getUsageAmount() != null ? ra.getUsageAmount() : BigDecimal.ZERO)
-                            .multiply(amen.getUnitPrice());
-                }
-            } else {
-                // FIXED/PER_PERSON/etc: unit_price * quantity
-                price = amen.getUnitPrice().multiply(BigDecimal.valueOf(ra.getQuantity()));
-            }
-            total = total.add(price);
-        }
+        //        List<RoomAmenity> roomAmens = roomAmenityRepository.findActiveByRoomId(room.getId(), month, year);
+        //        for (RoomAmenity ra : roomAmens) {
+        //            Amenity amen = ra.getAmenity();
+        //            if (amen == null) continue;
+        //            BigDecimal price;
+        //            if (amen.getType() == ServiceType.USAGE_BASED) {
+        //                if ("Điện".equals(amen.getName()) || "Nước".equals(amen.getName())) {
+        //                    Optional<ElectricWaterRecord> recordOpt =
+        //                            electricWaterRecordRepository.findByRoomAndMonthYear(room, month, year);
+        //                    if (recordOpt.isPresent()) {
+        //                        ElectricWaterRecord record = recordOpt.get();
+        //                        int usage = "Điện".equals(amen.getName())
+        //                                ? (record.getElectricEnd() - record.getElectricStart())
+        //                                : (record.getWaterEnd() - record.getWaterStart());
+        //                        price = BigDecimal.valueOf(Math.max(0, usage)).multiply(amen.getUnitPrice());
+        //                    } else {
+        //                        price = BigDecimal.ZERO;
+        //                    }
+        //                } else {
+        //                    price = (ra.getUsageAmount() != null ? ra.getUsageAmount() : BigDecimal.ZERO)
+        //                            .multiply(amen.getUnitPrice());
+        //                }
+        //            } else {
+        //                // FIXED/PER_PERSON/etc: unit_price * quantity
+        //                price = amen.getUnitPrice().multiply(BigDecimal.valueOf(ra.getQuantity()));
+        //            }
+        //            total = total.add(price);
+        //        }
 
         return total;
     }

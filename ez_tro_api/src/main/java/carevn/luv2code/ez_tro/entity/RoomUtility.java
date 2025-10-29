@@ -19,37 +19,37 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "room_amenities")
+@Table(name = "room_utilities")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RoomAmenity {
+public class RoomUtility {
 
     @EmbeddedId
-    RoomAmenityId id;
+    RoomUtilityId id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("roomId")
     @JoinColumn(name = "room_id")
     Room room;
 
-    @ManyToOne
-    @MapsId("amenityId")
-    @JoinColumn(name = "amenity_id")
-    Amenity amenity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("utilityId")
+    @JoinColumn(name = "utility_id")
+    Utility utility;
 
     @Min(value = 1, message = "Số lượng phải >= 1")
     @NotNull
     @Column(nullable = false)
-    Integer quantity = 1; // Số lượng đăng ký (xe giữ xe, người dùng internet)
+    Integer quantity = 1;
 
     @Column(precision = 8, scale = 2)
-    BigDecimal usageAmount; // Lượng tiêu thụ (kWh cho điện, chỉ cho type USAGE_BASED)
+    BigDecimal usageAmount;
 
     @NotNull
     @Column(nullable = false)
-    LocalDate startDate; // Ngày bắt đầu dùng tiện ích
+    LocalDate startDate;
 
     @Column
-    LocalDate endDate; // Ngày kết thúc (optional)
+    LocalDate endDate;
 
     @Column(length = 300)
     String note;
