@@ -284,7 +284,6 @@ public class UserServiceImpl implements UserService {
         dto.setAddress(user.getAddress());
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setEnabled(user.isEnabled());
-        dto.setProfilePicture(user.getProfilePicture());
 
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
             Set<Integer> roleIds = user.getRoles().stream().map(Role::getId).collect(Collectors.toSet());

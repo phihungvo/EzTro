@@ -22,6 +22,7 @@ public interface TenantMapper {
     @Mapping(source = "user.email", target = "email")
     @Mapping(source = "user.phoneNumber", target = "phoneNumber")
     @Mapping(source = "user.address", target = "permanentAddress")
+    //    @Mapping(target = "gender", source = "gender", qualifiedByName = "genderToString")
     @Mapping(target = "issueDate", source = "issueDate")
     @Mapping(target = "issuePlace", source = "issuePlace")
     @Mapping(target = "vehicleInfo", source = "vehicleInfo")
@@ -29,9 +30,10 @@ public interface TenantMapper {
     @Mapping(target = "emergencyPhone", source = "emergencyPhone")
     @Mapping(target = "isLiving", ignore = true)
     @Mapping(target = "contractStatus", ignore = true)
+    @Mapping(target = "profilePictureId", source = "user.profilePicture.id")
     TenantDetailResponse toDetailResponse(Tenant tenant);
 
-    // Updated: Ignore all nested contract/room fields; handle in service
+    // Simple: Ignore all nested fields; set manually in service for clarity and control
     @Mapping(target = "contractCode", ignore = true)
     @Mapping(target = "contractStatus", ignore = true)
     @Mapping(target = "startDate", ignore = true)
@@ -51,4 +53,9 @@ public interface TenantMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     Tenant toEntity(TenantRequest request);
+
+    //    @Named("genderToString")
+    //    default String genderToString(Tenant.Gender gender) {
+    //        return gender != null ? gender.name() : "Chưa cập nhật";
+    //    }
 }

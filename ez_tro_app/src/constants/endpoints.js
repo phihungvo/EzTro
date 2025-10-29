@@ -24,7 +24,8 @@ const API_ENDPOINTS = {
         GET_OWNERS: `${BASE_URL}/user/owners`,
         CREATE: `${BASE_URL}/user/createUser`,
         UPDATE: (userId) => `${BASE_URL}/user/${userId}`,
-        DELETE: `${BASE_URL}/user`,    
+        DELETE: `${BASE_URL}/user`,
+        UPLOAD_FILE: (userId) =>  `${BASE_URL}/user/upload/${userId}`,
     },
     ROLE: {
         GET_ALL: `${BASE_URL}/roles`,

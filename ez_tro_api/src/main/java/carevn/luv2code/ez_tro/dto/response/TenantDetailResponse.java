@@ -31,6 +31,8 @@ public class TenantDetailResponse {
 
     Boolean isLiving;
 
+    Integer profilePictureId;
+
     String contractStatus;
 
     String occupation;

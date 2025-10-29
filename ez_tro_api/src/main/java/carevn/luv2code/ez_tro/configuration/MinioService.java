@@ -21,6 +21,7 @@ import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.FileMapper;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.FileRepository;
+import carevn.luv2code.ez_tro.repository.UserRepository;
 import io.minio.*;
 import io.minio.CopySource;
 import io.minio.http.Method;
@@ -53,6 +54,9 @@ public class MinioService {
 
     @Autowired
     private FileMapper fileMapper;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @PostConstruct
     public void init() {
@@ -137,6 +141,38 @@ public class MinioService {
             }
         }
         return result;
+    }
+
+    public FileDTO uploadFileForUser(MultipartFile file, User uploadedBy, Integer userId) {
+        try (InputStream inputStream = file.getInputStream()) {
+            LocalDate today = LocalDate.now();
+            String relativePath = minioBasePath + "/users" + "/" + today.getYear() + "/"
+                    + String.format("%02d", today.getMonthValue()) + "/";
+            String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+            String fullObjectName = relativePath + fileName;
+
+            minioClient.putObject(PutObjectArgs.builder().bucket(bucket).object(fullObjectName).stream(
+                            inputStream, file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build());
+
+            File fileEntity = new File(
+                    fullObjectName,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    relativePath,
+                    file.getSize(),
+                    uploadedBy);
+            File savedFile = fileRepository.save(fileEntity);
+
+            User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            user.setProfilePicture(savedFile);
+            userRepository.save(user);
+
+            return fileMapper.toDTO(savedFile);
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.MINIO_UPLOAD_ERROR);
+        }
     }
 
     /**

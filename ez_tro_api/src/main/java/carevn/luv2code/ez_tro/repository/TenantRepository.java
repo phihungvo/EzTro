@@ -13,6 +13,13 @@ import carevn.luv2code.ez_tro.entity.Tenant;
 public interface TenantRepository extends JpaRepository<Tenant, Integer> {
     Optional<Tenant> findByUserId(Integer userId);
 
-    @Query("SELECT t FROM Tenant t LEFT JOIN FETCH t.user LEFT JOIN FETCH t.contracts WHERE t.id = :id")
+    @Query(
+            """
+				SELECT t FROM Tenant t
+				LEFT JOIN FETCH t.user u
+				LEFT JOIN FETCH u.profilePicture
+				LEFT JOIN FETCH t.contracts c
+				WHERE t.id = :id
+			""")
     Optional<Tenant> findByIdWithDetails(@Param("id") Integer id);
 }

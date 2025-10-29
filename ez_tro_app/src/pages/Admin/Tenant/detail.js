@@ -28,7 +28,8 @@ import {
 import moment from 'moment';
 import classNames from 'classnames/bind';
 import {tenantDetail, tenantRentalDetail} from '~/service/admin/tenant';
-import {uploadFile, getPresignedUrl} from '~/service/admin/uploadFile';
+import {getContractFiles, getPresignedUrl, deleteContractFile} from '~/service/admin/contract';
+import {uploadFile} from "~/service/admin/user";
 import {useAuth} from '~/routes/AuthContext';
 import styles from './TenantDetail.module.scss';
 import 'moment/locale/vi';

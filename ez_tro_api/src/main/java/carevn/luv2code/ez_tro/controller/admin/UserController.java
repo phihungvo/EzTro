@@ -5,13 +5,23 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import carevn.luv2code.ez_tro.configuration.MinioService;
+import carevn.luv2code.ez_tro.dto.FileDTO;
 import carevn.luv2code.ez_tro.dto.UserDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignRoleRequest;
 import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
+import carevn.luv2code.ez_tro.entity.User;
+import carevn.luv2code.ez_tro.exception.AppException;
+import carevn.luv2code.ez_tro.exception.ErrorCode;
+import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.service.admin.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final MinioService minioService;
 
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody CreateUserRequest request) {
@@ -65,6 +77,29 @@ public class UserController {
     public ResponseEntity<List<UserInfoDTO>> getAllOwners() {
         List<UserInfoDTO> owners = userService.getAllOwners();
         return ResponseEntity.ok(owners);
+    }
+
+    @PostMapping("/upload/{userId}")
+    public ApiResponse<FileDTO> uploadFile(@RequestParam("file") MultipartFile file, @PathVariable Integer userId) {
+        if (file.isEmpty()) {
+            return ApiResponse.<FileDTO>builder()
+                    .code(HttpStatus.BAD_REQUEST.value())
+                    .message("File is empty. Please upload a valid file.")
+                    .result(null)
+                    .build();
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User uploadedBy = userRepository
+                .findByUserName(auth.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        FileDTO savedFile = minioService.uploadFileForUser(file, uploadedBy, userId);
+        return ApiResponse.<FileDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Upload successful")
+                .result(savedFile)
+                .build();
     }
 
     //    @PostMapping("/createUser")
