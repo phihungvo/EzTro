@@ -24,7 +24,8 @@ const API_ENDPOINTS = {
         GET_OWNERS: `${BASE_URL}/user/owners`,
         CREATE: `${BASE_URL}/user/createUser`,
         UPDATE: (userId) => `${BASE_URL}/user/${userId}`,
-        DELETE: `${BASE_URL}/user`,    
+        DELETE: `${BASE_URL}/user`,
+        UPLOAD_FILE: (userId) =>  `${BASE_URL}/user/upload/${userId}`,
     },
     ROLE: {
         GET_ALL: `${BASE_URL}/roles`,
@@ -54,6 +55,7 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
+        RENTAL_DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}/current-rental`,
     },
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,

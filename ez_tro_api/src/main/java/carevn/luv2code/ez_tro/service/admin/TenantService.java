@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
+import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
+import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
 
 public interface TenantService {
@@ -15,6 +17,10 @@ public interface TenantService {
     void delete(Integer id);
 
     TenantResponse getById(Integer id);
+
+    TenantDetailResponse getTenantDetail(Integer id);
+
+    CurrentRentalInfoResponse getCurrentRentalInfo(Integer id);
 
     List<TenantResponse> getAll();
 

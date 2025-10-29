@@ -157,3 +157,23 @@ export const deleteUser = async (userIds) => {
         throw error;
     }
 };
+
+export const uploadFile = async (file, userId) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await apiClient.post(
+            API_ENDPOINTS.USER.UPLOAD_FILE(userId),
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

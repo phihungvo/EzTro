@@ -2,20 +2,16 @@ package carevn.luv2code.ez_tro.dto.response;
 
 import java.util.Date;
 
-import carevn.luv2code.ez_tro.enums.Gender;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TenantResponse {
+public class TenantDetailResponse {
     Integer id;
-
-    Integer userId;
 
     String fullName;
 
@@ -25,11 +21,33 @@ public class TenantResponse {
 
     String identityNumber;
 
+    Date issueDate;
+
+    String issuePlace;
+
     Date dateOfBirth;
 
-    Gender gender;
+    String gender;
+
+    Boolean isLiving;
+
+    Integer profilePictureId;
+
+    String contractStatus;
 
     String occupation;
 
+    String permanentAddress;
+
+    String vehicleInfo;
+
+    String emergencyContact;
+
+    String emergencyPhone;
+
     String note;
+
+    Date createdAt;
+
+    Date updatedAt;
 }

@@ -3,43 +3,39 @@ import {useParams, useNavigate} from 'react-router-dom';
 import {
     Card,
     Avatar,
-    Descriptions,
     Button,
     Row,
     Col,
-    Divider,
     message,
     Upload,
-    Watermark,
     Badge,
-    Space,
     Typography,
-    Tooltip
+    Spin,
+    Tag,
+    Divider
 } from 'antd';
 import {
     UserOutlined,
     UploadOutlined,
     ArrowLeftOutlined,
-    CalendarOutlined,
     PhoneOutlined,
     MailOutlined,
+    IdcardOutlined,
     HomeOutlined,
-    IdcardOutlined
+    EnvironmentOutlined,
+    CheckCircleOutlined
 } from '@ant-design/icons';
 import moment from 'moment';
-import {tenantDetail} from '~/service/admin/tenant';
-import {uploadFile, getPresignedUrl} from '~/service/admin/uploadFile';
+import classNames from 'classnames/bind';
+import {tenantDetail, tenantRentalDetail} from '~/service/admin/tenant';
+import {getContractFiles, getPresignedUrl, deleteContractFile} from '~/service/admin/contract';
+import {uploadFile} from "~/service/admin/user";
 import {useAuth} from '~/routes/AuthContext';
+import styles from './TenantDetail.module.scss';
 import 'moment/locale/vi';
-import CustomTabs from "~/components/Layout/AdminLayout/components/Tab";
-// import WorkHistory from "~/pages/AdminDashboard/WorkHistory";
-// import Skill from "~/pages/AdminDashboard/Skill";
-// import Education from "~/pages/AdminDashboard/Education";
-// import Leave from "~/pages/AdminDashboard/Leave";
-// import Position from "~/pages/AdminDashboard/Position";
-// import Contract from "~/pages/AdminDashboard/Contract";
 
-const {Title, Text} = Typography;
+const cx = classNames.bind(styles);
+const {Title, Text, Link} = Typography;
 
 moment.locale('vi');
 
@@ -48,44 +44,54 @@ function TenantDetail() {
     const navigate = useNavigate();
     const {user} = useAuth();
     const [tenant, setTenant] = useState(null);
+    const [rentalInfo, setRentalInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [avatarUrl, setAvatarUrl] = useState(null);
 
+    const statusMap = {
+        "Đang thuê": { color: "green" },
+        "Đang Hiệu Lực": { color: "green" },
+        "Đã kết thúc": { color: "gold" },
+        "Chưa thuê": { color: "red" },
+    };
+
     useEffect(() => {
         if (!user || !user.token) {
-            message.error('Vui lòng đăng nhập để xem chi tiết nhân viên');
+            message.error('Vui lòng đăng nhập để xem chi tiết người thuê');
             navigate('/login');
             return;
         }
 
-        const fetchTenant = async () => {
+        const fetchData = async () => {
             try {
-                const response = await tenantDetail(id);
-                if (response) {
+                const tenantResponse = await tenantDetail(id);
+                if (tenantResponse) {
                     setTenant({
-                        ...response,
-                        dateOfBirth: response.dateOfBirth ? moment(response.dateOfBirth).format('YYYY-MM-DD') : null,
-                        hireDate: response.hireDate ? moment(response.hireDate).format('YYYY-MM-DD') : null,
+                        ...tenantResponse,
+                        dateOfBirth: tenantResponse.dateOfBirth ? moment(tenantResponse.dateOfBirth).format('YYYY-MM-DD') : null,
+                        hireDate: tenantResponse.hireDate ? moment(tenantResponse.hireDate).format('YYYY-MM-DD') : null,
                     });
 
-                    // Lấy presigned URL nếu có profilePictureId
-                    if (response.profilePictureId) {
-                        const presignedUrl = await getPresignedUrl(response.profilePictureId);
+                    if (tenantResponse.profilePictureId) {
+                        const presignedUrl = await getPresignedUrl(tenantResponse.profilePictureId);
                         setAvatarUrl(presignedUrl);
-                    } else {
-                        setAvatarUrl('/default-avatar.png');
                     }
-                } else {
-                    throw new Error('Không tìm thấy nhân viên');
+                }
+
+                try {
+                    const rentalResponse = await tenantRentalDetail(id);
+                    setRentalInfo(rentalResponse);
+                } catch (rentalError) {
+                    console.log('Không có thông tin thuê:', rentalError);
                 }
             } catch (error) {
-                message.error(`Lỗi khi load chi tiết nhân viên: ${error.message}`);
-                navigate('/admin/Tenant');
+                message.error(`Lỗi khi load chi tiết người thuê: ${error.message}`);
+                navigate('/admin/tenants');
             } finally {
                 setLoading(false);
             }
         };
-        fetchTenant();
+        fetchData();
     }, [id, user, navigate]);
 
     const handleAvatarUpload = async (file) => {
@@ -94,155 +100,74 @@ function TenantDetail() {
             const presignedUrl = await getPresignedUrl(uploadedFile.result.id);
             setAvatarUrl(presignedUrl);
             message.success('Tải ảnh đại diện thành công!');
-
-            const updatedTenant = await TenantDetail(id);
-            setTenant(updatedTenant);
         } catch (error) {
             message.error(`Lỗi khi tải ảnh đại diện: ${error.message}`);
         }
         return false;
     };
 
-    if (loading) return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '50vh'
-        }}>
-            <Text>Đang tải...</Text>
+    if (loading) {
+        return (
+            <div className={cx('loading-container')}>
+                <Spin size="large" tip="Đang tải thông tin..."/>
+            </div>
+        );
+    }
+
+    if (!tenant) {
+        return (
+            <div className={cx('loading-container')}>
+                <Text type="secondary">Không tìm thấy người thuê</Text>
+            </div>
+        );
+    }
+
+    const InfoField = ({label, value}) => (
+        <div className={cx('info-field')}>
+            <Text className={cx('label')}>{label}</Text>
+            <Text className={cx('value')}>{value || 'Chưa cập nhật'}</Text>
         </div>
     );
 
-    if (!tenant) return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '50vh'
-        }}>
-            <Text type="secondary">Không tìm thấy nhân viên</Text>
-        </div>
-    );
-
-    const tabItems = [
-        // {
-        //     key: '1',
-        //     label: 'Lịch sử công việc',
-        //     children: <WorkHistory TenantId={id}/>,
-        // },
-        // {
-        //     key: '2',
-        //     label: 'Kỹ năng',
-        //     children: <Skill TenantId={id}/>,
-        // },
-        // {
-        //     key: '3',
-        //     label: 'Học vấn',
-        //     children: <Education TenantId={id}/>,
-        // },
-        // {
-        //     key: '4',
-        //     label: 'Nghĩ phép',
-        //     children: <Leave TenantId={id}/>,
-        // },
-        // {
-        //     key: '5',
-        //     label: 'Vị trí công việc',
-        //     children: <Position TenantId={id}/>,
-        // },
-        // {
-        //     key: '6',
-        //     label: 'Hợp đồng',
-        //     children: <Contract TenantId={id}/>,
-        // },
-        {
-            key: '7',
-            label: 'Báo cáo',
-            children: (
-                <Card style={{minHeight: 400}}>
-                    <Watermark content="Ant Design">
-                        <div style={{height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                            <Text type="secondary">Nội dung báo cáo sẽ được hiển thị ở đây</Text>
-                        </div>
-                    </Watermark>
-                </Card>
-            ),
-        },
-    ];
+    const formatCurrency = (value) => {
+        if (!value) return 'Chưa cập nhật';
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value);
+    };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            padding: '0 16px',
-            // background: '#f5f5f5'
-        }}>
-            <div style={{
-                maxWidth: '1400px',
-                margin: '0 auto',
-                // paddingTop: '20px'
-            }}>
-                {/* Header với nút quay lại */}
-                <div style={{
-                    marginBottom: '20px',
-                    padding: '0 4px'
-                }}>
+        <div className={cx('tenant-detail')}>
+            <div className={cx('container')}>
+                {/* Header */}
+                <div className={cx('header')}>
                     <Button
                         type="text"
                         icon={<ArrowLeftOutlined/>}
-                        onClick={() => navigate('/admin/tenant')}
-                        style={{
-                            fontSize: '14px',
-                            height: '40px',
-                            paddingLeft: '12px',
-                            paddingRight: '16px'
-                        }}
+                        onClick={() => navigate('/admin/tenants')}
+                        className={cx('back-button')}
                     >
-                        Quay lại danh sách nhân viên
+                        Quay lại danh sách
                     </Button>
                 </div>
 
-                {/* Card thông tin chính */}
-                <Card
-                    style={{
-                        marginBottom: '24px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: 'none',
-                        overflow: 'hidden'
-                    }}
-                    bodyStyle={{
-                        padding: '32px 32px 24px 32px',
-                        background: 'linear-gradient(135deg, #fafafa 0%, #ffffff 100%)'
-                    }}
-                >
-                    <Row gutter={[32, 32]} align="middle">
-                        {/* Cột avatar - responsive */}
-                        <Col
-                            xs={{span: 24, order: 1}}
-                            sm={{span: 24, order: 1}}
-                            md={{span: 8, order: 1}}
-                            lg={{span: 6, order: 1}}
-                            xl={{span: 5, order: 1}}
-                        >
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '0 16px'
-                            }}>
-                                <div style={{
-                                    position: 'relative',
-                                    display: 'inline-block',
-                                    marginBottom: '20px'
-                                }}>
+                {/* Profile Card */}
+                <Card className={cx('profile-card')} bordered={false}>
+                    <Row gutter={[32, 32]}>
+                        {/* Avatar Section */}
+                        <Col xs={24} md={8} lg={6}>
+                            <div className={cx('avatar-section')}>
+                                <div className={cx('avatar-wrapper')}>
                                     <Avatar
-                                        size={140}
+                                        size={160}
                                         src={avatarUrl}
                                         icon={<UserOutlined/>}
-                                        style={{
-                                            border: '5px solid #ffffff',
-                                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                                        }}
+                                        className={cx('avatar')}
+                                    />
+                                    <Badge
+                                        status={tenant.active ? "success" : "error"}
+                                        className={cx('status-badge')}
                                     />
                                 </div>
                                 <Upload
@@ -253,16 +178,7 @@ function TenantDetail() {
                                 >
                                     <Button
                                         icon={<UploadOutlined/>}
-                                        type="primary"
-                                        ghost
-                                        style={{
-                                            borderRadius: '8px',
-                                            fontSize: '13px',
-                                            fontWeight: '500',
-                                            height: '36px',
-                                            paddingLeft: '16px',
-                                            paddingRight: '16px'
-                                        }}
+                                        className={cx('upload-button')}
                                     >
                                         Cập nhật ảnh
                                     </Button>
@@ -270,317 +186,243 @@ function TenantDetail() {
                             </div>
                         </Col>
 
-                        {/* Cột thông tin - responsive */}
-                        <Col
-                            xs={{span: 24, order: 2}}
-                            sm={{span: 24, order: 2}}
-                            md={{span: 16, order: 2}}
-                            lg={{span: 18, order: 2}}
-                            xl={{span: 19, order: 2}}
-                        >
-                            <div style={{
-                                textAlign: {xs: 'center', md: 'left'}[0] || 'left',
-                                padding: '0 8px'
-                            }}>
-                                {/* Tên và mã nhân viên */}
-                                <div style={{marginBottom: '20px'}}>
-                                    <Title
-                                        level={1}
-                                        style={{
-                                            margin: '0 0 8px 0',
-                                            color: '#1a1a1a',
-                                            fontSize: 'clamp(24px, 4vw, 32px)',
-                                            fontWeight: '700',
-                                            lineHeight: '1.2'
-                                        }}
-                                    >
-                                        {tenant.lastName} {tenant.firstName}
+                        {/* Info Section */}
+                        <Col xs={24} md={16} lg={18}>
+                            <div className={cx('info-section')}>
+                                <div className={cx("title-group")}>
+                                    <Title level={2} className={cx("name")}>
+                                        {tenant.fullName}
                                     </Title>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: {xs: 'center', md: 'flex-start'}[0] || 'flex-start',
-                                        gap: '12px',
-                                        flexWrap: 'wrap',
-                                        marginBottom: '16px'
-                                    }}>
-                                        <Text
-                                            type="secondary"
-                                            style={{
-                                                fontSize: '16px',
-                                                fontWeight: '500'
-                                            }}
-                                        >
-                                            <IdcardOutlined style={{marginRight: '8px', color: '#1890ff'}}/>
-                                            Mã NV: {tenant.tenantCode}
-                                        </Text>
+
+                                    <div className={cx("meta-info")}>
+                                        <span><IdcardOutlined /> Trạng thái hợp đồng:</span>
+                                        <Tag color={statusMap[tenant.contractStatus]?.color || "default"}>
+                                            {tenant.contractStatus}
+                                        </Tag>
                                         <Badge
-                                            status={tenant.active ? "success" : "error"}
-                                            text={
-                                                <Text strong style={{
-                                                    fontSize: '14px',
-                                                    color: tenant.active ? '#52c41a' : '#ff4d4f'
-                                                }}>
-                                                    {tenant.active ? 'Đang hoạt động' : 'Không hoạt động'}
-                                                </Text>
-                                            }
+                                            status={tenant.isLiving ? "success" : "default"}
+                                            text={tenant.isLiving ? "Đang ở" : "Không ở"}
                                         />
                                     </div>
                                 </div>
 
-                                {/* Thông tin liên hệ nhanh */}
-                                <div style={{marginTop: '24px'}}>
-                                    <Row gutter={[16, 16]} justify={{xs: 'center', md: 'start'}[0] || 'start'}>
-                                        <Col xs={24} sm={12} md={24} lg={12}>
-                                            <div style={{
-                                                background: '#ffffff',
-                                                padding: '12px 16px',
-                                                borderRadius: '10px',
-                                                border: '1px solid #f0f0f0',
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '12px'
-                                            }}>
-                                                <MailOutlined style={{
-                                                    fontSize: '18px',
-                                                    color: '#1890ff',
-                                                    flexShrink: 0
-                                                }}/>
-                                                <div style={{flex: 1, minWidth: 0}}>
-                                                    <Text style={{
-                                                        fontSize: '13px',
-                                                        color: '#666',
-                                                        display: 'block',
-                                                        marginBottom: '2px'
-                                                    }}>
-                                                        Email
-                                                    </Text>
-                                                    <Text style={{
-                                                        fontSize: '14px',
-                                                        fontWeight: '500',
-                                                        wordBreak: 'break-all'
-                                                    }}>
-                                                        {tenant.email}
-                                                    </Text>
-                                                </div>
+                                {/* Contact Cards */}
+                                <Row gutter={[16, 16]} className={cx('contact-cards')}>
+                                    <Col xs={24} sm={12}>
+                                        <div className={cx('contact-card')}>
+                                            <MailOutlined className={cx('contact-icon', 'email')}/>
+                                            <div className={cx('contact-info')}>
+                                                <Text className={cx('contact-label')}>Email</Text>
+                                                <Text className={cx('contact-value')}>{tenant.email}</Text>
                                             </div>
-                                        </Col>
-                                        <Col xs={24} sm={12} md={24} lg={12}>
-                                            <div style={{
-                                                background: '#ffffff',
-                                                padding: '12px 16px',
-                                                borderRadius: '10px',
-                                                border: '1px solid #f0f0f0',
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '12px'
-                                            }}>
-                                                <PhoneOutlined style={{
-                                                    fontSize: '18px',
-                                                    color: '#52c41a',
-                                                    flexShrink: 0
-                                                }}/>
-                                                <div style={{flex: 1, minWidth: 0}}>
-                                                    <Text style={{
-                                                        fontSize: '13px',
-                                                        color: '#666',
-                                                        display: 'block',
-                                                        marginBottom: '2px'
-                                                    }}>
-                                                        Số điện thoại
-                                                    </Text>
-                                                    <Text style={{
-                                                        fontSize: '14px',
-                                                        fontWeight: '500'
-                                                    }}>
-                                                        {tenant.phone}
-                                                    </Text>
-                                                </div>
-                                            </div>
-                                        </Col>
-                                    </Row>
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
-
-                    <Divider style={{
-                        margin: '32px 0 28px 0',
-                        borderColor: '#e8e8e8'
-                    }}/>
-
-                    {/* Thông tin chi tiết - responsive grid */}
-                    <Row gutter={[32, 24]}>
-                        <Col xs={24} lg={12}>
-                            <div style={{
-                                background: '#ffffff',
-                                padding: '24px',
-                                borderRadius: '12px',
-                                border: '1px solid #f0f0f0',
-                                height: '100%'
-                            }}>
-                                <Title level={5} style={{
-                                    marginBottom: '20px',
-                                    color: '#1a1a1a',
-                                    fontSize: '16px',
-                                    fontWeight: '600'
-                                }}>
-                                    Thông tin cá nhân
-                                </Title>
-                                <Descriptions
-                                    column={1}
-                                    size="middle"
-                                    labelStyle={{
-                                        fontWeight: '500',
-                                        color: '#666',
-                                        width: '140px',
-                                        fontSize: '14px'
-                                    }}
-                                    contentStyle={{
-                                        color: '#1a1a1a',
-                                        fontSize: '14px',
-                                        fontWeight: '500'
-                                    }}
-                                    colon={false}
-                                >
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <CalendarOutlined style={{color: '#1890ff'}}/>
-                                                Ngày sinh
-                                            </Space>
-                                        }
-                                    >
-                                        {tenant.dateOfBirth ? moment(tenant.dateOfBirth).format('DD/MM/YYYY') : 'Chưa cập nhật'}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <UserOutlined style={{color: '#722ed1'}}/>
-                                                Giới tính
-                                            </Space>
-                                        }
-                                    >
-                                        {tenant.gender || 'Chưa cập nhật'}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <HomeOutlined style={{color: '#fa8c16'}}/>
-                                                Địa chỉ
-                                            </Space>
-                                        }
-                                    >
-                                        <div style={{wordBreak: 'break-word'}}>
-                                            {tenant.address || 'Chưa cập nhật'}
                                         </div>
-                                    </Descriptions.Item>
-                                </Descriptions>
-                            </div>
-                        </Col>
-
-                        <Col xs={24} lg={12}>
-                            <div style={{
-                                background: '#ffffff',
-                                padding: '24px',
-                                borderRadius: '12px',
-                                border: '1px solid #f0f0f0',
-                                height: '100%'
-                            }}>
-                                <Title level={5} style={{
-                                    marginBottom: '20px',
-                                    color: '#1a1a1a',
-                                    fontSize: '16px',
-                                    fontWeight: '600'
-                                }}>
-                                    Thông tin công việc
-                                </Title>
-                                <Descriptions
-                                    column={1}
-                                    size="middle"
-                                    labelStyle={{
-                                        fontWeight: '500',
-                                        color: '#666',
-                                        width: '140px',
-                                        fontSize: '14px'
-                                    }}
-                                    contentStyle={{
-                                        color: '#1a1a1a',
-                                        fontSize: '14px',
-                                        fontWeight: '500'
-                                    }}
-                                    colon={false}
-                                >
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <CalendarOutlined style={{color: '#52c41a'}}/>
-                                                Ngày vào làm
-                                            </Space>
-                                        }
-                                    >
-                                        {tenant.hireDate ? moment(tenant.hireDate).format('DD/MM/YYYY') : 'Chưa cập nhật'}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <IdcardOutlined style={{color: '#13c2c2'}}/>
-                                                Ngày tạo
-                                            </Space>
-                                        }
-                                    >
-                                        {tenant.createdAt ? moment(tenant.createdAt).format('DD/MM/YYYY HH:mm') : 'N/A'}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item
-                                        label={
-                                            <Space size={8}>
-                                                <UserOutlined style={{color: '#eb2f96'}}/>
-                                                Cập nhật cuối
-                                            </Space>
-                                        }
-                                    >
-                                        {tenant.updatedAt ? moment(tenant.updatedAt).format('DD/MM/YYYY HH:mm') : 'N/A'}
-                                    </Descriptions.Item>
-                                </Descriptions>
+                                    </Col>
+                                    <Col xs={24} sm={12}>
+                                        <div className={cx('contact-card')}>
+                                            <PhoneOutlined className={cx('contact-icon', 'phone')}/>
+                                            <div className={cx('contact-info')}>
+                                                <Text className={cx('contact-label')}>Số điện thoại</Text>
+                                                <Text className={cx('contact-value')}>{tenant.phoneNumber}</Text>
+                                            </div>
+                                        </div>
+                                    </Col>
+                                </Row>
                             </div>
                         </Col>
                     </Row>
                 </Card>
 
-                {/* Tab content */}
-                <Card
-                    style={{
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: 'none',
-                        marginBottom: '24px'
-                    }}
-                    bodyStyle={{
-                        padding: '35px',
-                        overflow: 'hidden'
-                    }}
-                >
-                    <CustomTabs
-                        items={tabItems}
-                        defaultActiveKey="1"
-                        tabPosition="top"
-                        onChange={(key) => console.log('Tab changed:', key)}
-                        style={{
-                            minHeight: '400px'
-                        }}
-                        tabBarStyle={{
-                            padding: '0 24px',
-                            margin: 0,
-                            background: '#fafafa',
-                            borderBottom: '1px solid #f0f0f0'
-                        }}
-                        contentStyle={{
-                            padding: '24px'
-                        }}
-                    />
+                {/* Personal Information */}
+                <Card className={cx('info-card')} bordered={false}>
+                    <Title level={5} className={cx('section-title')}>Thông Tin Cá Nhân</Title>
+                    <Row gutter={[48, 24]}>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Họ Tên" value={tenant.fullName} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField
+                                label="Ngày Sinh"
+                                value={tenant.dateOfBirth ? moment(tenant.dateOfBirth).format('DD/MM/YYYY') : null}
+                            />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Giới Tính" value={tenant.gender} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Số CMND/CCCD" value={tenant.identityNumber} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField
+                                label="Ngày Cấp"
+                                value={tenant.issueDate ? moment(tenant.issueDate).format('DD/MM/YYYY') : null}
+                            />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Nơi Cấp" value={tenant.issuePlace} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Địa Chỉ Hiện Tại" value={tenant.address} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Địa Chỉ Thường Trú" value={tenant.permanentAddress} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Nghề Nghiệp" value={tenant.occupation} />
+                        </Col>
+                    </Row>
                 </Card>
+
+                {/* Contact Information */}
+                <Card className={cx('info-card')} bordered={false}>
+                    <Title level={5} className={cx('section-title')}>Thông Tin Liên Hệ & Khác</Title>
+                    <Row gutter={[48, 24]}>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Số Điện Thoại" value={tenant.phoneNumber} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Email" value={tenant.email} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Người Liên Hệ Khẩn Cấp" value={tenant.emergencyContact} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="SĐT Liên Hệ Khẩn Cấp" value={tenant.emergencyPhone} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Thông Tin Xe" value={tenant.vehicleInfo} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField label="Ghi Chú" value={tenant.note} />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField
+                                label="Ngày Tạo"
+                                value={tenant.createdAt ? moment(tenant.createdAt).format('DD/MM/YYYY HH:mm') : null}
+                            />
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <InfoField
+                                label="Cập Nhật Cuối"
+                                value={tenant.updatedAt ? moment(tenant.updatedAt).format('DD/MM/YYYY HH:mm') : null}
+                            />
+                        </Col>
+                    </Row>
+                </Card>
+
+                {/* Rental Information - Only show if exists */}
+                {rentalInfo && (
+                    <Card className={cx('rental-card')} bordered={false}>
+                        <div className={cx('rental-header')}>
+                            <HomeOutlined className={cx('rental-icon')} />
+                            <Title level={5} className={cx('rental-title')}>
+                                Thông Tin Thuê Hiện Tại
+                            </Title>
+                            {rentalInfo.isContractRepresentative && (
+                                <Tag color="blue" icon={<CheckCircleOutlined />}>Đại diện hợp đồng</Tag>
+                            )}
+                        </div>
+
+                        <Divider style={{ margin: '16px 0' }} />
+
+                        {/* Contract Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <IdcardOutlined /> Hợp Đồng ({rentalInfo.contractCode})
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/contracts/${rentalInfo.contractCode}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Trạng thái HĐ"
+                                    value={
+                                        <Tag color={statusMap[rentalInfo.contractStatus]?.color || "default"}>
+                                            {rentalInfo.contractStatus}
+                                        </Tag>
+                                    }
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày bắt đầu"
+                                    value={moment(rentalInfo.startDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày kết thúc"
+                                    value={moment(rentalInfo.endDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Giá thuê (lúc ký)"
+                                    value={formatCurrency(rentalInfo.rentPrice)}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Tiền cọc"
+                                    value={formatCurrency(rentalInfo.deposit)}
+                                />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField
+                                    label="Ngày vào ở"
+                                    value={moment(rentalInfo.moveInDate).format('DD/MM/YYYY')}
+                                />
+                            </Col>
+                        </Row>
+
+                        <Divider style={{ margin: '20px 0' }} />
+
+                        {/* Room Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <HomeOutlined /> Phòng Thuê
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/rooms/${rentalInfo.roomName}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Tên phòng" value={rentalInfo.roomName} />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Tầng" value={rentalInfo.floorNumber} />
+                            </Col>
+                            <Col xs={12} sm={8}>
+                                <InfoField label="Diện tích" value={`${rentalInfo.area} m²`} />
+                            </Col>
+                        </Row>
+
+                        <Divider style={{ margin: '20px 0' }} />
+
+                        {/* Boarding House Info */}
+                        <div className={cx('rental-section')}>
+                            <Text className={cx('rental-section-title')}>
+                                <EnvironmentOutlined /> Khu Nhà
+                            </Text>
+                            <Link onClick={() => navigate(`/admin/boarding-houses/${rentalInfo.boardingHouseName}`)}>
+                                Xem chi tiết
+                            </Link>
+                        </div>
+
+                        <Row gutter={[32, 16]} style={{ marginTop: '16px' }}>
+                            <Col xs={24} sm={12}>
+                                <InfoField label="Tên khu nhà" value={rentalInfo.boardingHouseName} />
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <InfoField label="Địa chỉ" value={rentalInfo.boardingHouseAddress} />
+                            </Col>
+                        </Row>
+                    </Card>
+                )}
             </div>
         </div>
     );

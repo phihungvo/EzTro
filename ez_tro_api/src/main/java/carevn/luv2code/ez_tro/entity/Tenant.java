@@ -34,6 +34,13 @@ public class Tenant {
     String identityNumber;
 
     @Temporal(TemporalType.DATE)
+    @Column(name = "issue_date")
+    Date issueDate;
+
+    @Column(name = "issue_place", length = 100)
+    String issuePlace;
+
+    @Temporal(TemporalType.DATE)
     @Column(name = "date_of_birth")
     Date dateOfBirth;
 
@@ -41,7 +48,19 @@ public class Tenant {
     Gender gender;
 
     @Column(length = 100)
-    String occupation;
+    String occupation; // Nghề nghiệp
+
+    @Column(name = "permanent_address", length = 255) // Địa chỉ thường trú (moved from User if needed, or add here)
+    String permanentAddress;
+
+    @Column(name = "vehicle_info", length = 255) // Thông tin xe
+    String vehicleInfo;
+
+    @Column(name = "emergency_contact", length = 100) // Người liên hệ khẩn cấp
+    String emergencyContact;
+
+    @Column(name = "emergency_phone", length = 20) // SĐT liên hệ khẩn cấp
+    String emergencyPhone;
 
     @Column(columnDefinition = "TEXT")
     String note;

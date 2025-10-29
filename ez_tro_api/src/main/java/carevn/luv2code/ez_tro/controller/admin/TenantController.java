@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
+import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
 import jakarta.validation.Valid;
@@ -51,11 +53,21 @@ public class TenantController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<TenantResponse> getById(@PathVariable Integer id) {
-        TenantResponse response = tenantService.getById(id);
-        return ApiResponse.<TenantResponse>builder()
+    public ApiResponse<TenantDetailResponse> getTenantDetail(@PathVariable Integer id) {
+        TenantDetailResponse response = tenantService.getTenantDetail(id);
+        return ApiResponse.<TenantDetailResponse>builder()
                 .code(HttpStatus.OK.value())
-                .message("Get tenant successfully")
+                .message("Get tenant detail successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/{id}/current-rental")
+    public ApiResponse<CurrentRentalInfoResponse> getCurrentRentalInfo(@PathVariable Integer id) {
+        CurrentRentalInfoResponse response = tenantService.getCurrentRentalInfo(id);
+        return ApiResponse.<CurrentRentalInfoResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get tenant detail successfully")
                 .result(response)
                 .build();
     }

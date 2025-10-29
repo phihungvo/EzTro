@@ -16,17 +16,22 @@ import carevn.luv2code.ez_tro.entity.User;
 public interface UserMapper {
 
     @Mapping(target = "roleIds", ignore = true)
+    @Mapping(target = "profilePicture", ignore = true)
     UserDTO toDTO(User user);
 
     @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "profilePicture", ignore = true)
     User toEntity(UserDTO userDTO);
 
     @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "profilePicture", ignore = true)
     void updateUserFromDto(UserUpdateRequest request, @MappingTarget User user);
 
     @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "profilePicture", ignore = true)
     User toEntity(CreateUserRequest request);
 
     @Mapping(target = "fullName", expression = "java(user.getFirstName() + \" \" + user.getLastName())")
+    //    @Mapping(target = "profilePicture", ignore = true)
     UserInfoDTO toBasicInfoDTO(User user);
 }
