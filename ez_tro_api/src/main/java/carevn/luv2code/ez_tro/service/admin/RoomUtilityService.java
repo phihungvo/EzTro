@@ -23,4 +23,6 @@ public interface RoomUtilityService {
     List<RoomUtilityResponse> getByUtilityId(Integer utilityId);
 
     Page<RoomUtilityResponse> getByRoomIdPaged(Integer roomId, int page, int size);
+
+    Page<RoomUtilityResponse> getAllPaged(int page, int size);
 }

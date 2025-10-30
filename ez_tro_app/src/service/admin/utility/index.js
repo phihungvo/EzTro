@@ -18,6 +18,18 @@ export const getAllUtilities = async ({ page, pageSize }) => {
     }
 };
 
+export const getAllUtilitiesNoPaged = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.UTILITY.GET_ALL_NO_PAGING);
+
+        return response.data.result;
+    } catch (error) {
+        console.log('Error when fetching all utilities ! Error: ', error);
+        message.error('Error get all utilities: ');
+        return null;
+    }
+};
+
 export const createUtility = async (formData) => {
     try {
         const response = await apiClient.post(

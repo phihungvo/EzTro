@@ -35,6 +35,7 @@ import Contract from "~/pages/Admin/Contract";
 import Amenity from "src/pages/Admin/Utility";
 import Bill from "~/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
+import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 
 const cx = classNames.bind(styles);
 
@@ -116,7 +117,7 @@ const adminMenuConfig = [
                 title: "Quản lý các dịch vụ đi kèm (điện, nước, internet, vệ sinh...)",
                 icon: <ToolOutlined />,
                 color: "#6366f1",
-                path: "/admin/services",
+                path: "/admin/utilities",
             },
         ],
     },
@@ -265,6 +266,7 @@ const AdminLayout = ({ onLogout }) => {
                         <Route path="/bills" element={<Bill />} />
                         <Route path="/services" element={<Amenity />} />
                         <Route path="/users" element={<UserManagement />} />
+                        <Route path="/utilities" element={<UtilityManagement />} />
                         {/* Add other routes as needed */}
                         <Route path="/" element={<Dashboard />} />  // Default route
                     </Routes>

@@ -129,4 +129,11 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         Pageable pageable = PageRequest.of(page, size);
         return roomUtilityRepository.findByRoomIdPaged(roomId, pageable).map(roomUtilityMapper::toResponse);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RoomUtilityResponse> getAllPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return roomUtilityRepository.findAllPaged(pageable).map(roomUtilityMapper::toResponse);
+    }
 }

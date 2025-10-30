@@ -104,4 +104,15 @@ public class RoomUtilityController {
                 .result(responses)
                 .build();
     }
+
+    @GetMapping("/all-paged")
+    public ApiResponse<Page<RoomUtilityResponse>> getAllPaged(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<RoomUtilityResponse> responses = roomUtilityService.getAllPaged(page, size);
+        return ApiResponse.<Page<RoomUtilityResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Lấy tất cả đăng ký dịch vụ phân trang thành công")
+                .result(responses)
+                .build();
+    }
 }

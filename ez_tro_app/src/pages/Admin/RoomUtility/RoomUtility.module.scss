@@ -1,0 +1,33 @@
+.utility-wrapper {
+  width: 100%;
+  display: block;
+}
+
+.utility-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.utility-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 19px;
+}
+
+.sub_header {
+  display: flex;
+  justify-content: space-between;
+  padding: 17px 0px;
+}
+
+.features {
+  display: flex;
+  gap: 10px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: right;
+  margin-top: 24px;
+}
