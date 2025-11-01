@@ -39,29 +39,14 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       ssl:
-        enabled: ${SPRING_DATA_REDIS_SSL:false}
-      database: 0
-      timeout: 2000ms
-      cluster:
-        enabled: ${SPRING_REDIS_CLUSTER_ENABLED:false}
-      lettuce:
-        pool:
-          max-active: 16
-          max-idle: 8
-          min-idle: 2
-          max-wait: 1000ms
+        enabled: false
 
-  session:
-    redis:
-      repository-type: indexed
-#      cleanup-cron: "0 * * * * *"
-      cleanup-cron: "-"
-      flush-mode: on-save
-      namespace: tevc_cms_session
+#  session:
+#    store-type: hash_map
 
   mail:
     host: smtp.gmail.com
@@ -94,6 +79,7 @@ minio:
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket: ${MINIO_BUCKET}
+  base-path: ${MINIO_BASE_PATH:/uploads}
 
 logging:
   level:

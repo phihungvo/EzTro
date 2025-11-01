@@ -3,7 +3,7 @@ import { message } from 'antd';
 
 // Tạo axios instance
 const apiClient = axios.create({
-    baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api',
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
