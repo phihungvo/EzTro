@@ -88,4 +88,19 @@ public class TenantController {
         Page<TenantResponse> tenants = tenantService.getAllTenantsPaged(page, size);
         return ResponseEntity.ok(tenants);
     }
+
+    @GetMapping("/filter")
+    public ResponseEntity<Page<TenantResponse>> filterTenants(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) String occupation,
+            @RequestParam(required = false) Boolean hasActiveContract,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<TenantResponse> result = tenantService.filterTenants(
+                search, startDate, endDate, gender, occupation, hasActiveContract, page, size);
+        return ResponseEntity.ok(result);
+    }
 }

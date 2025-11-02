@@ -28,6 +28,26 @@ export const getAllTenantNoPaged = async () => {
     }
 };
 
+export const filterTenants = async ({ startDate, endDate, gender, occupation, hasActiveContract, search, page, pageSize }) => {
+    try {
+        const params = {
+            startDate,
+            endDate,
+            gender,
+            occupation,
+            hasActiveContract,
+            search,  // fullName, email, phoneNumber, identityNumber, occupation
+            page,
+            pageSize,
+        };
+        const response = await apiClient.get(API_ENDPOINTS.TENANTS.FILTER, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error when filtering tenants: ', error);
+        message.error('Lỗi khi lọc người thuê');
+        return null;
+    }
+};
 
 export const tenantDetail = async (tenantId) => {
     try {
