@@ -42,7 +42,7 @@ $active-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 2
 
 // ===== MAIN SIDEBAR =====
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: $sidebar-bg;
   color: $text-light;
   min-height: 100vh;
@@ -445,7 +445,7 @@ $active-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 2
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    width: 280px;
+    //width: 280px;
 
     &.active {
       transform: translateX(0);

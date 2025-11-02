@@ -77,6 +77,16 @@ public class RoomController {
                 .build();
     }
 
+    @GetMapping("/available")
+    public ApiResponse<List<RoomResponse>> getAvailableRooms() {
+        List<RoomResponse> responses = roomService.getAvailableRooms();
+        return ApiResponse.<List<RoomResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get all rooms available successfully")
+                .result(responses)
+                .build();
+    }
+
     @GetMapping("/by-boarding-house/{boardingHouseId}")
     public ApiResponse<List<RoomResponse>> getRoomsByBoardingHouse(@PathVariable Integer boardingHouseId) {
         List<RoomResponse> rooms = roomService.getByBoardingHouseId(boardingHouseId);

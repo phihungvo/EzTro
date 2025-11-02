@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.PaymentMethod;
 import lombok.*;
 
 @Getter
@@ -43,6 +44,14 @@ public class ContractResponse {
     String note;
 
     Integer fileCount;
+
+    Date depositReceivedAt;
+
+    PaymentMethod depositPaymentMethod;
+
+    Integer paymentCycleMonths;
+
+    Integer monthlyPaymentDay;
 
     Date createdAt;
 

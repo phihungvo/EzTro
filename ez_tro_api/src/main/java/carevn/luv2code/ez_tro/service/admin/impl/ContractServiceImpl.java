@@ -26,6 +26,7 @@ import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
@@ -63,6 +64,13 @@ public class ContractServiceImpl implements ContractService {
                 .findById(request.getTenantId())
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
+        if (contractRepository.existsByRoomIdAndStatus(request.getRoomId(), ContractStatus.ACTIVE)) {
+            throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
+        }
+        if (request.getEndDate() != null && request.getEndDate().before(request.getStartDate())) {
+            throw new AppException(ErrorCode.CONTRACT_END_DATE_INVALID);
+        }
+
         Contract contract = contractMapper.toEntity(request);
         contract.setRoom(room);
         contract.setTenant(tenant);
@@ -74,6 +82,10 @@ public class ContractServiceImpl implements ContractService {
         }
 
         contractRepository.save(contract);
+
+        if (contract.getStatus() == ContractStatus.ACTIVE) {
+            room.setStatus(RoomStatus.OCCUPIED);
+        }
         return contractMapper.toResponse(contract);
     }
 
