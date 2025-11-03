@@ -3,18 +3,14 @@ import {Badge} from "antd";
 import styles from "./IncidentItem.module.scss";
 
 const IncidentItem = ({type, description, date, status, icon}) => {
-    const getStatusConfig = (status) => {
-        switch (status) {
-            case 'resolved':
-                return {color: 'success', text: 'Đã Xử Lý'};
-            case 'pending':
-                return {color: 'warning', text: 'Đang Xử Lý'};
-            case 'new':
-                return {color: 'error', text: 'Mới'};
-            default:
-                return {color: 'default', text: status};
-        }
+    const STATUS_CONFIG = {
+        PENDING:     { color: 'warning', text: 'Chờ tiếp nhận' },
+        IN_PROGRESS: { color: 'info', text: 'Đang Xử Lý' },
+        RESOLVED:    { color: 'success', text: 'Đã Xử Lý Xong' },
+        REJECTED:    { color: 'error', text: 'Từ Chối Xử Lý' },
     };
+
+    const getStatusConfig = (status) => STATUS_CONFIG[status] ?? { color: 'default', text: status };
 
     const statusConfig = getStatusConfig(status);
 

@@ -1,4 +1,4 @@
-package carevn.luv2code.ez_tro.service.owner.impl;
+package carevn.luv2code.ez_tro.service.user.impl;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -14,7 +14,7 @@ import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
-import carevn.luv2code.ez_tro.service.owner.BillOwnerService;
+import carevn.luv2code.ez_tro.service.user.BillOwnerService;
 import lombok.RequiredArgsConstructor;
 
 @Service("ownerBillService")

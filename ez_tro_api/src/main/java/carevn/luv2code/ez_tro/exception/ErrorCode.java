@@ -72,6 +72,9 @@ public enum ErrorCode {
     CONTRACT_PAYMENT_CYCLE_INVALID(1053, "Payment cycle months must be >= 1", HttpStatus.BAD_REQUEST),
     CONTRACT_MONTHLY_PAYMENT_DAY_INVALID(1054, "Monthly payment day must be between 1 and 28", HttpStatus.BAD_REQUEST),
     CONTRACT_DEPOSIT_INVALID(1055, "Deposit must be >= 0", HttpStatus.BAD_REQUEST),
+    YOU_HAVE_ACTIVE_CONTRACT(1056, "You already have an active contract", HttpStatus.CONFLICT),
+    YOU_DO_NOT_HAVE_ACTIVE_CONTRACT(1057, "No active contract found", HttpStatus.NOT_FOUND),
+    c(1058, "You are not renting any room", HttpStatus.BAD_REQUEST),
 
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);

@@ -119,6 +119,10 @@ const API_ENDPOINTS = {
     },
     MY_BILL: {
         GET_ALL: `${BASE_URL}/user/bills/paged`,
+    },
+    MY_INCIDENT_REPORT: {
+        GET_ALL: `${BASE_URL}/user/incident-reports`,
+        CREATE: `${BASE_URL}/user/incident-reports`,
     }
 };
 

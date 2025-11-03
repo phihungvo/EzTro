@@ -1,4 +1,4 @@
-package carevn.luv2code.ez_tro.service.owner.impl;
+package carevn.luv2code.ez_tro.service.user.impl;
 
 import java.time.LocalDate;
 
@@ -8,7 +8,7 @@ import carevn.luv2code.ez_tro.dto.response.TenantRoomInfoResponse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
-import carevn.luv2code.ez_tro.service.owner.UserRoomInfoService;
+import carevn.luv2code.ez_tro.service.user.UserRoomInfoService;
 import lombok.RequiredArgsConstructor;
 
 @Service

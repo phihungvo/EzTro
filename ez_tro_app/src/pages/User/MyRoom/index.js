@@ -4,9 +4,11 @@ import RoomInfoCard from "~/components/Layout/UserLayout/components/RoomInfoCard
 import IncidentsCard from "~/components/Layout/UserLayout/components/IncidentsCard";
 import styles from "./MyRoom.module.scss";
 import { getMyRoomInfo } from "~/service/user/my-room";
+import {getMyIncidentReports} from "~/service/user/incident-report";
 
 const MyRoom = () => {
     const [myRoom, setMyRoom] = useState(null);
+    const [myIncidentReport, setMyIncidentReport] = useState(null);
 
     const fetchMyRoom = useCallback(async () => {
         try {
@@ -18,6 +20,10 @@ const MyRoom = () => {
             }
 
             setMyRoom(response.result);
+
+            const responseIncident = await getMyIncidentReports();
+            setMyIncidentReport(responseIncident);
+
         } catch (error) {
             console.error("❌ Error fetching room info:", error);
             message.error("Lỗi khi tải dữ liệu phòng");
@@ -69,7 +75,7 @@ const MyRoom = () => {
 
             {/* Incidents */}
             <IncidentsCard
-                incidents={incidents}
+                incidents={myIncidentReport}
                 onReportNew={handleReportNew}
             />
         </div>
