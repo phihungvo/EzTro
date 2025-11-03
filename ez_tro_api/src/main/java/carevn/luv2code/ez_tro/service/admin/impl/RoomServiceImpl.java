@@ -1,7 +1,6 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +10,7 @@ import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Room;
+import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.RoomMapper;
@@ -29,9 +29,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public RoomResponse create(RoomRequest request) {
-        BoardingHouse boardingHouse = boardingHouseRepository
-                .findById(request.getBoardingHouseId())
-                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        BoardingHouse boardingHouse = getBoardingHouseOrThrow(request.getBoardingHouseId());
 
         Room room = roomMapper.toEntity(request);
         room.setBoardingHouse(boardingHouse);
@@ -42,7 +40,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public RoomResponse update(Integer id, RoomRequest request) {
-        Room room = roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = getRoomOrThrow(id);
 
         room.setRoomNumber(request.getRoomNumber());
         room.setArea(request.getArea());
@@ -56,14 +54,13 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public void delete(Integer id) {
-        Room room = roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = getRoomOrThrow(id);
         roomRepository.delete(room);
     }
 
     @Override
     public RoomResponse getById(Integer id) {
-        Room room = roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-        return roomMapper.toResponse(room);
+        return roomMapper.toResponse(getRoomOrThrow(id));
     }
 
     @Override
@@ -72,14 +69,32 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    public List<RoomResponse> getAvailableRooms() {
+        return roomRepository.findByStatus(RoomStatus.AVAILABLE).stream()
+                .map(roomMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     public Page<RoomResponse> getAllRoomsPaged(int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
-        return roomRepository.findAll(pageRequest).map(roomMapper::toResponse);
+        return roomRepository.findAll(PageRequest.of(page, size)).map(roomMapper::toResponse);
     }
 
     @Override
     public List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId) {
-        List<Room> rooms = roomRepository.findByBoardingHouseId(boardingHouseId);
-        return rooms.stream().map(roomMapper::toResponse).collect(Collectors.toList());
+        return roomRepository.findByBoardingHouseId(boardingHouseId).stream()
+                .map(roomMapper::toResponse)
+                .toList();
+    }
+
+    /** -------------------- PRIVATE UTILITY METHODS -------------------- */
+    private Room getRoomOrThrow(Integer id) {
+        return roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    private BoardingHouse getBoardingHouseOrThrow(Integer id) {
+        return boardingHouseRepository
+                .findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
     }
 }

@@ -14,6 +14,7 @@ export default function DateField({ field }) {
                 format={field.format || 'YYYY-MM-DD'}
                 disabled={field.disabled}
                 showTime={field.showTime}
+                placeholder={field.placeholder || "Chọn ngày"}
                 disabledDate={field.disabledDate}
             />
         </Form.Item>

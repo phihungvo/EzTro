@@ -50,12 +50,14 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/rooms/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/rooms`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
+        GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
     },
     TENANTS: {
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
         RENTAL_DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}/current-rental`,
+        FILTER: `${BASE_URL}/tenants/filter`,
     },
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,

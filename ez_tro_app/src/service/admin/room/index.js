@@ -16,10 +16,21 @@ export const getAllRooms = async ({ page, pageSize }) => {
     }
 };
 
-
 export const getAllRoomNoPaged = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_NO_PAGING);
+        return response.data.result;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message || 'Lỗi lấy danh sách người dùng',
+        );
+        throw error;
+    }
+};
+
+export const getAllRoomAvailable = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_AVAILABLE);
         return response.data.result;
     } catch (error) {
         message.error(

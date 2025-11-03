@@ -1,11 +1,15 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,16 +21,20 @@ import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.Gender;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.TenantMapper;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TenantServiceImpl implements TenantService {
 
     private final TenantRepository tenantRepository;
@@ -136,6 +144,83 @@ public class TenantServiceImpl implements TenantService {
     public Page<TenantResponse> getAllTenantsPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         return tenantRepository.findAll(pageRequest).map(tenantMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TenantResponse> filterTenants(
+            String search,
+            String startDate,
+            String endDate,
+            String gender,
+            String occupation,
+            Boolean hasActiveContract,
+            int page,
+            int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Specification<Tenant> spec = Specification.where(null);
+
+        if (search != null && !search.trim().isEmpty()) {
+            String lowerSearch = search.toLowerCase().trim();
+
+            spec = spec.and((root, query, cb) -> {
+                Join<Tenant, User> userJoin = root.join("user", JoinType.LEFT);
+                Predicate namePred = cb.like(
+                        cb.lower(cb.concat(
+                                cb.coalesce(userJoin.get("firstName"), cb.literal("")),
+                                cb.concat(cb.literal(" "), cb.coalesce(userJoin.get("lastName"), cb.literal(""))))),
+                        "%" + lowerSearch + "%");
+                Predicate emailPred = cb.like(cb.lower(userJoin.get("email")), "%" + lowerSearch + "%");
+                Predicate phonePred = cb.like(cb.lower(userJoin.get("phoneNumber")), "%" + lowerSearch + "%");
+                Predicate identityPred = cb.like(cb.lower(root.get("identityNumber")), "%" + lowerSearch + "%");
+                Predicate occupationPred = cb.like(cb.lower(root.get("occupation")), "%" + lowerSearch + "%");
+
+                return cb.or(namePred, emailPred, phonePred, identityPred, occupationPred);
+            });
+        }
+
+        if (startDate != null && endDate != null && !startDate.isEmpty() && !endDate.isEmpty()) {
+            try {
+                LocalDate start = LocalDate.parse(startDate);
+                LocalDate end = LocalDate.parse(endDate);
+                spec = spec.and((root, query, cb) -> cb.between(root.get("dateOfBirth"), start, end));
+            } catch (Exception e) {
+                log.warn("Invalid date format in filter: {}", e.getMessage());
+            }
+        }
+
+        if (gender != null && !gender.isEmpty() && !"ALL".equalsIgnoreCase(gender)) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("gender"), Gender.valueOf(gender)));
+        }
+
+        if (occupation != null && !occupation.isEmpty() && !"ALL".equalsIgnoreCase(occupation)) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("occupation"), occupation));
+        }
+
+        if (hasActiveContract != null) {
+            spec = spec.and((root, query, cb) -> {
+                Subquery<Contract> subquery = query.subquery(Contract.class);
+                Root<Contract> contractRoot = subquery.from(Contract.class);
+                subquery.select(contractRoot);
+                Join<Contract, Tenant> tenantJoin = contractRoot.join("tenant", JoinType.INNER);
+                Date today = new Date(); // Use Date for comparison with TemporalType.DATE
+                Predicate statusPred = cb.equal(contractRoot.get("status"), ContractStatus.ACTIVE);
+                Predicate startDatePred = cb.lessThanOrEqualTo(contractRoot.get("startDate"), today);
+                Predicate endDatePred = cb.or(
+                        cb.isNull(contractRoot.get("endDate")),
+                        cb.greaterThanOrEqualTo(contractRoot.get("endDate"), today));
+                subquery.where(cb.equal(tenantJoin.get("id"), root.get("id")), statusPred, startDatePred, endDatePred);
+                if (hasActiveContract) {
+                    return cb.exists(subquery);
+                } else {
+                    return cb.not(cb.exists(subquery));
+                }
+            });
+        }
+
+        Page<Tenant> pageResult = tenantRepository.findAll(spec, pageable);
+        Page<TenantResponse> dtoPage = pageResult.map(tenantMapper::toResponse);
+        return dtoPage;
     }
 
     private Tenant getTenantWithDetails(Integer id) {

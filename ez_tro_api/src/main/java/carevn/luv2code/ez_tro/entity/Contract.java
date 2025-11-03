@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -57,6 +58,20 @@ public class Contract {
 
     @Column(precision = 12, scale = 2)
     BigDecimal deposit;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "deposit_received_at")
+    Date depositReceivedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deposit_payment_method")
+    PaymentMethod depositPaymentMethod;
+
+    @Column(name = "payment_cycle_months")
+    Integer paymentCycleMonths;
+
+    @Column(name = "monthly_payment_day")
+    Integer monthlyPaymentDay;
 
     @Column(name = "rent_price", precision = 12, scale = 2, nullable = false)
     BigDecimal rentPrice;

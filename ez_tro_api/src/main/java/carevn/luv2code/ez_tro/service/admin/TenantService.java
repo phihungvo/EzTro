@@ -25,4 +25,14 @@ public interface TenantService {
     List<TenantResponse> getAll();
 
     Page<TenantResponse> getAllTenantsPaged(int page, int size);
+
+    public Page<TenantResponse> filterTenants(
+            String search,
+            String startDate,
+            String endDate,
+            String gender,
+            String occupation,
+            Boolean hasActiveContract,
+            int page,
+            int size);
 }

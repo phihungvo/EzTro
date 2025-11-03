@@ -63,6 +63,16 @@ public enum ErrorCode {
     ROOM_UTILITY_NOT_FOUND(1046, "Room utility not found", HttpStatus.NOT_FOUND),
     ROOM_UTILITY_ALREADY_EXISTS(1047, "Room utility already exists", HttpStatus.CONFLICT),
 
+    CONTRACT_ROOM_ALREADY_ACTIVE(1048, "Room already has an active contract", HttpStatus.CONFLICT),
+    CONTRACT_START_DATE_REQUIRED(1049, "Start date is required", HttpStatus.BAD_REQUEST),
+    CONTRACT_END_DATE_INVALID(1050, "End date must be greater than or equal to start date", HttpStatus.BAD_REQUEST),
+    CONTRACT_RENT_PRICE_INVALID(1051, "Rent price must be greater than 0", HttpStatus.BAD_REQUEST),
+    CONTRACT_DEPOSIT_PAYMENT_METHOD_REQUIRED(
+            1052, "Deposit payment method is required when deposit > 0", HttpStatus.BAD_REQUEST),
+    CONTRACT_PAYMENT_CYCLE_INVALID(1053, "Payment cycle months must be >= 1", HttpStatus.BAD_REQUEST),
+    CONTRACT_MONTHLY_PAYMENT_DAY_INVALID(1054, "Monthly payment day must be between 1 and 28", HttpStatus.BAD_REQUEST),
+    CONTRACT_DEPOSIT_INVALID(1055, "Deposit must be >= 0", HttpStatus.BAD_REQUEST),
+
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);
 

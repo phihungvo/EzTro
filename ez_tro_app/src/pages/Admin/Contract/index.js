@@ -1,6 +1,7 @@
+import dayjs from 'dayjs';
 import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
-import moment from 'moment';
+// import moment from 'moment';
 import styles from '~/pages/Admin/Contract/Contract.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
@@ -46,11 +47,12 @@ import {
     updateContract,
     deleteContract,
 } from '~/service/admin/contract';
-import {getAllRoomNoPaged, getRoomsByBoardingHouse} from "~/service/admin/room";
+import {getAllRoomAvailable, getAllRoomNoPaged, getRoomsByBoardingHouse} from "~/service/admin/room";
 import {getAllTenantNoPaged} from "~/service/admin/tenant";
 import useDebounce from '~/hooks/useDebounce';
-import dayjs from 'dayjs';
 import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
+import {disablePastDates} from "~/utils/dateUtils";
+import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 
 const cx = classNames.bind(styles);
 const {RangePicker} = DatePicker;
@@ -301,34 +303,34 @@ function Contract() {
 
     const contractModalFields = [
         {
-            label: 'Phòng trọ',
+            label: 'Phòng',
             name: 'roomId',
             type: 'select',
             options: roomOptions,
-            disabled: disabledWhenEdit
+            disabled: disabledWhenEdit,
         },
         {
             label: 'Người thuê',
             name: 'tenantId',
             type: 'select',
             options: tenantOptions,
-            disabled: disabledWhenEdit
+            disabled: disabledWhenEdit,
         },
         {
-            label: 'Ngày bắt đầu',
+            label: 'Ngày bắt đầu hợp đồng',
             name: 'startDate',
             type: 'date',
-            render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
-            ),
+            format: 'DD/MM/YYYY',
+            placeholder: 'Chọn ngày bắt đầu',
+            disabledDate: disablePastDates
         },
         {
-            label: 'Ngày kết thúc',
+            label: 'Ngày kết thúc hợp đồng',
             name: 'endDate',
             type: 'date',
-            render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
-            ),
+            format: 'DD/MM/YYYY',
+            placeholder: 'Để trống nếu chưa xác định',
+            disabledDate: disablePastDates
         },
         {
             label: 'Tiền cọc (VNĐ)',
@@ -336,14 +338,43 @@ function Contract() {
             type: 'number',
         },
         {
-            label: 'Giá thuê (VNĐ/tháng)',
+            label: 'Giá thuê (VNĐ / tháng)',
             name: 'rentPrice',
+            type: 'number',
+        },
+        {
+            label: 'Ngày nhận cọc',
+            name: 'depositReceivedAt',
+            type: 'date',
+            format: 'DD/MM/YYYY',
+            disabledDate: disablePastDates
+        },
+        {
+            label: 'Phương thức thanh toán cọc',
+            name: 'depositPaymentMethod',
+            type: 'select',
+            options: [
+                {label: 'Tiền mặt', value: 'CASH'},
+                {label: 'Chuyển khoản ngân hàng', value: 'BANK_TRANSFER'},
+                {label: 'Ví MoMo', value: 'MOMO'},
+                {label: 'Ví ZaloPay', value: 'ZALO_PAY'},
+            ],
+        },
+        {
+            label: 'Chu kỳ thanh toán (tháng)',
+            name: 'paymentCycleMonths',
+            type: 'number',
+        },
+        {
+            label: 'Ngày thanh toán hàng tháng',
+            name: 'monthlyPaymentDay',
             type: 'number',
         },
         {
             label: 'Trạng thái hợp đồng',
             name: 'status',
             type: 'select',
+            disabled: disabledWhenEdit,
             options: [
                 {label: 'Đang hiệu lực', value: 'ACTIVE'},
                 {label: 'Đã hết hạn', value: 'EXPIRED'},
@@ -478,10 +509,27 @@ function Contract() {
         handleFilterContracts();
     }, [pagination.current, pagination.pageSize]);
 
-    const handleAddContract = () => {
+    const loadAllRooms = async () => {
+        try {
+            const rooms = await getAllRoomAvailable();
+            if (rooms && Array.isArray(rooms)) {
+                const roomOpts = rooms.map(room => ({
+                    label: `${room.roomNumber || 'N/A'} — ${room.boardingHouseName || 'N/A'} (ID: ${room.id})`,
+                    value: room.id,
+                }));
+                setRoomOptions(roomOpts);
+            }
+        } catch (error) {
+            console.error("Error loading all rooms:", error);
+            setRoomOptions([]);
+        }
+    };
+
+    const handleAddContract = async () => {
         setModalMode('create');
         setSelectedContract(null);
         form.resetFields();
+        await loadAllRooms();
         setIsModalOpen(true);
     };
 
@@ -504,8 +552,8 @@ function Contract() {
         setModalMode('edit');
         const formValues = {
             ...record,
-            startDate: record.startDate ? moment(record.startDate) : null,
-            endDate: record.endDate ? moment(record.endDate) : null,
+            startDate: record.startDate ? dayjs(record.startDate) : null,
+            endDate: record.endDate ? dayjs(record.endDate) : null,
         };
         form.setFieldsValue(formValues);
         setIsModalOpen(true);
@@ -607,70 +655,60 @@ function Contract() {
     return (
         <ConfigProvider>
             <div className={cx('contract-wrapper')}>
-                <div className={cx('filter-section')}>
-                    <Space direction="vertical" size="middle" className={cx('filter-space')}>
-                        <div className={cx('filter-inputs')}>
-                            <SmartInput
-                                size="large"
-                                placeholder="Tìm kiếm..."
-                                icon={<SearchOutlined/>}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className={cx('search-input')}
-                                inputWidth={230}
-                            />
-                            <RangePicker
-                                size="large"
-                                placeholder={['Từ ngày', 'Đến ngày']}
-                                format="DD/MM/YYYY"
-                                onChange={(dates) => setDateRange(dates)}
-                                className={cx('date-picker')}
-                                style={{ width: 270 }}
-                            />
-                            <Select
-                                size="large"
-                                placeholder="Lọc theo trạng thái"
-                                value={statusFilter}
-                                onChange={(value) => setStatusFilter(value)}
-                                className={cx('status-select')}
-                                options={[
-                                    {value: 'ALL', label: 'Tất cả'},
-                                    {value: 'ACTIVE', label: 'Đang hiệu lực'},
-                                    {value: 'EXPIRED', label: 'Đã hết hạn'},
-                                    {value: 'CANCELLED', label: 'Đã hủy'},
-                                ]}
-                            />
-                            <Select
-                                size="large"
-                                placeholder="Chọn khu nhà trọ"
-                                value={boardingHouseFilter}
-                                onChange={(value) => setBoardingHouseFilter(value)}
-                                className={cx('boarding-house-select')}
-                                allowClear
-                                options={boardingHouseOptions}
-                                loading={roomsLoading}
-                            />
-                            <Select
-                                size="large"
-                                placeholder="Chọn phòng"
-                                value={roomFilter}
-                                onChange={(value) => setRoomFilter(value)}
-                                className={cx('room-select')}
-                                allowClear
-                                options={roomOptions}
-                                loading={roomsLoading}
-                                disabled={!boardingHouseFilter}
-                            />
-
-                            <SmartButton
-                                title="Reset"
-                                type="default"
-                                icon={<CloseCircleOutlined/>}
-                                onClick={handleResetFilters}
-                            />
-                        </div>
-                    </Space>
-                </div>
+                <FilterComponent
+                    fields={[
+                        {
+                            type: 'search',
+                            name: 'search',
+                            placeholder: 'Tìm kiếm...',
+                            value: searchTerm,
+                            onChange: setSearchTerm,
+                        },
+                        {
+                            type: 'dateRange',
+                            name: 'dateRange',
+                            placeholder: ['Từ ngày', 'Đến ngày'],
+                            value: dateRange,
+                            onChange: setDateRange,
+                        },
+                        {
+                            type: 'select',
+                            name: 'status',
+                            placeholder: 'Lọc theo trạng thái',
+                            value: statusFilter,
+                            onChange: setStatusFilter,
+                            options: [
+                                { value: 'ALL', label: 'Tất cả' },
+                                { value: 'ACTIVE', label: 'Đang hiệu lực' },
+                                { value: 'EXPIRED', label: 'Đã hết hạn' },
+                                { value: 'CANCELLED', label: 'Đã hủy' },
+                            ],
+                        },
+                        {
+                            type: 'select',
+                            name: 'boardingHouse',
+                            placeholder: 'Chọn khu nhà trọ',
+                            value: boardingHouseFilter,
+                            onChange: setBoardingHouseFilter,
+                            options: boardingHouseOptions,
+                            loading: roomsLoading,
+                            allowClear: true,
+                        },
+                        {
+                            type: 'select',
+                            name: 'room',
+                            placeholder: 'Chọn phòng',
+                            value: roomFilter,
+                            onChange: setRoomFilter,
+                            options: roomOptions,
+                            loading: roomsLoading,
+                            disabled: !boardingHouseFilter,
+                            allowClear: true,
+                        },
+                    ]}
+                    onReset={handleResetFilters}
+                    gridTemplate="230px 270px 1fr 1fr 1fr auto"
+                />
 
                 {/* Nội dung */}
                 <div className={cx('contract-container')}>

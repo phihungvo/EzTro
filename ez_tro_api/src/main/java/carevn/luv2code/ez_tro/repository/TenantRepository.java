@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import carevn.luv2code.ez_tro.entity.Tenant;
 
 @Repository
-public interface TenantRepository extends JpaRepository<Tenant, Integer> {
+public interface TenantRepository extends JpaRepository<Tenant, Integer>, JpaSpecificationExecutor<Tenant> {
     Optional<Tenant> findByUserId(Integer userId);
 
     @Query(
