@@ -23,4 +23,6 @@ public interface UtilityService {
     List<UtilityResponse> getByBoardingHouse(Integer boardingHouseId);
 
     Page<UtilityResponse> getActiveByBoardingHouse(Integer boardingHouseId, int page, int size);
+
+    List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId);
 }

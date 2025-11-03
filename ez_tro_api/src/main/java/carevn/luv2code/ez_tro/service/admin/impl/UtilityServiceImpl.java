@@ -117,4 +117,11 @@ public class UtilityServiceImpl implements UtilityService {
                 .findActiveByBoardingHouseId(boardingHouseId, pageable)
                 .map(utilityMapper::toResponse);
     }
+
+    @Override
+    public List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId) {
+        return utilityRepository.findAllByBoardingHouseId(boardingHouseId).stream()
+                .map(utilityMapper::toResponse)
+                .toList();
+    }
 }

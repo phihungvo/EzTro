@@ -45,12 +45,16 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/buildings`,
         UPDATE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,
         DELETE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,
+        GET_BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/buildings/boarding-house/${boardingHouseId}`,
     },
     ROOM: {
         GET_ALL: `${BASE_URL}/rooms/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/rooms`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
+        CREATE: `${BASE_URL}/rooms`,
+        UPDATE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
+        DELETE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
     },
     TENANTS: {
         GET_ALL: `${BASE_URL}/tenants/paged`,
@@ -65,6 +69,7 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/boarding-houses`,
         UPDATE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         DELETE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
+        GET_UTILITY: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}/utilities`,
     },
     CONTRACT: {
         GET_ALL: `${BASE_URL}/contracts/paged`,

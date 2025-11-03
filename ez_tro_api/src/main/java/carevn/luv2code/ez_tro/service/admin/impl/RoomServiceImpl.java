@@ -1,21 +1,25 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
-import carevn.luv2code.ez_tro.entity.BoardingHouse;
-import carevn.luv2code.ez_tro.entity.Room;
+import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.RoomMapper;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
+import carevn.luv2code.ez_tro.repository.BuildingRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
+import carevn.luv2code.ez_tro.repository.UtilityRepository;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import lombok.RequiredArgsConstructor;
 
@@ -25,16 +29,56 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final BoardingHouseRepository boardingHouseRepository;
+    private final BuildingRepository buildingRepository;
+    private final UtilityRepository utilityRepository;
     private final RoomMapper roomMapper;
 
     @Override
+    @Transactional
     public RoomResponse create(RoomRequest request) {
         BoardingHouse boardingHouse = getBoardingHouseOrThrow(request.getBoardingHouseId());
 
+        Building building = buildingRepository
+                .findById(request.getBuildingId())
+                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+
+        List<Utility> utilities = utilityRepository.findAllByBoardingHouseId(boardingHouse.getId()).stream()
+                .filter(u -> request.getUtilityIds() != null
+                        && request.getUtilityIds().contains(u.getId()))
+                .toList();
+
         Room room = roomMapper.toEntity(request);
         room.setBoardingHouse(boardingHouse);
+        room.setBuilding(building);
+        room.setStatus(RoomStatus.AVAILABLE);
+
+        if (request.getRoomNumber() == null || request.getRoomNumber().trim().isEmpty()) {
+
+            Integer maxRoomNumber = roomRepository.findMaxRoomNumberByBuildingId(building.getId());
+
+            int nextRoomNumber = (maxRoomNumber == null) ? AppConstants.DEFAULT_ROOM_START_NUMBER : maxRoomNumber + 1;
+
+            while (roomRepository.existsByBuildingIdAndRoomNumber(building.getId(), String.valueOf(nextRoomNumber))) {
+                nextRoomNumber++;
+            }
+
+            room.setRoomNumber(String.valueOf(nextRoomNumber));
+        }
+
+        List<RoomUtility> roomUtilities = utilities.stream()
+                .map(utility -> RoomUtility.builder()
+                        .id(new RoomUtilityId(null, utility.getId()))
+                        .room(room)
+                        .utility(utility)
+                        .quantity(1)
+                        .startDate(LocalDate.now())
+                        .build())
+                .toList();
+
+        room.setRoomUtilities(roomUtilities);
 
         roomRepository.save(room);
+
         return roomMapper.toResponse(room);
     }
 
@@ -87,7 +131,9 @@ public class RoomServiceImpl implements RoomService {
                 .toList();
     }
 
-    /** -------------------- PRIVATE UTILITY METHODS -------------------- */
+    /**
+     * -------------------- PRIVATE UTILITY METHODS --------------------
+     */
     private Room getRoomOrThrow(Integer id) {
         return roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
     }

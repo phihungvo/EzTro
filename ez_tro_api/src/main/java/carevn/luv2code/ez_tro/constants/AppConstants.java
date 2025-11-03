@@ -11,6 +11,8 @@ public final class AppConstants {
     public static final String CONTRACT_CODE_PREFIX = "HD-";
     public static final String BILL_CODE_PREFIX = "BL-";
 
+    public static final int DEFAULT_ROOM_START_NUMBER = 101;
+
     private AppConstants() {
         // Ngăn khởi tạo
     }

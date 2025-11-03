@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.BoardingHouseResponse;
+import carevn.luv2code.ez_tro.dto.response.UtilityResponse;
 import carevn.luv2code.ez_tro.service.admin.BoardingHouseService;
+import carevn.luv2code.ez_tro.service.admin.UtilityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class BoardingHouseController {
 
     private final BoardingHouseService boardingHouseService;
+    private final UtilityService utilityService;
 
     @PostMapping
     public ApiResponse<BoardingHouseResponse> create(@Valid @RequestBody BoardingHouseRequest request) {
@@ -76,5 +79,16 @@ public class BoardingHouseController {
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         Page<BoardingHouseResponse> responses = boardingHouseService.getAllBoardingHousesPaged(page, size);
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/{id}/utilities")
+    public ApiResponse<List<UtilityResponse>> getUtilities(@PathVariable("id") Integer id) {
+        List<UtilityResponse> utilities = utilityService.getUtilitiesByBoardingHouse(id);
+
+        return ApiResponse.<List<UtilityResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get utilities by boarding house successfully")
+                .result(utilities)
+                .build();
     }
 }
