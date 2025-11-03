@@ -17,12 +17,18 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Tag, Row, Col, Segmented, Pagination} from 'antd';
-import {getAllRooms} from '~/service/admin/room';
+import {getAllRooms, createRoom} from '~/service/admin/room';
+import {getAllBoardingHousesNoPaged, getUtilityByBoardingHouse} from "~/service/admin/boarding_house";
+import {getByBoardingHouse} from "~/service/admin/building";
+import {createContract} from "~/service/admin/contract";
 
 const cx = classNames.bind(styles);
 
 function Room() {
     const [roomSource, setRoomSource] = useState([]);
+    const [utilityOption, setUtilityOption] = useState([]);
+    const [buildingOption, setBuildingOption] = useState([]);
+    const [boardingHouseOption, setBoardingHouseOption] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
@@ -40,6 +46,159 @@ function Room() {
         OCCUPIED: {color: 'warning', label: 'Đã cho thuê'},
         MAINTENANCE: {color: 'error', label: 'Đang bảo trì'},
     };
+
+    const disabledWhenEdit = modalMode === 'edit';
+
+    const handleBoardingHouseChange = async (boardingHouseId) => {
+        if (!boardingHouseId) {
+            setUtilityOption([]);
+            setBuildingOption([]);
+            form.setFieldsValue({ utilityIds: [], buildingId: null });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const [utilitiesResponse, buildingsResponse] = await Promise.all([
+                getUtilityByBoardingHouse(boardingHouseId),
+                getByBoardingHouse(boardingHouseId),
+            ]);
+
+            setUtilityOption(utilitiesResponse.map(u => ({ label: u.name, value: u.id })));
+            setBuildingOption(buildingsResponse.map(b => ({ label: b.name, value: b.id })));
+
+            form.setFieldsValue({ utilityIds: [], buildingId: null });
+        } catch (error) {
+            message.error('Không thể tải tiện ích và tòa nhà cho khu này');
+            setUtilityOption([]);
+            setBuildingOption([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGetRooms = async (page = 1, pageSize = pagination.pageSize) => {
+        setLoading(true);
+        try {
+            const response = await getAllRooms({page: page - 1, pageSize});
+
+            if (response?.content) {
+                setRoomSource(response.content);
+                setPagination({
+                    current: page,
+                    pageSize: pageSize,
+                    total: response.totalElements,
+                });
+            } else {
+                setRoomSource([]);
+                message.error('Dữ liệu phòng không hợp lệ');
+            }
+        } catch (error) {
+            message.error(`Lỗi khi lấy danh sách phòng: ${error.response?.data?.message || error.message}`);
+            setRoomSource([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchOptions = async () => {
+        try {
+            const response = await getAllBoardingHousesNoPaged();
+            setBoardingHouseOption(response.map(bh => ({ value: bh.id, label: bh.name })));
+        } catch (error) {
+            console.error('Error fetching options:', error);
+        }
+    };
+
+    const handleAddRoom = () => {
+        setModalMode('create');
+        setSelectedPosition(null);
+        form.resetFields();
+        setUtilityOption([]);
+        setBuildingOption([]);
+        setIsModalOpen(true);
+    };
+
+    const handleCallCreateRoom = async (formData) => {
+        try {
+            await createRoom(formData);
+            handleGetRooms();
+            setIsModalOpen(false);
+        } catch (error) {
+            message.error(
+                `Lỗi khi tạo phòng: ${
+                    error.response?.data?.message || error.message
+                }`,
+            );
+        }
+    };
+
+    const handleEditRoom = async (record) => {
+        setSelectedPosition(record);
+        setModalMode('edit');
+        form.setFieldsValue(record);
+
+        if (record.boardingHouseId) {
+            await handleBoardingHouseChange(record.boardingHouseId);
+            form.setFieldsValue({
+                ...record,
+                utilityIds: record.utilityIds || [],
+                buildingId: record.buildingId || null,
+            });
+        }
+
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteRoom = (record) => {
+        setModalMode('delete');
+        setSelectedPosition(record.id);
+        setIsModalOpen(true);
+    };
+
+    const handleFormSubmit = (formData) => {
+        if (modalMode === 'create') {
+            handleCallCreateRoom(formData);
+            message.success('Tạo phòng thành công (demo)');
+        } else if (modalMode === 'edit') {
+            message.success('Cập nhật phòng thành công (demo)');
+        } else if (modalMode === 'delete') {
+            message.success('Xóa phòng thành công (demo)');
+        }
+        setIsModalOpen(false);
+        handleGetRooms(pagination.current, pagination.pageSize);
+    };
+
+    const handleTableChange = (pagination) => {
+        handleGetRooms(pagination.current, pagination.pageSize);
+    };
+
+    const handleViewRoom = (record) => {
+        setSelectedPosition(record);
+        setModalMode('view');
+        form.setFieldsValue(record);
+        setIsModalOpen(true);
+    };
+
+    const getModalTitle = () => {
+        switch (modalMode) {
+            case 'create':
+                return 'Thêm phòng mới';
+            case 'edit':
+                return 'Chỉnh sửa phòng';
+            case 'delete':
+                return 'Xóa phòng';
+            case 'view':
+                return 'Chi tiết phòng';
+            default:
+                return 'Chi tiết phòng';
+        }
+    };
+
+    useEffect(() => {
+        fetchOptions();
+        handleGetRooms();
+    }, []);
 
     const columns = [
         {
@@ -115,90 +274,93 @@ function Room() {
         },
     ];
 
-    useEffect(() => {
-        handleGetRooms();
-    }, []);
+    const roomModalFields = [
+        {
+            label: 'Khu nhà',
+            name: 'boardingHouseId',
+            type: 'select',
+            options: boardingHouseOption,
+            disabled: disabledWhenEdit,
+            onChange: handleBoardingHouseChange,
+            rules: [{ required: true, message: 'Khu nhà bắt buộc chọn!' }],
+        },
+        {
+            label: 'Tòa nhà',
+            name: 'buildingId',
+            type: 'select',
+            options: buildingOption,
+            disabled: disabledWhenEdit,
+            placeholder: 'Chọn khu nhà trước',
+            rules: [{ required: true, message: 'Tòa nhà bắt buộc chọn!' }],
+        },
+        {
+            label: 'Số phòng',
+            name: 'roomNumber',
+            type: 'text',
+            placeholder: 'Để trống để hệ thống tự sinh',
+        },
+        {
+            label: 'Diện tích (m²)',
+            name: 'area',
+            type: 'number',
+        },
+        {
+            label: 'Số tầng',
+            name: 'floorNumber',
+            type: 'number',
+        },
+        {
+            label: 'Số người tối đa',
+            name: 'maxOccupants',
+            type: 'number',
+        },
+        {
+            label: 'Giá cho thuê',
+            name: 'price',
+            type: 'number',
+            placeholder: 'Để trống nếu chưa xác định',
+        },
+        {
+            label: 'Ghi chú',
+            name: 'note',
+            type: 'textarea',
+        },
+        {
+            label: 'Tiện ích phòng',
+            name: 'utilityIds',
+            type: 'select',
+            multiple: true,
+            options: utilityOption,
+            placeholder: 'Chọn khu nhà trước',
+        },
+        {
+            label: 'Ghi chú',
+            name: 'hasAirConditioner',
+            type: 'checkbox',
+        },
+        {
+            label: 'Ghi chú',
+            name: 'hasBathroom',
+            type: 'checkbox',
+        },
+        {
+            label: 'Ghi chú',
+            name: 'hasKitchen',
+            type: 'checkbox',
+        },
 
-    const handleGetRooms = async (page = 1, pageSize = pagination.pageSize) => {
-        setLoading(true);
-        try {
-            const response = await getAllRooms({page: page - 1, pageSize});
-
-            if (response && Array.isArray(response.content)) {
-                setRoomSource(response.content);
-                setPagination({
-                    current: page,
-                    pageSize: pageSize,
-                    total: response.totalElements,
-                });
-            } else {
-                setRoomSource([]);
-                message.error('Dữ liệu phòng không hợp lệ');
-            }
-        } catch (error) {
-            message.error(`Lỗi khi lấy danh sách phòng: ${error.response?.data?.message || error.message}`);
-            setRoomSource([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAddRoom = () => {
-        setModalMode('create');
-        setSelectedPosition(null);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleEditRoom = (record) => {
-        setSelectedPosition(record);
-        setModalMode('edit');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
-    };
-
-    const handleDeleteRoom = (record) => {
-        setModalMode('delete');
-        setSelectedPosition(record.id);
-        setIsModalOpen(true);
-    };
-
-    const handleFormSubmit = (formData) => {
-        if (modalMode === 'create') {
-            message.success('Tạo phòng thành công (demo)');
-        } else if (modalMode === 'edit') {
-            message.success('Cập nhật phòng thành công (demo)');
-        } else if (modalMode === 'delete') {
-            message.success('Xóa phòng thành công (demo)');
-        }
-        setIsModalOpen(false);
-    };
-
-    const handleTableChange = (pagination) => {
-        handleGetRooms(pagination.current, pagination.pageSize);
-    };
-
-    const handleViewRoom = (record) => {
-        setSelectedPosition(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
-    };
-
-    const getModalTitle = () => {
-        switch (modalMode) {
-            case 'create':
-                return 'Thêm phòng mới';
-            case 'edit':
-                return 'Chỉnh sửa phòng';
-            case 'delete':
-                return 'Xóa phòng';
-            case 'view':
-                return 'Chi tiết phòng';
-            default:
-                return 'Chi tiết phòng';
-        }
-    };
+        // {
+        //     label: 'Tiện ích cơ bản',
+        //     name: 'basicAmenities',
+        //     type: 'checkbox-group',
+        //     options: [
+        //         { label: 'Điều hòa', value: 'hasAirConditioner' },
+        //         { label: 'Phòng tắm riêng', value: 'hasBathroom' },
+        //         { label: 'Bếp', value: 'hasKitchen' },
+        //     ],
+        //     rules: [{ required: true, type: 'array', min: 1, message: 'Chọn ít nhất 1 tiện ích!' }],
+        // },
+    ];
 
     return (
         <div className={cx('room-wrapper')}>
@@ -263,7 +425,7 @@ function Room() {
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
                 title={getModalTitle()}
-                fields={[]}
+                fields={modalMode === 'delete' ? [] : roomModalFields}
                 onSubmit={handleFormSubmit}
                 initialValues={selectedPosition}
                 isDeleteMode={modalMode === 'delete'}

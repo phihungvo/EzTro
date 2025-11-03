@@ -52,3 +52,13 @@ export const deleteBuilding = async (buildingId) => {
         console.error('Error when deleting building: ', error);
     }
 };
+
+export const getByBoardingHouse = async (boardingHouseId) => {
+    try {
+        const response = await apiClient.get(
+            API_ENDPOINTS.BUILDING.GET_BY_BOARDING_HOUSE(boardingHouseId));
+        return response.data;
+    } catch (error) {
+        console.error('Error when get building by boarding house: ', error);
+    }
+};

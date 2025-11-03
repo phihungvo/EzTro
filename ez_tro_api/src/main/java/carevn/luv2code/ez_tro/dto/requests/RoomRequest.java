@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import lombok.*;
@@ -15,6 +16,8 @@ public class RoomRequest {
 
     Integer boardingHouseId;
 
+    Integer buildingId;
+
     BigDecimal area;
 
     BigDecimal price;
@@ -22,4 +25,16 @@ public class RoomRequest {
     RoomStatus status;
 
     String note;
+
+    List<Integer> utilityIds;
+
+    Integer floorNumber;
+
+    Integer maxOccupants;
+
+    Boolean hasAirConditioner = false;
+
+    Boolean hasBathroom = true;
+
+    Boolean hasKitchen = true;
 }

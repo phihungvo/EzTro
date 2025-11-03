@@ -59,14 +59,14 @@ public class Room {
     @Column(name = "max_occupants")
     Integer maxOccupants;
 
-    @Column(name = "has_air_conditioner", nullable = false)
+    @Column(name = "has_air_conditioner")
     Boolean hasAirConditioner = false;
 
-    @Column(name = "has_bathroom", nullable = false)
+    @Column(name = "has_bathroom")
     Boolean hasBathroom = true;
 
-    @Column(name = "has_kitchen", nullable = false)
-    Boolean hasKitchen = false;
+    @Column(name = "has_kitchen")
+    Boolean hasKitchen = true;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
@@ -83,7 +83,7 @@ public class Room {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Bill> bills;
 
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "is_deleted")
     Boolean isDeleted = false;
 
     @Temporal(TemporalType.TIMESTAMP)

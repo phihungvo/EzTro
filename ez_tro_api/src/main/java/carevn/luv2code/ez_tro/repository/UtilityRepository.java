@@ -20,5 +20,8 @@ public interface UtilityRepository extends JpaRepository<Utility, Integer> {
     Page<Utility> findActive(Pageable pageable);
 
     @Query("SELECT u FROM Utility u WHERE u.boardingHouse.id = :boardingHouseId AND u.isActive = true")
+    List<Utility> findAllByBoardingHouseId(Integer boardingHouseId);
+
+    @Query("SELECT u FROM Utility u WHERE u.boardingHouse.id = :boardingHouseId AND u.isActive = true")
     Page<Utility> findActiveByBoardingHouseId(@Param("boardingHouseId") Integer boardingHouseId, Pageable pageable);
 }

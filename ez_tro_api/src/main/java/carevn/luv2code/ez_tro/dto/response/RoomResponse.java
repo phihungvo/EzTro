@@ -29,4 +29,14 @@ public class RoomResponse {
     Date startDate;
 
     Date endDate;
+
+    Integer floorNumber;
+
+    Integer maxOccupants;
+
+    Boolean hasAirConditioner = false;
+
+    Boolean hasBathroom = true;
+
+    Boolean hasKitchen = true;
 }

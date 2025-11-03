@@ -63,3 +63,13 @@ export const deleteBoardingHouse = async (boardingHouseId) => {
         console.error('Error when deleting boarding house: ', error);
     }
 };
+
+export const getUtilityByBoardingHouse = async (boardingHouseId) => {
+    try {
+        const response = await apiClient.get(
+            API_ENDPOINTS.BOARDING_HOUSE.GET_UTILITY(boardingHouseId));
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when get utilities: ', error);
+    }
+};
