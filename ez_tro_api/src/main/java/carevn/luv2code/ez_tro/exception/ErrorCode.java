@@ -74,8 +74,11 @@ public enum ErrorCode {
     CONTRACT_DEPOSIT_INVALID(1055, "Deposit must be >= 0", HttpStatus.BAD_REQUEST),
     YOU_HAVE_ACTIVE_CONTRACT(1056, "You already have an active contract", HttpStatus.CONFLICT),
     YOU_DO_NOT_HAVE_ACTIVE_CONTRACT(1057, "No active contract found", HttpStatus.NOT_FOUND),
-    c(1058, "You are not renting any room", HttpStatus.BAD_REQUEST),
+    YOU_DONT_HAVE_ANY_ROOM_RENTED(1058, "You are not renting any room", HttpStatus.BAD_REQUEST),
+    CANNOT_EDIT_RESOLVED_INCIDENT(
+            1059, "Cannot edit incident report that is already resolved or rejected", HttpStatus.BAD_REQUEST),
 
+    ACCESS_DENIED(9997, "Access denied", HttpStatus.FORBIDDEN),
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);
 

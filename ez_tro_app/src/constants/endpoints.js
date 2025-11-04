@@ -123,6 +123,8 @@ const API_ENDPOINTS = {
     MY_INCIDENT_REPORT: {
         GET_ALL: `${BASE_URL}/user/incident-reports`,
         CREATE: `${BASE_URL}/user/incident-reports`,
+        UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+        DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
     }
 };
 

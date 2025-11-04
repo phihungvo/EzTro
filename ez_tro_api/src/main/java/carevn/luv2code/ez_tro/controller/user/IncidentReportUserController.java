@@ -39,4 +39,29 @@ public class IncidentReportUserController {
                 .result(incidentReportService.create(userId, request))
                 .build();
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<IncidentReportResponse> update(
+            @PathVariable("id") Integer id, @RequestBody IncidentReportRequest request) {
+
+        Integer userId = SecurityUtils.getCurrentUserId();
+        IncidentReportResponse response = incidentReportService.update(userId, id, request);
+
+        return ApiResponse.<IncidentReportResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cập nhật báo cáo sự cố thành công")
+                .result(response)
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable("id") Integer id) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        incidentReportService.delete(userId, id);
+
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.NO_CONTENT.value())
+                .message("Xóa báo cáo sự cố thành công")
+                .build();
+    }
 }

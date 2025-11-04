@@ -9,4 +9,8 @@ public interface IncidentReportUserService {
     IncidentReportResponse create(Integer userId, IncidentReportRequest request);
 
     List<IncidentReportResponse> getAllByUserId(Integer userId);
+
+    IncidentReportResponse update(Integer userId, Integer reportId, IncidentReportRequest request);
+
+    void delete(Integer userId, Integer reportId);
 }
