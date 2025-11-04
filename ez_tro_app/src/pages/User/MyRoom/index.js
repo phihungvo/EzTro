@@ -67,7 +67,6 @@ const MyRoom = () => {
     const handleReportEdit = async (id, values) => {
         try {
             await updateIncidentReport(id, values);
-            message.success("Cập nhật báo cáo thành công!");
             await fetchIncidentReports();
         } catch (error) {
             console.error("Error updating report:", error);
@@ -81,7 +80,6 @@ const MyRoom = () => {
     const handleReportDelete = async (id) => {
         try {
             await deleteIncidentReport(id);
-            message.success("Xóa báo cáo thành công!");
             await fetchIncidentReports();
         } catch (error) {
             console.error("Error deleting report:", error);

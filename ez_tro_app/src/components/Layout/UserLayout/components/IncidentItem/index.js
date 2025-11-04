@@ -1,43 +1,38 @@
 import React from 'react';
-import { Badge, Tag, Button, Space, Tooltip } from 'antd';
+import { Card, Tag, Button, Space, Tooltip } from 'antd';
 import {
     ClockCircleOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     SyncOutlined,
-    UserOutlined,
-    HomeOutlined,
-    FileTextOutlined,
     EditOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    CalendarOutlined
 } from '@ant-design/icons';
 import styles from './IncidentItem.module.scss';
+import moment from 'moment';
 
 const IncidentItem = ({ incident, onEdit, onDelete }) => {
     const STATUS_CONFIG = {
         PENDING: {
-            color: '#faad14',
+            color: 'warning',
             text: 'Chờ tiếp nhận',
             icon: <ClockCircleOutlined />,
-            className: styles.statusPending
         },
         IN_PROGRESS: {
-            color: '#1890ff',
+            color: 'processing',
             text: 'Đang xử lý',
             icon: <SyncOutlined spin />,
-            className: styles.statusInProgress
         },
         RESOLVED: {
-            color: '#52c41a',
+            color: 'success',
             text: 'Đã xử lý',
             icon: <CheckCircleOutlined />,
-            className: styles.statusResolved
         },
         REJECTED: {
-            color: '#ff4d4f',
+            color: 'error',
             text: 'Từ chối',
             icon: <CloseCircleOutlined />,
-            className: styles.statusRejected
         }
     };
 
@@ -54,64 +49,62 @@ const IncidentItem = ({ incident, onEdit, onDelete }) => {
     };
 
     return (
-        <div className={`${styles.incidentItem} ${statusConfig.className}`}>
-            <div className={styles.statusBar} style={{ backgroundColor: statusConfig.color }}></div>
-
-            <div className={styles.mainContent}>
-                <div className={styles.header}>
-                    <div className={styles.titleSection}>
-                        <FileTextOutlined className={styles.titleIcon} style={{ color: statusConfig.color }} />
-                        <h3 className={styles.title}>{incident.title}</h3>
-                    </div>
-
-                    <div className={styles.actions}>
-                        <Space size={8}>
-                            <Tooltip title="Chỉnh sửa">
-                                <Button
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    onClick={handleEdit}
-                                    className={styles.actionBtn}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Xóa">
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={handleDelete}
-                                    className={styles.actionBtn}
-                                />
-                            </Tooltip>
-                        </Space>
-                    </div>
+        <Card
+            className={styles.incidentCard}
+            hoverable
+        >
+            <div className={styles.cardContent}>
+                {/* Left Section - Status */}
+                <div className={styles.statusSection}>
+                    <Tag
+                        color={statusConfig.color}
+                        icon={statusConfig.icon}
+                        className={styles.statusTag}
+                    >
+                        {statusConfig.text}
+                    </Tag>
                 </div>
 
-                <p className={styles.description}>{incident.description}</p>
+                {/* Middle Section - Info */}
+                <div className={styles.infoSection}>
+                    <h3 className={styles.title}>{incident.title}</h3>
+                    <p className={styles.description}>{incident.description}</p>
+                </div>
 
-                <div className={styles.metaInfo}>
-                    <div className={styles.tags}>
-                        <Tag icon={<UserOutlined />} className={styles.tag}>
-                            {incident.tenantName}
-                        </Tag>
-                        <Tag icon={<HomeOutlined />} color="blue" className={styles.tag}>
-                            Phòng {incident.roomNumber}
-                        </Tag>
+                {/* Right Section - Date & Actions */}
+                <div className={styles.metaSection}>
+                    <div className={styles.dateInfo}>
+                        <CalendarOutlined className={styles.dateIcon} />
+                        <span className={styles.dateText}>
+                            {incident.expectedResolveDate
+                                ? moment(incident.expectedResolveDate).format('DD/MM/YYYY')
+                                : 'Chưa xác định'}
+                        </span>
                     </div>
-
-                    <Badge
-                        status="processing"
-                        color={statusConfig.color}
-                        text={
-                            <span className={styles.statusBadge}>
-                                {statusConfig.icon}
-                                <span>{statusConfig.text}</span>
-                            </span>
-                        }
-                    />
+                    <Space size={6} className={styles.actions}>
+                        <Tooltip title="Chỉnh sửa">
+                            <Button
+                                type="primary"
+                                ghost
+                                size="small"
+                                icon={<EditOutlined />}
+                                onClick={handleEdit}
+                            />
+                        </Tooltip>
+                        <Tooltip title="Xóa">
+                            <Button
+                                type="primary"
+                                danger
+                                ghost
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                onClick={handleDelete}
+                            />
+                        </Tooltip>
+                    </Space>
                 </div>
             </div>
-        </div>
+        </Card>
     );
 };
 

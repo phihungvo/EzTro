@@ -20,4 +20,10 @@ public class IncidentReportResponse {
     String tenantName;
 
     String roomNumber;
+
+    String buildingName;
+
+    String boardingHouseName;
+
+    String expectedResolveDate;
 }

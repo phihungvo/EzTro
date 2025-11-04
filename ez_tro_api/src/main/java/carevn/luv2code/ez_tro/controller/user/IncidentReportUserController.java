@@ -56,8 +56,7 @@ public class IncidentReportUserController {
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") Integer id) {
-        Integer userId = SecurityUtils.getCurrentUserId();
-        incidentReportService.delete(userId, id);
+        incidentReportService.delete(id);
 
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.NO_CONTENT.value())

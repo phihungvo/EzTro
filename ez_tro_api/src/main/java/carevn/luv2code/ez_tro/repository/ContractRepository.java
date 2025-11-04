@@ -31,6 +31,8 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     Optional<Contract> findTopByOrderByIdDesc();
 
+    Optional<Contract> findByRoomIdAndStatus(Integer roomId, ContractStatus status);
+
     @Query(
             """
 		SELECT c FROM Contract c

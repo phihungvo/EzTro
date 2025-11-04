@@ -108,6 +108,12 @@ const API_ENDPOINTS = {
         GET_BY_UTILITY: (utilityId) => `${BASE_URL}/room-utilities/utility/${utilityId}`,
         GET_PAGED_BY_ROOM: (roomId, page, size) => `${BASE_URL}/room-utilities/room/${roomId}/paged?page=${page}&size=${size}`,
     },
+    INCIDENT_REPORT: {
+        GET_ALL: `${BASE_URL}/incident-reports/paged`,
+        CREATE: `${BASE_URL}/incident-reports`,
+        UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+        DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {
