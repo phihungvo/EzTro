@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.DashboardSummaryResponse;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
-import carevn.luv2code.ez_tro.service.owner.UserDashboardService;
+import carevn.luv2code.ez_tro.service.user.UserDashboardService;
 import lombok.RequiredArgsConstructor;
 
 @RestController

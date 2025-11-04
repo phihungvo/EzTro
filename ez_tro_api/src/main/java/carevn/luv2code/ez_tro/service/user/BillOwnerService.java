@@ -1,4 +1,4 @@
-package carevn.luv2code.ez_tro.service.owner;
+package carevn.luv2code.ez_tro.service.user;
 
 import java.util.List;
 

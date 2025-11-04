@@ -1,4 +1,4 @@
-package carevn.luv2code.ez_tro.service.owner.impl;
+package carevn.luv2code.ez_tro.service.user.impl;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -7,7 +7,7 @@ import carevn.luv2code.ez_tro.dto.response.DashboardSummaryResponse;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.repository.*;
-import carevn.luv2code.ez_tro.service.owner.UserDashboardService;
+import carevn.luv2code.ez_tro.service.user.UserDashboardService;
 import lombok.RequiredArgsConstructor;
 
 @Service

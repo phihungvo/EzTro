@@ -32,7 +32,7 @@ function Room() {
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
-        pageSize: 6,
+        pageSize: 10,
         total: 0,
     });
     const [modalMode, setModalMode] = useState('create');

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
-import carevn.luv2code.ez_tro.service.owner.BillOwnerService;
+import carevn.luv2code.ez_tro.service.user.BillOwnerService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
