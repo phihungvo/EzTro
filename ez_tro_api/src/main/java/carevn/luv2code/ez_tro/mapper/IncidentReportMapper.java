@@ -10,5 +10,7 @@ public interface IncidentReportMapper {
 
     @Mapping(target = "tenantName", source = "tenant.user.fullName")
     @Mapping(target = "roomNumber", source = "room.roomNumber")
+    @Mapping(target = "buildingName", source = "room.building.name")
+    @Mapping(target = "boardingHouseName", source = "room.boardingHouse.name")
     IncidentReportResponse toResponse(IncidentReport incidentReport);
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import classNames from "classnames/bind";
-import { Routes, Route, useLocation } from 'react-router-dom';  // Add useLocation for dynamic active
+import { Routes, Route, useLocation } from 'react-router-dom';
 import styles from "./AdminLayout.module.scss";
 import Header from "../Header";
 import AdminSidebar from "~/components/Layout/AdminLayout/components/Sidebar/AdminSidebar";
@@ -36,6 +36,7 @@ import Amenity from "src/pages/Admin/Utility";
 import Bill from "~/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
+import IncidentReport from "~/pages/Admin/IncidentReport";
 
 const cx = classNames.bind(styles);
 
@@ -267,6 +268,8 @@ const AdminLayout = ({ onLogout }) => {
                         <Route path="/services" element={<Amenity />} />
                         <Route path="/users" element={<UserManagement />} />
                         <Route path="/utilities" element={<UtilityManagement />} />
+                        <Route path="/incidents" element={<IncidentReport />} />
+
                         {/* Add other routes as needed */}
                         <Route path="/" element={<Dashboard />} />  // Default route
                     </Routes>

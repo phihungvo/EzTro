@@ -69,27 +69,29 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
     @Override
     @Transactional
     public IncidentReportResponse update(Integer userId, Integer reportId, IncidentReportRequest request) {
-        Tenant tenant = tenantRepository
-                .findByUserId(userId)
-                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " + userId));
+        //        Tenant tenant = tenantRepository
+        //                .findByUserId(userId)
+        //                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " +
+        // userId));
 
         IncidentReport report = incidentReportRepository
                 .findById(reportId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy báo cáo sự cố với ID: " + reportId));
 
         // Đảm bảo chỉ chủ báo cáo mới được cập nhật
-        if (!report.getTenant().getId().equals(tenant.getId())) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
-        }
+        //        if (!report.getTenant().getId().equals(tenant.getId())) {
+        //            throw new AppException(ErrorCode.ACCESS_DENIED);
+        //        }
 
         // Chỉ được sửa khi chưa xử lý xong
-        if (report.getStatus() == IncidentStatus.RESOLVED || report.getStatus() == IncidentStatus.REJECTED) {
-            throw new AppException(ErrorCode.CANNOT_EDIT_RESOLVED_INCIDENT);
-        }
+        //        if (report.getStatus() == IncidentStatus.RESOLVED || report.getStatus() == IncidentStatus.REJECTED) {
+        //            throw new AppException(ErrorCode.CANNOT_EDIT_RESOLVED_INCIDENT);
+        //        }
 
-        // Cập nhật thông tin
         report.setTitle(request.getTitle());
         report.setDescription(request.getDescription());
+        report.setStatus(request.getStatus());
+        report.setExpectedResolveDate(request.getExpectedResolveDate());
 
         incidentReportRepository.save(report);
         return incidentReportMapper.toResponse(report);
@@ -97,11 +99,7 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
 
     @Override
     @Transactional
-    public void delete(Integer userId, Integer reportId) {
-        Tenant tenant = tenantRepository
-                .findByUserId(userId)
-                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " + userId));
-
+    public void delete(Integer reportId) {
         IncidentReport report = incidentReportRepository
                 .findById(reportId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy báo cáo sự cố với ID: " + reportId));
