@@ -17,9 +17,9 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Tag, Row, Col, Segmented, Pagination} from 'antd';
-import {getAllRooms, createRoom} from '~/service/admin/room';
+import {getAllRooms, createRoom, updateRoom, deleteRoom} from '~/service/admin/room';
 import {getAllBoardingHousesNoPaged, getUtilityByBoardingHouse} from "~/service/admin/boarding_house";
-import {getByBoardingHouse} from "~/service/admin/building";
+import {deleteBuilding, getByBoardingHouse, updateBuilding} from "~/service/admin/building";
 import {createContract} from "~/service/admin/contract";
 
 const cx = classNames.bind(styles);
@@ -37,7 +37,7 @@ function Room() {
     });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedPosition, setSelectedPosition] = useState(null);
+    const [selectedRoom, setSelectedRoom] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
 
@@ -53,7 +53,7 @@ function Room() {
         if (!boardingHouseId) {
             setUtilityOption([]);
             setBuildingOption([]);
-            form.setFieldsValue({ utilityIds: [], buildingId: null });
+            form.setFieldsValue({utilityIds: [], buildingId: null});
             return;
         }
 
@@ -64,10 +64,10 @@ function Room() {
                 getByBoardingHouse(boardingHouseId),
             ]);
 
-            setUtilityOption(utilitiesResponse.map(u => ({ label: u.name, value: u.id })));
-            setBuildingOption(buildingsResponse.map(b => ({ label: b.name, value: b.id })));
+            setUtilityOption(utilitiesResponse.map(u => ({label: u.name, value: u.id})));
+            setBuildingOption(buildingsResponse.map(b => ({label: b.name, value: b.id})));
 
-            form.setFieldsValue({ utilityIds: [], buildingId: null });
+            form.setFieldsValue({utilityIds: [], buildingId: null});
         } catch (error) {
             message.error('Không thể tải tiện ích và tòa nhà cho khu này');
             setUtilityOption([]);
@@ -104,7 +104,7 @@ function Room() {
     const fetchOptions = async () => {
         try {
             const response = await getAllBoardingHousesNoPaged();
-            setBoardingHouseOption(response.map(bh => ({ value: bh.id, label: bh.name })));
+            setBoardingHouseOption(response.map(bh => ({value: bh.id, label: bh.name})));
         } catch (error) {
             console.error('Error fetching options:', error);
         }
@@ -112,7 +112,7 @@ function Room() {
 
     const handleAddRoom = () => {
         setModalMode('create');
-        setSelectedPosition(null);
+        setSelectedRoom(null);
         form.resetFields();
         setUtilityOption([]);
         setBuildingOption([]);
@@ -134,7 +134,7 @@ function Room() {
     };
 
     const handleEditRoom = async (record) => {
-        setSelectedPosition(record);
+        setSelectedRoom(record);
         setModalMode('edit');
         form.setFieldsValue(record);
 
@@ -150,20 +150,39 @@ function Room() {
         setIsModalOpen(true);
     };
 
+    const handleCallUpdateRoom = async (formData) => {
+        try {
+            await updateRoom(selectedRoom.id, formData);
+            handleGetRooms();
+            setIsModalOpen(false);
+        } catch (error) {
+            message.error(
+                `Lỗi khi cập nhật phòng: ${
+                    error.response?.data?.message || error.message
+                }`,
+            );
+        }
+    };
+
     const handleDeleteRoom = (record) => {
         setModalMode('delete');
-        setSelectedPosition(record.id);
+        setSelectedRoom(record);
         setIsModalOpen(true);
+    };
+
+    const handleCallDeleteRoom = async () => {
+        await deleteRoom(selectedRoom.id);
+        handleGetRooms();
+        setIsModalOpen(false);
     };
 
     const handleFormSubmit = (formData) => {
         if (modalMode === 'create') {
             handleCallCreateRoom(formData);
-            message.success('Tạo phòng thành công (demo)');
         } else if (modalMode === 'edit') {
-            message.success('Cập nhật phòng thành công (demo)');
+            handleCallUpdateRoom(formData);
         } else if (modalMode === 'delete') {
-            message.success('Xóa phòng thành công (demo)');
+            handleCallDeleteRoom();
         }
         setIsModalOpen(false);
         handleGetRooms(pagination.current, pagination.pageSize);
@@ -174,7 +193,7 @@ function Room() {
     };
 
     const handleViewRoom = (record) => {
-        setSelectedPosition(record);
+        setSelectedRoom(record);
         setModalMode('view');
         form.setFieldsValue(record);
         setIsModalOpen(true);
@@ -217,7 +236,7 @@ function Room() {
             align: 'center',
         },
         {
-            title: 'Tên nhà trọ',
+            title: 'Thuộc nhà trọ',
             dataIndex: 'boardingHouseName',
             key: 'boardingHouseName',
             align: 'center',
@@ -246,7 +265,7 @@ function Room() {
             title: 'Ghi chú',
             dataIndex: 'note',
             key: 'note',
-            width: 150,
+            width: 350,
             align: 'center',
         },
         {
@@ -277,21 +296,20 @@ function Room() {
     const roomModalFields = [
         {
             label: 'Khu nhà',
-            name: 'boardingHouseId',
-            type: 'select',
+            name: modalMode === 'edit' ? 'boardingHouseName' : 'boardingHouseId',
+            type: modalMode === 'edit' ? 'text' : 'select',
             options: boardingHouseOption,
-            disabled: disabledWhenEdit,
-            onChange: handleBoardingHouseChange,
-            rules: [{ required: true, message: 'Khu nhà bắt buộc chọn!' }],
+            disabled: modalMode === 'edit',
+            onChange: modalMode === 'create' ? handleBoardingHouseChange : undefined,
+            rules: modalMode === 'create' ? [{ required: true, message: 'Chọn khu nhà!' }] : [],
         },
         {
             label: 'Tòa nhà',
-            name: 'buildingId',
-            type: 'select',
+            name: modalMode === 'edit' ? 'buildingName' : 'buildingId',
+            type: modalMode === 'edit' ? 'text' : 'select',
             options: buildingOption,
-            disabled: disabledWhenEdit,
-            placeholder: 'Chọn khu nhà trước',
-            rules: [{ required: true, message: 'Tòa nhà bắt buộc chọn!' }],
+            disabled: modalMode === 'edit',
+            rules: modalMode === 'create' ? [{ required: true, message: 'Chọn tòa nhà!' }] : [],
         },
         {
             label: 'Số phòng',
@@ -331,7 +349,7 @@ function Room() {
             type: 'select',
             multiple: true,
             options: utilityOption,
-            placeholder: 'Chọn khu nhà trước',
+            placeholder: 'Chọn phòng trước',
         },
         {
             label: 'Ghi chú',
@@ -427,7 +445,7 @@ function Room() {
                 title={getModalTitle()}
                 fields={modalMode === 'delete' ? [] : roomModalFields}
                 onSubmit={handleFormSubmit}
-                initialValues={selectedPosition}
+                initialValues={selectedRoom}
                 isDeleteMode={modalMode === 'delete'}
                 formInstance={form}
             />

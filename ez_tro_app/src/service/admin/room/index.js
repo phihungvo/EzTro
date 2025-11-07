@@ -63,3 +63,27 @@ export const createRoom = async (formData) => {
         console.error('Error when creating room: ', error);
     }
 };
+
+export const updateRoom = async (roomId, formData) => {
+    try {
+        const response = await apiClient.put(
+            API_ENDPOINTS.ROOM.UPDATE(roomId),
+            formData,
+        );
+        message.success('Room updated successfully');
+        return response.data;
+    } catch (error) {
+        console.error('Error when updating room: ', error);
+    }
+};
+
+export const deleteRoom = async (roomId) => {
+    try {
+        const response = await apiClient.delete(
+            API_ENDPOINTS.ROOM.DELETE(roomId));
+        message.success('Room deleting successfully');
+        return response.data;
+    } catch (error) {
+        console.error('Error when deleting room: ', error);
+    }
+};
