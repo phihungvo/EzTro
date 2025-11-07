@@ -7,6 +7,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
+    const [initializing, setInitializing] = useState(true);
 
     // Khi app load, check token
     useEffect(() => {
@@ -28,6 +29,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('token');
             }
         }
+        setInitializing(false);
     }, []);
 
     const login = (token) => {
@@ -62,6 +64,10 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         navigate('/login');
     };
+
+    if (initializing) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <AuthContext.Provider value={{ user, login, logout }}>
