@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +22,9 @@ import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.BuildingRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.UtilityRepository;
+import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
+import carevn.luv2code.ez_tro.specification.RoomSpecs;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -122,6 +126,25 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public Page<RoomResponse> getAllRoomsPaged(int page, int size) {
         return roomRepository.findAll(PageRequest.of(page, size)).map(roomMapper::toResponse);
+    }
+
+    @Override
+    public Page<RoomResponse> getAllRoomsByRole(Pageable pageable) {
+        User user = SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+
+        Specification<Room> spec = Specification.where(RoomSpecs.hasBoardingHouse());
+
+        if (!isAdmin) {
+            spec = spec.and(RoomSpecs.ownedBy(user));
+        }
+
+        return roomRepository.findAll(spec, pageable).map(roomMapper::toResponse);
+    }
+
+    @Override
+    public List<RoomResponse> getAllByRole() {
+        return getAllRoomsByRole(Pageable.unpaged()).getContent();
     }
 
     @Override

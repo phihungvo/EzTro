@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.service.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
@@ -21,6 +22,10 @@ public interface RoomService {
     List<RoomResponse> getAvailableRooms();
 
     Page<RoomResponse> getAllRoomsPaged(int page, int size);
+
+    Page<RoomResponse> getAllRoomsByRole(Pageable pageable);
+
+    List<RoomResponse> getAllByRole();
 
     List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId);
 }

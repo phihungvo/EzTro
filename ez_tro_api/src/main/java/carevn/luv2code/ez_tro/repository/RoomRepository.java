@@ -3,13 +3,14 @@ package carevn.luv2code.ez_tro.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 
-public interface RoomRepository extends JpaRepository<Room, Integer> {
+public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecificationExecutor<Room> {
     List<Room> findAllByBoardingHouse_IdIn(List<Integer> boardingHouseIds);
 
     List<Room> findByBoardingHouseId(Integer boardingHouseId);
