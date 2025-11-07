@@ -20,6 +20,8 @@ import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
 import UserManagement from "~/pages/Admin/User/UserManagement";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
+import UserLayout from "~/components/Layout/UserLayout";
+import UserDashboard from "~/pages/User/HomeDashboard";
 
 const AppRoutes = () => {
     const {user} = useAuth();
@@ -66,6 +68,17 @@ const AppRoutes = () => {
                             <Route index element={<OwnerDashboard/>}/>
                         </Routes>
                     </SharedLayout>
+                </PrivateRoute>
+            }/>
+
+            {/* USER */}
+            <Route path="/user/*" element={
+                <PrivateRoute allowedRoles={['USER']}>
+                    <UserLayout>
+                        <Routes>
+                            <Route path="dashboard" element={<UserDashboard/>}/>
+                        </Routes>
+                    </UserLayout>
                 </PrivateRoute>
             }/>
 
