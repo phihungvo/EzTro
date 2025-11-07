@@ -14,15 +14,24 @@ import carevn.luv2code.ez_tro.enums.ContractStatus;
 public interface RoomMapper {
 
     @Mapping(source = "boardingHouse.name", target = "boardingHouseName")
+    @Mapping(source = "building.name", target = "buildingName")
     @Mapping(target = "startDate", expression = "java(getLatestContractStartDate(room))")
     @Mapping(target = "endDate", expression = "java(getLatestContractEndDate(room))")
     RoomResponse toResponse(Room room);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "boardingHouse", ignore = true)
+    @Mapping(target = "building", ignore = true)
     @Mapping(target = "contracts", ignore = true)
     @Mapping(target = "electricWaterRecords", ignore = true)
+    @Mapping(target = "roomUtilities", ignore = true)
     Room toEntity(RoomRequest request);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "boardingHouse", ignore = true)
+    @Mapping(target = "building", ignore = true)
+    @Mapping(target = "roomUtilities", ignore = true)
+    void updateRoomFromRequest(RoomRequest request, @MappingTarget Room room);
 
     default java.util.Date getLatestContractStartDate(Room room) {
         if (room.getContracts() == null || room.getContracts().isEmpty()) return null;

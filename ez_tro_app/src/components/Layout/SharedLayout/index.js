@@ -50,7 +50,7 @@ const SharedLayout = ({children}) => {
                 onLogout={handleLogout}
             />
 
-            <div className={cx("main", {collapsed})}>
+            <div className={cx("rightContainer", {collapsed})}>
                 <Header title={activeItem?.title || "Trang quản trị"}/>
                 <div className={cx("content")}>
                     {children}

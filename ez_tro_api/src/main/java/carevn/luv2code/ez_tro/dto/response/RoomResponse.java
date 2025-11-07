@@ -26,6 +26,8 @@ public class RoomResponse {
 
     String boardingHouseName;
 
+    String buildingName;
+
     Date startDate;
 
     Date endDate;

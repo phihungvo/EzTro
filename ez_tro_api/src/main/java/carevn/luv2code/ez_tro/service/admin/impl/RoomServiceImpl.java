@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +38,13 @@ public class RoomServiceImpl implements RoomService {
     private final UtilityRepository utilityRepository;
     private final RoomMapper roomMapper;
 
+    /**
+     * Tạo mới một phòng trong khu nhà trọ:
+     * - Xác thực khu nhà trọ và tòa nhà tồn tại.
+     * - Lấy danh sách tiện ích thuộc khu nhà trọ (nếu có).
+     * - Tự động sinh số phòng nếu chưa được cung cấp.
+     * - Gán các tiện ích mặc định cho phòng mới tạo.
+     */
     @Override
     @Transactional
     public RoomResponse create(RoomRequest request) {
@@ -86,15 +94,34 @@ public class RoomServiceImpl implements RoomService {
         return roomMapper.toResponse(room);
     }
 
+    /**
+     * Cập nhật thông tin phòng theo ID, bao gồm các thuộc tính cơ bản và danh sách tiện ích.
+     * Không cho phép thay đổi khu nhà trọ hoặc tòa nhà của phòng.
+     */
     @Override
     public RoomResponse update(Integer id, RoomRequest request) {
         Room room = getRoomOrThrow(id);
 
-        room.setRoomNumber(request.getRoomNumber());
-        room.setArea(request.getArea());
-        room.setPrice(request.getPrice());
-        room.setStatus(request.getStatus());
-        room.setNote(request.getNote());
+        roomMapper.updateRoomFromRequest(request, room);
+
+        if (request.getUtilityIds() != null) {
+            List<Utility> utilities = utilityRepository.findAllById(request.getUtilityIds());
+            List<RoomUtility> newRoomUtilities = utilities.stream()
+                    .map(utility -> {
+                        RoomUtilityId roomUtilityId = new RoomUtilityId(room.getId(), utility.getId());
+                        return RoomUtility.builder()
+                                .id(roomUtilityId)
+                                .room(room)
+                                .utility(utility)
+                                .quantity(1)
+                                .startDate(LocalDate.now())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            room.getRoomUtilities().clear();
+            room.getRoomUtilities().addAll(newRoomUtilities);
+        }
 
         roomRepository.save(room);
         return roomMapper.toResponse(room);
