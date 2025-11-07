@@ -3,12 +3,14 @@ package carevn.luv2code.ez_tro.controller.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.BuildingRequest;
 import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
 import carevn.luv2code.ez_tro.service.admin.BuildingService;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -17,6 +19,12 @@ import lombok.RequiredArgsConstructor;
 public class BuildingController {
 
     private final BuildingService buildingService;
+
+    @GetMapping("/paged-by-role")
+    public ResponseEntity<Page<BuildingResponse>> getAllBuildingsByRole(
+            @Parameter(description = "Phân trang") Pageable pageable) {
+        return ResponseEntity.ok(buildingService.getAllBuildingsByRole(pageable));
+    }
 
     @PostMapping
     public ResponseEntity<BuildingResponse> create(@RequestBody BuildingRequest request) {

@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
@@ -15,7 +17,9 @@ import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BoardingHouseMapper;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
+import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BoardingHouseService;
+import carevn.luv2code.ez_tro.specification.BoardingHouseSpecs;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -74,6 +78,25 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         return boardingHouseRepository.findAll().stream()
                 .map(boardingHouseMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public List<BoardingHouseResponse> getAllByRole() {
+        return getAllPagedByRole(Pageable.unpaged()).getContent();
+    }
+
+    @Override
+    public Page<BoardingHouseResponse> getAllPagedByRole(Pageable pageable) {
+        User user = SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+
+        Specification<BoardingHouse> spec = Specification.where(null);
+
+        if (!isAdmin) {
+            spec = spec.and(BoardingHouseSpecs.ownedBy(user));
+        }
+
+        return boardingHouseRepository.findAll(spec, pageable).map(boardingHouseMapper::toResponse);
     }
 
     @Override

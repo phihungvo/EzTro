@@ -42,6 +42,7 @@ const API_ENDPOINTS = {
     },
     BUILDING: {
         GET_ALL: `${BASE_URL}/buildings/paged`,
+        GET_ALL_BY_ROLE: `${BASE_URL}/buildings/paged-by-role`,
         CREATE: `${BASE_URL}/buildings`,
         UPDATE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,
         DELETE: (buildingId) => `${BASE_URL}/buildings/${buildingId}`,

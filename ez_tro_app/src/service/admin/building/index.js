@@ -16,6 +16,20 @@ export const getAllBuildings = async ({ page, pageSize }) => {
     }
 };
 
+export const getAllBuildingsByRole = async ({ page, pageSize }) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.BUILDING.GET_ALL_BY_ROLE, {
+            params: { page, pageSize },
+        });
+
+        return response.data;
+    } catch (error) {
+        console.log('Error when fetching all buildings ! Error: ', error);
+        message.error('Error get all buildings: ');
+        return null;
+    }
+};
+
 export const createBuilding = async (formData) => {
     try {
         const response = await apiClient.post(
