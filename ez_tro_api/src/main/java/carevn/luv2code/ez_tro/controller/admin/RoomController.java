@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,15 +62,13 @@ public class RoomController {
     }
 
     @GetMapping("/paged")
-    public ResponseEntity<Page<RoomResponse>> getAllRoomsPaged(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<RoomResponse> rooms = roomService.getAllRoomsPaged(page, size);
-        return ResponseEntity.ok(rooms);
+    public ResponseEntity<Page<RoomResponse>> getAllRoomsPaged(Pageable pageable) {
+        return ResponseEntity.ok(roomService.getAllRoomsByRole(pageable));
     }
 
     @GetMapping
     public ApiResponse<List<RoomResponse>> getAll() {
-        List<RoomResponse> responses = roomService.getAll();
+        List<RoomResponse> responses = roomService.getAllByRole();
         return ApiResponse.<List<RoomResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get all rooms successfully")
