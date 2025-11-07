@@ -17,8 +17,13 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import { Form, message, Row, Col, Pagination, Segmented } from 'antd';
-import {getAllBuildings, createBuilding, updateBuilding, deleteBuilding} from '~/service/admin/building';
-import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {
+    createBuilding,
+    updateBuilding,
+    deleteBuilding,
+    getAllBuildingsByRole
+} from '~/service/admin/building';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
 
@@ -125,7 +130,7 @@ function Building() {
     const handleGetAllBoardingHouses = async () => {
         try {
             const response = await getAllBoardingHousesNoPaged();
-            const mappedUsers = response.result.map(usr => ({
+            const mappedUsers = response.map(usr => ({
                 value: usr.id,
                 label: usr.name,
             }));
@@ -139,7 +144,7 @@ function Building() {
     const handleGetBuildings = async (page = 1, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            const response = await getAllBuildings({ page: page - 1, pageSize });
+            const response = await getAllBuildingsByRole({ page: page - 1, pageSize });
 
             if (response && Array.isArray(response.content)) {
                 setBuildingSource(response.content);

@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -66,7 +67,7 @@ public class BoardingHouseController {
 
     @GetMapping
     public ApiResponse<List<BoardingHouseResponse>> getAll() {
-        List<BoardingHouseResponse> responses = boardingHouseService.getAll();
+        List<BoardingHouseResponse> responses = boardingHouseService.getAllByRole();
         return ApiResponse.<List<BoardingHouseResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get all boarding houses successfully")
@@ -75,9 +76,8 @@ public class BoardingHouseController {
     }
 
     @GetMapping("/paged")
-    public ResponseEntity<Page<BoardingHouseResponse>> getAllBuildings(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<BoardingHouseResponse> responses = boardingHouseService.getAllBoardingHousesPaged(page, size);
+    public ResponseEntity<Page<BoardingHouseResponse>> getAllPagedByRole(Pageable pageable) {
+        Page<BoardingHouseResponse> responses = boardingHouseService.getAllPagedByRole(pageable);
         return ResponseEntity.ok(responses);
     }
 

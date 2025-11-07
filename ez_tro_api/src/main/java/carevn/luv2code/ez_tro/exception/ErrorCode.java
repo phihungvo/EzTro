@@ -77,6 +77,8 @@ public enum ErrorCode {
     YOU_DONT_HAVE_ANY_ROOM_RENTED(1058, "You are not renting any room", HttpStatus.BAD_REQUEST),
     CANNOT_EDIT_RESOLVED_INCIDENT(
             1059, "Cannot edit incident report that is already resolved or rejected", HttpStatus.BAD_REQUEST),
+    BUILDING_CREATE_FORBIDDEN(
+            1060, "You are not allowed to create building in this boarding house", HttpStatus.FORBIDDEN),
 
     ACCESS_DENIED(9997, "Access denied", HttpStatus.FORBIDDEN),
     USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
