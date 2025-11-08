@@ -1,4 +1,3 @@
-// Updated Tenant component (minimal changes for placeholders and removing 'ALL')
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
 import { useNavigate } from 'react-router-dom';

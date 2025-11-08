@@ -23,4 +23,7 @@ public interface TenantRepository extends JpaRepository<Tenant, Integer>, JpaSpe
 				WHERE t.id = :id
 			""")
     Optional<Tenant> findByIdWithDetails(@Param("id") Integer id);
+
+    //	@Query("SELECT t FROM Tenant t LEFT JOIN FETCH t.contracts WHERE t.id = :id")
+    //	Optional<Tenant> findByIdWithDetails(@Param("id") Integer id);
 }

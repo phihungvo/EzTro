@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.service.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
@@ -24,7 +25,7 @@ public interface TenantService {
 
     List<TenantResponse> getAll();
 
-    Page<TenantResponse> getAllTenantsPaged(int page, int size);
+    Page<TenantResponse> getAllTenantsPaged(Pageable pageable);
 
     public Page<TenantResponse> filterTenants(
             String search,
