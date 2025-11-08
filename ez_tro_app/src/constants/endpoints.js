@@ -90,6 +90,7 @@ const API_ENDPOINTS = {
     BILL: {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
+        FILTER: `${BASE_URL}/bills/filter`,
     },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,

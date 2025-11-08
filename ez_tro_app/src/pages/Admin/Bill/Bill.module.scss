@@ -1,33 +1,39 @@
-.room-wrapper {
+.wrapper {
   width: 100%;
-  display: block;
+  padding: 16px;
+  background: #f9f9f9;
+  min-height: 100vh;
+
 }
 
-.room-container {
-  width: 100%;
-  overflow-x: auto;
+.container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .05);
 }
 
-.room-header {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 19px;
+  margin-bottom: 16px;
 }
 
-.sub_header {
+.left {
   display: flex;
-  justify-content: space-between;
-  padding: 17px 0px;
+  gap: 12px;
+  align-items: center;
 }
 
-.features {
-  display: flex;
-  gap: 10px;
-}
+.card {
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: all .2s;
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: right;
-  margin-top: 24px;
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+  }
 }

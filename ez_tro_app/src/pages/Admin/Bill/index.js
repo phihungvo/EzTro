@@ -1,408 +1,320 @@
+// src/pages/Admin/Bill/Bill.jsx
 import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
-import moment from 'moment';
-import styles from '~/pages/Admin/Bill/Bill.module.scss';
+import dayjs from 'dayjs';
+import styles from './Bill.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
-// import BillCard from '~/components/Layout/AdminLayout/components/BillCard';
 import {
-    SearchOutlined,
-    PlusOutlined,
-    FilterOutlined,
-    CloudUploadOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    TableOutlined,
-    AppstoreOutlined,
+    SearchOutlined, PlusOutlined, FilterOutlined, CloudUploadOutlined,
+    EditOutlined, DeleteOutlined, TableOutlined, AppstoreOutlined
 } from '@ant-design/icons';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Pagination, Segmented, Tag, DatePicker} from 'antd';
-import {getAllBills, createBill, updateBill, deleteBill} from '~/service/admin/bill';
-import {getAllActiveContracts} from "~/service/admin/contract";
+import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
+import {Form, message, Pagination, Segmented, Tag, DatePicker, Spin, Empty, Row, Col} from 'antd';
+import {
+    getAllBills, createBill, updateBill, deleteBill, filterBills
+} from '~/service/admin/bill';
+import {getAllActiveContracts} from '~/service/admin/contract';
+import useDebounce from '~/hooks/useDebounce';
 
 const cx = classNames.bind(styles);
+const {RangePicker} = DatePicker;
 
 function Bill() {
-    const [billSource, setBillSource] = useState([]);
-    const [contractOption, setContractOption] = useState([]);
+    const [bills, setBills] = useState([]);
+    const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const [pagination, setPagination] = useState({current: 1, pageSize: 10, total: 0});
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
 
-    const disabledWhenEdit = modalMode === 'edit';
+    // Filter states
+    const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 500);
+    const [dateRange, setDateRange] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [monthFilter, setMonthFilter] = useState(null);
+    const [yearFilter, setYearFilter] = useState(null);
+    const [contractFilter, setContractFilter] = useState(null);
 
     const getStatusTag = (status) => {
-        const statusConfig = {
-            'PAID': {color: 'success', text: 'Đã thanh toán'},
-            'UNPAID': {color: 'warning', text: 'Chưa thanh toán'},
-            'OVERDUE': {color: 'error', text: 'Quá hạn thanh toán'},
+        const map = {
+            PAID: {color: 'success', text: 'Đã thanh toán'},
+            UNPAID: {color: 'warning', text: 'Chưa thanh toán'},
+            OVERDUE: {color: 'error', text: 'Quá hạn'},
         };
-        const config = statusConfig[status] || {color: 'default', text: status};
-        return <Tag color={config.color}>{config.text}</Tag>;
+        const cfg = map[status] || {color: 'default', text: status};
+        return <Tag color={cfg.color}>{cfg.text}</Tag>;
     };
 
     const columns = [
+        {title: 'Mã', dataIndex: 'billCode', width: 150, fixed: 'left', align: 'center',},
+        {title: 'Tiêu đề', dataIndex: 'billTitle', width: 200, align: 'center',},
+        {title: 'Người thuê', dataIndex: 'tenantName', width: 150, align: 'center',},
         {
-            title: 'Mã hoá đơn',
-            dataIndex: 'billCode',
-            key: 'billCode',
-            width: 150,
-            fixed: 'left',
-            align: 'center',
-        },
-        {
-            title: 'Tên hoá đơn',
-            dataIndex: 'billTitle',
-            key: 'billTitle',
-            width: 250,
-            align: 'center',
-        },
-        {
-            title: 'Người thuê',
-            dataIndex: 'tenantName',
-            key: 'tenantName',
-            width: 160,
-            align: 'center',
-        },
-        {
-            title: 'Số tiền (VNĐ)',
+            title: 'Số tiền',
             dataIndex: 'amount',
-            key: 'amount',
-            width: 150,
+            width: 140,
+            render: (v) => v?.toLocaleString('vi-VN') + ' đ',
             align: 'center',
-            render: (value) =>
-                value != null
-                    ? value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-                    : 'N/A',
         },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            width: 150,
-            align: 'center',
-            render: (status) => getStatusTag(status),
-        },
-        {
-            title: 'Ngày thanh toán',
-            dataIndex: 'paymentDate',
-            key: 'paymentDate',
-            align: 'center',
-            width: 150,
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'Chờ thanh toán',
-        },
+        {title: 'Trạng thái', dataIndex: 'status', width: 130, align: 'center', render: getStatusTag},
         {
             title: 'Hạn thanh toán',
             dataIndex: 'dueDate',
-            key: 'dueDate',
+            width: 140,
             align: 'center',
-            width: 150,
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
-        },
-        {
-            title: 'Ngày tạo',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            align: 'center',
-            width: 160,
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
-        },
-        {
-            title: 'Ngày cập nhật',
-            dataIndex: 'updatedAt',
-            key: 'updatedAt',
-            align: 'center',
-            width: 160,
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
+            render: (d) => d ? dayjs(d).format('DD/MM/YYYY') : '—'
         },
         {
             title: 'Thao tác',
-            key: 'action',
             fixed: 'right',
-            width: 120,
-            align: 'center',
-            render: (_, record) => (
+            width: 100,
+            render: (_, r) => (
                 <>
                     <SmartButton
                         type="primary"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         buttonWidth={40}
-                        onClick={() => handleEditBill(record)}
+                        onClick={() => handleEdit(r)}
                     />
                     <SmartButton
                         type="danger"
-                        icon={<DeleteOutlined />}
+                        icon={<DeleteOutlined/>}
                         buttonWidth={40}
-                        onClick={() => handleDeleteBill(record)}
-                        style={{ marginLeft: '8px' }}
+                        onClick={() => handleDelete(r)}
+                        style={{marginLeft: 8}}
                     />
                 </>
-            ),
-        },
+            )
+        }
     ];
 
-    const billModalFields = [
+    const modalFields = [
         {
-            label: 'Hợp đồng thuê',
+            label: 'Hợp đồng',
             name: 'contractId',
             type: 'select',
-            options: contractOption,
-            disabled: disabledWhenEdit,
-            fullWidth: true,
+            options: contracts,
+            disabled: modalMode === 'edit',
+            rules: [{required: true}]
         },
-        {
-            label: 'Tiêu đề hoá đơn',
-            name: 'billTitle',
-            type: 'text',
-        },
-        {
-            label: 'Tiền dịch vụ',
-            name: 'serviceAmount',
-            type: 'number',
-            render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
-            ),
-        },
+        {label: 'Tiêu đề', name: 'billTitle', type: 'text', rules: [{required: true}]},
+        {label: 'Tiền dịch vụ', name: 'serviceAmount', type: 'number', placeholder: '0'},
         {
             label: 'Hạn thanh toán',
             name: 'dueDate',
             type: 'date',
-            render: () => (
-                <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
-            ),
+            render: () => <DatePicker format="DD/MM/YYYY" style={{width: '100%'}}/>
         },
-        {
-            label: 'Ghi chú',
-            name: 'note',
-            type: 'textarea',
-        },
+        {label: 'Ghi chú', name: 'note', type: 'textarea'}
     ];
 
     useEffect(() => {
-        fetchContractOptions();
-        handleGetBills();
+        const load = async () => {
+            try {
+                const res = await getAllActiveContracts();
+                const opts = (res || []).map(c => ({
+                    label: `${c.boardingHouseName} - P.${c.roomNumber} - ${c.tenantFullName}`,
+                    value: c.id
+                }));
+                setContracts(opts);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        load();
     }, []);
 
-    const fetchContractOptions = async () => {
-        try {
-            const contractResponse = await getAllActiveContracts();
-            if (contractResponse && Array.isArray(contractResponse)) {
-                const c = contractResponse.map((c) => ({
-                    label: `${c.boardingHouseName} - Phòng ${c.roomNumber} - ${c.tenantFullName} (${new Date(c.startDate).toLocaleDateString('vi-VN')} → ${new Date(c.endDate).toLocaleDateString('vi-VN')})`,
-                    value: c.id,
-                }));
-                setContractOption(c);
-            }
-        } catch (error) {
-            console.error('Error fetching options:', error);
-        }
-    };
-
-    const handleGetBills = async (page = 1, pageSize = pagination.pageSize) => {
+    // Filter bills
+    const fetchBills = async () => {
         setLoading(true);
         try {
-            const response = await getAllBills({page: page - 1, pageSize});
-
-            if (response && Array.isArray(response.result)) {
-                setBillSource(response.result);
-                setPagination({
-                    current: page,
-                    pageSize: pageSize,
-                    total: response.totalElements,
-                });
-            } else {
-                setBillSource([]);
-                message.error('Dữ liệu hoá đơn không hợp lệ');
+            const params = {
+                page: pagination.current - 1,
+                size: pagination.pageSize,
+                search: debouncedSearch || undefined,
+                status: statusFilter === 'ALL' ? undefined : statusFilter,
+                month: monthFilter,
+                year: yearFilter,
+                contractId: contractFilter
+            };
+            if (dateRange?.[0]) {
+                params.startDate = dateRange[0].format('YYYY-MM-DD');
+                params.endDate = dateRange[1].format('YYYY-MM-DD');
             }
-        } catch (error) {
-            message.error(`Lỗi khi lấy danh sách hoá đơn: ${error.response?.data?.message || error.message}`);
-            setBillSource([]);
+
+            const res = await filterBills(params);
+            setBills(res.content || []);
+            setPagination(p => ({...p, total: res.totalElements}));
+        } catch (e) {
+            message.error('Lỗi tải hóa đơn');
+            setBills([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAddBill = () => {
+    useEffect(() => {
+        setPagination(p => ({...p, current: 1}));
+        fetchBills();
+    }, [debouncedSearch, dateRange, statusFilter, monthFilter, yearFilter, contractFilter]);
+
+    useEffect(() => {
+        fetchBills();
+    }, [pagination.current, pagination.pageSize]);
+
+    const handleAdd = () => {
         setModalMode('create');
-        setSelectedBill(null);
         form.resetFields();
         setIsModalOpen(true);
     };
 
-    const handleCallCreateBill = async (formData) => {
-        try {
-            await createBill(formData);
-            handleGetBills();
-            setIsModalOpen(false);
-        } catch (error) {
-            message.error(
-                `Lỗi khi tạo hoá đơn: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        }
-    };
-
-    const handleEditBill = (record) => {
-        setSelectedBill(record);
+    const handleEdit = (r) => {
         setModalMode('edit');
-        const formValues = {
-            ...record,
-            startDate: record.startDate ? moment(record.startDate) : null,
-            endDate: record.endDate ? moment(record.endDate) : null,
-        };
-        form.setFieldsValue(formValues);
+        setSelectedBill(r);
+        form.setFieldsValue({
+            ...r,
+            dueDate: r.dueDate ? dayjs(r.dueDate) : null
+        });
         setIsModalOpen(true);
     };
 
-    const handleCallUpdateBill = async (formData) => {
-        try {
-            // await updateBill(selectedBill.id, formData);
-            handleGetBills();
-            setIsModalOpen(false);
-        } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật hoá đơn: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        }
-    };
-
-    const handleDeleteBill = (record) => {
+    const handleDelete = (r) => {
         setModalMode('delete');
-        setSelectedBill(record);
-        form.resetFields();
+        setSelectedBill(r);
         setIsModalOpen(true);
     };
 
-    const handleCallDeleteBill = async () => {
-        // await deleteBill(selectedBill.id);
-        handleGetBills();
-        setIsModalOpen(false);
-    };
-
-    const handleFormSubmit = (formData) => {
-        const submitData = {
-            ...formData,
+    const handleSubmit = async (values) => {
+        const data = {
+            ...values,
+            dueDate: values.dueDate?.format('YYYY-MM-DD')
         };
 
-        if (modalMode === 'create') {
-            handleCallCreateBill(submitData);
-        } else if (modalMode === 'edit') {
-            handleCallUpdateBill(submitData);
-        } else if (modalMode === 'delete') {
-            handleCallDeleteBill();
-        }
-        setIsModalOpen(false);
-    };
-
-    const handleTableChange = (pagination) => {
-        handleGetBills(pagination.current, pagination.pageSize);
-    };
-
-    const getModalTitle = () => {
-        switch (modalMode) {
-            case 'create':
-                return 'Thêm khu hoá đơn';
-            case 'edit':
-                return 'Chỉnh sửa hoá đơn';
-            case 'delete':
-                return 'Xóa hoá đơn';
-            default:
-                return 'Chi tiết hoá đơn';
+        try {
+            if (modalMode === 'create') await createBill(data);
+            // else if (modalMode === 'edit') await updateBill(selectedBill.id, data);
+            // else if (modalMode === 'delete') await deleteBill(selectedBill.id);
+            setIsModalOpen(false);
+            fetchBills();
+        } catch (e) {
+            message.error(e.response?.data?.message || 'Lỗi');
         }
     };
 
-    const handleViewBill = (record) => {
-        setSelectedBill(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
+    const handleReset = () => {
+        setSearch('');
+        setDateRange(null);
+        setStatusFilter('ALL');
+        setMonthFilter(null);
+        setYearFilter(null);
+        setContractFilter(null);
+        message.success('Đã reset bộ lọc');
     };
 
     return (
-        <div className={cx('bill-wrapper')}>
-            {/* Header */}
-            <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm hoá đơn" icon={<SearchOutlined/>}/>
-                <div className={cx('features')}>
-                    <Segmented
-                        value={viewMode}
-                        onChange={setViewMode}
-                        options={[
-                            {label: 'Bảng', value: 'table', icon: <TableOutlined/>},
-                            {label: 'Thẻ', value: 'card', icon: <AppstoreOutlined/>},
-                        ]}
-                        className={cx('view-toggle')}
-                    />
-                    <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddBill}/>
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
-                </div>
-            </div>
+        <div className={cx('wrapper')}>
+            <FilterComponent
+                fields={[
+                    {type: 'search', value: search, onChange: setSearch, placeholder: 'Tìm mã, tên, phòng...'},
+                    {type: 'dateRange', value: dateRange, onChange: setDateRange},
+                    {
+                        type: 'select',
+                        value: statusFilter,
+                        onChange: setStatusFilter,
+                        options: [
+                            {value: 'ALL', label: 'Tất cả trạng thái'},
+                            {value: 'UNPAID', label: 'Chưa thanh toán'},
+                            {value: 'PAID', label: 'Đã thanh toán'},
+                            {value: 'OVERDUE', label: 'Quá hạn'}
+                        ]
+                    },
+                    // {type: 'month', value: monthFilter, onChange: setMonthFilter, placeholder: 'Tháng'},
+                    // {type: 'year', value: yearFilter, onChange: setYearFilter, placeholder: 'Năm'},
+                    {
+                        type: 'select',
+                        value: contractFilter,
+                        onChange: setContractFilter,
+                        options: contracts,
+                        placeholder: 'Chọn hợp đồng',
+                        allowClear: true
+                    }
+                ]}
+                onReset={handleReset}
+                gridTemplate="minmax(200px, 1fr) minmax(240px, 1fr) 1fr 1fr 80px"
 
-            {/* Nội dung */}
-            <div className={cx('bill-container')}>
+            />
+
+            <div className={cx('container')}>
+                <div className={cx('header')}>
+                    <div className={cx('left')}>
+                        <Segmented
+                            options={[
+                                {label: <>Bảng <TableOutlined/></>, value: 'table'},
+                                {label: <>Thẻ <AppstoreOutlined/></>, value: 'card'}
+                            ]}
+                            value={viewMode}
+                            onChange={setViewMode}
+                        />
+                        <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAdd}/>
+                        <SmartButton title="Excel" icon={<CloudUploadOutlined/>}
+                                     onClick={() => message.info('Sắp có!')}/>
+                    </div>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onChange={(p, s) => setPagination({...pagination, current: p, pageSize: s})}
+                        showSizeChanger
+                    />
+                </div>
+
                 {viewMode === 'table' ? (
                     <SmartTable
                         columns={columns}
-                        dataSources={billSource}
+                        dataSources={bills}
                         loading={loading}
-                        pagination={pagination}
-                        onTableChange={handleTableChange}
+                        pagination={false}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {billSource.map((Bill) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={Bill.id}>
-                                    {/*<BillCard*/}
-                                    {/*    bill={bill}*/}
-                                    {/*    onView={() => handleViewBill(Bill)}*/}
-                                    {/*    onEdit={() => handleEditBill(Bill)}*/}
-                                    {/*    onDelete={() => handleDeleteBill(Bill)}*/}
-                                    {/*/>*/}
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['10', '20', '30']}
-                                onChange={(page, pageSize) => handleGetBills(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Spin spinning={loading}>
+                        {bills.length === 0 ? <Empty/> : (
+                            <Row gutter={[16, 16]}>
+                                {bills.map(b => (
+                                    <Col xs={24} md={12} lg={8} key={b.id}>
+                                        <div className={cx('card')}>
+                                            <div><strong>{b.billCode}</strong></div>
+                                            <div>{b.billTitle}</div>
+                                            <div>{b.tenantName}</div>
+                                            <div><strong>{b.amount?.toLocaleString()}đ</strong></div>
+                                            {getStatusTag(b.status)}
+                                            <div style={{marginTop: 8}}>
+                                                <SmartButton size="small"
+                                                             onClick={() => handleEdit(b)}>Sửa</SmartButton>
+                                                <SmartButton size="small" type="danger" onClick={() => handleDelete(b)}
+                                                             style={{marginLeft: 8}}>Xóa</SmartButton>
+                                            </div>
+                                        </div>
+                                    </Col>
+                                ))}
+                            </Row>
+                        )}
+                    </Spin>
                 )}
             </div>
 
-            {/* Modal */}
             <PopupModal
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
-                title={getModalTitle()}
-                fields={modalMode === 'delete' ? [] : billModalFields}
-                onSubmit={handleFormSubmit}
+                title={modalMode === 'create' ? 'Tạo hóa đơn' : modalMode === 'edit' ? 'Sửa hóa đơn' : 'Xóa hóa đơn'}
+                fields={modalMode === 'delete' ? [] : modalFields}
+                onSubmit={handleSubmit}
                 initialValues={selectedBill}
                 isDeleteMode={modalMode === 'delete'}
                 formInstance={form}

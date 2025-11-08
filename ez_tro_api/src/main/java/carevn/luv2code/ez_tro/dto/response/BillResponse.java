@@ -22,8 +22,6 @@ public class BillResponse {
 
     BigDecimal amount;
 
-    Boolean paid;
-
     Date paymentDate;
 
     Date dueDate;
