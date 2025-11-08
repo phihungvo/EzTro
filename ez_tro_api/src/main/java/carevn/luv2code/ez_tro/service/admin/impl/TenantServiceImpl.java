@@ -27,7 +27,9 @@ import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.TenantMapper;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
+import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
+import carevn.luv2code.ez_tro.specification.TenantSpecs;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -136,14 +138,21 @@ public class TenantServiceImpl implements TenantService {
     }
 
     @Override
-    public List<TenantResponse> getAll() {
-        return tenantRepository.findAll().stream().map(tenantMapper::toResponse).toList();
+    public Page<TenantResponse> getAllTenantsPaged(Pageable pageable) {
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+
+        Specification<Tenant> spec = Specification.where(null);
+
+        if (!safe.isAdmin()) {
+            spec = spec.and(TenantSpecs.ownedByOwner(safe.get()));
+        }
+
+        return tenantRepository.findAll(spec, pageable).map(tenantMapper::toResponse);
     }
 
     @Override
-    public Page<TenantResponse> getAllTenantsPaged(int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
-        return tenantRepository.findAll(pageRequest).map(tenantMapper::toResponse);
+    public List<TenantResponse> getAll() {
+        return getAllTenantsPaged(Pageable.unpaged()).getContent();
     }
 
     @Override
@@ -158,7 +167,13 @@ public class TenantServiceImpl implements TenantService {
             int page,
             int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
         Specification<Tenant> spec = Specification.where(null);
+
+        if (!safe.isAdmin()) {
+            spec = spec.and(TenantSpecs.ownedByOwner(safe.get()));
+        }
 
         if (search != null && !search.trim().isEmpty()) {
             String lowerSearch = search.toLowerCase().trim();
@@ -202,7 +217,7 @@ public class TenantServiceImpl implements TenantService {
                 Subquery<Contract> subquery = query.subquery(Contract.class);
                 Root<Contract> contractRoot = subquery.from(Contract.class);
                 subquery.select(contractRoot);
-                Join<Contract, Tenant> tenantJoin = contractRoot.join("tenant", JoinType.INNER);
+                Join<Contract, Tenant> tenantJoin = contractRoot.join("tenant", JoinType.LEFT);
                 Date today = new Date(); // Use Date for comparison with TemporalType.DATE
                 Predicate statusPred = cb.equal(contractRoot.get("status"), ContractStatus.ACTIVE);
                 Predicate startDatePred = cb.lessThanOrEqualTo(contractRoot.get("startDate"), today);

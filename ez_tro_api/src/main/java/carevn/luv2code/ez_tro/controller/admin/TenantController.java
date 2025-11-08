@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -83,9 +84,8 @@ public class TenantController {
     }
 
     @GetMapping("/paged")
-    public ResponseEntity<Page<TenantResponse>> getAllTenantsPaged(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<TenantResponse> tenants = tenantService.getAllTenantsPaged(page, size);
+    public ResponseEntity<Page<TenantResponse>> getAllTenantsPaged(Pageable pageable) {
+        Page<TenantResponse> tenants = tenantService.getAllTenantsPaged(pageable);
         return ResponseEntity.ok(tenants);
     }
 

@@ -1,0 +1,50 @@
+// src/main/java/carevn/luv2code/ez_tro/specification/TenantSpecs.java
+package carevn.luv2code.ez_tro.specification;
+
+import org.springframework.data.jpa.domain.Specification;
+
+import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.enums.ContractStatus;
+import jakarta.persistence.criteria.*;
+
+public class TenantSpecs {
+
+    public static Specification<Tenant> ownedByOwner(User currentUser) {
+        return (root, query, cb) -> {
+            if (currentUser == null || currentUser.getId() == null) {
+                return cb.disjunction();
+            }
+            query.distinct(true);
+            Join<Tenant, Contract> c = root.join("contracts", JoinType.INNER);
+            Join<Contract, Room> r = c.join("room", JoinType.INNER);
+            Join<Room, BoardingHouse> bh = r.join("boardingHouse", JoinType.INNER);
+            return cb.equal(bh.get("owner").get("id"), currentUser.getId());
+        };
+    }
+
+    public static Specification<Tenant> hasContract() {
+        return (root, query, cb) -> root.join("contracts", JoinType.INNER).isNotNull();
+    }
+
+    public static Specification<Tenant> hasActiveContract() {
+        return (root, query, cb) -> {
+            Join<Tenant, Contract> join = root.join("contracts", JoinType.INNER);
+            return cb.and(
+                    cb.equal(join.get("status"), ContractStatus.ACTIVE),
+                    cb.lessThanOrEqualTo(join.get("startDate"), new java.util.Date()),
+                    cb.or(
+                            cb.isNull(join.get("endDate")),
+                            cb.greaterThanOrEqualTo(join.get("endDate"), new java.util.Date())));
+        };
+    }
+
+    /**
+     * Tenant có phòng
+     */
+    public static Specification<Tenant> hasRoom() {
+        return (root, query, cb) -> {
+            Join<Tenant, Contract> contractJoin = root.join("contracts", JoinType.INNER);
+            return contractJoin.join("room", JoinType.INNER).isNotNull();
+        };
+    }
+}
