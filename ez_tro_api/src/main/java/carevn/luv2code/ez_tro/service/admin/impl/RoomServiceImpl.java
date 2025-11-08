@@ -144,10 +144,20 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoomResponse> getAvailableRooms() {
-        return roomRepository.findByStatus(RoomStatus.AVAILABLE).stream()
-                .map(roomMapper::toResponse)
-                .toList();
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+
+        Specification<Room> spec = Specification.where(RoomSpecs.isAvailable());
+
+        if (!safe.isAdmin()) {
+            if (safe.get() == null) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+            spec = spec.and(RoomSpecs.ownedBy(safe.get()));
+        }
+
+        return roomRepository.findAll(spec).stream().map(roomMapper::toResponse).toList();
     }
 
     @Override

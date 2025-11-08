@@ -306,6 +306,7 @@ function Contract() {
             label: 'Phòng',
             name: 'roomId',
             type: 'select',
+            placeholder: 'Chọn phòng còn trống để cho thuê',
             options: roomOptions,
             disabled: disabledWhenEdit,
         },
@@ -329,30 +330,34 @@ function Contract() {
             name: 'endDate',
             type: 'date',
             format: 'DD/MM/YYYY',
-            placeholder: 'Để trống nếu chưa xác định',
+            placeholder: 'Chọn ngày kết thúc (nếu có)',
             disabledDate: disablePastDates
         },
         {
             label: 'Tiền cọc (VNĐ)',
             name: 'deposit',
             type: 'number',
+            placeholder: 'Nhập số tiền cọc (VNĐ)',
         },
         {
             label: 'Giá thuê (VNĐ / tháng)',
             name: 'rentPrice',
             type: 'number',
+            placeholder: 'Nhập giá thuê mỗi tháng (VNĐ)',
         },
         {
             label: 'Ngày nhận cọc',
             name: 'depositReceivedAt',
             type: 'date',
             format: 'DD/MM/YYYY',
+            placeholder: 'Chọn ngày đã nhận tiền cọc',
             disabledDate: disablePastDates
         },
         {
             label: 'Phương thức thanh toán cọc',
             name: 'depositPaymentMethod',
             type: 'select',
+            placeholder: 'Chọn phương thức thanh toán tiền cọc',
             options: [
                 {label: 'Tiền mặt', value: 'CASH'},
                 {label: 'Chuyển khoản ngân hàng', value: 'BANK_TRANSFER'},
@@ -364,27 +369,19 @@ function Contract() {
             label: 'Chu kỳ thanh toán (tháng)',
             name: 'paymentCycleMonths',
             type: 'number',
+            placeholder: 'VD: 1 cho mỗi tháng',
         },
         {
             label: 'Ngày thanh toán hàng tháng',
             name: 'monthlyPaymentDay',
             type: 'number',
-        },
-        {
-            label: 'Trạng thái hợp đồng',
-            name: 'status',
-            type: 'select',
-            disabled: disabledWhenEdit,
-            options: [
-                {label: 'Đang hiệu lực', value: 'ACTIVE'},
-                {label: 'Đã hết hạn', value: 'EXPIRED'},
-                {label: 'Đã hủy', value: 'CANCELLED'},
-            ],
+            placeholder: 'VD: 5 nghĩa là trả vào ngày 5 mỗi tháng',
         },
         {
             label: 'Ghi chú',
             name: 'note',
             type: 'textarea',
+            placeholder: 'Nhập ghi chú thêm (nếu có)',
         },
     ];
 
@@ -509,12 +506,12 @@ function Contract() {
         handleFilterContracts();
     }, [pagination.current, pagination.pageSize]);
 
-    const loadAllRooms = async () => {
+    const loadAllRoomsAvailability = async () => {
         try {
             const rooms = await getAllRoomAvailable();
             if (rooms && Array.isArray(rooms)) {
                 const roomOpts = rooms.map(room => ({
-                    label: `${room.roomNumber || 'N/A'} — ${room.boardingHouseName || 'N/A'} (ID: ${room.id})`,
+                    label: `Phòng: ${room.roomNumber || 'N/A'} — ${room.boardingHouseName || 'N/A'} (ID: ${room.id})`,
                     value: room.id,
                 }));
                 setRoomOptions(roomOpts);
@@ -529,7 +526,7 @@ function Contract() {
         setModalMode('create');
         setSelectedContract(null);
         form.resetFields();
-        await loadAllRooms();
+        await loadAllRoomsAvailability();
         setIsModalOpen(true);
     };
 
