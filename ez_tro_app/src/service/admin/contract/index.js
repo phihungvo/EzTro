@@ -109,14 +109,22 @@ export const getAllActiveContracts = async () => {
 
 export const createContract = async (formData) => {
     try {
-        const response = await apiClient.post(
-            API_ENDPOINTS.CONTRACT.CREATE,
-            formData,
-        );
-        message.success('Contract created successfully');
-        return response.data;
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.CREATE, formData);
+
+        if (response?.status === 200 || response?.status === 201) {
+            message.success('Tạo hợp đồng thành công');
+            return response.data;
+        }
     } catch (error) {
-        console.error('Error when creating contract: ', error);
+        if (error.response) {
+            const { status, data } = error.response;
+
+            if (status === 409) {
+                message.error( 'Phòng đã có hợp đồng đang hoạt động');
+            } else {
+                message.error(data?.message || 'Error when creating contract');
+            }
+        }
     }
 };
 

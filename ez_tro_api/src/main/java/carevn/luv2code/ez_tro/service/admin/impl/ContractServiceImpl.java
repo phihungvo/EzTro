@@ -35,7 +35,9 @@ import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
+import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
+import carevn.luv2code.ez_tro.specification.ContractSpecs;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -81,10 +83,11 @@ public class ContractServiceImpl implements ContractService {
             contract.setContractCode(CONTRACT_CODE_PREFIX + timestamp);
         }
 
-        contractRepository.save(contract);
+        contractRepository.saveAndFlush(contract);
 
         if (contract.getStatus() == ContractStatus.ACTIVE) {
             room.setStatus(RoomStatus.OCCUPIED);
+            roomRepository.saveAndFlush(room);
         }
         return contractMapper.toResponse(contract);
     }
@@ -210,6 +213,11 @@ public class ContractServiceImpl implements ContractService {
             int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Specification<Contract> spec = Specification.where(null);
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin()) {
+            spec = spec.and(ContractSpecs.ownedByOwner(safe.get()));
+        }
 
         if (search != null && !search.trim().isEmpty()) {
             String lowerSearch = search.toLowerCase().trim();
