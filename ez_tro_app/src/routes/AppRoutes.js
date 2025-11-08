@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.jsx
 import {Routes, Route, Navigate} from "react-router-dom";
 import SharedLayout from "~/components/Layout/SharedLayout";
 import PrivateRoute from "./PrivateRoute";
@@ -8,8 +7,6 @@ import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
 
 import AdminDashboard from "~/pages/Admin/HomeDashboard";
-import OwnerDashboard from "~/pages/Owner/HomeDashboard";
-
 import Building from "~/pages/Admin/Building";
 import Room from "~/pages/Admin/Room";
 import Tenant from "~/pages/Admin/Tenant";
@@ -22,6 +19,7 @@ import UserManagement from "~/pages/Admin/User/UserManagement";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import UserLayout from "~/components/Layout/UserLayout";
 import UserDashboard from "~/pages/User/HomeDashboard";
+import Owner from "~/pages/Admin/Owner";
 
 const AppRoutes = () => {
     const {user} = useAuth();
@@ -37,6 +35,7 @@ const AppRoutes = () => {
                     <SharedLayout>
                         <Routes>
                             <Route path="dashboard" element={<AdminDashboard/>}/>
+                            <Route path="owners" element={<Owner/>}/>
                             <Route path="buildings" element={<Building/>}/>
                             <Route path="rooms" element={<Room/>}/>
                             <Route path="tenants" element={<Tenant/>}/>
@@ -58,14 +57,14 @@ const AppRoutes = () => {
                 <PrivateRoute allowedRoles={['OWNER']}>
                     <SharedLayout>
                         <Routes>
-                            <Route path="dashboard" element={<OwnerDashboard/>}/>
+                            {/*<Route path="dashboard" element={<OwnerDashboard/>}/>*/}
                             <Route path="buildings" element={<Building/>}/>
                             <Route path="rooms" element={<Room/>}/>
                             <Route path="tenants" element={<Tenant/>}/>
                             <Route path="tenants/:id" element={<TenantDetail/>}/>
                             <Route path="contracts" element={<Contract/>}/>
                             <Route path="bills" element={<Bill/>}/>
-                            <Route index element={<OwnerDashboard/>}/>
+                            {/*<Route index element={<OwnerDashboard/>}/>*/}
                         </Routes>
                     </SharedLayout>
                 </PrivateRoute>
