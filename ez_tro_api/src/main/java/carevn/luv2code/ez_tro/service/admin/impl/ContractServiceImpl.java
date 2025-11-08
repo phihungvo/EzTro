@@ -138,9 +138,17 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ContractResponse> getAllActiveContracts() {
-        LocalDate today = LocalDate.now();
-        return contractRepository.findAllActiveContracts(ContractStatus.ACTIVE, today).stream()
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+
+        Specification<Contract> spec = ContractSpecs.isActive();
+
+        if (!safe.isAdmin()) {
+            spec = spec.and(ContractSpecs.ownedByOwner(safe.get()));
+        }
+
+        return contractRepository.findAll(spec).stream()
                 .map(contractMapper::toResponse)
                 .toList();
     }

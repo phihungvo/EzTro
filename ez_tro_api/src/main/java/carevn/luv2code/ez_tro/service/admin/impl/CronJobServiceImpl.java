@@ -186,7 +186,6 @@ public class CronJobServiceImpl implements CronJobService {
                         .serviceAmount(services)
                         .dueDate(dueDate)
                         .status(BillStatus.UNPAID)
-                        .paid(false)
                         .note(String.format("Rent: %s, Services: %s", rent, services))
                         .build();
 

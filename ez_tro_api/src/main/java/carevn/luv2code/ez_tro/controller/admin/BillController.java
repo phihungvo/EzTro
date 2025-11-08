@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -81,4 +82,23 @@ public class BillController {
     //                .result(bills)
     //                .build();
     //    }
+
+    @GetMapping("/filter")
+    public ApiResponse<Page<BillResponse>> filterBills(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean paid,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer contractId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<BillResponse> result = billService.filterBills(search, status, paid, month, year, contractId, page, size);
+        return ApiResponse.<Page<BillResponse>>builder()
+                .code(200)
+                .message("Lọc hóa đơn thành công")
+                .result(result)
+                .build();
+    }
 }

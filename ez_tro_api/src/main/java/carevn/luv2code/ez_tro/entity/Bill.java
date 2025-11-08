@@ -48,9 +48,6 @@ public class Bill {
     @Column(name = "amount", nullable = false)
     BigDecimal amount;
 
-    @Column(name = "paid", nullable = false)
-    Boolean paid = false;
-
     @Temporal(TemporalType.DATE)
     @Column(name = "payment_date")
     Date paymentDate;

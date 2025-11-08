@@ -16,6 +16,11 @@ export const getAllBills = async ({ page, pageSize }) => {
     }
 };
 
+export const filterBills = async (params) => {
+    const response = await apiClient.get(API_ENDPOINTS.BILL.FILTER, { params });
+    return response.data.result;
+};
+
 export const createBill = async (formData) => {
     try {
         const response = await apiClient.post(
