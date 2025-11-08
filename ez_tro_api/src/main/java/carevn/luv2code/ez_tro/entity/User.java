@@ -52,9 +52,6 @@ public class User implements UserDetails {
 
     Date updateAt;
 
-    @Column(name = "is_owner", nullable = false)
-    boolean isOwner = false;
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

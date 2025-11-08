@@ -11,7 +11,10 @@ import {
     SettingOutlined,
     AlertOutlined,
     BarChartOutlined,
-    GoldOutlined, CalendarOutlined,
+    GoldOutlined,
+    CalendarOutlined,
+    CrownOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 
 export const MENU_CONFIG = {
@@ -56,10 +59,18 @@ export const MENU_CONFIG = {
                     color: "#ec4899"
                 },
                 {
+                    key: "owners",
+                    label: "Chủ trọ",
+                    title: "Quản lý chủ trọ",
+                    icon: <CrownOutlined/>,
+                    path: "/admin/owners",
+                    color: "#f59e0b"
+                },
+                {
                     key: "tenants",
                     label: "Khách thuê",
                     title: "Quản lý người thuê",
-                    icon: <UserSwitchOutlined/>,
+                    icon: <UserOutlined/>,
                     path: "/admin/tenants",
                     color: "#f59e0b"
                 },

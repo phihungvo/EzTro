@@ -40,6 +40,13 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/permissions`,
         UPDATE: (permissionId) => `${BASE_URL}/permissions/${permissionId}`,
     },
+    OWNER: {
+        GET_ALL: `${BASE_URL}/owners`,
+        GET_MY_INFO: `${BASE_URL}/owners/me`,
+        CREATE: `${BASE_URL}/owners`,
+        UPDATE: (ownerId) => `${BASE_URL}/owners/${ownerId}`,
+        DELETE: (ownerId) => `${BASE_URL}/owners/${ownerId}`,
+    },
     BUILDING: {
         GET_ALL: `${BASE_URL}/buildings/paged`,
         GET_ALL_BY_ROLE: `${BASE_URL}/buildings/paged-by-role`,
