@@ -17,8 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,43 +32,48 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
-            throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable()) // SockJS cần tắt hẳn CSRF
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                .authorizeHttpRequests(auth -> auth
+                        // ✅ Cho phép tất cả các request WebSocket (SockJS tạo subpath động)
+                        .requestMatchers("/ws/**")
+                        .permitAll()
+
+                        // ✅ Cho phép API public khác
+                        .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/logout",
                                 "/api/files/**",
-                                "/api/files/presigned-url/**",
                                 "/api/public/**",
                                 "/actuator/health",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**")
                         .permitAll()
+
+                        // 🔒 Còn lại yêu cầu JWT
                         .anyRequest()
                         .authenticated())
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(
-                            List.of("http://localhost:3000", "https://2946f7d48d6d.ngrok-free.app"));
-                    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    configuration.setAllowedHeaders(List.of("*"));
-                    configuration.setAllowCredentials(true);
-                    return configuration;
-                }))
+                // ✅ Thêm JWT filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return new ProviderManager(authProvider);
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
@@ -80,17 +85,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000", "https://2946f7d48d6d.ngrok-free.app")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
-                        .allowCredentials(true);
-            }
-        };
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(authenticationProvider());
     }
 
     @Bean

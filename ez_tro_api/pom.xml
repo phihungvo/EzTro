@@ -83,6 +83,19 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Spring Boot WebSocket + STOMP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- JSON processing (Gson để convert Map → JSON string trong data field) -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
         <!-- Utility Libraries -->
         <dependency>
             <groupId>io.github.cdimascio</groupId>
