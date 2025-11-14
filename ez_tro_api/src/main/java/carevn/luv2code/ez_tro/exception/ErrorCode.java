@@ -80,9 +80,11 @@ public enum ErrorCode {
     BUILDING_CREATE_FORBIDDEN(
             1060, "You are not allowed to create building in this boarding house", HttpStatus.FORBIDDEN),
 
-    OWNER_NOT_FOUND(9996, "Owner not found", HttpStatus.NOT_FOUND),
-    ACCESS_DENIED(9997, "Access denied", HttpStatus.FORBIDDEN),
-    USERNAME_EXISTED(9998, "Username existed!", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(9994, "Notification not found", HttpStatus.NOT_FOUND),
+    OWNER_NOT_FOUND(9995, "Owner not found", HttpStatus.NOT_FOUND),
+    ACCESS_DENIED(9996, "Access denied", HttpStatus.FORBIDDEN),
+    USERNAME_EXISTED(9997, "Username existed!", HttpStatus.BAD_REQUEST),
+    FORBIDDEN(9998, "Forbidden", HttpStatus.FORBIDDEN),
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized exception", HttpStatus.INTERNAL_SERVER_ERROR);
 
     int code;

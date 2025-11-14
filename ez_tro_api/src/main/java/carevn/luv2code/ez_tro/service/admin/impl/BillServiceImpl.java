@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillService;
+import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.specification.BillSpecs;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -41,6 +43,7 @@ public class BillServiceImpl implements BillService {
     private final TenantRepository tenantRepository;
     private final BillMapper billMapper;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     public BillResponse create(BillRequest request) {
@@ -69,6 +72,13 @@ public class BillServiceImpl implements BillService {
         }
 
         billRepository.save(bill);
+
+        notificationService.sendToUser(
+                tenant.getUser().getId(),
+                "Hóa đơn mới",
+                "Phòng " + room.getRoomNumber() + " - " + totalAmount + "đ - Hạn: " + bill.getDueDate(),
+                "BILL_CREATED",
+                Map.of("billId", bill.getId(), "roomNumber", room.getRoomNumber()));
 
         return billMapper.toResponse(bill);
     }
