@@ -18,6 +18,7 @@ import {
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import {message, Button} from "antd";
+import NotificationBell from "~/components/Layout/AdminLayout/components/NotificationBell";
 
 const cx = classNames.bind(styles);
 
@@ -92,6 +93,7 @@ const UserLayout = () => {
                             <div className={cx("avatar")}>NC</div>
                             <span className={cx("userName")}>{userInfo.name}</span>
                         </div>
+                        <NotificationBell/>
                         <Button
                             type="primary"
                             onClick={handleLogout}

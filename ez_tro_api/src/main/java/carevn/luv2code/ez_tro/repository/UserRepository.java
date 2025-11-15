@@ -37,6 +37,21 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles r LEFT JOIN FETCH r.permissions WHERE u.userName = :userName")
     Optional<User> findByUserNameWithRolesAndPermissions(@Param("userName") String userName);
 
+    /**
+     * Lấy danh sách User (khách thuê) đang thuê phòng ACTIVE thuộc chủ trọ có ID = ownerId
+     */
+    @Query(
+            """
+			SELECT DISTINCT u FROM User u
+			INNER JOIN Tenant t ON t.user = u
+			INNER JOIN Contract c ON c.tenant = t
+			INNER JOIN Room r ON c.room = r
+			INNER JOIN BoardingHouse bh ON r.boardingHouse = bh
+			WHERE bh.owner.id = :ownerId
+			AND c.status = 'ACTIVE'
+			""")
+    List<User> findActiveTenantsByOwnerId(@Param("ownerId") Integer ownerId);
+
     Page<User> findByRolesContaining(Role role, Pageable pageable);
 
     //    Optional<User> findByIdAndIsOwner(Integer id, boolean isOwner);

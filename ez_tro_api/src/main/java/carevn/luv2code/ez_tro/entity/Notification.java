@@ -20,7 +20,7 @@ public class Notification {
     Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
+    @JoinColumn(name = "recipient_id")
     private User recipient;
 
     @Column(name = "sender_id")
@@ -33,13 +33,16 @@ public class Notification {
     String message;
 
     @Column(nullable = false, length = 50)
-    String type;
+    String type; // PERSONAL, BILL_REMINDER, CONTRACT, SYSTEM, INCIDENT...
 
     @Column(columnDefinition = "JSON")
     String data; // JSON string
 
+    @Column(name = "is_broadcast", nullable = false)
+    Boolean isBroadcast = false;
+
     @Column(name = "is_read")
-    boolean isRead = false;
+    Boolean isRead = false;
 
     @Column(name = "read_at")
     LocalDateTime readAt;

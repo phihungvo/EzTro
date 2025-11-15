@@ -13,5 +13,13 @@ public interface NotificationService {
 
     void markAsRead(Integer notificationId);
 
-    Integer countUnread();
+    long countUnread();
+
+    void sendToAll(String title, String message, String type, Object data);
+
+    void sendToAllTenantsOfOwner(Integer ownerId, String title, String message, String type, Object data);
+
+    void sendBillReminder(Integer billId);
+
+    void markAllAsRead();
 }
