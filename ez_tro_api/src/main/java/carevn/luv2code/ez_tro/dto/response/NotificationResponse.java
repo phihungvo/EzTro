@@ -10,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class NotificationResponse {
-    Long id;
+    Integer id;
 
     String title;
 

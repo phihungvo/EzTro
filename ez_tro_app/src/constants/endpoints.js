@@ -18,6 +18,12 @@ const API_ENDPOINTS = {
     SERVICE: {
         EXPORT_EXCEL: `${BASE_URL}/export/excel`,
     },
+    NOTIFICATION: {
+        GET_MY_NOTIFICATIONS: `${BASE_URL}/notifications/me`,
+        MARK_AS_READ: (id) => `${BASE_URL}/notifications/read/${id}`,
+        MARK_ALL_AS_READ: `${BASE_URL}/notifications/read-all`,
+        UNREAD_COUNT: `${BASE_URL}/notifications/unread-count`,
+    },
     USER: {
         GET_ALL: `${BASE_URL}/user/getAll`,
         BASIC_INFO: `${BASE_URL}/user/basic-info`,
