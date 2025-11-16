@@ -1,0 +1,198 @@
+// src/pages/Admin/Revenue/Revenue.module.scss
+.revenue-wrapper {
+  width: 100%;
+  display: block;
+  padding: 16px;
+  background: #f9f9f9;
+  min-height: 100vh;
+}
+
+/* ================= Statistics Section ================= */
+.statistics-section {
+  margin-bottom: 20px;
+  animation: fadeInDown 0.5s ease-out;
+
+  .stat-card {
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #1890ff, #52c41a);
+    }
+
+    &.total::before {
+      background: linear-gradient(90deg, #1890ff, #40a9ff);
+    }
+
+    &.paid::before {
+      background: linear-gradient(90deg, #52c41a, #73d13d);
+    }
+
+    &.unpaid::before {
+      background: linear-gradient(90deg, #ff4d4f, #ff7875);
+    }
+
+    &.partial::before {
+      background: linear-gradient(90deg, #fa8c16, #ffa940);
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    :global {
+      .ant-card-body {
+        padding: 20px;
+      }
+
+      .ant-statistic-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #595959;
+        margin-bottom: 8px;
+      }
+
+      .ant-statistic-content {
+        font-size: 24px;
+        font-weight: 700;
+
+        .ant-statistic-content-value {
+          font-size: 20px;
+        }
+
+        .ant-statistic-content-suffix {
+          font-size: 16px;
+          margin-left: 4px;
+        }
+      }
+    }
+  }
+}
+
+/* ================= Container ================= */
+.revenue-container {
+  width: 100%;
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.sub_header {
+  display: flex;
+  justify-content: space-between;
+  padding: 17px 0px;
+  align-items: center;
+}
+
+.features {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.view-toggle {
+  margin-right: 8px;
+}
+
+.card-grid {
+  margin-top: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: right;
+  margin-top: 24px;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 992px) {
+  .statistics-section {
+    .stat-card {
+      :global {
+        .ant-statistic-content {
+          font-size: 20px;
+
+          .ant-statistic-content-value {
+            font-size: 18px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .sub_header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .features {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
+  }
+
+  .statistics-section {
+    margin-bottom: 16px;
+
+    .stat-card {
+      :global {
+        .ant-card-body {
+          padding: 16px;
+        }
+
+        .ant-statistic-content {
+          font-size: 18px;
+
+          .ant-statistic-content-value {
+            font-size: 16px;
+          }
+
+          .ant-statistic-content-suffix {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ================= Animations ================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

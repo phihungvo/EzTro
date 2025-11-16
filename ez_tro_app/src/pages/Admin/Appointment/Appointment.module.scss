@@ -1,0 +1,139 @@
+// src/pages/Admin/Appointment/Appointment.module.scss
+.appointment-wrapper {
+  width: 100%;
+  display: block;
+  padding: 16px;
+  background: #f9f9f9;
+  min-height: 100vh;
+}
+
+.appointment-container {
+  width: 100%;
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.sub_header {
+  display: flex;
+  justify-content: space-between;
+  padding: 17px 0px;
+  align-items: center;
+}
+
+.features {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.view-toggle {
+  margin-right: 8px;
+}
+
+.card-grid {
+  margin-top: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: right;
+  margin-top: 24px;
+}
+
+/* Calendar View Styles */
+.calendar-wrapper {
+  :global {
+    .ant-picker-calendar {
+      .ant-picker-panel {
+        background: transparent;
+      }
+
+      .ant-picker-calendar-header {
+        padding: 16px 0;
+        border-bottom: 1px solid #f0f0f0;
+        margin-bottom: 16px;
+
+        .ant-picker-calendar-year-select,
+        .ant-picker-calendar-month-select {
+          min-width: 100px;
+        }
+      }
+
+      .ant-picker-cell {
+        &.ant-picker-cell-in-view {
+          .ant-picker-cell-inner {
+            &:hover {
+              background: #f0f0f0;
+            }
+          }
+
+          &.ant-picker-cell-selected {
+            .ant-picker-cell-inner {
+              background: #e6f7ff;
+              border-color: #1890ff;
+
+              &::before {
+                border-color: #1890ff;
+              }
+            }
+          }
+
+          &.ant-picker-cell-today {
+            .ant-picker-cell-inner {
+              &::before {
+                border-color: #52c41a;
+              }
+            }
+          }
+        }
+      }
+
+      .ant-picker-content {
+        th {
+          font-weight: 600;
+          color: #262626;
+        }
+      }
+
+      .ant-badge-status-text {
+        font-size: 12px;
+        color: #595959;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        display: inline-block;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .sub_header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .features {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
+  }
+
+  .calendar-wrapper {
+    overflow-x: auto;
+
+    :global {
+      .ant-picker-calendar {
+        min-width: 600px;
+      }
+    }
+  }
+}
