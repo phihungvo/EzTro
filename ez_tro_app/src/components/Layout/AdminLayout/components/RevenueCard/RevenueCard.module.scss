@@ -1,0 +1,392 @@
+// src/components/Layout/AdminLayout/components/RevenueCard/RevenueCard.module.scss
+.revenue-card {
+  border-radius: 18px !important;
+  border: none !important;
+  overflow: hidden;
+  background: #fff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.35s ease;
+  animation: fadeInUp 0.4s ease-out;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(24, 144, 255, 0.25) !important;
+
+    .card-header {
+      background: linear-gradient(135deg, #1890ff, #096dd9);
+    }
+  }
+}
+
+/* ================= Header ================= */
+.card-header {
+  background: linear-gradient(135deg, #40a9ff, #1890ff);
+  color: #fff;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.dollar-icon {
+  font-size: 28px !important;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.revenue-code {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.3px;
+}
+
+.month-label {
+  font-size: 12px;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* ================= Body ================= */
+.card-body {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Info Row với icon */
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+
+  &.highlight {
+    background: linear-gradient(135deg, #e6f7ff, #bae7ff);
+    border-left: 3px solid #1890ff;
+
+    .icon {
+      color: #1890ff !important;
+    }
+
+    .label {
+      color: #0050b3;
+    }
+
+    .value.primary {
+      color: #096dd9;
+      font-size: 16px;
+      font-weight: 700;
+    }
+  }
+
+  &:hover {
+    transform: translateX(4px);
+    background: #e8e8e8;
+
+    &.highlight {
+      background: linear-gradient(135deg, #bae7ff, #91d5ff);
+    }
+  }
+
+  .icon {
+    color: #1890ff !important;
+    font-size: 16px !important;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .label {
+    font-size: 11px;
+    color: #1890ff;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .value {
+    font-size: 14px;
+    color: #262626;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+}
+
+/* Info Item đơn giản */
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &.payment-date {
+    border-bottom: none;
+    margin-top: 4px;
+
+    .label {
+      color: #52c41a;
+    }
+
+    .value {
+      color: #52c41a;
+      font-weight: 600;
+    }
+  }
+
+  .label {
+    font-size: 11px;
+    color: #8c8c8c;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .value {
+    font-size: 14px;
+    color: #262626;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+}
+
+/* ================= Fees Section ================= */
+.fees-section {
+  background: linear-gradient(135deg, #f9f9f9, #f0f0f0);
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fee-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fee-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  position: relative;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #1890ff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+  }
+
+  .fee-icon {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 14px;
+
+    &.electric {
+      color: #faad14;
+    }
+
+    &.water {
+      color: #1890ff;
+    }
+  }
+
+  .fee-label {
+    font-size: 10px;
+    color: #8c8c8c;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .fee-value {
+    font-size: 13px;
+    color: #262626;
+    font-weight: 700;
+  }
+}
+
+/* ================= Total Section ================= */
+.total-section {
+  background: linear-gradient(135deg, #f6ffed, #d9f7be);
+  padding: 14px;
+  border-radius: 10px;
+  border: 2px solid #52c41a;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.15);
+}
+
+.total-row,
+.paid-row,
+.remaining-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.total-row {
+  padding-bottom: 10px;
+  border-bottom: 2px solid #52c41a;
+  margin-bottom: 10px;
+
+  .total-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #237804;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .total-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #52c41a;
+  }
+}
+
+.paid-row {
+  .paid-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #389e0d;
+  }
+
+  .paid-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #52c41a;
+
+    &.full {
+      color: #52c41a;
+      text-shadow: 0 1px 2px rgba(82, 196, 26, 0.3);
+    }
+  }
+}
+
+.remaining-row {
+  .remaining-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #cf1322;
+  }
+
+  .remaining-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ff4d4f;
+  }
+}
+
+/* ================= Progress Section ================= */
+.progress-section {
+  padding: 8px 0;
+
+  :global {
+    .ant-progress-text {
+      font-weight: 700;
+    }
+  }
+}
+
+/* ================= Footer ================= */
+.card-footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid #f0f0f0;
+  background: linear-gradient(to top, #fafafa, #fff);
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 576px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .revenue-code {
+    font-size: 16px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .fee-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .total-section {
+    padding: 12px;
+  }
+
+  .total-row .total-value {
+    font-size: 16px;
+  }
+
+  .paid-row .paid-value,
+  .remaining-row .remaining-value {
+    font-size: 14px;
+  }
+}
+
+/* ================= Animation ================= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

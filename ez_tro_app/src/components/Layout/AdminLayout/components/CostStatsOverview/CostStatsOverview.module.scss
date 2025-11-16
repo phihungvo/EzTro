@@ -1,0 +1,166 @@
+// src/components/OperatingCostTracker/CostStatsOverview.module.scss
+
+// Container cho toàn bộ phần thống kê
+.statsOverview {
+  // Không cần padding ở đây vì đã có trong OperatingCostTracker
+}
+
+// === Card thống kê chính (Tổng chi phí, Đã thanh toán,...) ===
+.statCard {
+  border-radius: 12px;
+  height: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  :global(.ant-statistic-title) {
+    font-size: 13px !important;
+    color: #8c8c8c !important;
+  }
+
+  :global(.ant-statistic-content) {
+    font-size: 24px !important;
+    font-weight: bold !important;
+  }
+
+  .trend {
+    margin-top: 8px;
+    font-size: 12px;
+
+    .up {
+      color: #ff4d4f;
+    }
+
+    .down {
+      color: #52c41a;
+    }
+
+    .label {
+      color: #8c8c8c;
+      margin-left: 4px;
+    }
+  }
+}
+
+// === Card tổng quan ngân sách ===
+.budgetCard {
+  border-radius: 12px;
+  margin-top: 24px;
+
+  .title {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+
+    .icon {
+      margin-right: 8px;
+      color: #722ed1;
+    }
+  }
+
+  .budgetHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .totalBudget {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .usedPercent {
+      font-size: 14px;
+      font-weight: 600;
+
+      &.over {
+        color: #ff4d4f;
+      }
+
+      &.safe {
+        color: #52c41a;
+      }
+    }
+  }
+
+  .divider {
+    margin: 16px 0;
+  }
+}
+
+// === Card chi tiết từng loại chi phí ===
+.categoryCard {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .icon {
+      font-size: 18px;
+      margin-right: 8px;
+    }
+
+    .label {
+      font-weight: 600;
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .badge {
+      margin-left: auto;
+    }
+  }
+
+  .infoRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+
+    .label {
+      color: #8c8c8c;
+    }
+
+    .value {
+      font-weight: bold;
+
+      &.over {
+        color: #ff4d4f;
+      }
+    }
+
+    .budget {
+      font-weight: 600;
+    }
+  }
+
+  .progress {
+    margin-bottom: 4px;
+  }
+
+  .footer {
+    font-size: 11px;
+    text-align: right;
+    margin-top: 4px;
+
+    &.over {
+      color: #ff4d4f;
+    }
+
+    &.safe {
+      color: #52c41a;
+    }
+  }
+}
+
+// Responsive điều chỉnh
+@media (max-width: 768px) {
+  .budgetHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

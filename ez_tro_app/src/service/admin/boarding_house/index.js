@@ -33,7 +33,7 @@ export const createBoardingHouse = async (formData) => {
             API_ENDPOINTS.BOARDING_HOUSE.CREATE,
             formData,
         );
-        message.success('Boarding House created successfully');
+        message.success('Tạo khu trọ thành công');
         return response.data;
     } catch (error) {
         console.error('Error when creating boarding house: ', error);
@@ -46,7 +46,7 @@ export const updateBoardingHouse = async (boardingHouseId, formData) => {
             API_ENDPOINTS.BOARDING_HOUSE.UPDATE(boardingHouseId),
             formData,
         );
-        message.success('Boarding House updated successfully');
+        message.success('Cập nhật khu trọ thành công');
         return response.data;
     } catch (error) {
         console.error('Error when updating boarding house: ', error);
@@ -57,7 +57,7 @@ export const deleteBoardingHouse = async (boardingHouseId) => {
     try {
         const response = await apiClient.delete(
             API_ENDPOINTS.BOARDING_HOUSE.DELETE(boardingHouseId));
-        message.success('Boarding House deleting successfully');
+        message.success('Xoá khu trọ thành công');
         return response.data;
     } catch (error) {
         console.error('Error when deleting boarding house: ', error);

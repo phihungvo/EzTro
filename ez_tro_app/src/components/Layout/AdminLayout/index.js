@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import classNames from "classnames/bind";
-import { Routes, Route, useLocation } from 'react-router-dom';
+import {Routes, Route, useLocation} from 'react-router-dom';
 import styles from "./AdminLayout.module.scss";
 import Header from "../Header";
 import AdminSidebar from "~/components/Layout/AdminLayout/components/Sidebar/AdminSidebar";
@@ -24,7 +24,7 @@ import {
     FileTextOutlined,
     SettingOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 import Building from "~/pages/Admin/Building";
 import Tenant from "~/pages/Admin/Tenant";
@@ -37,6 +37,10 @@ import Bill from "~/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
+import RequestManagement from "~/pages/Admin/RequestManagement";
+import Appointment from "~/pages/Admin/Appointment";
+import Revenue from "~/pages/Admin/Revenue";
+// import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
 
@@ -48,7 +52,7 @@ const adminMenuConfig = [
                 key: "dashboard",
                 label: "Bảng điều khiển",
                 title: "Tổng quan hệ thống",
-                icon: <DashboardOutlined />,
+                icon: <DashboardOutlined/>,
                 color: "#3b82f6",
                 path: "/admin/dashboard",  // Add path for routing
             },
@@ -62,7 +66,7 @@ const adminMenuConfig = [
                 key: "boarding-houses",
                 label: "Khu nhà trọ",
                 title: "Quản lý khu nhà trọ",
-                icon: <AppstoreOutlined />,
+                icon: <AppstoreOutlined/>,
                 color: "#10b981",
                 path: "/admin/boarding-houses",
             },
@@ -70,7 +74,7 @@ const adminMenuConfig = [
                 key: "buildings",
                 label: "Tòa nhà",
                 title: "Quản lý tòa nhà",
-                icon: <BankOutlined />,
+                icon: <BankOutlined/>,
                 color: "#14b8a6",
                 path: "/admin/buildings",
             },
@@ -78,7 +82,7 @@ const adminMenuConfig = [
                 key: "rooms",
                 label: "Phòng trọ",
                 title: "Quản lý phòng trọ",
-                icon: <HomeOutlined />,
+                icon: <HomeOutlined/>,
                 color: "#ec4899",
                 path: "/admin/rooms",
             },
@@ -86,7 +90,7 @@ const adminMenuConfig = [
                 key: "tenants",
                 label: "Người thuê",
                 title: "Quản lý người thuê",
-                icon: <UserSwitchOutlined />,
+                icon: <UserSwitchOutlined/>,
                 color: "#f59e0b",
                 path: "/admin/tenants",
             },
@@ -100,7 +104,7 @@ const adminMenuConfig = [
                 key: "contracts",
                 label: "Hợp đồng thuê trọ",
                 title: "Quản lý thông tin hợp đồng thuê trọ",
-                icon: <FileTextOutlined />,
+                icon: <FileTextOutlined/>,
                 color: "#8b5cf6",
                 path: "/admin/contracts",
             },
@@ -108,7 +112,7 @@ const adminMenuConfig = [
                 key: "bills",
                 label: "Hoá đơn thanh toán",
                 title: "Quản lý hoá đơn tiền phòng và dịch vụ của người thuê",
-                icon: <FileTextOutlined />,
+                icon: <FileTextOutlined/>,
                 color: "#f59e0b",
                 path: "/admin/bills",
             },
@@ -116,7 +120,7 @@ const adminMenuConfig = [
                 key: "services",
                 label: "Dịch vụ phòng trọ",
                 title: "Quản lý các dịch vụ đi kèm (điện, nước, internet, vệ sinh...)",
-                icon: <ToolOutlined />,
+                icon: <ToolOutlined/>,
                 color: "#6366f1",
                 path: "/admin/utilities",
             },
@@ -130,7 +134,7 @@ const adminMenuConfig = [
                 key: "revenues",
                 label: "Doanh thu",
                 title: "Thống kê doanh thu và lợi nhuận",
-                icon: <DollarOutlined />,
+                icon: <DollarOutlined/>,
                 color: "#16a34a",
                 path: "/admin/revenues",
             },
@@ -138,7 +142,7 @@ const adminMenuConfig = [
                 key: "assets",
                 label: "Tài sản",
                 title: "Quản lý tài sản, thiết bị trong khu trọ",
-                icon: <GoldOutlined />,
+                icon: <GoldOutlined/>,
                 color: "#ca8a04",
                 path: "/admin/assets",
             },
@@ -146,7 +150,7 @@ const adminMenuConfig = [
                 key: "expenses",
                 label: "Chi phí",
                 title: "Theo dõi chi phí vận hành",
-                icon: <BankOutlined />,
+                icon: <BankOutlined/>,
                 color: "#22d3ee",
                 path: "/admin/expenses",
             },
@@ -160,7 +164,7 @@ const adminMenuConfig = [
                 key: "room-requests",
                 label: "Yêu cầu dọn phòng / trả phòng",
                 title: "Xử lý yêu cầu dọn phòng, trả phòng từ người thuê",
-                icon: <AlertOutlined />,
+                icon: <AlertOutlined/>,
                 color: "#ef4444",
                 path: "/admin/room-requests",
             },
@@ -168,7 +172,7 @@ const adminMenuConfig = [
                 key: "appointments",
                 label: "Lịch hẹn xem phòng",
                 title: "Quản lý lịch hẹn và khách xem phòng",
-                icon: <CalendarOutlined />,
+                icon: <CalendarOutlined/>,
                 color: "#3b82f6",
                 path: "/admin/appointments",
             },
@@ -176,7 +180,7 @@ const adminMenuConfig = [
                 key: "incidents",
                 label: "Báo cáo sự cố",
                 title: "Quản lý và xử lý sự cố phòng trọ",
-                icon: <AlertOutlined />,
+                icon: <AlertOutlined/>,
                 color: "#f97316",
                 path: "/admin/incidents",
             },
@@ -190,7 +194,7 @@ const adminMenuConfig = [
                 key: "reports",
                 label: "Báo cáo",
                 title: "Tổng hợp và xuất báo cáo thống kê",
-                icon: <BarChartOutlined />,
+                icon: <BarChartOutlined/>,
                 color: "#a855f7",
                 path: "/admin/reports",
             },
@@ -198,7 +202,7 @@ const adminMenuConfig = [
                 key: "users",
                 label: "Người dùng",
                 title: "Quản lý tài khoản người dùng",
-                icon: <TeamOutlined />,
+                icon: <TeamOutlined/>,
                 color: "#0ea5e9",
                 path: "/admin/users",
             },
@@ -206,7 +210,7 @@ const adminMenuConfig = [
                 key: "settings",
                 label: "Cấu hình hệ thống",
                 title: "Thiết lập và tùy chỉnh hệ thống",
-                icon: <SettingOutlined />,
+                icon: <SettingOutlined/>,
                 color: "#475569",
                 path: "/admin/settings",
             },
@@ -214,7 +218,7 @@ const adminMenuConfig = [
     },
 ];
 
-const AdminLayout = ({ onLogout }) => {
+const AdminLayout = ({onLogout}) => {
     const navigate = useNavigate();
     const location = useLocation();  // Use location to determine active menu dynamically
     const [collapsed, setCollapsed] = useState(false);
@@ -253,25 +257,28 @@ const AdminLayout = ({ onLogout }) => {
                 onLogout={handleLogout}
             />
 
-            <div className={cx("rightContainer", { collapsed })}>
-                <Header title={activeMenu?.title || "Trang quản trị"} />
+            <div className={cx("rightContainer", {collapsed})}>
+                <Header title={activeMenu?.title || "Trang quản trị"}/>
                 <div className={cx("content")}>
                     <Routes>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/tenants" element={<Tenant />} />
-                        <Route path="/tenants/:id" element={<TenantDetail />} />  // Add detail route
-                        <Route path="/boarding-houses" element={<BoardingHouses />} />
-                        <Route path="/buildings" element={<Building />} />
-                        <Route path="/rooms" element={<Room />} />
-                        <Route path="/contracts" element={<Contract />} />
-                        <Route path="/bills" element={<Bill />} />
-                        <Route path="/services" element={<Amenity />} />
-                        <Route path="/users" element={<UserManagement />} />
-                        <Route path="/utilities" element={<UtilityManagement />} />
-                        <Route path="/incidents" element={<IncidentReport />} />
+                        <Route path="/dashboard" element={<Dashboard/>}/>
+                        <Route path="/tenants" element={<Tenant/>}/>
+                        <Route path="/tenants/:id" element={<TenantDetail/>}/>
+                        <Route path="/boarding-houses" element={<Revenue/>}/>
+                        <Route path="/buildings" element={<Building/>}/>
+                        <Route path="/rooms" element={<Room/>}/>
+                        <Route path="/contracts" element={<Contract/>}/>
+                        <Route path="/bills" element={<Bill/>}/>
+                        <Route path="/services" element={<Amenity/>}/>
+                        <Route path="/revenues" element={<Revenue/>}/>
+                        <Route path="/users" element={<UserManagement/>}/>
+                        <Route path="/utilities" element={<UtilityManagement/>}/>
+                        <Route path="/incidents" element={<IncidentReport/>}/>
+                        <Route path="/room-requests" element={<RequestManagement/>}/>
+                        <Route path="/appointments" element={<Appointment/>}/>
 
                         {/* Add other routes as needed */}
-                        <Route path="/" element={<Dashboard />} />  // Default route
+                        <Route path="/" element={<Dashboard/>}/> // Default route
                     </Routes>
                 </div>
             </div>

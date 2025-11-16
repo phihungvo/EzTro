@@ -10,7 +10,7 @@ export const getMyNotifications = async (page = 0, size = 10) => {
         return response.data.result;
     } catch (error) {
         console.error('Error fetching notifications:', error);
-        message.error('Không thể tải thông báo');
+        // message.error('Không thể tải thông báo');
         return {content: [], last: true, totalElements: 0};
     }
 };
@@ -21,7 +21,7 @@ export const markAsRead = async (notificationId) => {
         return true;
     } catch (error) {
         console.error('Error marking notification as read:', error);
-        message.error('Lỗi khi đánh dấu đã đọc');
+        // message.error('Lỗi khi đánh dấu đã đọc');
         return false;
     }
 };
@@ -33,7 +33,7 @@ export const markAllAsRead = async () => {
         return true;
     } catch (error) {
         console.error('Error marking all as read:', error);
-        message.error('Lỗi khi đánh dấu tất cả');
+        // message.error('Lỗi khi đánh dấu tất cả');
         return false;
     }
 };

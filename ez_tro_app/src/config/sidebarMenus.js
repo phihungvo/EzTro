@@ -261,6 +261,35 @@ export const MENU_CONFIG = {
             ],
         },
         {
+            group: "Tài chính & tài sản",
+            items: [
+                {
+                    key: "revenues",
+                    label: "Doanh thu",
+                    title: "Thống kê doanh thu và lợi nhuận",
+                    icon: <DollarOutlined />,
+                    color: "#16a34a",
+                    path: "/owner/revenues",
+                },
+                {
+                    key: "assets",
+                    label: "Tài sản",
+                    title: "Quản lý tài sản, thiết bị trong khu trọ",
+                    icon: <GoldOutlined />,
+                    color: "#ca8a04",
+                    path: "/owner/assets",
+                },
+                {
+                    key: "expenses",
+                    label: "Chi phí",
+                    title: "Theo dõi chi phí vận hành",
+                    icon: <BankOutlined />,
+                    color: "#22d3ee",
+                    path: "/owner/expenses",
+                },
+            ],
+        },
+        {
             group: "Báo cáo",
             items: [
                 {

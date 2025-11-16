@@ -20,6 +20,12 @@ import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import UserLayout from "~/components/Layout/UserLayout";
 import UserDashboard from "~/pages/User/HomeDashboard";
 import Owner from "~/pages/Admin/Owner";
+import Revenue from "~/pages/Admin/Revenue";
+import React from "react";
+import RequestManagement from "~/pages/Admin/RequestManagement";
+import Appointment from "~/pages/Admin/Appointment";
+import Asset from "~/pages/Admin/Asset";
+import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
 
 const AppRoutes = () => {
     const {user} = useAuth();
@@ -45,8 +51,14 @@ const AppRoutes = () => {
                             <Route path="utilities" element={<UtilityManagement/>}/>
                             <Route path="incidents" element={<IncidentReport/>}/>
                             <Route index element={<AdminDashboard/>}/>
-                            <Route path="users" element={<UserManagement />} />
-                            <Route path="/boarding-houses" element={<BoardingHouses />} />
+                            <Route path="users" element={<UserManagement/>}/>
+                            <Route path="/boarding-houses" element={<BoardingHouses/>}/>
+                            <Route path="/revenues" element={<Revenue/>}/>
+                            <Route path="/room-requests" element={<RequestManagement/>}/>
+                            <Route path="/appointments" element={<Appointment/>}/>
+                            <Route path="/assets" element={<Asset/>}/>
+                            <Route path="/expenses" element={<OperatingCostTracker/>}/>
+
                         </Routes>
                     </SharedLayout>
                 </PrivateRoute>
@@ -65,6 +77,10 @@ const AppRoutes = () => {
                             <Route path="contracts" element={<Contract/>}/>
                             <Route path="bills" element={<Bill/>}/>
                             {/*<Route index element={<OwnerDashboard/>}/>*/}
+                            <Route path="/revenues" element={<Revenue/>}/>
+                            <Route path="/appointments" element={<Appointment/>}/>
+                            <Route path="/assets" element={<Asset/>}/>
+                            <Route path="/expenses" element={<OperatingCostTracker/>}/>
                         </Routes>
                     </SharedLayout>
                 </PrivateRoute>

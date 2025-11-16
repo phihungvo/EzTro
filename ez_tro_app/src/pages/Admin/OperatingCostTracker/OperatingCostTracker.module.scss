@@ -1,0 +1,96 @@
+// src/components/OperatingCostTracker/OperatingCostTracker.module.scss
+
+.container {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+
+    .headerIcon {
+      margin-right: 8px;
+      color: #722ed1;
+    }
+  }
+
+  p {
+    margin: 4px 0 0 0;
+    color: #8c8c8c;
+  }
+}
+
+.filterCard {
+  margin: 24px 0;
+  border-radius: 12px;
+
+  .filterLabel {
+    margin-right: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.tableCard {
+  border-radius: 12px;
+
+  .amount {
+    font-weight: bold;
+    color: #ff4d4f;
+    font-size: 14px;
+  }
+
+  .summaryRow {
+    background: #fafafa;
+    font-weight: bold;
+
+    .summaryTotal {
+      color: #ff4d4f;
+      font-size: 15px;
+      font-weight: bold;
+    }
+  }
+}
+
+.modalContent {
+  padding: 16px 0;
+}
+
+.detailItem {
+  margin-bottom: 12px;
+
+  .label {
+    color: #8c8c8c;
+    font-size: 12px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .value {
+    font-weight: 500;
+  }
+
+  .amountValue {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff4d4f;
+  }
+
+  .note {
+    font-style: italic;
+    color: #595959;
+  }
+}
