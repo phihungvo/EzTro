@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 
 import carevn.luv2code.ez_tro.enums.BillStatus;
@@ -54,7 +55,7 @@ public class Bill {
 
     @NotNull
     @Column(nullable = false)
-    Date dueDate;
+    LocalDate dueDate;
 
     @Min(value = 0)
     @Column(precision = 10, scale = 2, nullable = false)

@@ -1,7 +1,7 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -22,5 +22,5 @@ public class BillRequest {
 
     private String note;
 
-    private Date dueDate;
+    private LocalDate dueDate;
 }

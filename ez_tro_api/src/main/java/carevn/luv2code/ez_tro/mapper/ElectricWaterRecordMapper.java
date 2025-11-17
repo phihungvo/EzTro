@@ -8,10 +8,15 @@ import carevn.luv2code.ez_tro.entity.ElectricWaterRecord;
 
 @Mapper(componentModel = "spring")
 public interface ElectricWaterRecordMapper {
+    //    @Mapping(target = "id", ignore = true)
+    //    @Mapping(target = "room", ignore = true)
+    ElectricWaterRecord toEntity(ElectricWaterRecordRequest request);
+
+    @Mapping(source = "room.id", target = "roomId")
     @Mapping(source = "room.roomNumber", target = "roomNumber")
+    @Mapping(source = "room.boardingHouse.name", target = "boardingHouseName")
     ElectricWaterRecordResponse toResponse(ElectricWaterRecord record);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "room", ignore = true)
-    ElectricWaterRecord toEntity(ElectricWaterRecordRequest request);
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntity(@MappingTarget ElectricWaterRecord entity, ElectricWaterRecordRequest request);
 }
