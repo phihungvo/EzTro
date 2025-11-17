@@ -1,0 +1,335 @@
+
+.room-grid {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.loading-card,
+.empty-card {
+  border-radius: 12px !important;
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.room-card {
+  border-radius: 12px !important;
+  border: 2px solid #e8e8e8 !important;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  animation: fadeInUp 0.4s ease-out;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  &.recorded {
+    border-color: #52c41a !important;
+    background: linear-gradient(to bottom, #f6ffed, #fff) !important;
+  }
+
+  &.pending {
+    border-color: #faad14 !important;
+    background: linear-gradient(to bottom, #fffbe6, #fff) !important;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  :global {
+    .ant-card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+  }
+}
+
+/* ================= Room Header ================= */
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.room-number {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.room-text {
+  font-size: 13px;
+  color: #8c8c8c;
+  font-weight: 600;
+}
+
+.room-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #722ed1;
+  line-height: 1;
+}
+
+.room-location {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: rgba(114, 46, 209, 0.08);
+  border-radius: 6px;
+}
+
+.location-text {
+  font-size: 12px;
+  color: #722ed1;
+  font-weight: 600;
+}
+
+.room-tenant {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.tenant-icon {
+  color: #722ed1;
+  font-size: 14px;
+}
+
+.tenant-name {
+  font-size: 13px;
+  color: #262626;
+  font-weight: 600;
+}
+
+/* ================= Record Display ================= */
+.record-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.utility-row {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.utility-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.utility-icon {
+  font-size: 16px;
+
+  &.electric {
+    color: #faad14;
+  }
+
+  &.water {
+    color: #1890ff;
+  }
+}
+
+.utility-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.utility-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reading-row,
+.usage-row,
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.reading-label,
+.usage-label,
+.amount-label {
+  color: #8c8c8c;
+  font-weight: 600;
+}
+
+.reading-value {
+  font-weight: 600;
+  color: #595959;
+
+  &.new {
+    color: #262626;
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
+.usage-value {
+  font-weight: 700;
+  color: #722ed1;
+}
+
+.amount-value {
+  font-weight: 700;
+  font-size: 13px;
+
+  &.electric {
+    color: #faad14;
+  }
+
+  &.water {
+    color: #1890ff;
+  }
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: linear-gradient(135deg, #f9f0ff, #efdbff);
+  border-radius: 8px;
+  border: 2px solid #722ed1;
+}
+
+.total-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.total-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #722ed1;
+}
+
+.recorded-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(82, 196, 26, 0.1);
+  border-radius: 6px;
+  margin-top: auto;
+}
+
+.time-icon {
+  color: #52c41a;
+  font-size: 14px;
+}
+
+.time-text {
+  font-size: 11px;
+  color: #52c41a;
+  font-weight: 600;
+}
+
+/* ================= Empty Record ================= */
+.empty-record {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #595959;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+/* ================= Room Actions ================= */
+.room-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &.primary {
+    background: #722ed1;
+    border-color: #722ed1;
+
+    &:hover {
+      background: #531dab;
+      border-color: #531dab;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* ================= Animations ================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 576px) {
+  .room-num {
+    font-size: 20px;
+  }
+
+  .room-actions {
+    flex-direction: column;
+  }
+}
