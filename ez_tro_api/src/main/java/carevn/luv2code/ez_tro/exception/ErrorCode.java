@@ -79,6 +79,10 @@ public enum ErrorCode {
             1059, "Cannot edit incident report that is already resolved or rejected", HttpStatus.BAD_REQUEST),
     BUILDING_CREATE_FORBIDDEN(
             1060, "You are not allowed to create building in this boarding house", HttpStatus.FORBIDDEN),
+    ELECTRIC_WATER_RECORD_EXISTS(
+            1061,
+            "Electric water record for this room in the specified month and year already exists",
+            HttpStatus.CONFLICT),
 
     NOTIFICATION_NOT_FOUND(9994, "Notification not found", HttpStatus.NOT_FOUND),
     OWNER_NOT_FOUND(9995, "Owner not found", HttpStatus.NOT_FOUND),

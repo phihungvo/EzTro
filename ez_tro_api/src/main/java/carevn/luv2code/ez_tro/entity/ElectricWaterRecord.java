@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.entity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 import jakarta.persistence.*;
@@ -14,7 +15,9 @@ import lombok.experimental.FieldDefaults;
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "electric_water_records")
+@Table(
+        name = "electric_water_records",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"room_id", "month", "year"})})
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ElectricWaterRecord {
 
@@ -45,6 +48,25 @@ public class ElectricWaterRecord {
 
     @Column(name = "water_end")
     Integer waterEnd;
+
+    // Tính tự động
+    @Column(name = "electric_usage", precision = 10, scale = 2)
+    BigDecimal electricUsage;
+
+    @Column(name = "water_usage", precision = 10, scale = 2)
+    BigDecimal waterUsage;
+
+    @Column(name = "electric_cost", precision = 12, scale = 2)
+    BigDecimal electricCost;
+
+    @Column(name = "water_cost", precision = 12, scale = 2)
+    BigDecimal waterCost;
+
+    @Column(name = "total_cost", precision = 12, scale = 2)
+    BigDecimal totalCost;
+
+    @Column(name = "recorded_by")
+    String recordedBy; // Tên người ghi (admin, owner, tenant)
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)

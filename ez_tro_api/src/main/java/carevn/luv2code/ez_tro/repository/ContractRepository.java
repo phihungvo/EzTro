@@ -45,14 +45,27 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
     @Query("SELECT c FROM Contract c WHERE c.tenant.id = :tenantId AND c.status = 'ACTIVE'")
     Optional<Contract> findActiveContractByTenantId(@Param("tenantId") Integer tenantId);
 
-    @Query("SELECT c FROM Contract c WHERE c.tenant.user.id = :userId AND c.status = 'ACTIVE'")
-    Optional<Contract> findActiveContractByTenantUserId(@Param("userId") Integer userId);
+    // === Tìm hợp đồng active theo tenant user ID ===
+    @Query(
+            """
+		SELECT c FROM Contract c
+		WHERE c.tenant.user.id = :userId
+		AND c.status = 'ACTIVE'
+		AND c.startDate <= :today
+		AND (c.endDate IS NULL OR c.endDate >= :today)
+		""")
+    Optional<Contract> findActiveContractByTenantUserId(
+            @Param("userId") Integer userId, @Param("today") LocalDate today);
+
+    //    @Query("SELECT c FROM Contract c WHERE c.tenant.user.id = :userId AND c.status = 'ACTIVE'")
+    //    Optional<Contract> findActiveContractByTenantUserId(@Param("userId") Integer userId);
 
     @Query(
             "SELECT c FROM Contract c WHERE c.tenant.user.id = :userId AND c.status = :status AND c.startDate <= :today AND (c.endDate IS NULL OR c.endDate >= :today)")
     Optional<Contract> findActiveContractByUserId(
             @Param("userId") Integer userId, @Param("status") ContractStatus status, @Param("today") LocalDate today);
 
+    // === Tìm tất cả hợp đồng active để lập hóa đơn tháng ===
     @Query("SELECT c FROM Contract c WHERE c.status = 'ACTIVE' "
             + "AND c.startDate <= :endOfMonth AND (c.endDate IS NULL OR c.endDate >= :startOfMonth)")
     List<Contract> findActiveContractsForBilling(

@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,7 @@ public class ElectricWaterRecordController {
         ElectricWaterRecordResponse response = recordService.create(request);
         return ApiResponse.<ElectricWaterRecordResponse>builder()
                 .code(HttpStatus.CREATED.value())
-                .message("Electric/water record created successfully")
+                .message("Ghi chỉ số thành công")
                 .result(response)
                 .build();
     }
@@ -35,7 +36,7 @@ public class ElectricWaterRecordController {
         ElectricWaterRecordResponse response = recordService.update(id, request);
         return ApiResponse.<ElectricWaterRecordResponse>builder()
                 .code(HttpStatus.OK.value())
-                .message("Electric/water record updated successfully")
+                .message("Cập nhật chỉ số thành công")
                 .result(response)
                 .build();
     }
@@ -45,7 +46,7 @@ public class ElectricWaterRecordController {
         recordService.delete(id);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.NO_CONTENT.value())
-                .message("Electric/water record deleted successfully")
+                .message("Xóa chỉ số thành công")
                 .build();
     }
 
@@ -66,6 +67,30 @@ public class ElectricWaterRecordController {
                 .code(HttpStatus.OK.value())
                 .message("Get all electric/water records successfully")
                 .result(responses)
+                .build();
+    }
+
+    @GetMapping("/filter")
+    public ApiResponse<Page<ElectricWaterRecordResponse>> filter(
+            @RequestParam(required = false) Integer roomId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ApiResponse.<Page<ElectricWaterRecordResponse>>builder()
+                .code(200)
+                .message("Lọc thành công")
+                .result(recordService.filter(roomId, month, year, page, size))
+                .build();
+    }
+
+    @GetMapping("/room/{roomId}")
+    public ApiResponse<List<ElectricWaterRecordResponse>> getByRoom(@PathVariable Integer roomId) {
+        return ApiResponse.<List<ElectricWaterRecordResponse>>builder()
+                .code(200)
+                .message("Lấy theo phòng thành công")
+                .result(recordService.getByRoom(roomId))
                 .build();
     }
 }

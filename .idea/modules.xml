@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/ez_tro.iml" filepath="$PROJECT_DIR$/.idea/ez_tro.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ez_tro_api/ez_tro_api.iml" filepath="$PROJECT_DIR$/ez_tro_api/ez_tro_api.iml" />
     </modules>
   </component>
 </project>

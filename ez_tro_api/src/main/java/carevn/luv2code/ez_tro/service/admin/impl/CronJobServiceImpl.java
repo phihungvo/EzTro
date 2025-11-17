@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -146,7 +145,6 @@ public class CronJobServiceImpl implements CronJobService {
         int currentMonth = now.getMonthValue();
         int currentYear = now.getYear();
         LocalDate dueDateLocal = now.withDayOfMonth(now.lengthOfMonth()); // 2025-10-31
-        Date dueDate = java.sql.Date.valueOf(dueDateLocal); // Convert cho entity Date
 
         // 1. Lấy active contracts
         List<Contract> activeContracts = contractRepository.findActiveContractsForBilling(currentMonth, currentYear);
@@ -184,7 +182,7 @@ public class CronJobServiceImpl implements CronJobService {
                         .billCode(billCode)
                         .amount(totalAmount)
                         .serviceAmount(services)
-                        .dueDate(dueDate)
+                        .dueDate(dueDateLocal)
                         .status(BillStatus.UNPAID)
                         .note(String.format("Rent: %s, Services: %s", rent, services))
                         .build();
