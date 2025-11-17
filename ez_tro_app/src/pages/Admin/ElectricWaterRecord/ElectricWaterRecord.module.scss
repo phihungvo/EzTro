@@ -1,0 +1,357 @@
+
+.record-wrapper {
+  width: 100%;
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* ================= Header ================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  animation: fadeInDown 0.5s ease-out;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .title-icon {
+    color: #faad14;
+  }
+}
+
+.page-description {
+  margin: 4px 0 0 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* ================= Steps Card ================= */
+.steps-card {
+  margin-bottom: 24px;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  animation: fadeIn 0.5s ease-out 0.1s both;
+
+  :global {
+    .ant-steps-item-icon {
+      border-width: 2px;
+    }
+
+    .ant-steps-item-process .ant-steps-item-icon {
+      background: #722ed1;
+      border-color: #722ed1;
+    }
+
+    .ant-steps-item-finish .ant-steps-item-icon {
+      background: #52c41a;
+      border-color: #52c41a;
+    }
+  }
+}
+
+/* ================= Period Info Card ================= */
+.period-info-card {
+  margin-bottom: 20px;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  border-left: 4px solid #722ed1 !important;
+  animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+.period-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.period-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .period-icon {
+    color: #722ed1;
+  }
+}
+
+.period-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.period-date {
+  font-size: 14px;
+  color: #595959;
+  font-weight: 500;
+}
+
+.completion-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #595959;
+}
+
+.progress-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #722ed1;
+}
+
+/* ================= Filter Card ================= */
+.filter-card {
+  margin-bottom: 20px;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  animation: fadeIn 0.5s ease-out 0.3s both;
+
+  :global {
+    .ant-card-body {
+      padding: 16px 20px;
+    }
+  }
+}
+
+.search-input {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px 0 0 6px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: #722ed1;
+    box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.1);
+  }
+
+  &::placeholder {
+    color: #bfbfbf;
+  }
+}
+
+/* ================= Action Card ================= */
+.action-card {
+  margin-top: 24px;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  animation: fadeIn 0.5s ease-out 0.5s both;
+
+  :global {
+    .ant-card-body {
+      padding: 20px 24px;
+    }
+  }
+}
+
+/* ================= Submit Modal ================= */
+.submit-modal-content {
+  padding: 8px 0;
+}
+
+.warning-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff7e6;
+  border-radius: 8px;
+  border-left: 4px solid #fa8c16;
+
+  .warning-icon {
+    font-size: 24px;
+    color: #fa8c16;
+    flex-shrink: 0;
+  }
+
+  p {
+    margin: 0;
+    color: #595959;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #8c8c8c;
+  font-weight: 600;
+}
+
+.summary-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #262626;
+
+  &.success {
+    color: #52c41a;
+  }
+
+  &.warning {
+    color: #fa8c16;
+  }
+
+  &.primary {
+    color: #722ed1;
+  }
+}
+
+.amount-summary {
+  padding: 16px;
+  background: linear-gradient(135deg, #f9f0ff, #efdbff);
+  border-radius: 8px;
+  border: 2px solid #722ed1;
+}
+
+.amount-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(114, 46, 209, 0.1);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.total {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 2px solid #722ed1;
+  }
+}
+
+.amount-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+
+  &.electric {
+    color: #faad14;
+  }
+
+  &.water {
+    color: #1890ff;
+  }
+}
+
+.amount-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #595959;
+}
+
+.amount-value {
+  font-size: 16px;
+  font-weight: 700;
+
+  &.electric {
+    color: #faad14;
+  }
+
+  &.water {
+    color: #1890ff;
+  }
+
+  &.total {
+    font-size: 20px;
+    color: #722ed1;
+  }
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 768px) {
+  .record-wrapper {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .period-info-card {
+    :global {
+      .ant-row {
+        flex-direction: column;
+      }
+    }
+  }
+
+  .action-card {
+    :global {
+      .ant-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .ant-col {
+        width: 100%;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+/* ================= Animations ================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

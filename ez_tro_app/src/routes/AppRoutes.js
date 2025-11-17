@@ -26,6 +26,7 @@ import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
 import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
+import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 
 const AppRoutes = () => {
     const {user} = useAuth();
@@ -58,6 +59,7 @@ const AppRoutes = () => {
                             <Route path="/appointments" element={<Appointment/>}/>
                             <Route path="/assets" element={<Asset/>}/>
                             <Route path="/expenses" element={<OperatingCostTracker/>}/>
+                            <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>
 
                         </Routes>
                     </SharedLayout>
