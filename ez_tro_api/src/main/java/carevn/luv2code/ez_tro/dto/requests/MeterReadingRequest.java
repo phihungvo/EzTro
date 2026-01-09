@@ -1,0 +1,37 @@
+package carevn.luv2code.ez_tro.dto.requests;
+
+import jakarta.validation.constraints.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class MeterReadingRequest {
+
+    @NotNull
+    Integer roomId;
+
+    @NotNull
+    Integer utilityId;
+
+    @Min(1)
+    @Max(12)
+    Integer periodMonth;
+
+    @Min(2000)
+    Integer periodYear;
+
+    @NotNull
+    @DecimalMin("0.0")
+    BigDecimal currentIndex;
+
+    Date readingDate;
+
+    String note;
+}

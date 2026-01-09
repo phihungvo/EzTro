@@ -28,7 +28,7 @@ public class CronJobServiceImpl implements CronJobService {
     private final RoomRepository roomRepository;
     //    private final AmenityRepository amenityRepository;
     //    private final RoomAmenityRepository roomAmenityRepository;
-    private final ElectricWaterRecordRepository electricWaterRecordRepository;
+//    private final ElectricWaterRecordRepository electricWaterRecordRepository;
     private final BillRepository billRepository;
 
     @Autowired
@@ -39,14 +39,14 @@ public class CronJobServiceImpl implements CronJobService {
             RoomRepository roomRepository,
             //            AmenityRepository amenityRepository,
             //            RoomAmenityRepository roomAmenityRepository,
-            ElectricWaterRecordRepository electricWaterRecordRepository,
+//            ElectricWaterRecordRepository electricWaterRecordRepository,
             BillRepository billRepository)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
         //        this.amenityRepository = amenityRepository;
         //        this.roomAmenityRepository = roomAmenityRepository;
-        this.electricWaterRecordRepository = electricWaterRecordRepository;
+//        this.electricWaterRecordRepository = electricWaterRecordRepository;
         this.billRepository = billRepository;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();

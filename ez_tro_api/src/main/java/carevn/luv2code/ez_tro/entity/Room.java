@@ -74,7 +74,7 @@ public class Room {
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    List<ElectricWaterRecord> electricWaterRecords;
+    List<MeterReading> meterReadings;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
