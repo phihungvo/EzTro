@@ -129,6 +129,10 @@ const API_ENDPOINTS = {
         UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
         DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
     },
+    PERIOD: {
+        GET_ALL: `${BASE_URL}/meter-periods`,
+        CREATE: `${BASE_URL}/meter-periods`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {

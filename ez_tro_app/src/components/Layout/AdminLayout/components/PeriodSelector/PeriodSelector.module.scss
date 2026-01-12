@@ -1,0 +1,126 @@
+// PeriodSelector.module.scss
+// Tích hợp hoàn toàn với ElectricWaterRecord.module.scss
+
+.period-selector-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 24px;
+  animation: fadeIn 0.5s ease-out 0.1s both;
+  border-left: 4px solid #722ed1 !important; // giống period-info-card
+
+  :global(.ant-card-head) {
+    background: #ffffff;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 16px 24px;
+
+    .ant-card-head-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #262626;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  :global(.ant-card-body) {
+    padding: 20px 24px;
+  }
+}
+
+// Nút tạo mới - style giống primary button trong action-card
+.create-new-btn {
+  background: #722ed1 !important;
+  border-color: #722ed1 !important;
+  font-weight: 500;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #9254de !important;
+    border-color: #9254de !important;
+    box-shadow: 0 4px 12px rgba(114, 46, 209, 0.2) !important;
+  }
+}
+
+// Card mỗi kỳ ghi - style giống period-info-card
+.period-item-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  border-left: 4px solid #722ed1 !important;
+  cursor: pointer;
+  animation: fadeIn 0.4s ease-out;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(114, 46, 209, 0.15) !important;
+  }
+
+  :global(.ant-card-body) {
+    padding: 16px 20px;
+  }
+}
+
+// Title trong card kỳ
+.period-title-wrapper {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .period-icon {
+    color: #722ed1;
+  }
+}
+
+// Description (ngày + tag)
+.period-description {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #595959;
+
+  .period-date {
+    font-weight: 500;
+    color: #722ed1;
+  }
+
+  .status-tag {
+    margin-top: 8px;
+    display: inline-block;
+  }
+}
+
+// Loading & Empty
+.loading-container {
+  text-align: center;
+  padding: 60px 0;
+}
+
+.empty-container {
+  padding: 60px 0;
+
+  :global(.ant-empty-description) {
+    color: #8c8c8c;
+    font-size: 15px;
+  }
+}
+
+// Responsive giống toàn bộ trang
+@media (max-width: 768px) {
+  .period-selector-card {
+    :global(.ant-card-body) {
+      padding: 16px;
+    }
+  }
+
+  .period-item-card {
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+  }
+}

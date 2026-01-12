@@ -29,6 +29,8 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
         return periodRepo.findAll();
     }
 
+    // Tạo kỳ ghi chỉ số mới
+    @Override
     public MeterPeriodResponse create(MeterPeriodRequest request) {
         if (periodRepo.findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear()).isPresent()) {
             throw new AppException(ErrorCode.PERIOD_ALREADY_EXISTS);
@@ -45,6 +47,8 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
         return mapToResponse(periodRepo.save(period));
     }
 
+    // Xác nhận kỳ ghi chỉ số
+    @Override
     public MeterPeriodResponse confirm(Integer periodId) {
         MeterReadingPeriod period = getPeriodOrThrow(periodId);
         if (period.getStatus() != PeriodStatus.DRAFT) {
@@ -55,6 +59,8 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
         return mapToResponse(periodRepo.save(period));
     }
 
+    // Khóa kỳ ghi chỉ số
+    @Override
     public MeterPeriodResponse lock(Integer periodId) {
         MeterReadingPeriod period = getPeriodOrThrow(periodId);
         if (period.getStatus() != PeriodStatus.CONFIRMED) {

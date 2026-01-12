@@ -1,0 +1,14 @@
+
+/* ================= Action Card ================= */
+.action-card {
+  margin-top: 24px;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  animation: fadeIn 0.5s ease-out 0.5s both;
+
+  :global {
+    .ant-card-body {
+      padding: 20px 24px;
+    }
+  }
+}

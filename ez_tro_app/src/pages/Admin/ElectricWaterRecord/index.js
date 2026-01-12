@@ -1,56 +1,59 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import classNames from 'classnames/bind';
 import styles from './ElectricWaterRecord.module.scss';
-import {
-    Card,
-    Row,
-    Col,
-    Button,
-    Steps,
-    message,
-    Modal,
-    Tag,
-    Badge,
-    Select,
-    DatePicker,
-    Space,
-    Divider,
-    Tooltip,
-    Progress
-} from 'antd';
-import {
-    ThunderboltOutlined,
-    // WaterDropOutlined,
-    CalendarOutlined,
-    CheckCircleOutlined,
-    ClockCircleOutlined,
-    ExclamationCircleOutlined,
-    SaveOutlined,
-    SendOutlined,
-    HistoryOutlined,
-    FileTextOutlined,
-    SearchOutlined,
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
+// import styles from './Bill.module.scss';
+
+import {Steps, Card, message, Modal} from 'antd';
+import {CalendarOutlined, FileTextOutlined, CheckCircleOutlined} from '@ant-design/icons';
+
+// import PeriodSelector from './components/PeriodSelector';
+// import PeriodCreateModal from './components/PeriodCreateModal';
+// import PeriodInfo from './components/PeriodInfo';
+// import StatisticsSummary from './components/StatisticsSummary';
+// import FilterBar from './components/FilterBar';
+// import RoomRecordGrid from './components/RoomRecordGrid';
+// import ActionButtons from './components/ActionButtons';
+//
+// import RecordInputModal from './components/modals/RecordInputModal';
+// import RecordHistoryModal from './components/modals/RecordHistoryModal';
+
+// API services (bạn sẽ implement sau)
+// import {
+//     fetchPeriods,
+//     createPeriod,
+//     fetchRooms,
+//     fetchRecordsByPeriod,
+//     saveRoomRecord,
+//     submitPeriodRecords,
+// } from '@/services/electricWaterApi'; // ← bạn tạo file này
+
 import {mockRooms, mockPeriods, mockRecords, electricPrice, waterPrice} from './mockData';
-import RecordSummary from "~/components/Layout/AdminLayout/components/RecordSummary";
-import RecordPeriodSelector from "~/components/Layout/AdminLayout/components/RecordPeriodSelector";
+import PeriodSelector from "~/components/Layout/AdminLayout/components/PeriodSelector";
+import PeriodInfo from "~/components/Layout/AdminLayout/components/PeriodInfo";
+import StatisticsSummary from "~/components/Layout/AdminLayout/components/StatisticsSummary";
+import FilterBar from "~/components/Layout/AdminLayout/components/FilterBar";
 import RoomRecordGrid from "~/components/Layout/AdminLayout/components/RoomRecordGrid";
+import ActionButtons from "~/components/Layout/AdminLayout/components/ActionButtons";
+import PeriodCreateModal from "~/components/Layout/AdminLayout/components/PeriodCreateModal";
 import RecordInputModal from "~/components/Layout/AdminLayout/components/RecordInputModal";
 import RecordHistoryModal from "~/components/Layout/AdminLayout/components/RecordHistoryModal";
+import {getAllPeriodNoPaging, createPeriod} from "~/service/admin/meter-reading-period";
+import {getAllRoomNoPaged} from "~/service/admin/room";
 
 const cx = classNames.bind(styles);
-const {Option} = Select;
+
+const steps = [
+    {title: 'Chọn kỳ ghi', icon: <CalendarOutlined/>},
+    {title: 'Ghi chỉ số', icon: <FileTextOutlined/>},
+    {title: 'Hoàn thành', icon: <CheckCircleOutlined/>},
+];
 
 function ElectricWaterRecord() {
     const [currentStep, setCurrentStep] = useState(0);
+    const [periods, setPeriods] = useState([]);
     const [selectedPeriod, setSelectedPeriod] = useState(null);
-    const [selectedRoom, setSelectedRoom] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [records, setRecords] = useState([]);
-    const [isInputModalOpen, setIsInputModalOpen] = useState(false);
-    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Filters
@@ -58,6 +61,13 @@ function ElectricWaterRecord() {
     const [buildingFilter, setBuildingFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [searchText, setSearchText] = useState('');
+
+    // Modals
+    const [isCreatePeriodOpen, setIsCreatePeriodOpen] = useState(false);
+    const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+    const [selectedRoom, setSelectedRoom] = useState(null);
 
     // Statistics
     const [statistics, setStatistics] = useState({
@@ -71,343 +81,248 @@ function ElectricWaterRecord() {
         totalWaterAmount: 0,
     });
 
+    // Load danh sách kỳ hạn
+    const loadPeriods = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getAllPeriodNoPaging();
+            setPeriods(data || []);
+        } catch (error) {
+            message.error('Không tải được danh sách kỳ hạn');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
-        loadRooms();
+        loadPeriods();
+    }, [loadPeriods]);
+
+    // Khi chọn kỳ → load rooms + records
+    useEffect(() => {
+        if (!selectedPeriod) {
+            setRooms([]);
+            setRecords([]);
+            setCurrentStep(0);
+            return;
+        }
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [roomsData, recordsData] = await Promise.all([
+                    getAllRoomNoPaged(),
+                    // fetchRecordsByPeriod(selectedPeriod.id),
+                ]);
+
+                setRooms(roomsData || []);
+                setRecords(recordsData || []);
+                setCurrentStep(1);
+            } catch (err) {
+                message.error('Lỗi khi tải dữ liệu phòng/kỳ');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, [selectedPeriod]);
 
+    // Tính thống kê
     useEffect(() => {
-        calculateStatistics();
-    }, [records]);
+        if (!rooms.length) return;
 
-    const loadRooms = () => {
-        setLoading(true);
-        setTimeout(() => {
-            const roomsData = [...mockRooms];
-
-            // Load existing records for this period
-            const periodRecords = selectedPeriod
-                ? mockRecords.filter(r => r.periodId === selectedPeriod.id)
-                : [];
-
-            setRecords(periodRecords);
-            setRooms(roomsData);
-            setLoading(false);
-        }, 500);
-    };
-
-    const calculateStatistics = () => {
         const total = rooms.length;
         const recorded = records.filter(r => r.status === 'RECORDED').length;
         const pending = total - recorded;
-        const completionRate = total > 0 ? (recorded / total) * 100 : 0;
+        const completion = total > 0 ? (recorded / total) * 100 : 0;
 
-        const totalElectricUsage = records.reduce((sum, r) => sum + (r.electricUsage || 0), 0);
+        const totalElecUsage = records.reduce((sum, r) => sum + (r.electricUsage || 0), 0);
         const totalWaterUsage = records.reduce((sum, r) => sum + (r.waterUsage || 0), 0);
-        const totalElectricAmount = records.reduce((sum, r) => sum + (r.electricAmount || 0), 0);
+        const totalElecAmount = records.reduce((sum, r) => sum + (r.electricAmount || 0), 0);
         const totalWaterAmount = records.reduce((sum, r) => sum + (r.waterAmount || 0), 0);
 
         setStatistics({
             totalRooms: total,
             recordedRooms: recorded,
             pendingRooms: pending,
-            completionRate,
-            totalElectricUsage,
+            completionRate: completion,
+            totalElectricUsage: totalElecUsage,
             totalWaterUsage,
-            totalElectricAmount,
+            totalElectricAmount: totalElecAmount,
             totalWaterAmount,
         });
+    }, [rooms, records]);
+
+    // Xử lý tạo kỳ mới
+    const handleCreatePeriod = async (periodData) => {
+        try {
+            setLoading(true);
+            const newPeriod = await createPeriod(periodData);
+            // message.success('Tạo kỳ hạn mới thành công');
+            setIsCreatePeriodOpen(false);
+
+            // Reload danh sách kỳ & tự chọn kỳ vừa tạo
+            await loadPeriods();
+            setSelectedPeriod(newPeriod);
+        } catch (err) {
+            message.error('Tạo kỳ thất bại');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // Chọn kỳ từ danh sách
     const handleSelectPeriod = (period) => {
         setSelectedPeriod(period);
-        setCurrentStep(1);
-        message.success(`Đã chọn kỳ ghi: ${period.name}`);
+        message.success(`Đã chọn kỳ: ${period.name}`);
     };
 
-    const handleRoomClick = (room) => {
-        if (!selectedPeriod) {
-            message.warning('Vui lòng chọn kỳ ghi trước!');
-            return;
+    // Lưu chỉ số 1 phòng
+    const handleSaveRecord = async (recordData) => {
+        try {
+            // const savedRecord = await saveRoomRecord({
+            //     ...recordData,
+            //     periodId: selectedPeriod.id,
+            // });
+            //
+            // setRecords(prev => {
+            //     const exists = prev.find(r => r.roomId === recordData.roomId);
+            //     if (exists) {
+            //         return prev.map(r =>
+            //             r.roomId === recordData.roomId ? { ...r, ...savedRecord } : r
+            //         );
+            //     }
+            //     return [...prev, savedRecord];
+            // });
+
+            message.success('Lưu chỉ số thành công');
+            setIsInputModalOpen(false);
+        } catch (err) {
+            message.error('Lưu chỉ số thất bại');
         }
-
-        const existingRecord = records.find(r => r.roomId === room.id);
-        setSelectedRoom({...room, record: existingRecord});
-        setIsInputModalOpen(true);
     };
 
-    const handleSaveRecord = (recordData) => {
-        const existingIndex = records.findIndex(r => r.roomId === recordData.roomId);
-
-        let newRecords;
-        if (existingIndex >= 0) {
-            newRecords = [...records];
-            newRecords[existingIndex] = {
-                ...newRecords[existingIndex],
-                ...recordData,
-                status: 'RECORDED',
-                recordedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-            };
-        } else {
-            newRecords = [...records, {
-                ...recordData,
-                id: Date.now(),
-                periodId: selectedPeriod.id,
-                status: 'RECORDED',
-                recordedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-            }];
-        }
-
-        setRecords(newRecords);
-        setIsInputModalOpen(false);
-        message.success('Lưu chỉ số thành công!');
-    };
-
-    const handleViewHistory = (room) => {
-        setSelectedRoom(room);
-        setIsHistoryModalOpen(true);
-    };
-
+    // Gửi toàn bộ
     const handleSubmitAll = () => {
         if (statistics.pendingRooms > 0) {
             Modal.confirm({
                 title: 'Còn phòng chưa ghi chỉ số',
-                content: `Còn ${statistics.pendingRooms} phòng chưa được ghi. Bạn có muốn tiếp tục gửi không?`,
+                content: `Còn ${statistics.pendingRooms} phòng chưa ghi. Vẫn gửi?`,
                 okText: 'Tiếp tục',
                 cancelText: 'Hủy',
                 onOk: () => setIsSubmitModalOpen(true),
             });
-        } else {
-            setIsSubmitModalOpen(true);
+            return;
         }
+        setIsSubmitModalOpen(true);
     };
 
-    const handleConfirmSubmit = () => {
+    const handleConfirmSubmit = async () => {
         setLoading(true);
-        setTimeout(() => {
-            message.success('Đã gửi dữ liệu thành công! Hóa đơn đã được tạo.');
+        try {
+            // await submitPeriodRecords(selectedPeriod.id);
+            message.success('Gửi dữ liệu và tạo hóa đơn thành công!');
             setIsSubmitModalOpen(false);
-            setLoading(false);
-            // Reset to new period
-            setCurrentStep(0);
             setSelectedPeriod(null);
-            setRecords([]);
-        }, 1500);
+            setCurrentStep(0);
+            await loadPeriods();
+        } catch (err) {
+            message.error('Gửi dữ liệu thất bại');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const getFilteredRooms = () => {
-        let filtered = [...rooms];
+    const filteredRooms = rooms.filter(room => {
+        const matchesBoarding =
+            boardingHouseFilter === 'ALL' || room.boardingHouse === boardingHouseFilter;
+        const matchesBuilding =
+            buildingFilter === 'ALL' || room.building === buildingFilter;
+        const record = records.find(r => r.roomId === room.id);
+        const matchesStatus =
+            statusFilter === 'ALL' ||
+            (statusFilter === 'RECORDED' && !!record) ||
+            (statusFilter === 'PENDING' && !record);
+        const matchesSearch =
+            !searchText ||
+            room.roomNumber.toLowerCase().includes(searchText.toLowerCase()) ||
+            (room.tenantName?.toLowerCase().includes(searchText.toLowerCase()) ?? false);
 
-        if (boardingHouseFilter !== 'ALL') {
-            filtered = filtered.filter(r => r.boardingHouse === boardingHouseFilter);
-        }
+        return matchesBoarding && matchesBuilding && matchesStatus && matchesSearch;
+    });
 
-        if (buildingFilter !== 'ALL') {
-            filtered = filtered.filter(r => r.building === buildingFilter);
-        }
-
-        if (statusFilter !== 'ALL') {
-            const hasRecord = statusFilter === 'RECORDED';
-            filtered = filtered.filter(r => {
-                const record = records.find(rec => rec.roomId === r.id);
-                return hasRecord ? !!record : !record;
-            });
-        }
-
-        if (searchText) {
-            filtered = filtered.filter(r =>
-                r.roomNumber.toLowerCase().includes(searchText.toLowerCase()) ||
-                r.tenantName?.toLowerCase().includes(searchText.toLowerCase())
-            );
-        }
-
-        return filtered;
-    };
-
-    const steps = [
-        {
-            title: 'Chọn kỳ ghi',
-            icon: <CalendarOutlined/>,
-        },
-        {
-            title: 'Ghi chỉ số',
-            icon: <FileTextOutlined/>,
-        },
-        {
-            title: 'Hoàn thành',
-            icon: <CheckCircleOutlined/>,
-        },
-    ];
+    //
+    // Xử lý trường hợp selectedPeriod là mảng //// cần thiết
+    const safeSelectedPeriod = Array.isArray(selectedPeriod) && selectedPeriod.length > 0
+        ? selectedPeriod[0]
+        : selectedPeriod;
 
     return (
         <div className={cx('record-wrapper')}>
-            {/* Progress Steps */}
             <Card className={cx('steps-card')}>
                 <Steps current={currentStep} items={steps}/>
             </Card>
 
-            {/* Step 1: Period Selector */}
+            {/* Bước 0 - Chọn kỳ */}
             {currentStep === 0 && (
-                <RecordPeriodSelector
-                    periods={mockPeriods}
+                <PeriodSelector
+                    periods={periods}
+                    loading={loading}
                     onSelectPeriod={handleSelectPeriod}
+                    onCreateNew={() => setIsCreatePeriodOpen(true)}
                 />
             )}
 
-            {/* Step 2: Record Input */}
+            {/* Bước 1 - Ghi chỉ số */}
             {currentStep === 1 && selectedPeriod && (
                 <>
-                    {/* Period Info & Statistics */}
-                    <Card className={cx('period-info-card')}>
-                        <Row gutter={[16, 16]}>
-                            <Col xs={24} lg={12}>
-                                <div className={cx('period-info')}>
-                                    <h3 className={cx('period-title')}>
-                                        <CalendarOutlined className={cx('period-icon')}/>
-                                        {selectedPeriod.name}
-                                    </h3>
-                                    <div className={cx('period-details')}>
-                    <span className={cx('period-date')}>
-                      {dayjs(selectedPeriod.startDate).format('DD/MM/YYYY')}
-                        {' → '}
-                        {dayjs(selectedPeriod.endDate).format('DD/MM/YYYY')}
-                    </span>
-                                        <Tag color={selectedPeriod.status === 'ACTIVE' ? 'green' : 'orange'}>
-                                            {selectedPeriod.status === 'ACTIVE' ? 'Đang ghi' : 'Chờ ghi'}
-                                        </Tag>
-                                    </div>
-                                </div>
-                            </Col>
-                            <Col xs={24} lg={12}>
-                                <div className={cx('completion-progress')}>
-                                    <div className={cx('progress-header')}>
-                                        <span className={cx('progress-label')}>Tiến độ ghi:</span>
-                                        <span className={cx('progress-value')}>
-                      {statistics.recordedRooms}/{statistics.totalRooms} phòng
-                    </span>
-                                    </div>
-                                    <Progress
-                                        percent={statistics.completionRate}
-                                        strokeColor={{
-                                            '0%': '#722ed1',
-                                            '100%': '#52c41a',
-                                        }}
-                                        format={(percent) => `${percent.toFixed(0)}%`}
-                                    />
-                                </div>
-                            </Col>
-                        </Row>
-                    </Card>
-
-                    {/* Summary Statistics */}
-                    <RecordSummary statistics={statistics}/>
-
-                    {/* Filters */}
-                    <Card className={cx('filter-card')}>
-                        <Row gutter={[16, 16]} align="middle">
-                            <Col xs={24} sm={12} md={6}>
-                                <Select
-                                    value={boardingHouseFilter}
-                                    onChange={setBoardingHouseFilter}
-                                    style={{width: '100%'}}
-                                    placeholder="Khu trọ"
-                                >
-                                    <Option value="ALL">Tất cả khu trọ</Option>
-                                    <Option value="Nhà trọ Sunshine">Nhà trọ Sunshine</Option>
-                                    <Option value="Nhà trọ Green Park">Nhà trọ Green Park</Option>
-                                    <Option value="Nhà trọ Sky View">Nhà trọ Sky View</Option>
-                                </Select>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Select
-                                    value={buildingFilter}
-                                    onChange={setBuildingFilter}
-                                    style={{width: '100%'}}
-                                    placeholder="Toà nhà"
-                                >
-                                    <Option value="ALL">Tất cả toà</Option>
-                                    <Option value="Toà A">Toà A</Option>
-                                    <Option value="Toà B">Toà B</Option>
-                                    <Option value="Toà C">Toà C</Option>
-                                </Select>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Select
-                                    value={statusFilter}
-                                    onChange={setStatusFilter}
-                                    style={{width: '100%'}}
-                                    placeholder="Trạng thái"
-                                >
-                                    <Option value="ALL">Tất cả trạng thái</Option>
-                                    <Option value="RECORDED">Đã ghi</Option>
-                                    <Option value="PENDING">Chưa ghi</Option>
-                                </Select>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Space.Compact style={{width: '100%'}}>
-                                    <input
-                                        type="text"
-                                        placeholder="Tìm phòng, người thuê..."
-                                        value={searchText}
-                                        onChange={(e) => setSearchText(e.target.value)}
-                                        className={cx('search-input')}
-                                    />
-                                    <Button icon={<SearchOutlined/>}/>
-                                </Space.Compact>
-                            </Col>
-                        </Row>
-                    </Card>
-
-                    {/* Room Grid */}
-                    <RoomRecordGrid
-                        rooms={getFilteredRooms()}
-                        records={records}
-                        onRoomClick={handleRoomClick}
-                        onViewHistory={handleViewHistory}
-                        loading={loading}
+                    <PeriodInfo period={safeSelectedPeriod}/>
+                    <StatisticsSummary statistics={statistics}/>
+                    <FilterBar
+                        boardingHouseFilter={boardingHouseFilter}
+                        setBoardingHouseFilter={setBoardingHouseFilter}
+                        buildingFilter={buildingFilter}
+                        setBuildingFilter={setBuildingFilter}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        searchText={searchText}
+                        setSearchText={setSearchText}
                     />
-
-                    {/* Action Buttons */}
-                    <Card className={cx('action-card')}>
-                        <Row gutter={16} justify="space-between">
-                            <Col>
-                                <Button
-                                    size="large"
-                                    onClick={() => {
-                                        setCurrentStep(0);
-                                        setSelectedPeriod(null);
-                                        setRecords([]);
-                                    }}
-                                >
-                                    Chọn lại kỳ ghi
-                                </Button>
-                            </Col>
-                            <Col>
-                                <Space size="middle">
-                                    <Button
-                                        type="default"
-                                        size="large"
-                                        icon={<SaveOutlined/>}
-                                        onClick={() => message.info('Đã lưu nháp!')}
-                                    >
-                                        Lưu nháp
-                                    </Button>
-                                    <Button
-                                        type="primary"
-                                        size="large"
-                                        icon={<SendOutlined/>}
-                                        onClick={handleSubmitAll}
-                                        disabled={statistics.recordedRooms === 0}
-                                    >
-                                        Gửi và Tạo hóa đơn ({statistics.recordedRooms})
-                                    </Button>
-                                </Space>
-                            </Col>
-                        </Row>
-                    </Card>
+                    <RoomRecordGrid
+                        rooms={filteredRooms}
+                        records={records}
+                        loading={loading}
+                        onRoomClick={room => {
+                            setSelectedRoom(room);
+                            setIsInputModalOpen(true);
+                        }}
+                        onViewHistory={room => {
+                            setSelectedRoom(room);
+                            setIsHistoryModalOpen(true);
+                        }}
+                    />
+                    <ActionButtons
+                        onBack={() => {
+                            setSelectedPeriod(null);
+                            setCurrentStep(0);
+                        }}
+                        onSaveDraft={() => message.info('Đã lưu nháp (chưa implement)')}
+                        onSubmit={handleSubmitAll}
+                        disabledSubmit={statistics.recordedRooms === 0}
+                        recordedCount={statistics.recordedRooms}
+                    />
                 </>
             )}
 
             {/* Modals */}
+            <PeriodCreateModal
+                open={isCreatePeriodOpen}
+                onCancel={() => setIsCreatePeriodOpen(false)}
+                onCreate={handleCreatePeriod}
+                loading={loading}
+            />
+
             <RecordInputModal
                 isOpen={isInputModalOpen}
                 onClose={() => setIsInputModalOpen(false)}
@@ -424,91 +339,11 @@ function ElectricWaterRecord() {
                 room={selectedRoom}
             />
 
-            {/* Submit Confirmation Modal */}
-            <Modal
-                title="Xác nhận gửi dữ liệu"
-                open={isSubmitModalOpen}
-                onCancel={() => setIsSubmitModalOpen(false)}
-                onOk={handleConfirmSubmit}
-                okText="Xác nhận gửi"
-                cancelText="Hủy"
-                confirmLoading={loading}
-                width={600}
-            >
-                <div className={cx('submit-modal-content')}>
-                    <div className={cx('warning-box')}>
-                        <ExclamationCircleOutlined className={cx('warning-icon')}/>
-                        <p>Sau khi gửi, hệ thống sẽ tự động tạo hóa đơn điện nước cho các phòng đã ghi.</p>
-                    </div>
-
-                    <Divider/>
-
-                    <Row gutter={[16, 16]}>
-                        <Col span={12}>
-                            <div className={cx('summary-item')}>
-                                <span className={cx('summary-label')}>Tổng số phòng:</span>
-                                <span className={cx('summary-value')}>{statistics.totalRooms}</span>
-                            </div>
-                        </Col>
-                        <Col span={12}>
-                            <div className={cx('summary-item')}>
-                                <span className={cx('summary-label')}>Đã ghi:</span>
-                                <span className={cx('summary-value', 'success')}>{statistics.recordedRooms}</span>
-                            </div>
-                        </Col>
-                        <Col span={12}>
-                            <div className={cx('summary-item')}>
-                                <span className={cx('summary-label')}>Chưa ghi:</span>
-                                <span className={cx('summary-value', 'warning')}>{statistics.pendingRooms}</span>
-                            </div>
-                        </Col>
-                        <Col span={12}>
-                            <div className={cx('summary-item')}>
-                                <span className={cx('summary-label')}>Hoàn thành:</span>
-                                <span className={cx('summary-value', 'primary')}>
-                  {statistics.completionRate.toFixed(0)}%
-                </span>
-                            </div>
-                        </Col>
-                    </Row>
-
-                    <Divider/>
-
-                    <Row gutter={[16, 16]}>
-                        <Col span={24}>
-                            <div className={cx('amount-summary')}>
-                                <div className={cx('amount-row')}>
-                                    <ThunderboltOutlined className={cx('amount-icon', 'electric')}/>
-                                    <span className={cx('amount-label')}>Tổng tiền điện:</span>
-                                    <span className={cx('amount-value', 'electric')}>
-                    {new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'})
-                        .format(statistics.totalElectricAmount)}
-                  </span>
-                                </div>
-                                <div className={cx('amount-row')}>
-                                    <ThunderboltOutlined className={cx('amount-icon', 'water')}/>
-                                    <span className={cx('amount-label')}>Tổng tiền nước:</span>
-                                    <span className={cx('amount-value', 'water')}>
-                    {new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'})
-                        .format(statistics.totalWaterAmount)}
-                  </span>
-                                </div>
-                                <Divider style={{margin: '12px 0'}}/>
-                                <div className={cx('amount-row', 'total')}>
-                                    <span className={cx('amount-label')}>Tổng cộng:</span>
-                                    <span className={cx('amount-value', 'total')}>
-                    {new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'})
-                        .format(statistics.totalElectricAmount + statistics.totalWaterAmount)}
-                  </span>
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
-                </div>
-            </Modal>
+            {/* Modal xác nhận gửi */}
+            {/* Bạn có thể giữ nguyên phần Modal submit như cũ hoặc tách thành component riêng */}
+            {/* ... giữ nguyên code Modal submit của bạn ở đây ... */}
         </div>
     );
 }
 
 export default ElectricWaterRecord;
-

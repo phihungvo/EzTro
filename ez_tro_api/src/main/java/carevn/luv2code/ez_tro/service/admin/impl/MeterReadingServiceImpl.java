@@ -29,7 +29,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     private final MeterReadingRepository meterReadingRepository;
     private final UtilityRepository utilityRepository;
     private final RoomRepository roomRepository;
-    private final MeterReadingMapper mapper;
+    private final MeterReadingMapper meterReadingMapper;
     private final AuthorizationService authorizationService;
 
     @Override
@@ -93,7 +93,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
                 .note(request.getNote())
                 .build();
 
-        return mapper.toResponse(meterReadingRepository.save(reading));
+        return meterReadingMapper.toResponse(meterReadingRepository.save(reading));
     }
 
     @Override
@@ -102,14 +102,14 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         authorizationService.checkOwnerOfRoom(roomId);
         List<MeterReading> readings = meterReadingRepository
                 .findByRoomIdAndPeriodMonthAndPeriodYear(roomId, month, year);
-        return mapper.toResponseList(readings);
+        return meterReadingMapper.toResponseList(readings);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MeterReadingResponse> getHistoryByRoom(Integer roomId) {
         authorizationService.checkOwnerOfRoom(roomId); // hoặc check tenant nếu là phòng đang thuê
-        return mapper.toResponseList(meterReadingRepository.findByRoomId(roomId));
+        return meterReadingMapper.toResponseList(meterReadingRepository.findByRoomId(roomId));
     }
 
     @Override
