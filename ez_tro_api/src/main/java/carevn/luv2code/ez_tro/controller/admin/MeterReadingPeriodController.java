@@ -1,19 +1,17 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
-import carevn.luv2code.ez_tro.dto.requests.MeterPeriodRequest;
-import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
-import carevn.luv2code.ez_tro.dto.response.ApiResponse;
-import carevn.luv2code.ez_tro.dto.response.MeterPeriodResponse;
-import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
-import carevn.luv2code.ez_tro.entity.MeterReadingPeriod;
-import carevn.luv2code.ez_tro.service.admin.MeterReadingPeriodService;
-import carevn.luv2code.ez_tro.service.admin.MeterReadingService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import carevn.luv2code.ez_tro.dto.requests.MeterPeriodRequest;
+import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.MeterPeriodResponse;
+import carevn.luv2code.ez_tro.entity.MeterReadingPeriod;
+import carevn.luv2code.ez_tro.service.admin.MeterReadingPeriodService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/meter-periods")

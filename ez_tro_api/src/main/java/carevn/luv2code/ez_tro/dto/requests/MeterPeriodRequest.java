@@ -1,10 +1,10 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
-
-import java.time.LocalDate;
 
 @Data
 public class MeterPeriodRequest {

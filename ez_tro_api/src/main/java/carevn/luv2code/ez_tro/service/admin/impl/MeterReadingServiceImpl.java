@@ -1,5 +1,14 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
 import carevn.luv2code.ez_tro.entity.*;
@@ -11,15 +20,6 @@ import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.service.admin.MeterReadingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +38,8 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         // Kiểm tra quyền sở hữu (chủ nhà trọ)
         authorizationService.checkOwnerOfRoom(request.getRoomId());
 
-        MeterReadingPeriod period = meterReadingPeriodRepository.findByPeriodMonthAndPeriodYear(
-                        request.getPeriodMonth(), request.getPeriodYear())
+        MeterReadingPeriod period = meterReadingPeriodRepository
+                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
                 .orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
 
         if (period.getStatus() == PeriodStatus.LOCKED) {
@@ -53,10 +53,12 @@ public class MeterReadingServiceImpl implements MeterReadingService {
             throw new AppException(ErrorCode.METER_READING_ALREADY_EXISTS_FOR_PERIOD);
         }
 
-        Room room = roomRepository.findById(request.getRoomId())
+        Room room = roomRepository
+                .findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        Utility utility = utilityRepository.findById(request.getUtilityId())
+        Utility utility = utilityRepository
+                .findById(request.getUtilityId())
                 .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
 
         // Tìm chỉ số kỳ trước
@@ -100,8 +102,8 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @Transactional(readOnly = true)
     public List<MeterReadingResponse> getByRoomAndPeriod(Integer roomId, Integer month, Integer year) {
         authorizationService.checkOwnerOfRoom(roomId);
-        List<MeterReading> readings = meterReadingRepository
-                .findByRoomIdAndPeriodMonthAndPeriodYear(roomId, month, year);
+        List<MeterReading> readings =
+                meterReadingRepository.findByRoomIdAndPeriodMonthAndPeriodYear(roomId, month, year);
         return meterReadingMapper.toResponseList(readings);
     }
 
@@ -114,8 +116,6 @@ public class MeterReadingServiceImpl implements MeterReadingService {
 
     @Override
     public List<MeterReadingResponse> batchCreate(List<MeterReadingRequest> requests) {
-        return requests.stream()
-                .map(this::create)
-                .collect(Collectors.toList());
+        return requests.stream().map(this::create).collect(Collectors.toList());
     }
 }

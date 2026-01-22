@@ -1,14 +1,15 @@
 package carevn.luv2code.ez_tro.entity;
 
+import java.math.BigDecimal;
+import java.util.Date;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
-import java.util.Date;
-
 @Entity
-@Table(name = "meter_readings",
+@Table(
+        name = "meter_readings",
         uniqueConstraints = @UniqueConstraint(columnNames = {"room_id", "utility_id", "period_month", "period_year"}))
 @Getter
 @Setter

@@ -22,7 +22,7 @@ import {
     BarChartOutlined,
     GoldOutlined,
     FileTextOutlined,
-    SettingOutlined,
+    SettingOutlined, CreditCardOutlined,
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
@@ -40,6 +40,8 @@ import IncidentReport from "~/pages/Admin/IncidentReport";
 import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Revenue from "~/pages/Admin/Revenue";
+import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
+import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -93,6 +95,13 @@ const adminMenuConfig = [
                 icon: <UserSwitchOutlined/>,
                 color: "#f59e0b",
                 path: "/admin/tenants",
+            },
+            {
+                key: "admin-payment-management",
+                label: "Quản lý thanh toán gói",
+                title: "Quản lý Thanh toán gói dịch vụ chủ trọ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/admin-payment-management",
             },
         ],
     },
@@ -276,6 +285,8 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/incidents" element={<IncidentReport/>}/>
                         <Route path="/room-requests" element={<RequestManagement/>}/>
                         <Route path="/appointments" element={<Appointment/>}/>
+                        <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
+                        <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
 
                         {/* Add other routes as needed */}
                         <Route path="/" element={<Dashboard/>}/> // Default route

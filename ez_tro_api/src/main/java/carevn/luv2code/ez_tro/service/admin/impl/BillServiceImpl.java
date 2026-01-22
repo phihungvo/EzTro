@@ -184,46 +184,46 @@ public class BillServiceImpl implements BillService {
         return billRepository.findAll(spec, pageable).map(billMapper::toResponse);
     }
 
-//    Tích hợp tự động tính tiền điện nước
-//    @Transactional
-//    public BillResponse generateMonthlyBill(Integer contractId, Integer month, Integer year) {
-//        Contract contract = contractRepository.findById(contractId)
-//                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-//
-//        Room room = contract.getRoom();
-//
-//        // Lấy tất cả chỉ số trong kỳ
-//        List<MeterReading> readings = meterReadingRepository
-//                .findByRoomIdAndPeriodMonthAndPeriodYear(room.getId(), month, year);
-//
-//        BigDecimal totalUtility = readings.stream()
-//                .map(MeterReading::getAmount)
-//                .filter(amount -> amount != null)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
-//
-//        BigDecimal totalAmount = contract.getRentPrice().add(totalUtility);
-//
-//        Bill bill = Bill.builder()
-//                .contract(contract)
-//                .room(room)
-//                .tenant(contract.getTenant())
-//                .billTitle("Hóa đơn tháng " + month + "/" + year)
-//                .amount(totalAmount)
-//                .serviceAmount(totalUtility) // phần điện nước + dịch vụ khác
-//                .status(BillStatus.UNPAID)
-//                .dueDate(calculateDueDate(month, year)) // implement hàm này
-//                .build();
-//
-//        if (bill.getBillCode() == null || bill.getBillCode().isBlank()) {
-//            String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-//            bill.setBillCode("BILL-" + timestamp);
-//        }
-//
-//        billRepository.save(bill);
-//
-//        // Gửi thông báo...
-//        // notificationService...
-//
-//        return billMapper.toResponse(bill);
-//    }
+    //    Tích hợp tự động tính tiền điện nước
+    //    @Transactional
+    //    public BillResponse generateMonthlyBill(Integer contractId, Integer month, Integer year) {
+    //        Contract contract = contractRepository.findById(contractId)
+    //                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+    //
+    //        Room room = contract.getRoom();
+    //
+    //        // Lấy tất cả chỉ số trong kỳ
+    //        List<MeterReading> readings = meterReadingRepository
+    //                .findByRoomIdAndPeriodMonthAndPeriodYear(room.getId(), month, year);
+    //
+    //        BigDecimal totalUtility = readings.stream()
+    //                .map(MeterReading::getAmount)
+    //                .filter(amount -> amount != null)
+    //                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    //
+    //        BigDecimal totalAmount = contract.getRentPrice().add(totalUtility);
+    //
+    //        Bill bill = Bill.builder()
+    //                .contract(contract)
+    //                .room(room)
+    //                .tenant(contract.getTenant())
+    //                .billTitle("Hóa đơn tháng " + month + "/" + year)
+    //                .amount(totalAmount)
+    //                .serviceAmount(totalUtility) // phần điện nước + dịch vụ khác
+    //                .status(BillStatus.UNPAID)
+    //                .dueDate(calculateDueDate(month, year)) // implement hàm này
+    //                .build();
+    //
+    //        if (bill.getBillCode() == null || bill.getBillCode().isBlank()) {
+    //            String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+    //            bill.setBillCode("BILL-" + timestamp);
+    //        }
+    //
+    //        billRepository.save(bill);
+    //
+    //        // Gửi thông báo...
+    //        // notificationService...
+    //
+    //        return billMapper.toResponse(bill);
+    //    }
 }

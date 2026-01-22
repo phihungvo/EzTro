@@ -1,0 +1,243 @@
+.payment-wrapper {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #262626;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    :global(.anticon) {
+      color: #722ed1;
+    }
+  }
+
+  .page-description {
+    font-size: 14px;
+    color: #8c8c8c;
+    margin: 0;
+  }
+}
+
+/* Statistics */
+.statistics-row {
+  margin-bottom: 24px;
+
+  .stat-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    &.primary {
+      border-left: 4px solid #722ed1;
+    }
+
+    &.success {
+      border-left: 4px solid #52c41a;
+    }
+
+    &.warning {
+      border-left: 4px solid #fa8c16;
+    }
+
+    &.danger {
+      border-left: 4px solid #ff4d4f;
+    }
+
+    :global(.ant-card-body) {
+      padding: 20px;
+    }
+
+    :global(.ant-statistic-title) {
+      font-size: 14px;
+      color: #8c8c8c;
+      margin-bottom: 8px;
+    }
+
+    .stat-growth {
+      margin-top: 12px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      &.up {
+        color: #52c41a;
+      }
+
+      &.down {
+        color: #ff4d4f;
+      }
+    }
+
+    .stat-detail {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #8c8c8c;
+    }
+  }
+}
+
+/* Filters */
+.filter-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  :global(.ant-card-body) {
+    padding: 20px;
+  }
+
+  .filter-space {
+    width: 100%;
+
+    :global(.ant-space-item) {
+      flex-wrap: wrap;
+    }
+  }
+}
+
+/* Table */
+.table-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  :global(.ant-card-body) {
+    padding: 0;
+  }
+
+  :global(.ant-table) {
+    border-radius: 12px;
+  }
+
+  .transaction-code {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: #722ed1;
+    font-size: 13px;
+  }
+
+  .customer-info {
+    .customer-name {
+      font-weight: 600;
+      color: #262626;
+      margin-bottom: 4px;
+    }
+
+    .customer-contact {
+      font-size: 12px;
+      color: #8c8c8c;
+    }
+  }
+
+  .amount {
+    font-weight: 700;
+    color: #262626;
+    font-size: 15px;
+  }
+}
+
+/* Detail Modal */
+.detail-content {
+  :global(.ant-descriptions-item-label) {
+    font-weight: 600;
+    background: #fafafa;
+  }
+
+  .amount-large {
+    font-size: 20px;
+    font-weight: 700;
+    color: #722ed1;
+  }
+}
+
+/* Confirm Info */
+.confirm-info {
+  background: #f0f0f0;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  p {
+    margin: 8px 0;
+    font-size: 14px;
+
+    strong {
+      color: #595959;
+    }
+  }
+
+  .amount-large {
+    font-size: 18px;
+    font-weight: 700;
+    color: #722ed1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payment-wrapper {
+    padding: 16px;
+  }
+
+  .statistics-row {
+    :global(.ant-col) {
+      margin-bottom: 16px;
+    }
+  }
+
+  .filter-space {
+    flex-direction: column;
+    align-items: stretch !important;
+
+    :global(.ant-space-item) {
+      width: 100% !important;
+
+      > * {
+        width: 100% !important;
+      }
+    }
+  }
+
+  .table-card {
+    :global(.ant-table) {
+      font-size: 12px;
+    }
+  }
+}
+
+/* Custom scrollbar */
+:global {
+  .ant-table-body::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .ant-table-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .ant-table-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+
+    &:hover {
+      background: #555;
+    }
+  }
+}

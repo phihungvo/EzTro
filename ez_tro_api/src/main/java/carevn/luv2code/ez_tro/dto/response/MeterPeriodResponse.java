@@ -1,28 +1,28 @@
 package carevn.luv2code.ez_tro.dto.response;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MeterPeriodResponse {
-     Integer id;
+    Integer id;
 
-     Integer periodMonth;
+    Integer periodMonth;
 
-     Integer periodYear;
+    Integer periodYear;
 
-     LocalDate startDate;
+    LocalDate startDate;
 
-     LocalDate endDate;
+    LocalDate endDate;
 
-     String status;
+    String status;
 
-     LocalDateTime confirmedAt;
+    LocalDateTime confirmedAt;
 
-     LocalDateTime lockedAt;
+    LocalDateTime lockedAt;
 }

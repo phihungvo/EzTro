@@ -1,5 +1,7 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import org.springframework.stereotype.Service;
+
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.exception.AppException;
@@ -8,7 +10,6 @@ import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +25,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         User currentUser = SecurityUtils.getCurrentUserOrThrow();
 
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         if (!currentUser.getId().equals(room.getBoardingHouse().getOwner().getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);

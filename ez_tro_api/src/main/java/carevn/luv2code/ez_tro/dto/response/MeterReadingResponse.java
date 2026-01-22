@@ -1,10 +1,10 @@
 package carevn.luv2code.ez_tro.dto.response;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.math.BigDecimal;
 import java.util.Date;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Data
 @Builder

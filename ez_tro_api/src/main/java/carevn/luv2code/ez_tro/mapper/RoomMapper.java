@@ -23,7 +23,7 @@ public interface RoomMapper {
     @Mapping(target = "boardingHouse", ignore = true)
     @Mapping(target = "building", ignore = true)
     @Mapping(target = "contracts", ignore = true)
-//    @Mapping(target = "electricWaterRecords", ignore = true)
+    //    @Mapping(target = "electricWaterRecords", ignore = true)
     @Mapping(target = "roomUtilities", ignore = true)
     Room toEntity(RoomRequest request);
 

@@ -16,6 +16,7 @@ import {
     CrownOutlined,
     UserOutlined,
 } from "@ant-design/icons";
+import React from "react";
 
 export const MENU_CONFIG = {
     ADMIN: [
@@ -298,7 +299,7 @@ export const MENU_CONFIG = {
             ],
         },
         {
-            group: "Báo cáo",
+            group: "Báo cáo và gói dịch vụ",
             items: [
                 {
                     key: "reports",
@@ -306,6 +307,12 @@ export const MENU_CONFIG = {
                     icon: <BarChartOutlined/>,
                     path: "/owner/reports",
                     color: "#a855f7"
+                },
+                {
+                    key: "owner-subscription",
+                    label: "Gói dịch vụ của tôi",
+                    icon: <DollarOutlined />,
+                    path: "/owner/owner-subscription",
                 },
             ],
         },

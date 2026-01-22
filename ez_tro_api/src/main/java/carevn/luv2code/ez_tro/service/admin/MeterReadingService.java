@@ -1,9 +1,9 @@
 package carevn.luv2code.ez_tro.service.admin;
 
+import java.util.List;
+
 import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
-
-import java.util.List;
 
 public interface MeterReadingService {
 

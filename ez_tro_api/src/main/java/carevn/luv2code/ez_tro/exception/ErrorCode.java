@@ -84,15 +84,11 @@ public enum ErrorCode {
             "Electric water record for this room in the specified month and year already exists",
             HttpStatus.CONFLICT),
     METER_READING_ALREADY_EXISTS_FOR_PERIOD(
-            1062,
-            "Meter reading for this room, utility, month, and year already exists",
-            HttpStatus.CONFLICT
-    ),
+            1062, "Meter reading for this room, utility, month, and year already exists", HttpStatus.CONFLICT),
     INVALID_METER_READING_VALUE(
             1063,
             "Current meter reading must be greater than or equal to the previous reading",
-            HttpStatus.BAD_REQUEST
-    ),
+            HttpStatus.BAD_REQUEST),
     PERIOD_ALREADY_EXISTS(1064, "Meter reading period for this month and year already exists", HttpStatus.CONFLICT),
     PERIOD_ALREADY_CONFIRMED(1065, "Only DRAFT periods can be confirmed", HttpStatus.BAD_REQUEST),
     PERIOD_MUST_BE_CONFIRMED_BEFORE_LOCK(1066, "Only CONFIRMED periods can be locked", HttpStatus.BAD_REQUEST),

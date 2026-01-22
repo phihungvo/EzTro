@@ -1,11 +1,12 @@
 package carevn.luv2code.ez_tro.mapper;
 
+import java.util.List;
+
+import org.mapstruct.*;
+
 import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
 import carevn.luv2code.ez_tro.entity.MeterReading;
-import org.mapstruct.*;
-
-import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface MeterReadingMapper {

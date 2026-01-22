@@ -1,15 +1,16 @@
 package carevn.luv2code.ez_tro.entity;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import carevn.luv2code.ez_tro.enums.PeriodStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "meter_reading_periods",
+@Table(
+        name = "meter_reading_periods",
         uniqueConstraints = @UniqueConstraint(columnNames = {"period_month", "period_year"}))
 @Getter
 @Setter

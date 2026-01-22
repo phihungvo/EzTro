@@ -1,20 +1,21 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import carevn.luv2code.ez_tro.dto.requests.MeterPeriodRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterPeriodResponse;
 import carevn.luv2code.ez_tro.entity.MeterReadingPeriod;
 import carevn.luv2code.ez_tro.enums.PeriodStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
+import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.MeterReadingPeriodRepository;
 import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.service.admin.MeterReadingPeriodService;
-import carevn.luv2code.ez_tro.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +33,9 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
     // Tạo kỳ ghi chỉ số mới
     @Override
     public MeterPeriodResponse create(MeterPeriodRequest request) {
-        if (periodRepo.findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear()).isPresent()) {
+        if (periodRepo
+                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
+                .isPresent()) {
             throw new AppException(ErrorCode.PERIOD_ALREADY_EXISTS);
         }
 
@@ -72,8 +75,7 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
     }
 
     private MeterReadingPeriod getPeriodOrThrow(Integer id) {
-        return periodRepo.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
+        return periodRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
     }
 
     // mapper đơn giản (có thể dùng MapStruct)

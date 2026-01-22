@@ -1,7 +1,7 @@
-import {Routes, Route, Navigate} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import SharedLayout from "~/components/Layout/SharedLayout";
 import PrivateRoute from "./PrivateRoute";
-import {useAuth} from "./AuthContext";
+import { useAuth } from "./AuthContext";
 
 import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
@@ -21,88 +21,83 @@ import UserLayout from "~/components/Layout/UserLayout";
 import UserDashboard from "~/pages/User/HomeDashboard";
 import Owner from "~/pages/Admin/Owner";
 import Revenue from "~/pages/Admin/Revenue";
-import React from "react";
 import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
 import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
+import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
+import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
+import AdminLayout from "~/components/Layout/AdminLayout";
+import React from "react";
 
 const AppRoutes = () => {
-    const {user} = useAuth();
+    const { user } = useAuth();
 
     return (
         <Routes>
-            <Route path="/login" element={<Login/>}/>
-            <Route path="/register" element={<Register/>}/>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
             {/* ADMIN */}
             <Route path="/admin/*" element={
                 <PrivateRoute allowedRoles={['ADMIN']}>
-                    <SharedLayout>
-                        <Routes>
-                            <Route path="dashboard" element={<AdminDashboard/>}/>
-                            <Route path="owners" element={<Owner/>}/>
-                            <Route path="buildings" element={<Building/>}/>
-                            <Route path="rooms" element={<Room/>}/>
-                            <Route path="tenants" element={<Tenant/>}/>
-                            <Route path="tenants/:id" element={<TenantDetail/>}/>
-                            <Route path="contracts" element={<Contract/>}/>
-                            <Route path="bills" element={<Bill/>}/>
-                            <Route path="utilities" element={<UtilityManagement/>}/>
-                            <Route path="incidents" element={<IncidentReport/>}/>
-                            <Route index element={<AdminDashboard/>}/>
-                            <Route path="users" element={<UserManagement/>}/>
-                            <Route path="/boarding-houses" element={<BoardingHouses/>}/>
-                            <Route path="/revenues" element={<Revenue/>}/>
-                            <Route path="/room-requests" element={<RequestManagement/>}/>
-                            <Route path="/appointments" element={<Appointment/>}/>
-                            <Route path="/assets" element={<Asset/>}/>
-                            <Route path="/expenses" element={<OperatingCostTracker/>}/>
-                            <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>
-
-                        </Routes>
-                    </SharedLayout>
+                    <AdminLayout onLogout={() => {
+                        localStorage.clear();
+                        window.location.href = '/login';
+                    }} />
                 </PrivateRoute>
             }/>
 
             {/* OWNER */}
-            <Route path="/owner/*" element={
-                <PrivateRoute allowedRoles={['OWNER']}>
-                    <SharedLayout>
-                        <Routes>
-                            {/*<Route path="dashboard" element={<OwnerDashboard/>}/>*/}
-                            <Route path="buildings" element={<Building/>}/>
-                            <Route path="rooms" element={<Room/>}/>
-                            <Route path="tenants" element={<Tenant/>}/>
-                            <Route path="tenants/:id" element={<TenantDetail/>}/>
-                            <Route path="contracts" element={<Contract/>}/>
-                            <Route path="bills" element={<Bill/>}/>
-                            {/*<Route index element={<OwnerDashboard/>}/>*/}
-                            <Route path="/revenues" element={<Revenue/>}/>
-                            <Route path="/appointments" element={<Appointment/>}/>
-                            <Route path="/assets" element={<Asset/>}/>
-                            <Route path="/expenses" element={<OperatingCostTracker/>}/>
-                        </Routes>
-                    </SharedLayout>
-                </PrivateRoute>
-            }/>
+            <Route
+                path="/owner/*"
+                element={
+                    <PrivateRoute allowedRoles={["OWNER"]}>
+                        <SharedLayout>
+                            <Routes>
+                                <Route path="buildings" element={<Building />} />
+                                <Route path="rooms" element={<Room />} />
+                                <Route path="tenants" element={<Tenant />} />
+                                <Route path="tenants/:id" element={<TenantDetail />} />
+                                <Route path="contracts" element={<Contract />} />
+                                <Route path="bills" element={<Bill />} />
+                                <Route path="revenues" element={<Revenue />} />
+                                <Route path="appointments" element={<Appointment />} />
+                                <Route path="assets" element={<Asset />} />
+                                <Route path="expenses" element={<OperatingCostTracker />} />
+                                <Route path="admin-payment-management" element={<AdminPaymentManagement/>}/>
+                                <Route path="owner-subscription" element={<OwnerSubscriptionPage/>}/>
+                            </Routes>
+                        </SharedLayout>
+                    </PrivateRoute>
+                }
+            />
 
             {/* USER */}
-            <Route path="/user/*" element={
-                <PrivateRoute allowedRoles={['USER']}>
-                    <UserLayout>
-                        <Routes>
-                            <Route path="dashboard" element={<UserDashboard/>}/>
-                        </Routes>
-                    </UserLayout>
-                </PrivateRoute>
-            }/>
+            <Route
+                path="/user/*"
+                element={
+                    <PrivateRoute allowedRoles={["USER"]}>
+                        <UserLayout>
+                            <Routes>
+                                <Route path="dashboard" element={<UserDashboard />} />
+                            </Routes>
+                        </UserLayout>
+                    </PrivateRoute>
+                }
+            />
 
             {/* Default */}
-            <Route path="*" element={
-                <Navigate to={user ? `/${user.role.toLowerCase()}/dashboard` : '/login'} replace/>
-            }/>
+            <Route
+                path="*"
+                element={
+                    <Navigate
+                        to={user ? `/${user.role.toLowerCase()}/dashboard` : "/login"}
+                        replace
+                    />
+                }
+            />
         </Routes>
     );
 };
