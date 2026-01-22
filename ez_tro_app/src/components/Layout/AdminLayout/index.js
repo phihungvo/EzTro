@@ -22,7 +22,7 @@ import {
     BarChartOutlined,
     GoldOutlined,
     FileTextOutlined,
-    SettingOutlined, CreditCardOutlined,
+    SettingOutlined, CreditCardOutlined, CrownOutlined,
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
@@ -42,6 +42,7 @@ import Appointment from "~/pages/Admin/Appointment";
 import Revenue from "~/pages/Admin/Revenue";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
+import Owner from "~/pages/Admin/Owner";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -79,6 +80,14 @@ const adminMenuConfig = [
                 icon: <BankOutlined/>,
                 color: "#14b8a6",
                 path: "/admin/buildings",
+            },
+            {
+                key: "owners",
+                label: "Chủ trọ",
+                title: "Quản lý chủ trọ",
+                icon: <CrownOutlined/>,
+                color: "#f59e0b",
+                path: "/admin/owners",
             },
             {
                 key: "rooms",
@@ -274,6 +283,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/tenants" element={<Tenant/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
                         <Route path="/boarding-houses" element={<Revenue/>}/>
+                        <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
