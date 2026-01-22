@@ -1,0 +1,22 @@
+package carevn.luv2code.ez_tro.mapper;
+
+import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
+import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
+import carevn.luv2code.ez_tro.entity.MeterReading;
+import org.mapstruct.*;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface MeterReadingMapper {
+
+    @Mapping(target = "consumption", ignore = true)
+    @Mapping(target = "amount", ignore = true)
+    MeterReading toEntity(MeterReadingRequest request);
+
+    @Mapping(target = "roomNumber", source = "room.roomNumber")
+    @Mapping(target = "utilityName", source = "utility.name")
+    MeterReadingResponse toResponse(MeterReading entity);
+
+    List<MeterReadingResponse> toResponseList(List<MeterReading> entities);
+}
