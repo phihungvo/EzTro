@@ -11,12 +11,12 @@ import {
     EditOutlined,
     DeleteOutlined,
     TableOutlined,
-    AppstoreOutlined,
+    AppstoreOutlined, CopyOutlined,
 } from '@ant-design/icons';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
+import {Form, message, Row, Col, Pagination, Segmented, Tag, Space, Tooltip, Button} from 'antd';
 import {
     getAllOwners
     // createOwner,
@@ -34,7 +34,7 @@ function Owner() {
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
-        pageSize: 6,
+        pageSize: 10,
         total: 0,
     });
     const [modalMode, setModalMode] = useState('create');
@@ -66,6 +66,114 @@ function Owner() {
             align: 'center',
             width: 180,
             render: (text) => text || '—',
+        },
+        {
+            title: 'User Name',
+            dataIndex: 'userName',
+            key: 'userName',
+            width: 150,
+            fixed: 'left',
+            align: 'center',
+            onFilter: (value, record) => record.userName.toLowerCase().startsWith(value.toLowerCase()),
+            render: (text) => {
+                if (!text) {
+                    return <span style={{ color: '#999' }}>N/A</span>;
+                }
+
+                // Giới hạn hiển thị nếu quá dài (ví dụ > 20 ký tự)
+                const displayText = text.length > 20 ? text.slice(0, 20) + '...' : text;
+
+                return (
+                    <Space size="small" style={{ maxWidth: '100%', justifyContent: 'center' }}>
+                        {/* Hover hiện full userName */}
+                        <Tooltip title={text} placement="top">
+          <span
+              style={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '110px',           // Giới hạn chiều rộng text để không tràn
+                  display: 'inline-block',
+                  cursor: 'pointer',
+              }}
+          >
+            {displayText}
+          </span>
+                        </Tooltip>
+
+                        {/* Nút copy */}
+                        <Tooltip title="Copy username">
+                            <Button
+                                type="text"
+                                icon={<CopyOutlined />}
+                                size="small"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText(text)
+                                        .then(() => {
+                                            message.success('Đã copy username!', 1.5);
+                                        })
+                                        .catch(() => {
+                                            message.error('Không thể copy, vui lòng thử lại');
+                                        });
+                                }}
+                            />
+                        </Tooltip>
+                    </Space>
+                );
+            },
+        },
+        {
+            title: 'Original Password',
+            dataIndex: 'originalPassword',
+            key: 'originalPassword',
+            width: 180,
+            align: 'center',
+            render: (text, record) => {
+                if (!text) {
+                    return <span style={{color: '#999'}}>N/A</span>;
+                }
+
+                const displayText = text.length > 15 ? text.slice(0, 15) + '...' : text;
+
+                return (
+                    <Space size="small" style={{maxWidth: '100%', justifyContent: 'center'}}>
+                        <Tooltip title={text} placement="top">
+                            <span
+                                style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '120px',
+                                    display: 'inline-block',
+                                }}
+                            >
+            {displayText}
+          </span>
+                        </Tooltip>
+
+                        <Tooltip title="Copy mật khẩu">
+                            <Button
+                                type="text"
+                                icon={<CopyOutlined/>}
+                                size="small"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText(text)
+                                        .then(() => {
+                                            message.success('Đã copy mật khẩu!', 1.5);
+                                        })
+                                        .catch(() => {
+                                            message.error('Không thể copy, vui lòng thử lại');
+                                        });
+                                }}
+                            />
+                        </Tooltip>
+                    </Space>
+                );
+            },
         },
         {
             title: 'Địa chỉ',

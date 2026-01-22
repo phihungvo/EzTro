@@ -105,13 +105,6 @@ const adminMenuConfig = [
                 color: "#f59e0b",
                 path: "/admin/tenants",
             },
-            {
-                key: "admin-payment-management",
-                label: "Quản lý thanh toán gói",
-                title: "Quản lý Thanh toán gói dịch vụ chủ trọ",
-                icon: <CreditCardOutlined/>,
-                path: "/admin/admin-payment-management",
-            },
         ],
     },
 
@@ -155,6 +148,13 @@ const adminMenuConfig = [
                 icon: <DollarOutlined/>,
                 color: "#16a34a",
                 path: "/admin/revenues",
+            },
+            {
+                key: "admin-payment-management",
+                label: "Quản lý gói",
+                title: "Quản lý Thanh toán gói dịch vụ chủ trọ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/admin-payment-management",
             },
             {
                 key: "assets",
