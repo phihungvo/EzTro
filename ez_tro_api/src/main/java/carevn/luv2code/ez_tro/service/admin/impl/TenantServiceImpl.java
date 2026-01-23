@@ -49,6 +49,10 @@ public class TenantServiceImpl implements TenantService {
                 .findById(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+//        if (tenantRepository.existsByUserId(request.getUserId())) {
+//            throw new AppException(ErrorCode.TENANT_ALREADY_EXISTS);
+//        }
+
         Tenant tenant = tenantMapper.toEntity(request);
         tenant.setUser(user);
 
