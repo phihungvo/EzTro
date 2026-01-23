@@ -197,24 +197,45 @@ function Tenant() {
 
     const tenantModalFields = [
         {
+            label: 'Full Name',
+            name: 'fullName',
+            type: 'text',
+        },
+        {
+            label: 'Phone Number',
+            name: 'phoneNumber',
+            type: 'text',
+        },
+        {
+            label: 'Email',
+            name: 'email',
+            type: 'text',
+            rules: [{ required: true, message: 'Email bắt buộc!' }],
+        },
+        {
+            label: 'Password',
+            name: 'password',
+            type: 'text',
+        },
+        {
             label: 'Số căn cước',
             name: 'identityNumber',
             type: 'text',
             rules: [{ required: true, message: 'Số căn cước bắt buộc!' }],
         },
-        {
-            label: 'Ngày cấp',
-            name: 'issueDate',
-            type: 'date',
-            format: 'DD/MM/YYYY',
-            placeholder: 'Chọn ngày cấp',
-            disabledDate: disablePastDates,
-        },
-        {
-            label: 'Nơi cấp',
-            name: 'issuePlace',
-            type: 'text',
-        },
+        // {
+        //     label: 'Ngày cấp',
+        //     name: 'issueDate',
+        //     type: 'date',
+        //     format: 'DD/MM/YYYY',
+        //     placeholder: 'Chọn ngày cấp',
+        //     disabledDate: disablePastDates,
+        // },
+        // {
+        //     label: 'Nơi cấp',
+        //     name: 'issuePlace',
+        //     type: 'text',
+        // },
         {
             label: 'Ngày sinh',
             name: 'dateOfBirth',
@@ -239,26 +260,26 @@ function Tenant() {
             name: 'occupation',
             type: 'text',
         },
-        {
-            label: 'Địa chỉ thường trú',
-            name: 'permanentAddress',
-            type: 'textarea',
-        },
-        {
-            label: 'Thông tin xe',
-            name: 'vehicleInfo',
-            type: 'text',
-        },
-        {
-            label: 'Người liên hệ khẩn cấp',
-            name: 'emergencyContact',
-            type: 'text',
-        },
-        {
-            label: 'SĐT liên hệ khẩn cấp',
-            name: 'emergencyPhone',
-            type: 'text',
-        },
+        // {
+        //     label: 'Địa chỉ thường trú',
+        //     name: 'permanentAddress',
+        //     type: 'textarea',
+        // },
+        // {
+        //     label: 'Thông tin xe',
+        //     name: 'vehicleInfo',
+        //     type: 'text',
+        // },
+        // {
+        //     label: 'Người liên hệ khẩn cấp',
+        //     name: 'emergencyContact',
+        //     type: 'text',
+        // },
+        // {
+        //     label: 'SĐT liên hệ khẩn cấp',
+        //     name: 'emergencyPhone',
+        //     type: 'text',
+        // },
         {
             label: 'Ghi chú',
             name: 'note',
