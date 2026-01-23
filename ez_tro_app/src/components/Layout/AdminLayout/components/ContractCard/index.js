@@ -78,7 +78,7 @@ const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
                     <div className={cx('price-item')}>
                         <span className={cx('price-label')}>Giá thuê</span>
                         <span className={cx('price-value')}>
-                            {formatCurrency(contract.rentPrice || 3500000)}
+                            {formatCurrency(contract.price || 3500000)}
                         </span>
                     </div>
                     <div className={cx('divider')}></div>
