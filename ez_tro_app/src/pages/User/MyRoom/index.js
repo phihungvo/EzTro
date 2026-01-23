@@ -99,7 +99,7 @@ const MyRoom = () => {
                         building: myRoom.buildingName,
                         floor: myRoom.floor,
                         area: myRoom.area,
-                        price: myRoom.rentPrice,
+                        price: myRoom.price,
                         status: myRoom.status,
                     }}
                 />

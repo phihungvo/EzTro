@@ -20,6 +20,8 @@ public interface OwnerMapper {
     User toEntity(OwnerRequest req);
 
     @Mapping(target = "createdAt", source = "createAt", dateFormat = "yyyy-MM-dd HH:mm:ss")
+    @Mapping(target = "userName", source = "username")
+    @Mapping(target = "originalPassword", source = "originalPassword")
     OwnerResponse toResponse(User user);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
