@@ -95,6 +95,7 @@ public enum ErrorCode {
     PERIOD_NOT_FOUND(1067, "Meter reading period not found", HttpStatus.NOT_FOUND),
     PERIOD_LOCKED_CANNOT_EDIT(1068, "Cannot add or edit meter readings for a LOCKED period", HttpStatus.BAD_REQUEST),
 
+    EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
     NOTIFICATION_NOT_FOUND(9994, "Notification not found", HttpStatus.NOT_FOUND),
     OWNER_NOT_FOUND(9995, "Owner not found", HttpStatus.NOT_FOUND),
     ACCESS_DENIED(9996, "Access denied", HttpStatus.FORBIDDEN),

@@ -71,6 +71,7 @@ const API_ENDPOINTS = {
         DELETE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
     },
     TENANTS: {
+        CREATE: `${BASE_URL}/tenants`,
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,

@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,21 +43,37 @@ public class TenantServiceImpl implements TenantService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final TenantMapper tenantMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public TenantResponse create(TenantRequest request) {
-        User user = userRepository
-                .findById(request.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-//        if (tenantRepository.existsByUserId(request.getUserId())) {
-//            throw new AppException(ErrorCode.TENANT_ALREADY_EXISTS);
-//        }
-
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
         Tenant tenant = tenantMapper.toEntity(request);
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .userName(request.getEmail())
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .originalPassword(request.getPassword())
+                .enabled(true)
+                .accountNonExpired(true)
+                .credentialsNonExpired(true)
+                .accountNonLocked(true)
+                .build();
+
+        userRepository.save(user);
+
         tenant.setUser(user);
 
         tenant = tenantRepository.save(tenant);
+
+        // Handle email noti when create tenant if needed
+        // .....
+
         return tenantMapper.toResponse(tenant);
     }
 
