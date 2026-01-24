@@ -28,19 +28,42 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final UserRepository userRepository;
     private final BoardingHouseMapper boardingHouseMapper;
+    private final ResourceLimitServiceImpl resourceLimitService;
 
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
-        User owner = userRepository
-                .findById(request.getOwnerId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+//        User owner = userRepository
+//                .findById(request.getOwnerId())
+//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!SecurityUtils.isOwner() || !SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        // Kiểm tra quota
+        resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
 
         BoardingHouse house = boardingHouseMapper.toEntity(request);
-        house.setOwner(owner);
+        house.setOwner(currentUser);
 
         boardingHouseRepository.save(house);
         return boardingHouseMapper.toResponse(house);
     }
+
+//    User currentUser = SecurityUtils.getCurrentUser();
+//    if (!currentUser.isOwner()) {
+//        throw new AppException(ErrorCode.FORBIDDEN);
+//    }
+//
+//    // Kiểm tra quota
+//    resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
+//
+//    BoardingHouse house = boardingHouseMapper.toEntity(request);
+//    house.setOwner(currentUser); // owner tự tạo, không cần ownerId từ request
+//
+//    boardingHouseRepository.save(house);
+//    return boardingHouseMapper.toResponse(house);
 
     @Override
     public BoardingHouseResponse update(Integer id, BoardingHouseRequest request) {

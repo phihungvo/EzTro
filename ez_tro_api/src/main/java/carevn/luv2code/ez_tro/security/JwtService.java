@@ -60,11 +60,11 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("roles", user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toList()));
-        claims.put(
-                "authorities",
-                user.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList()));
+//        claims.put(
+//                "authorities",
+//                user.getAuthorities().stream()
+//                        .map(GrantedAuthority::getAuthority)
+//                        .collect(Collectors.toList()));
         return createToken(claims, user.getUsername());
     }
 
