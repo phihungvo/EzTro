@@ -13,17 +13,18 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TenantRequest {
+
+    @NotBlank(message = "Họ và tên không được để trống")
+    String fullName;
+
+    String phoneNumber;
+
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
     String email;
 
     @NotBlank(message = "Mật khẩu không được để trống")
     String password;
-
-    @NotBlank(message = "Họ và tên không được để trống")
-    String fullName;
-
-    String phoneNumber;
 
     String identityNumber;
 

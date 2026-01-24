@@ -2,6 +2,20 @@ import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
 
+
+export const createTenant = async (formData) => {
+    try {
+        const response = await apiClient.post(
+            API_ENDPOINTS.TENANTS.CREATE,
+            formData,
+        );
+        message.success('Tenant created successfully');
+        return response.data;
+    } catch (error) {
+        console.error('Error when creating tenant: ', error);
+    }
+};
+
 export const getAllTenants = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.TENANTS.GET_ALL, {

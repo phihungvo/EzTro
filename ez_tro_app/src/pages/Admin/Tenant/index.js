@@ -200,11 +200,12 @@ function Tenant() {
             label: 'Full Name',
             name: 'fullName',
             type: 'text',
+            rules: [{ required: true, message: 'Full Name bắt buộc!' }],
         },
         {
             label: 'Phone Number',
             name: 'phoneNumber',
-            type: 'text',
+            type: 'number',
         },
         {
             label: 'Email',
@@ -215,12 +216,12 @@ function Tenant() {
         {
             label: 'Password',
             name: 'password',
-            type: 'text',
+            type: 'number',
         },
         {
             label: 'Số căn cước',
             name: 'identityNumber',
-            type: 'text',
+            type: 'number',
             rules: [{ required: true, message: 'Số căn cước bắt buộc!' }],
         },
         // {
@@ -359,7 +360,7 @@ function Tenant() {
 
     const handleCallCreateTenant = async (formData) => {
         try {
-            // await createTenant(formData);
+            await createTenant(formData);
             handleFilterTenants();
             setIsModalOpen(false);
             message.success('Tạo người thuê thành công');
@@ -374,7 +375,7 @@ function Tenant() {
         const formValues = {
             ...record,
             dateOfBirth: record.dateOfBirth ? new Date(record.dateOfBirth) : null,
-            issueDate: record.issueDate ? new Date(record.issueDate) : null,
+            // issueDate: record.issueDate ? new Date(record.issueDate) : null,
         };
         form.setFieldsValue(formValues);
         setIsModalOpen(true);
@@ -413,7 +414,6 @@ function Tenant() {
         const submitData = {
             ...formData,
             dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
-            issueDate: formData.issueDate ? formData.issueDate.format('YYYY-MM-DD') : null,
         };
 
         if (modalMode === 'create') {
