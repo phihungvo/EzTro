@@ -94,6 +94,13 @@ public enum ErrorCode {
     PERIOD_MUST_BE_CONFIRMED_BEFORE_LOCK(1066, "Only CONFIRMED periods can be locked", HttpStatus.BAD_REQUEST),
     PERIOD_NOT_FOUND(1067, "Meter reading period not found", HttpStatus.NOT_FOUND),
     PERIOD_LOCKED_CANNOT_EDIT(1068, "Cannot add or edit meter readings for a LOCKED period", HttpStatus.BAD_REQUEST),
+    RESOURCE_LIMIT_EXCEEDED(1069, "Resource limit exceeded", HttpStatus.BAD_REQUEST),
+    SUBSCRIPTION_PLAN_CODE_ALREADY_EXISTS(1070, "Subscription plan code already exists", HttpStatus.CONFLICT),
+    SUBSCRIPTION_PLAN_NOT_FOUND(1071, "Subscription plan not found", HttpStatus.NOT_FOUND),
+    SUBSCRIPTION_NOT_FOUND(1072, "Subscription not found", HttpStatus.NOT_FOUND),
+    NO_ACTIVE_SUBSCRIPTION(1073, "No active subscription found", HttpStatus.NOT_FOUND),
+    NOT_AN_OWNER(1074, "User is not an owner", HttpStatus.FORBIDDEN),
+    ALREADY_HAS_ACTIVE_SUBSCRIPTION(1075, "Owner already has an active subscription", HttpStatus.CONFLICT),
 
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
     NOTIFICATION_NOT_FOUND(9994, "Notification not found", HttpStatus.NOT_FOUND),

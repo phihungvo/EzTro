@@ -32,11 +32,27 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
 
+    private final ResourceLimitServiceImpl resourceLimitService;
     private final RoomRepository roomRepository;
     private final BoardingHouseRepository boardingHouseRepository;
     private final BuildingRepository buildingRepository;
     private final UtilityRepository utilityRepository;
     private final RoomMapper roomMapper;
+
+//    @Override
+//    @Transactional
+//    public RoomResponse create(RoomRequest request) {
+//        BoardingHouse boardingHouse = getBoardingHouseOrThrow(request.getBoardingHouseId());
+//
+//        User currentUser = SecurityUtils.getCurrentUser();
+//        if (!boardingHouse.getOwner().getId().equals(currentUser.getId()) && !currentUser.isAdmin()) {
+//            throw new AppException(ErrorCode.FORBIDDEN);
+//        }
+//
+//        resourceLimitService.validateCanCreateRoom(currentUser.getId());
+//
+//        // phần còn lại giữ nguyên...
+//    }
 
     /**
      * Tạo mới một phòng trong khu nhà trọ:
@@ -49,6 +65,13 @@ public class RoomServiceImpl implements RoomService {
     @Transactional
     public RoomResponse create(RoomRequest request) {
         BoardingHouse boardingHouse = getBoardingHouseOrThrow(request.getBoardingHouseId());
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!boardingHouse.getOwner().getId().equals(currentUser.getId()) && !SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        resourceLimitService.validateCanCreateRoom(currentUser.getId());
 
         Building building = buildingRepository
                 .findById(request.getBuildingId())

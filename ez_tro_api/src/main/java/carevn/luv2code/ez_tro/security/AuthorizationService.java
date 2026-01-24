@@ -7,4 +7,6 @@ public interface AuthorizationService {
     void checkOwnerOfBoardingHouse(Integer boardingHouseId);
 
     boolean isOwnerOfRoom(Integer roomId);
+
+    boolean isUserAnOwner(Integer userId);
 }
