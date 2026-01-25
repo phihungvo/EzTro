@@ -1,3 +1,4 @@
+// src/pages/General/Login/Login.jsx
 import React, { useState } from 'react';
 import { useAuth } from '~/routes/AuthContext';
 import { login as loginService } from '~/service/admin/user';
@@ -5,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import classNames from 'classnames/bind';
 import styles from '~/pages/General/Login/Login.module.scss';
+import { useQueryClient } from '@tanstack/react-query';
 
 const cx = classNames.bind(styles);
 
@@ -15,6 +17,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const queryClient = useQueryClient(); // gọi ở body component
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,6 +35,11 @@ const Login = () => {
             }
 
             login(token);
+
+            // Invalidate quota ngay khi login thành công
+            queryClient.invalidateQueries({ queryKey: ['owner-quota'] });
+            queryClient.refetchQueries({ queryKey: ['owner-quota'] });
+
             message.success('Đăng nhập thành công!');
             navigate('/dashboard');
         } catch (err) {
@@ -80,8 +88,7 @@ const Login = () => {
                     </button>
 
                     <p className={cx('signup-link')}>
-                        Chưa có tài khoản?{' '}
-                        <a href="#" onClick={(e) => e.preventDefault()}>Đăng ký ngay</a>
+                        Chưa có tài khoản? <a href="#" onClick={(e) => e.preventDefault()}>Đăng ký ngay</a>
                     </p>
                 </form>
 

@@ -22,9 +22,12 @@ import {
     getAllBoardingHouses,
     createBoardingHouse,
     updateBoardingHouse,
-    deleteBoardingHouse
+    deleteBoardingHouse,
 } from '~/service/admin/boarding_house';
-import {getAllOwners} from "~/service/admin/user";
+import {getAllOwners} from '~/service/admin/user';
+import {useOwnerQuota} from '~/hooks/useOwnerQuota';
+import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
+import {useAuth} from "~/routes/AuthContext";
 
 const cx = classNames.bind(styles);
 
@@ -43,6 +46,18 @@ function BoardingHouses() {
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
 
+    const {data: quota} = useOwnerQuota();
+    const invalidateQuota = useInvalidateQuota();
+
+    const { user } = useAuth();
+    const isOwner = user?.isOwner || false;
+
+    // Tính current/max cho boarding house
+    const current = quota?.currentBoardingHouses ?? 0;
+    const max = quota?.maxBoardingHouses ?? 0;
+    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
+    const isAddDisabled = isOwner && current >= max;
+
     const columns = [
         {
             title: 'Tên khu nhà',
@@ -53,21 +68,21 @@ function BoardingHouses() {
             align: 'center',
         },
         {
-            title: 'Tên nhà trọ',
+            title: 'Địa chỉ',
             dataIndex: 'address',
             key: 'address',
             align: 'center',
             width: 250,
         },
         {
-            title: 'Số điện thoại liên hệ',
+            title: 'SĐT liên hệ',
             dataIndex: 'contactPhone',
             key: 'contactPhone',
             align: 'center',
             width: 200,
         },
         {
-            title: 'Số toà nhà',
+            title: 'Số tòa nhà',
             dataIndex: 'totalBuildings',
             key: 'totalBuildings',
             width: 150,
@@ -138,12 +153,12 @@ function BoardingHouses() {
             type: 'text',
         },
         {
-            label: 'Số điện thoại liên hệ',
+            label: 'SĐT liên hệ',
             name: 'contactPhone',
             type: 'text',
         },
         {
-            label: 'Số toà nhà',
+            label: 'Số tòa nhà',
             name: 'totalBuildings',
             type: 'number',
         },
@@ -167,13 +182,13 @@ function BoardingHouses() {
     const handleGetAllUsers = async () => {
         try {
             const response = await getAllOwners();
-            const mappedUsers = response.map(usr => ({
+            const mapped = response.map((usr) => ({
                 value: usr.id,
                 label: usr.fullName,
             }));
-            setUserOptionSource(mappedUsers);
+            setUserOptionSource(mapped);
         } catch (error) {
-            console.error('Error fetching users:', error);
+            console.error('Error fetching owners:', error);
             setUserOptionSource([]);
         }
     };
@@ -182,12 +197,11 @@ function BoardingHouses() {
         setLoading(true);
         try {
             const response = await getAllBoardingHouses({page: page - 1, pageSize});
-
-            if (response && Array.isArray(response.content)) {
+            if (response?.content) {
                 setBoardingHouses(response.content);
                 setPagination({
                     current: page,
-                    pageSize: pageSize,
+                    pageSize,
                     total: response.totalElements,
                 });
             } else {
@@ -203,6 +217,10 @@ function BoardingHouses() {
     };
 
     const handleAddBoardingHouses = () => {
+        if (isAddDisabled) {
+            message.warning('Bạn đã đạt giới hạn số khu nhà trọ theo gói hiện tại. Vui lòng nâng cấp gói!');
+            return;
+        }
         setModalMode('create');
         setSelectedBoardingHouses(null);
         form.resetFields();
@@ -212,14 +230,12 @@ function BoardingHouses() {
     const handleCallCreateBoardingHouse = async (formData) => {
         try {
             await createBoardingHouse(formData);
+            invalidateQuota();
             handleGetBoardingHouses();
             setIsModalOpen(false);
+            message.success('Thêm khu nhà thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi tạo khu nhà: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi tạo khu nhà: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -235,12 +251,9 @@ function BoardingHouses() {
             await updateBoardingHouse(selectedBoardingHouses.id, formData);
             handleGetBoardingHouses();
             setIsModalOpen(false);
+            message.success('Cập nhật khu nhà thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật khu nhà: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi cập nhật khu nhà: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -252,9 +265,15 @@ function BoardingHouses() {
     };
 
     const handleCallDeleteBoardingHouse = async () => {
-        await deleteBoardingHouse(selectedBoardingHouses.id);
-        handleGetBoardingHouses();
-        setIsModalOpen(false);
+        try {
+            await deleteBoardingHouse(selectedBoardingHouses.id);
+            invalidateQuota();
+            handleGetBoardingHouses();
+            setIsModalOpen(false);
+            message.success('Xóa khu nhà thành công!');
+        } catch (error) {
+            message.error(`Lỗi khi xóa khu nhà: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     const handleExportFile = async () => {
@@ -262,7 +281,7 @@ function BoardingHouses() {
             const response = await exportExcelFile('boarding_house');
             if (
                 !response.headers['content-type'].includes(
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
             ) {
                 throw new Error('Định dạng file không hợp lệ');
@@ -272,9 +291,7 @@ function BoardingHouses() {
             link.href = url;
             link.setAttribute(
                 'download',
-                `employee_${new Date()
-                    .toISOString()
-                    .replace(/[-:]/g, '')}.xlsx`,
+                `boarding_house_${new Date().toISOString().replace(/[-:]/g, '')}.xlsx`
             );
             link.click();
             window.URL.revokeObjectURL(url);
@@ -293,11 +310,10 @@ function BoardingHouses() {
         } else if (modalMode === 'delete') {
             handleCallDeleteBoardingHouse();
         }
-        setIsModalOpen(false);
     };
 
-    const handleTableChange = (pagination) => {
-        handleGetBoardingHouses(pagination.current, pagination.pageSize);
+    const handleTableChange = (newPagination) => {
+        handleGetBoardingHouses(newPagination.current, newPagination.pageSize);
     };
 
     const getModalTitle = () => {
@@ -311,13 +327,6 @@ function BoardingHouses() {
             default:
                 return 'Chi tiết khu nhà';
         }
-    };
-
-    const handleViewBoardingHouses = (record) => {
-        setSelectedBoardingHouses(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
     };
 
     return (
@@ -335,12 +344,18 @@ function BoardingHouses() {
                         ]}
                         className={cx('view-toggle')}
                     />
-                    <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddBoardingHouses}/>
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
+
                     <SmartButton
-                        title="Excel"
-                        icon={<CloudUploadOutlined/>}
-                        onClick={handleExportFile}/>
+                        title={addButtonText}
+                        icon={<PlusOutlined/>}
+                        type="primary"
+                        onClick={handleAddBoardingHouses}
+                        disabled={isAddDisabled}
+                        tooltip={isAddDisabled ? 'Đã đạt giới hạn khu nhà trọ – nâng cấp gói để thêm' : undefined}
+                    />
+
+                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
+                    <SmartButton title="Excel" icon={<CloudUploadOutlined/>} onClick={handleExportFile}/>
                 </div>
             </div>
 
@@ -361,7 +376,7 @@ function BoardingHouses() {
                                 <Col xs={24} sm={24} md={12} lg={8} xl={6} key={boardingHouse.id}>
                                     <BoardingHousesCard
                                         boardingHouse={boardingHouse}
-                                        onView={() => handleViewBoardingHouses(boardingHouse)}
+                                        // onView={() => handleViewBoardingHouses(boardingHouse)}
                                         onEdit={() => handleEditBoardingHouses(boardingHouse)}
                                         onDelete={() => handleDeleteBoardingHouses(boardingHouse)}
                                     />
@@ -369,7 +384,6 @@ function BoardingHouses() {
                             ))}
                         </Row>
 
-                        {/* ✅ Pagination riêng cho chế độ card */}
                         <div className={cx('pagination-wrapper')}>
                             <Pagination
                                 current={pagination.current}
