@@ -2,12 +2,13 @@ package carevn.luv2code.ez_tro.controller.admin;
 
 import java.util.List;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.SubscriptionPlanDTO;
 import carevn.luv2code.ez_tro.dto.UserSubscriptionDTO;
 import carevn.luv2code.ez_tro.dto.requests.*;
+import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.OwnerLimitsResponse;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.SubscriptionPlanService;
@@ -26,57 +27,92 @@ public class SubscriptionController {
     // ------------------- Subscription Plans (Admin only) -------------------
 
     @PostMapping("/plans")
-    public ResponseEntity<SubscriptionPlanDTO> createPlan(@Valid @RequestBody SubscriptionPlanCreateRequest request) {
-        return ResponseEntity.ok(planService.create(request));
+    public ApiResponse<SubscriptionPlanDTO> createPlan(@Valid @RequestBody SubscriptionPlanCreateRequest request) {
+        return ApiResponse.<SubscriptionPlanDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Subscription plan created successfully")
+                .result(planService.create(request))
+                .build();
     }
 
     @GetMapping("/plans")
-    public ResponseEntity<List<SubscriptionPlanDTO>> getAllPlans() {
-        return ResponseEntity.ok(planService.getAllActive());
+    public ApiResponse<List<SubscriptionPlanDTO>> getAllPlans() {
+        return ApiResponse.<List<SubscriptionPlanDTO>>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("")
+                .result(planService.getAllActive())
+                .build();
     }
 
     @GetMapping("/plans/{id}")
-    public ResponseEntity<SubscriptionPlanDTO> getPlan(@PathVariable Integer id) {
-        return ResponseEntity.ok(planService.getById(id));
+    public ApiResponse<SubscriptionPlanDTO> getPlan(@PathVariable Integer id) {
+        return ApiResponse.<SubscriptionPlanDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Get subscription plan successfully")
+                .result(planService.getById(id))
+                .build();
     }
 
     @PutMapping("/plans/{id}")
-    public ResponseEntity<SubscriptionPlanDTO> updatePlan(
+    public ApiResponse<SubscriptionPlanDTO> updatePlan(
             @PathVariable Integer id, @Valid @RequestBody SubscriptionPlanCreateRequest request) {
-        return ResponseEntity.ok(planService.update(id, request));
+        return ApiResponse.<SubscriptionPlanDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Subscription plan updated successfully")
+                .result(planService.update(id, request))
+                .build();
     }
 
     @DeleteMapping("/plans/{id}")
-    public ResponseEntity<Void> deletePlan(@PathVariable Integer id) {
+    public ApiResponse<Void> deletePlan(@PathVariable Integer id) {
         planService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Subscription plan deleted successfully")
+                .result(null)
+                .build();
     }
 
     // ------------------- User Subscriptions -------------------
 
     @PostMapping("/assign")
-    public ResponseEntity<UserSubscriptionDTO> assignSubscription(
-            @Valid @RequestBody AssignSubscriptionRequest request) {
-        return ResponseEntity.ok(subService.assignSubscription(request));
+    public ApiResponse<UserSubscriptionDTO> assignSubscription(@Valid @RequestBody AssignSubscriptionRequest request) {
+        return ApiResponse.<UserSubscriptionDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Subscription assigned successfully")
+                .result(subService.assignSubscription(request))
+                .build();
     }
 
     @PatchMapping("/{subscriptionId}/override")
-    public ResponseEntity<UserSubscriptionDTO> overrideLimits(
+    public ApiResponse<UserSubscriptionDTO> overrideLimits(
             @PathVariable Long subscriptionId, @RequestBody OverrideLimitsRequest request) {
-        return ResponseEntity.ok(subService.overrideLimits(subscriptionId, request));
+        return ApiResponse.<UserSubscriptionDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Subscription limits overridden successfully")
+                .result(subService.overrideLimits(subscriptionId, request))
+                .build();
     }
 
     // ------------------- Owner xem giới hạn của chính mình -------------------
 
     @GetMapping("/my-limits")
-    public ResponseEntity<OwnerLimitsResponse> getMyLimits() {
+    public ApiResponse<OwnerLimitsResponse> getMyLimits() {
         Integer currentUserId = SecurityUtils.getCurrentUser().getId();
-        return ResponseEntity.ok(subService.getCurrentLimits(currentUserId));
+        return ApiResponse.<OwnerLimitsResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get current user's limits successfully")
+                .result(subService.getCurrentLimits(currentUserId))
+                .build();
     }
 
     // Admin xem limits của bất kỳ owner nào
     @GetMapping("/owner/{ownerId}/limits")
-    public ResponseEntity<OwnerLimitsResponse> getOwnerLimits(@PathVariable Integer ownerId) {
-        return ResponseEntity.ok(subService.getCurrentLimits(ownerId));
+    public ApiResponse<OwnerLimitsResponse> getOwnerLimits(@PathVariable Integer ownerId) {
+        return ApiResponse.<OwnerLimitsResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get owner's limits successfully")
+                .result(subService.getCurrentLimits(ownerId))
+                .build();
     }
 }

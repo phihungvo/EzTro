@@ -44,9 +44,15 @@ public class TenantServiceImpl implements TenantService {
     private final UserRepository userRepository;
     private final TenantMapper tenantMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ResourceLimitServiceImpl resourceLimitService;
 
     @Override
     public TenantResponse create(TenantRequest request) {
+        Integer ownerId = SecurityUtils.getCurrentUserId();
+
+        // Validate quota tenant
+        resourceLimitService.validateCanCreateTenant(ownerId);
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -68,6 +74,7 @@ public class TenantServiceImpl implements TenantService {
         userRepository.save(user);
 
         tenant.setUser(user);
+        tenant.setOwner(SecurityUtils.getCurrentUser());
 
         tenant = tenantRepository.save(tenant);
 

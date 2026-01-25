@@ -30,6 +30,10 @@ public class Tenant {
     @ToString.Exclude
     User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
+
     @Column(name = "identity_number", length = 20)
     String identityNumber;
 

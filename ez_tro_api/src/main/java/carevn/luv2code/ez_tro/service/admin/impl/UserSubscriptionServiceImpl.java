@@ -36,7 +36,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
     private final RoomRepository roomRepo;
     private final TenantRepository tenantRepo;
     private final ContractRepository contractRepo;
-    private final UserSubscriptionMapper mapper;
+    private final UserSubscriptionMapper userSubscriptionMapper;
 
     // ========== ASSIGN SUBSCRIPTION ==========
 
@@ -61,7 +61,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
                     subscriptionRepo.save(old);
                 });
 
-        UserSubscription sub = mapper.toEntity(request);
+        UserSubscription sub = userSubscriptionMapper.toEntity(request);
         sub.setOwner(owner);
         sub.setPlan(plan);
         sub.setStatus(request.getStatus() != null ? request.getStatus() : SubscriptionStatus.ACTIVE);
@@ -71,7 +71,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         }
 
         sub = subscriptionRepo.save(sub);
-        return mapper.toDTO(sub);
+        return userSubscriptionMapper.toDTO(sub);
     }
 
     // ========== OVERRIDE LIMITS ==========
@@ -90,7 +90,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         sub.setOverrideMaxContracts(request.getOverrideMaxContracts());
 
         sub = subscriptionRepo.save(sub);
-        return mapper.toDTO(sub);
+        return userSubscriptionMapper.toDTO(sub);
     }
 
     // ========== GET CURRENT LIMITS (dùng record chung) ==========

@@ -9,7 +9,6 @@ export const createTenant = async (formData) => {
             API_ENDPOINTS.TENANTS.CREATE,
             formData,
         );
-        message.success('Tenant created successfully');
         return response.data;
     } catch (error) {
         console.error('Error when creating tenant: ', error);

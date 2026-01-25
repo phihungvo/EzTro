@@ -181,7 +181,7 @@ function Tenant() {
         {
             title: 'Thao tác',
             fixed: 'right',
-            width: 170,
+            width: 200,
             align: 'center',
             render: (_, record) => (
                 <>
@@ -382,7 +382,7 @@ function Tenant() {
             await createTenant(formData);
             handleFilterTenants();
             setIsModalOpen(false);
-            message.success('Tạo người thuê thành công');
+            // message.success('Tạo người thuê thành công');
         } catch (error) {
             message.error(`Lỗi khi tạo người thuê: ${error.response?.data?.message || error.message}`);
         }
