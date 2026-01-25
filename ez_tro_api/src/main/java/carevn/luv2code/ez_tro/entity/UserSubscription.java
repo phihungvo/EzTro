@@ -1,13 +1,14 @@
 package carevn.luv2code.ez_tro.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import carevn.luv2code.ez_tro.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_subscriptions")
@@ -45,6 +46,8 @@ public class UserSubscription {
     Integer overrideMaxBoardingHouses;
     Integer overrideMaxBuildings;
     Integer overrideMaxRooms;
+    Integer overrideMaxTenants;
+    Integer overrideMaxContracts;
 
     @CreationTimestamp
     LocalDateTime createdAt;

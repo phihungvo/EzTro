@@ -1,15 +1,15 @@
 package carevn.luv2code.ez_tro.dto;
 
-//public class SubscriptionPlanDTO {
-//}
-//package carevn.luv2code.ez_tro.dto.response;
+// public class SubscriptionPlanDTO {
+// }
+// package carevn.luv2code.ez_tro.dto.response;
+
+import java.math.BigDecimal;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder

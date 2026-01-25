@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.security;
 
 import java.util.Optional;
 
-import carevn.luv2code.ez_tro.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;

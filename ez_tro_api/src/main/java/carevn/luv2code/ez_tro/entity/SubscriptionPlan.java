@@ -1,13 +1,14 @@
 package carevn.luv2code.ez_tro.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Table(name = "subscription_plans")
@@ -40,6 +41,12 @@ public class SubscriptionPlan {
 
     @Column(nullable = false)
     Integer maxRooms = 50;
+
+    @Column(nullable = false)
+    Integer maxTenants;
+
+    @Column(nullable = false)
+    Integer maxActiveContracts;
 
     @Column(precision = 12, scale = 2)
     BigDecimal pricePerMonth;

@@ -1,10 +1,10 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
+import java.time.LocalDateTime;
+
 import carevn.luv2code.ez_tro.enums.SubscriptionStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 @Data
 public class AssignSubscriptionRequest {

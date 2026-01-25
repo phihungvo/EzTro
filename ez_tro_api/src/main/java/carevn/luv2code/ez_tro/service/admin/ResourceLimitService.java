@@ -8,4 +8,7 @@ public interface ResourceLimitService {
 
     void validateCanCreateRoom(Integer ownerId);
 
+    void validateCanCreateTenant(Integer ownerId);
+
+    void validateCanCreateContract(Integer ownerId);
 }

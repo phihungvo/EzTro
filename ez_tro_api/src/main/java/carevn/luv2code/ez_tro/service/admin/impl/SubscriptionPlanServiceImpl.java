@@ -1,5 +1,10 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import carevn.luv2code.ez_tro.dto.SubscriptionPlanDTO;
 import carevn.luv2code.ez_tro.dto.requests.SubscriptionPlanCreateRequest;
 import carevn.luv2code.ez_tro.entity.SubscriptionPlan;
@@ -9,10 +14,6 @@ import carevn.luv2code.ez_tro.mapper.SubscriptionPlanMapper;
 import carevn.luv2code.ez_tro.repository.SubscriptionPlanRepository;
 import carevn.luv2code.ez_tro.service.admin.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -46,16 +47,16 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     @Override
     @Transactional(readOnly = true)
     public SubscriptionPlanDTO getById(Integer id) {
-        SubscriptionPlan plan = planRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
+        SubscriptionPlan plan =
+                planRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
         return planMapper.toDTO(plan);
     }
 
     @Override
     @Transactional
     public SubscriptionPlanDTO update(Integer id, SubscriptionPlanCreateRequest request) {
-        SubscriptionPlan plan = planRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
+        SubscriptionPlan plan =
+                planRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
 
         planMapper.updateFromRequest(request, plan);
         plan = planRepository.save(plan);
@@ -65,8 +66,8 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     @Override
     @Transactional
     public void delete(Integer id) {
-        SubscriptionPlan plan = planRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
+        SubscriptionPlan plan =
+                planRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
         plan.setIsActive(false);
         planRepository.save(plan);
     }

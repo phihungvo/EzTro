@@ -7,4 +7,6 @@ public class OverrideLimitsRequest {
     private Integer overrideMaxBoardingHouses;
     private Integer overrideMaxBuildings;
     private Integer overrideMaxRooms;
+    private Integer overrideMaxTenants;
+    private Integer overrideMaxContracts;
 }

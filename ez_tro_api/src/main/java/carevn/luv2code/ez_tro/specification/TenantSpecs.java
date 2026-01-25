@@ -15,10 +15,13 @@ public class TenantSpecs {
                 return cb.disjunction();
             }
             query.distinct(true);
-            Join<Tenant, Contract> c = root.join("contracts", JoinType.INNER);
-            Join<Contract, Room> r = c.join("room", JoinType.INNER);
-            Join<Room, BoardingHouse> bh = r.join("boardingHouse", JoinType.INNER);
-            return cb.equal(bh.get("owner").get("id"), currentUser.getId());
+
+            Join<Tenant, Contract> contractJoin =
+                    root.join("contracts", JoinType.LEFT); // LEFT JOIN để giữ tenant không contract
+            Join<Contract, Room> roomJoin = contractJoin.join("room", JoinType.LEFT);
+            Join<Room, BoardingHouse> bhJoin = roomJoin.join("boardingHouse", JoinType.LEFT);
+
+            return cb.equal(bhJoin.get("owner").get("id"), currentUser.getId());
         };
     }
 

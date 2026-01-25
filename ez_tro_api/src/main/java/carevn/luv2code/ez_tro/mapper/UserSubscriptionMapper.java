@@ -1,12 +1,12 @@
 package carevn.luv2code.ez_tro.mapper;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+
 import carevn.luv2code.ez_tro.dto.UserSubscriptionDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignSubscriptionRequest;
 import carevn.luv2code.ez_tro.entity.UserSubscription;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface UserSubscriptionMapper {

@@ -1,5 +1,11 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import carevn.luv2code.ez_tro.dto.OwnerResourceLimits;
 import carevn.luv2code.ez_tro.dto.UserSubscriptionDTO;
 import carevn.luv2code.ez_tro.dto.requests.AssignSubscriptionRequest;
 import carevn.luv2code.ez_tro.dto.requests.OverrideLimitsRequest;
@@ -7,20 +13,15 @@ import carevn.luv2code.ez_tro.dto.response.OwnerLimitsResponse;
 import carevn.luv2code.ez_tro.entity.SubscriptionPlan;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.entity.UserSubscription;
+import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.SubscriptionStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.UserSubscriptionMapper;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.security.AuthorizationService;
-import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +34,17 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
     private final BoardingHouseRepository bhRepo;
     private final BuildingRepository buildingRepo;
     private final RoomRepository roomRepo;
+    private final TenantRepository tenantRepo;
+    private final ContractRepository contractRepo;
     private final UserSubscriptionMapper mapper;
 
+    // ========== ASSIGN SUBSCRIPTION ==========
+
     @Transactional
+    @Override
     public UserSubscriptionDTO assignSubscription(AssignSubscriptionRequest request) {
-        // Tìm owner (người nhận gói) và kiểm tra phải là OWNER
-        User owner = userRepo.findById(request.getOwnerId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User owner =
+                userRepo.findById(request.getOwnerId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (!authorizationService.isUserAnOwner(owner.getId())) {
             throw new AppException(ErrorCode.NOT_AN_OWNER);
@@ -48,23 +53,17 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         SubscriptionPlan plan = planRepo.findById(request.getPlanId())
                 .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
 
-        // Kiểm tra owner đã có subscription ACTIVE chưa
-        Optional<UserSubscription> existingActive = subscriptionRepo.findActiveByOwnerId(owner.getId(), SubscriptionStatus.ACTIVE);
-        if (existingActive.isPresent()) {
-            // Option 1: Không cho phép gán mới nếu đã có active
-            // throw new AppException(ErrorCode.ALREADY_HAS_ACTIVE_SUBSCRIPTION);
+        // Hủy gói active cũ nếu có (tùy nghiệp vụ)
+        subscriptionRepo
+                .findActiveByOwnerId(owner.getId(), SubscriptionStatus.ACTIVE)
+                .ifPresent(old -> {
+                    old.setStatus(SubscriptionStatus.CANCELLED);
+                    subscriptionRepo.save(old);
+                });
 
-            // Option 2: Tự động hủy gói cũ (nếu nghiệp vụ cho phép)
-            UserSubscription old = existingActive.get();
-            old.setStatus(SubscriptionStatus.CANCELLED);
-            subscriptionRepo.save(old);
-        }
-
-        // 5. Tạo subscription mới
         UserSubscription sub = mapper.toEntity(request);
         sub.setOwner(owner);
         sub.setPlan(plan);
-
         sub.setStatus(request.getStatus() != null ? request.getStatus() : SubscriptionStatus.ACTIVE);
 
         if (sub.getStartDate() == null) {
@@ -72,70 +71,78 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         }
 
         sub = subscriptionRepo.save(sub);
-
         return mapper.toDTO(sub);
     }
 
-//    @Transactional
-//    public UserSubscriptionDTO assignSubscription(AssignSubscriptionRequest request) {
-//        User owner = userRepo.findById(request.getOwnerId())
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-//
-//        if (!SecurityUtils.isOwner()) {
-//            throw new AppException(ErrorCode.NOT_AN_OWNER);
-//        }
-//
-//        SubscriptionPlan plan = planRepo.findById(request.getPlanId())
-//                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
-//
-//        UserSubscription sub = mapper.toEntity(request);
-//        sub.setOwner(owner);
-//        sub.setPlan(plan);
-//        sub.setStatus(request.getStatus() != null ? request.getStatus() : SubscriptionStatus.ACTIVE);
-//
-//        sub = subscriptionRepo.save(sub);
-//        return mapper.toDTO(sub);
-//    }
+    // ========== OVERRIDE LIMITS ==========
 
     @Transactional
+    @Override
     public UserSubscriptionDTO overrideLimits(Long subscriptionId, OverrideLimitsRequest request) {
-        UserSubscription sub = subscriptionRepo.findById(subscriptionId)
+        UserSubscription sub = subscriptionRepo
+                .findById(subscriptionId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
 
         sub.setOverrideMaxBoardingHouses(request.getOverrideMaxBoardingHouses());
         sub.setOverrideMaxBuildings(request.getOverrideMaxBuildings());
         sub.setOverrideMaxRooms(request.getOverrideMaxRooms());
+        sub.setOverrideMaxTenants(request.getOverrideMaxTenants());
+        sub.setOverrideMaxContracts(request.getOverrideMaxContracts());
 
         sub = subscriptionRepo.save(sub);
         return mapper.toDTO(sub);
     }
 
+    // ========== GET CURRENT LIMITS (dùng record chung) ==========
+
     @Transactional(readOnly = true)
+    @Override
     public OwnerLimitsResponse getCurrentLimits(Integer ownerId) {
-        UserSubscription sub = subscriptionRepo.findActiveByOwnerId(ownerId, SubscriptionStatus.ACTIVE)
+        UserSubscription sub = subscriptionRepo
+                .findActiveByOwnerId(ownerId, SubscriptionStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
 
-        int maxBH = sub.getOverrideMaxBoardingHouses() != null
-                ? sub.getOverrideMaxBoardingHouses()
-                : sub.getPlan().getMaxBoardingHouses();
+        OwnerResourceLimits limits = calculateLimits(sub);
 
-        int maxB = sub.getOverrideMaxBuildings() != null
-                ? sub.getOverrideMaxBuildings()
-                : sub.getPlan().getMaxBuildings();
-
-        int maxR = sub.getOverrideMaxRooms() != null
-                ? sub.getOverrideMaxRooms()
-                : sub.getPlan().getMaxRooms();
+        long currentBH = bhRepo.countByOwnerId(ownerId);
+        long currentB = buildingRepo.countByBoardingHouse_Owner_Id(ownerId);
+        long currentR = roomRepo.countByBoardingHouse_Owner_Id(ownerId);
+        long currentT = tenantRepo.countByOwnerId(ownerId);
+        long currentC = contractRepo.countByOwnerIdAndStatus(ownerId, ContractStatus.ACTIVE);
 
         return OwnerLimitsResponse.builder()
-                .maxBoardingHouses(maxBH)
-                .currentBoardingHouses(bhRepo.countByOwnerId(ownerId))
-                .maxBuildings(maxB)
-                .currentBuildings(buildingRepo.countByBoardingHouse_Owner_Id(ownerId))
-                .maxRooms(maxR)
-                .currentRooms(roomRepo.countByBoardingHouse_Owner_Id(ownerId))
+                .maxBoardingHouses(limits.maxBoardingHouses())
+                .currentBoardingHouses(currentBH)
+                .maxBuildings(limits.maxBuildings())
+                .currentBuildings(currentB)
+                .maxRooms(limits.maxRooms())
+                .currentRooms(currentR)
+                .maxTenants(limits.maxTenants())
+                .currentTenants(currentT)
+                .maxContracts(limits.maxActiveContracts())
+                .currentContracts(currentC)
                 .planName(sub.getPlan().getName())
-                .status(sub.getStatus().toString())
+                .status(sub.getStatus().name())
                 .build();
+    }
+
+    // ========== HELPER ==========
+
+    private OwnerResourceLimits calculateLimits(UserSubscription sub) {
+        SubscriptionPlan plan = sub.getPlan();
+        if (plan == null) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
+        }
+
+        return new OwnerResourceLimits(
+                getOrOverride(sub.getOverrideMaxBoardingHouses(), plan.getMaxBoardingHouses()),
+                getOrOverride(sub.getOverrideMaxBuildings(), plan.getMaxBuildings()),
+                getOrOverride(sub.getOverrideMaxRooms(), plan.getMaxRooms()),
+                getOrOverride(sub.getOverrideMaxTenants(), plan.getMaxTenants()),
+                getOrOverride(sub.getOverrideMaxContracts(), plan.getMaxActiveContracts()));
+    }
+
+    private int getOrOverride(Integer overrideValue, int defaultValue) {
+        return overrideValue != null ? overrideValue : defaultValue;
     }
 }

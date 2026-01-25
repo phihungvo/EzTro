@@ -45,6 +45,9 @@ import {
 } from '~/service/admin/tenant';
 import useDebounce from '~/hooks/useDebounce';
 import { disablePastDates } from "~/utils/dateUtils";
+import {useOwnerQuota} from "~/hooks/useOwnerQuota";
+import {useInvalidateQuota} from "~/hooks/useInvalidateQuota";
+import {useAuth} from "~/routes/AuthContext";
 
 const cx = classNames.bind(styles);
 const { RangePicker } = DatePicker;
@@ -70,6 +73,18 @@ function Tenant() {
     const [genderFilter, setGenderFilter] = useState(null);
     const [occupationFilter, setOccupationFilter] = useState(null);
     const [hasActiveContractFilter, setHasActiveContractFilter] = useState(null);
+
+    const {data: quota} = useOwnerQuota();
+    const invalidateQuota = useInvalidateQuota();
+
+    const { user } = useAuth();
+    const isOwner = user?.isOwner || false;
+
+    // Tính current/max cho boarding house
+    const current = quota?.currentTenants ?? 0;
+    const max = quota?.maxTenants ?? 0;
+    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
+    const isAddDisabled = isOwner && current >= max;
 
     const genderStyles = {
         MALE: { color: 'blue', label: 'Nam' },
@@ -352,6 +367,10 @@ function Tenant() {
     }, []);
 
     const handleAddTenant = () => {
+        if (isAddDisabled) {
+            message.warning('Bạn đã đạt giới hạn số người thuê theo gói hiện tại. Vui lòng nâng cấp gói!');
+            return;
+        }
         setModalMode('create');
         setSelectedTenant(null);
         form.resetFields();
@@ -553,10 +572,12 @@ function Tenant() {
                                 />
                             </div>
                             <SmartButton
-                                title="Thêm mới"
-                                icon={<PlusOutlined />}
+                                title={addButtonText}
+                                icon={<PlusOutlined/>}
                                 type="primary"
                                 onClick={handleAddTenant}
+                                disabled={isAddDisabled}
+                                tooltip={isAddDisabled ? 'Đã đạt giới hạn người thuê – nâng cấp gói để thêm' : undefined}
                             />
                             <SmartButton
                                 title="Excel"

@@ -238,8 +238,8 @@ public class TenantServiceImpl implements TenantService {
                 Subquery<Contract> subquery = query.subquery(Contract.class);
                 Root<Contract> contractRoot = subquery.from(Contract.class);
                 subquery.select(contractRoot);
-                Join<Contract, Tenant> tenantJoin = contractRoot.join("tenant", JoinType.LEFT);
-                Date today = new Date(); // Use Date for comparison with TemporalType.DATE
+                Join<Contract, Tenant> tenantJoin = contractRoot.join("tenant", JoinType.INNER);
+                Date today = new Date();
                 Predicate statusPred = cb.equal(contractRoot.get("status"), ContractStatus.ACTIVE);
                 Predicate startDatePred = cb.lessThanOrEqualTo(contractRoot.get("startDate"), today);
                 Predicate endDatePred = cb.or(

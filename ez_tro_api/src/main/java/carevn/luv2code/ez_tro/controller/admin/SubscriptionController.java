@@ -1,5 +1,10 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import carevn.luv2code.ez_tro.dto.SubscriptionPlanDTO;
 import carevn.luv2code.ez_tro.dto.UserSubscriptionDTO;
 import carevn.luv2code.ez_tro.dto.requests.*;
@@ -9,11 +14,6 @@ import carevn.luv2code.ez_tro.service.admin.SubscriptionPlanService;
 import carevn.luv2code.ez_tro.service.admin.UserSubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/subscriptions")
@@ -41,8 +41,8 @@ public class SubscriptionController {
     }
 
     @PutMapping("/plans/{id}")
-    public ResponseEntity<SubscriptionPlanDTO> updatePlan(@PathVariable Integer id,
-                                                          @Valid @RequestBody SubscriptionPlanCreateRequest request) {
+    public ResponseEntity<SubscriptionPlanDTO> updatePlan(
+            @PathVariable Integer id, @Valid @RequestBody SubscriptionPlanCreateRequest request) {
         return ResponseEntity.ok(planService.update(id, request));
     }
 
@@ -55,13 +55,14 @@ public class SubscriptionController {
     // ------------------- User Subscriptions -------------------
 
     @PostMapping("/assign")
-    public ResponseEntity<UserSubscriptionDTO> assignSubscription(@Valid @RequestBody AssignSubscriptionRequest request) {
+    public ResponseEntity<UserSubscriptionDTO> assignSubscription(
+            @Valid @RequestBody AssignSubscriptionRequest request) {
         return ResponseEntity.ok(subService.assignSubscription(request));
     }
 
     @PatchMapping("/{subscriptionId}/override")
-    public ResponseEntity<UserSubscriptionDTO> overrideLimits(@PathVariable Long subscriptionId,
-                                                              @RequestBody OverrideLimitsRequest request) {
+    public ResponseEntity<UserSubscriptionDTO> overrideLimits(
+            @PathVariable Long subscriptionId, @RequestBody OverrideLimitsRequest request) {
         return ResponseEntity.ok(subService.overrideLimits(subscriptionId, request));
     }
 
