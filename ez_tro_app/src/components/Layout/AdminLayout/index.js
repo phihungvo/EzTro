@@ -282,7 +282,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
-                        <Route path="/boarding-houses" element={<Revenue/>}/>
+                        <Route path="/boarding-houses" element={<BoardingHouses/>}/>
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>

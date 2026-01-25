@@ -134,6 +134,9 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/meter-periods`,
         CREATE: `${BASE_URL}/meter-periods`,
     },
+    SUBSCRIPTION: {
+        MY_LIMIT: `${BASE_URL}/subscriptions/my-limits`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {
