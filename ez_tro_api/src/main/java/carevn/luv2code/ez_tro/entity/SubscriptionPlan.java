@@ -31,7 +31,10 @@ public class SubscriptionPlan {
     String name;
 
     @Column(columnDefinition = "TEXT")
-    String description;
+    String description; // Mô tả ngắn (hiển thị trên card pricing)
+
+    @Column(columnDefinition = "LONGTEXT")
+    String fullDescription;  // Lưu Markdown
 
     @Column(nullable = false)
     Integer maxBoardingHouses = 1;

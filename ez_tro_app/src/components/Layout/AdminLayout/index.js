@@ -43,6 +43,8 @@ import Revenue from "~/pages/Admin/Revenue";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
+import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
+import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -150,9 +152,16 @@ const adminMenuConfig = [
                 path: "/admin/revenues",
             },
             {
-                key: "admin-payment-management",
-                label: "Quản lý gói",
-                title: "Quản lý Thanh toán gói dịch vụ chủ trọ",
+                key: "subscription-plan",
+                label: "Gói dịch vụ",
+                title: "Quản lý gói dịch vụ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/subscription-plan",
+            },
+            {
+                key: "payment-management",
+                label: "Đăng ký gói",
+                title: "Quản lý đăng ký gói dịch vụ chủ trọ",
                 icon: <CreditCardOutlined/>,
                 path: "/admin/admin-payment-management",
             },
@@ -296,6 +305,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/room-requests" element={<RequestManagement/>}/>
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
+                        <Route path="/subscription-plan" element={<SubscriptionPlan/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
 
                         {/* Add other routes as needed */}
