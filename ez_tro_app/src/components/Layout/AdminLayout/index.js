@@ -43,6 +43,7 @@ import Revenue from "~/pages/Admin/Revenue";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
+import SystemLogs from "~/pages/Admin/SystemLogs";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -209,6 +210,14 @@ const adminMenuConfig = [
         group: "Báo cáo & người dùng",
         items: [
             {
+                key: "system-log",
+                label: "System Logs",
+                title: "Nhật ký hệ thống",
+                icon: <BarChartOutlined/>,
+                color: "#a855f7",
+                path: "/admin/system-log",
+            },
+            {
                 key: "reports",
                 label: "Báo cáo",
                 title: "Tổng hợp và xuất báo cáo thống kê",
@@ -297,6 +306,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
+                        <Route path="/system-log" element={<SystemLogs/>}/>
 
                         {/* Add other routes as needed */}
                         <Route path="/" element={<Dashboard/>}/> // Default route
