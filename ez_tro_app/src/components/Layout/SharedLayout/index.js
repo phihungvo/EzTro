@@ -3,10 +3,10 @@ import {useLocation, useNavigate} from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./SharedLayout.module.scss";
 import Header from "../Header";
-import {MENU_CONFIG} from "~/config/sidebarMenus";
 import {useAuth} from "~/routes/AuthContext";
 import {message} from "antd";
 import AdminSidebar from "~/components/Layout/AdminLayout/components/Sidebar/AdminSidebar";
+import {MENU_CONFIG} from "~/config/sidebarMenus";
 
 const cx = classNames.bind(styles);
 
