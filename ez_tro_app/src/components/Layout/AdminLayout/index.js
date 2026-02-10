@@ -22,7 +22,7 @@ import {
     BarChartOutlined,
     GoldOutlined,
     FileTextOutlined,
-    SettingOutlined, CreditCardOutlined, CrownOutlined,
+    SettingOutlined, CreditCardOutlined, CrownOutlined, FileSearchOutlined,
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
@@ -44,6 +44,7 @@ import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
 import SystemLogs from "~/pages/Admin/SystemLogs";
+import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -105,6 +106,14 @@ const adminMenuConfig = [
                 icon: <UserSwitchOutlined/>,
                 color: "#f59e0b",
                 path: "/admin/tenants",
+            },
+            {
+                key: "appointments",
+                label: "Chỉ số điện nước",
+                title: "Ghi chỉ số điện nước hàng tháng cho từng phòng trọ",
+                icon: <CalendarOutlined/>,
+                color: "#3b82f6",
+                path: "/admin/electric-water-record",
             },
             {
                 key: "admin-payment-management",
@@ -213,8 +222,8 @@ const adminMenuConfig = [
                 key: "system-log",
                 label: "System Logs",
                 title: "Nhật ký hệ thống",
-                icon: <BarChartOutlined/>,
-                color: "#a855f7",
+                icon: <FileSearchOutlined/>,
+                color: "#64748b",
                 path: "/admin/system-log",
             },
             {
@@ -307,6 +316,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
                         <Route path="/system-log" element={<SystemLogs/>}/>
+                        <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>
 
                         {/* Add other routes as needed */}
                         <Route path="/" element={<Dashboard/>}/> // Default route

@@ -563,52 +563,52 @@ function SystemLogs() {
         <div className={styles.logsWrapper}>
             <div className={styles.logsContainer}>
                 {/* Header */}
-                <div className={styles.logsHeader}>
-                    <div className={styles.headerContent}>
-                        <div className={styles.headerLeft}>
-                            <div className={styles.titleSection}>
-                                <Title level={1} className={styles.mainTitle}>
-                                    <DatabaseOutlined className={styles.titleIcon}/>
-                                    System Logs
-                                    <Badge count="LIVE" className={styles.liveBadge}/>
-                                </Title>
-                                <Paragraph className={styles.subtitle}>
-                                    Real-time monitoring and comprehensive system activity tracking
-                                </Paragraph>
-                            </div>
-                        </div>
-                        <div className={styles.headerRight}>
-                            <Space size="middle">
-                                <div className={styles.autoRefreshToggle}>
-                                    <Switch
-                                        checked={autoRefresh}
-                                        onChange={setAutoRefresh}
-                                        checkedChildren="Auto"
-                                        unCheckedChildren="Manual"
-                                    />
-                                    <Text type="secondary" style={{fontSize: 13, marginLeft: 8}}>
-                                        Auto Refresh
-                                    </Text>
-                                </div>
-                                <Button
-                                    icon={<ReloadOutlined spin={autoRefresh}/>}
-                                    className={styles.iconButton}
-                                >
-                                    Refresh
-                                </Button>
-                                <Dropdown overlay={actionMenu} trigger={['click']}>
-                                    <Button
-                                        icon={<DownloadOutlined/>}
-                                        type="primary"
-                                        className={styles.primaryButton}
-                                    >
-                                        Export
-                                    </Button>
-                                </Dropdown>
-                            </Space>
-                        </div>
-                    </div>
-                </div>
+                {/*<div className={styles.logsHeader}>*/}
+                {/*    <div className={styles.headerContent}>*/}
+                {/*        <div className={styles.headerLeft}>*/}
+                {/*            <div className={styles.titleSection}>*/}
+                {/*                <Title level={1} className={styles.mainTitle}>*/}
+                {/*                    <DatabaseOutlined className={styles.titleIcon}/>*/}
+                {/*                    System Logs*/}
+                {/*                    <Badge count="LIVE" className={styles.liveBadge}/>*/}
+                {/*                </Title>*/}
+                {/*                <Paragraph className={styles.subtitle}>*/}
+                {/*                    Real-time monitoring and comprehensive system activity tracking*/}
+                {/*                </Paragraph>*/}
+                {/*            </div>*/}
+                {/*        </div>*/}
+                {/*        <div className={styles.headerRight}>*/}
+                {/*            <Space size="middle">*/}
+                {/*                <div className={styles.autoRefreshToggle}>*/}
+                {/*                    <Switch*/}
+                {/*                        checked={autoRefresh}*/}
+                {/*                        onChange={setAutoRefresh}*/}
+                {/*                        checkedChildren="Auto"*/}
+                {/*                        unCheckedChildren="Manual"*/}
+                {/*                    />*/}
+                {/*                    <Text type="secondary" style={{fontSize: 13, marginLeft: 8}}>*/}
+                {/*                        Auto Refresh*/}
+                {/*                    </Text>*/}
+                {/*                </div>*/}
+                {/*                <Button*/}
+                {/*                    icon={<ReloadOutlined spin={autoRefresh}/>}*/}
+                {/*                    className={styles.iconButton}*/}
+                {/*                >*/}
+                {/*                    Refresh*/}
+                {/*                </Button>*/}
+                {/*                <Dropdown overlay={actionMenu} trigger={['click']}>*/}
+                {/*                    <Button*/}
+                {/*                        icon={<DownloadOutlined/>}*/}
+                {/*                        type="primary"*/}
+                {/*                        className={styles.primaryButton}*/}
+                {/*                    >*/}
+                {/*                        Export*/}
+                {/*                    </Button>*/}
+                {/*                </Dropdown>*/}
+                {/*            </Space>*/}
+                {/*        </div>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
 
                 {/* Statistics */}
                 <Row gutter={[24, 24]} className={styles.statsSection}>
