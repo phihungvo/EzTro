@@ -32,6 +32,7 @@ public class BuildingServiceImpl implements BuildingService {
     private final BuildingRepository buildingRepository;
     private final BoardingHouseRepository boardingHouseRepository;
     private final BuildingMapper buildingMapper;
+    private final ResourceLimitServiceImpl resourceLimitService;
 
     @Override
     public Page<BuildingResponse> getAllBuildingsByRole(Pageable pageable) {
@@ -51,6 +52,14 @@ public class BuildingServiceImpl implements BuildingService {
         BoardingHouse house = boardingHouseRepository
                 .findById(request.getBoardingHouseId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+
+        // Kiểm tra quyền sở hữu & quota
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!house.getOwner().getId().equals(currentUser.getId()) && !SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        resourceLimitService.validateCanCreateBuilding(currentUser.getId());
 
         Building building = buildingMapper.toEntity(request);
         building.setBoardingHouse(house);

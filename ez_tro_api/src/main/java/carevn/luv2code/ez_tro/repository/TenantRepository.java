@@ -14,14 +14,21 @@ import carevn.luv2code.ez_tro.entity.Tenant;
 public interface TenantRepository extends JpaRepository<Tenant, Integer>, JpaSpecificationExecutor<Tenant> {
     Optional<Tenant> findByUserId(Integer userId);
 
+    long countByOwnerId(Integer ownerId);
+
+    // Đếm tenant qua hợp đồng và phòng
+    //    @Query("SELECT COUNT(t) FROM Tenant t " + "WHERE t IN (SELECT c.tenant FROM Contract c "
+    //            + "WHERE c.room.boardingHouse.owner.id = :ownerId)")
+    //    long countByOwnerId(@Param("ownerId") Integer ownerId);
+
     @Query(
             """
-				SELECT t FROM Tenant t
-				LEFT JOIN FETCH t.user u
-				LEFT JOIN FETCH u.profilePicture
-				LEFT JOIN FETCH t.contracts c
-				WHERE t.id = :id
-			""")
+						SELECT t FROM Tenant t
+						LEFT JOIN FETCH t.user u
+						LEFT JOIN FETCH u.profilePicture
+						LEFT JOIN FETCH t.contracts c
+						WHERE t.id = :id
+					""")
     Optional<Tenant> findByIdWithDetails(@Param("id") Integer id);
 
     //	@Query("SELECT t FROM Tenant t LEFT JOIN FETCH t.contracts WHERE t.id = :id")

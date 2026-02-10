@@ -45,6 +45,8 @@ import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
 import SystemLogs from "~/pages/Admin/SystemLogs";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
+import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
+import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -165,6 +167,20 @@ const adminMenuConfig = [
                 icon: <DollarOutlined/>,
                 color: "#16a34a",
                 path: "/admin/revenues",
+            },
+            {
+                key: "subscription-plan",
+                label: "Gói dịch vụ",
+                title: "Quản lý gói dịch vụ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/subscription-plan",
+            },
+            {
+                key: "payment-management",
+                label: "Đăng ký gói",
+                title: "Quản lý đăng ký gói dịch vụ chủ trọ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/admin-payment-management",
             },
             {
                 key: "assets",
@@ -300,7 +316,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
-                        <Route path="/boarding-houses" element={<Revenue/>}/>
+                        <Route path="/boarding-houses" element={<BoardingHouses/>}/>
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
@@ -314,6 +330,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/room-requests" element={<RequestManagement/>}/>
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
+                        <Route path="/subscription-plan" element={<SubscriptionPlan/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
                         <Route path="/system-log" element={<SystemLogs/>}/>
                         <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>

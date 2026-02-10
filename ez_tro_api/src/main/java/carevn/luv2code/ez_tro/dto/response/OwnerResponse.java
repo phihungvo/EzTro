@@ -21,6 +21,8 @@ public class OwnerResponse {
 
     String phoneNumber;
 
+    String originalPassword;
+
     String address;
 
     LocalDateTime createdAt;

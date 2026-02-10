@@ -24,6 +24,8 @@ public class UserDTO {
 
     String phoneNumber;
 
+    String originalPassword;
+
     String profilePicture;
 
     Boolean enabled;

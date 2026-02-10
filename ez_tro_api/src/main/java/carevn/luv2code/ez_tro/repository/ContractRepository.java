@@ -33,6 +33,10 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     Optional<Contract> findByRoomIdAndStatus(Integer roomId, ContractStatus status);
 
+    // Đếm số hợp đồng theo ownerId và status
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.room.boardingHouse.owner.id = :ownerId AND c.status = :status")
+    long countByOwnerIdAndStatus(@Param("ownerId") Integer ownerId, @Param("status") ContractStatus status);
+
     @Query(
             """
 		SELECT c FROM Contract c

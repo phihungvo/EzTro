@@ -18,9 +18,14 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Tag, Row, Col, Segmented, Pagination} from 'antd';
 import {getAllRooms, createRoom, updateRoom, deleteRoom} from '~/service/admin/room';
-import {getAllBoardingHousesNoPaged, getUtilityByBoardingHouse} from "~/service/admin/boarding_house";
-import {deleteBuilding, getByBoardingHouse, updateBuilding} from "~/service/admin/building";
-import {createContract} from "~/service/admin/contract";
+import {
+    getAllBoardingHousesNoPaged,
+    getUtilityByBoardingHouse,
+} from '~/service/admin/boarding_house';
+import {getByBoardingHouse} from '~/service/admin/building';
+import {useOwnerQuota} from '~/hooks/useOwnerQuota';
+import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
+import {useAuth} from "~/routes/AuthContext";
 
 const cx = classNames.bind(styles);
 
@@ -41,13 +46,23 @@ function Room() {
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
 
+    const {data: quota} = useOwnerQuota();
+    const invalidateQuota = useInvalidateQuota();
+
+    const { user } = useAuth();
+    const isOwner = user?.isOwner || false;
+
+    // Tính current/max cho phòng
+    const current = quota?.currentRooms ?? 0;
+    const max = quota?.maxRooms ?? 0;
+    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
+    const isAddDisabled = isOwner && current >= max;
+
     const statusRoom = {
         AVAILABLE: {color: 'success', label: 'Trống'},
         OCCUPIED: {color: 'warning', label: 'Đã cho thuê'},
         MAINTENANCE: {color: 'error', label: 'Đang bảo trì'},
     };
-
-    const disabledWhenEdit = modalMode === 'edit';
 
     const handleBoardingHouseChange = async (boardingHouseId) => {
         if (!boardingHouseId) {
@@ -64,8 +79,8 @@ function Room() {
                 getByBoardingHouse(boardingHouseId),
             ]);
 
-            setUtilityOption(utilitiesResponse.map(u => ({label: u.name, value: u.id})));
-            setBuildingOption(buildingsResponse.map(b => ({label: b.name, value: b.id})));
+            setUtilityOption(utilitiesResponse.map((u) => ({label: u.name, value: u.id})));
+            setBuildingOption(buildingsResponse.map((b) => ({label: b.name, value: b.id})));
 
             form.setFieldsValue({utilityIds: [], buildingId: null});
         } catch (error) {
@@ -81,12 +96,11 @@ function Room() {
         setLoading(true);
         try {
             const response = await getAllRooms({page: page - 1, pageSize});
-
             if (response?.content) {
                 setRoomSource(response.content);
                 setPagination({
                     current: page,
-                    pageSize: pageSize,
+                    pageSize,
                     total: response.totalElements,
                 });
             } else {
@@ -104,13 +118,17 @@ function Room() {
     const fetchOptions = async () => {
         try {
             const response = await getAllBoardingHousesNoPaged();
-            setBoardingHouseOption(response.map(bh => ({value: bh.id, label: bh.name})));
+            setBoardingHouseOption(response.map((bh) => ({value: bh.id, label: bh.name})));
         } catch (error) {
-            console.error('Error fetching options:', error);
+            console.error('Error fetching boarding houses:', error);
         }
     };
 
     const handleAddRoom = () => {
+        if (isAddDisabled) {
+            message.warning('Bạn đã đạt giới hạn số phòng theo gói hiện tại. Vui lòng nâng cấp gói!');
+            return;
+        }
         setModalMode('create');
         setSelectedRoom(null);
         form.resetFields();
@@ -122,14 +140,12 @@ function Room() {
     const handleCallCreateRoom = async (formData) => {
         try {
             await createRoom(formData);
+            invalidateQuota();           // Refetch quota ngay
             handleGetRooms();
             setIsModalOpen(false);
+            message.success('Thêm phòng thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi tạo phòng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi tạo phòng: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -155,12 +171,9 @@ function Room() {
             await updateRoom(selectedRoom.id, formData);
             handleGetRooms();
             setIsModalOpen(false);
+            message.success('Cập nhật phòng thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật phòng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi cập nhật phòng: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -171,9 +184,15 @@ function Room() {
     };
 
     const handleCallDeleteRoom = async () => {
-        await deleteRoom(selectedRoom.id);
-        handleGetRooms();
-        setIsModalOpen(false);
+        try {
+            await deleteRoom(selectedRoom.id);
+            invalidateQuota();           // Refetch quota sau xóa
+            handleGetRooms();
+            setIsModalOpen(false);
+            message.success('Xóa phòng thành công!');
+        } catch (error) {
+            message.error(`Lỗi khi xóa phòng: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     const handleFormSubmit = (formData) => {
@@ -184,19 +203,10 @@ function Room() {
         } else if (modalMode === 'delete') {
             handleCallDeleteRoom();
         }
-        setIsModalOpen(false);
-        handleGetRooms(pagination.current, pagination.pageSize);
     };
 
-    const handleTableChange = (pagination) => {
-        handleGetRooms(pagination.current, pagination.pageSize);
-    };
-
-    const handleViewRoom = (record) => {
-        setSelectedRoom(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
+    const handleTableChange = (newPagination) => {
+        handleGetRooms(newPagination.current, newPagination.pageSize);
     };
 
     const getModalTitle = () => {
@@ -301,7 +311,7 @@ function Room() {
             options: boardingHouseOption,
             disabled: modalMode === 'edit',
             onChange: modalMode === 'create' ? handleBoardingHouseChange : undefined,
-            rules: modalMode === 'create' ? [{ required: true, message: 'Chọn khu nhà!' }] : [],
+            rules: modalMode === 'create' ? [{required: true, message: 'Chọn khu nhà!'}] : [],
         },
         {
             label: 'Tòa nhà',
@@ -309,7 +319,7 @@ function Room() {
             type: modalMode === 'edit' ? 'text' : 'select',
             options: buildingOption,
             disabled: modalMode === 'edit',
-            rules: modalMode === 'create' ? [{ required: true, message: 'Chọn tòa nhà!' }] : [],
+            rules: modalMode === 'create' ? [{required: true, message: 'Chọn tòa nhà!'}] : [],
         },
         {
             label: 'Số phòng',
@@ -352,36 +362,25 @@ function Room() {
             placeholder: 'Chọn phòng trước',
         },
         {
-            label: 'Ghi chú',
+            label: 'Điều hòa',
             name: 'hasAirConditioner',
             type: 'checkbox',
         },
         {
-            label: 'Ghi chú',
+            label: 'Phòng tắm riêng',
             name: 'hasBathroom',
             type: 'checkbox',
         },
         {
-            label: 'Ghi chú',
+            label: 'Bếp',
             name: 'hasKitchen',
             type: 'checkbox',
         },
-
-        // {
-        //     label: 'Tiện ích cơ bản',
-        //     name: 'basicAmenities',
-        //     type: 'checkbox-group',
-        //     options: [
-        //         { label: 'Điều hòa', value: 'hasAirConditioner' },
-        //         { label: 'Phòng tắm riêng', value: 'hasBathroom' },
-        //         { label: 'Bếp', value: 'hasKitchen' },
-        //     ],
-        //     rules: [{ required: true, type: 'array', min: 1, message: 'Chọn ít nhất 1 tiện ích!' }],
-        // },
     ];
 
     return (
         <div className={cx('room-wrapper')}>
+            {/* Header */}
             <div className={cx('sub_header')}>
                 <SmartInput size="large" placeholder="Tìm kiếm phòng" icon={<SearchOutlined/>}/>
                 <div className={cx('features')}>
@@ -394,12 +393,22 @@ function Room() {
                         ]}
                         className={cx('view-toggle')}
                     />
-                    <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddRoom}/>
+
+                    <SmartButton
+                        title={addButtonText}
+                        icon={<PlusOutlined/>}
+                        type="primary"
+                        onClick={handleAddRoom}
+                        disabled={isAddDisabled}
+                        tooltip={isAddDisabled ? 'Đã đạt giới hạn phòng – nâng cấp gói để thêm' : undefined}
+                    />
+
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
                 </div>
             </div>
 
+            {/* Nội dung */}
             <div className={cx('room-container')}>
                 {viewMode === 'table' ? (
                     <SmartTable
@@ -416,7 +425,7 @@ function Room() {
                                 <Col xs={24} sm={24} md={12} lg={8} xl={6} key={room.id}>
                                     <RoomCard
                                         room={room}
-                                        onView={() => handleViewRoom(room)}
+                                        // onView={() => handleViewRoom(room)}
                                         onEdit={() => handleEditRoom(room)}
                                         onDelete={() => handleDeleteRoom(room)}
                                     />
@@ -439,6 +448,7 @@ function Room() {
                 )}
             </div>
 
+            {/* Modal */}
             <PopupModal
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}

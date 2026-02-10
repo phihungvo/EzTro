@@ -283,6 +283,7 @@ public class UserServiceImpl implements UserService {
         dto.setEmail(user.getEmail());
         dto.setAddress(user.getAddress());
         dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setOriginalPassword(user.getOriginalPassword());
         dto.setEnabled(user.isEnabled());
 
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {

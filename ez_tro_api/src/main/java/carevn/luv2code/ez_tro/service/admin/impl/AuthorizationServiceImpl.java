@@ -7,6 +7,7 @@ import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
+import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthorizationServiceImpl implements AuthorizationService {
 
     private final RoomRepository roomRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void checkOwnerOfRoom(Integer roomId) {
@@ -36,6 +38,18 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     public void checkOwnerOfBoardingHouse(Integer boardingHouseId) {
         // Tương tự, kiểm tra owner của BoardingHouse
         // ...
+    }
+
+    /**
+     * Kiểm tra userId có phải OWNER không
+     */
+    public boolean isUserAnOwner(Integer userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return false;
+        }
+
+        return user.getRoles().stream().anyMatch(role -> "OWNER".equals(role.getName()));
     }
 
     @Override
