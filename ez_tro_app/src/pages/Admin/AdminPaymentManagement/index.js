@@ -403,18 +403,6 @@ function AdminPaymentManagement() {
 
     return (
         <div className={cx('payment-wrapper')}>
-            {/* Header */}
-            <div className={cx('page-header')}>
-                <div>
-                    {/*<h1 className={cx('page-title')}>*/}
-                    {/*    <CreditCardOutlined /> Quản lý Thanh toán & Hóa đơn*/}
-                    {/*</h1>*/}
-                    <p className={cx('page-description')}>
-                        Theo dõi và xử lý các giao dịch thanh toán từ chủ trọ
-                    </p>
-                </div>
-            </div>
-
             {/* Statistics */}
             <Row gutter={[16, 16]} className={cx('statistics-row')}>
                 <Col xs={24} sm={12} lg={6}>

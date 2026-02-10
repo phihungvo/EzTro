@@ -1,17 +1,12 @@
 import React, {useState, useEffect} from 'react';
 import {
-    Row, Col, Card, Statistic, Progress, Tag, Select, DatePicker,
-    Space, Typography, Avatar, Button, Tooltip, Badge, Divider,
+    Row, Col, Card, Tag, DatePicker,
+    Space, Typography, Avatar, Button, Divider,
 } from 'antd';
 import {
-    ArrowUpOutlined, ArrowDownOutlined, UserOutlined, EyeOutlined,
-    ClockCircleOutlined, GlobalOutlined, MobileOutlined, DesktopOutlined,
-    TabletOutlined, DollarOutlined, HomeOutlined, FireOutlined,
-    ThunderboltOutlined, TeamOutlined, RiseOutlined, TrophyOutlined,
-    DownloadOutlined, ReloadOutlined, StarOutlined, HeartOutlined,
-    ShoppingOutlined, SyncOutlined, CheckCircleOutlined, WarningOutlined,
-    LineChartOutlined, BarChartOutlined, PieChartOutlined, CaretUpOutlined,
-    CaretDownOutlined, EnvironmentOutlined, ClockCircleFilled,
+    ArrowUpOutlined, UserOutlined, DollarOutlined, HomeOutlined,
+    FireOutlined, TeamOutlined, RiseOutlined, TrophyOutlined,
+    StarOutlined, HeartOutlined, ShoppingOutlined, CaretUpOutlined, CaretDownOutlined,
 } from '@ant-design/icons';
 import ReactApexChart from 'react-apexcharts';
 import styles from './HomeDashboard.module.scss';
@@ -359,73 +354,73 @@ function AdminDashboard() {
         <div className={styles.dashboardWrapper}>
             <div className={styles.dashboardContainer}>
                 {/* Premium Header */}
-                <div className={styles.premiumHeader}>
-                    <div className={styles.headerContent}>
-                        <div className={styles.headerLeft}>
-                            <div className={styles.welcomeSection}>
-                                <Title level={1} className={styles.mainTitle}>
-                                    Comprehensive insights and real-time business intelligence
-                                    {/*<span className={styles.titleBadge}>PRO</span>*/}
-                                </Title>
-                                {/*<Paragraph className={styles.subtitle}>*/}
-                                {/*    Comprehensive insights and real-time business intelligence*/}
-                                {/*</Paragraph>*/}
-                            </div>
-                        </div>
-                        <div className={styles.headerRight}>
-                            <Space size="middle" wrap>
-                                <Select
-                                    defaultValue="7days"
-                                    className={styles.premiumSelect}
-                                    onChange={setTimeRange}
-                                    options={[
-                                        {value: 'today', label: '📅 Today'},
-                                        {value: '7days', label: '📊 Last 7 Days'},
-                                        {value: '30days', label: '📈 Last 30 Days'},
-                                        {value: 'custom', label: '🎯 Custom Range'},
-                                    ]}
-                                />
-                                <Button type="primary" icon={<DownloadOutlined/>} className={styles.actionButton}>
-                                    Export Report
-                                </Button>
-                                <Tooltip title="Refresh Data">
-                                    <Button icon={<ReloadOutlined/>} className={styles.iconButton}/>
-                                </Tooltip>
-                            </Space>
-                        </div>
-                    </div>
-                </div>
+                {/*<div className={styles.premiumHeader}>*/}
+                {/*    <div className={styles.headerContent}>*/}
+                {/*        <div className={styles.headerLeft}>*/}
+                {/*            <div className={styles.welcomeSection}>*/}
+                {/*                <Title level={1} className={styles.mainTitle}>*/}
+                {/*                    Comprehensive insights and real-time business intelligence*/}
+                {/*                    /!*<span className={styles.titleBadge}>PRO</span>*!/*/}
+                {/*                </Title>*/}
+                {/*                /!*<Paragraph className={styles.subtitle}>*!/*/}
+                {/*                /!*    Comprehensive insights and real-time business intelligence*!/*/}
+                {/*                /!*</Paragraph>*!/*/}
+                {/*            </div>*/}
+                {/*        </div>*/}
+                {/*        <div className={styles.headerRight}>*/}
+                {/*            <Space size="middle" wrap>*/}
+                {/*                <Select*/}
+                {/*                    defaultValue="7days"*/}
+                {/*                    className={styles.premiumSelect}*/}
+                {/*                    onChange={setTimeRange}*/}
+                {/*                    options={[*/}
+                {/*                        {value: 'today', label: '📅 Today'},*/}
+                {/*                        {value: '7days', label: '📊 Last 7 Days'},*/}
+                {/*                        {value: '30days', label: '📈 Last 30 Days'},*/}
+                {/*                        {value: 'custom', label: '🎯 Custom Range'},*/}
+                {/*                    ]}*/}
+                {/*                />*/}
+                {/*                <Button type="primary" icon={<DownloadOutlined/>} className={styles.actionButton}>*/}
+                {/*                    Export Report*/}
+                {/*                </Button>*/}
+                {/*                <Tooltip title="Refresh Data">*/}
+                {/*                    <Button icon={<ReloadOutlined/>} className={styles.iconButton}/>*/}
+                {/*                </Tooltip>*/}
+                {/*            </Space>*/}
+                {/*        </div>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
 
                 {/* Real-time Alert Bar */}
-                <div className={styles.alertBar}>
-                    <div className={styles.alertItem}>
-                        <Badge status="success" className={styles.pulseBadge}/>
-                        <Text strong>{realTimeData.activeNow}</Text>
-                        <Text type="secondary">Người dùng đang online</Text>
-                    </div>
-                    <Divider type="vertical" style={{height: 32}}/>
-                    <div className={styles.alertItem}>
-                        <CheckCircleOutlined style={{color: '#10b981', fontSize: 18}}/>
-                        <Text strong>{realTimeData.transactionsToday}</Text>
-                        <Text type="secondary">Giao dịch hôm nay</Text>
-                    </div>
-                    <Divider type="vertical" style={{height: 32}}/>
-                    <div className={styles.alertItem}>
-                        <DollarOutlined style={{color: '#6366f1', fontSize: 18}}/>
-                        <Text strong>{(realTimeData.revenueToday / 1000000).toFixed(1)}M</Text>
-                        <Text type="secondary">Doanh thu hôm nay</Text>
-                    </div>
-                </div>
+                {/*<div className={styles.alertBar}>*/}
+                {/*    <div className={styles.alertItem}>*/}
+                {/*        <Badge status="success" className={styles.pulseBadge}/>*/}
+                {/*        <Text strong>{realTimeData.activeNow}</Text>*/}
+                {/*        <Text type="secondary">Người dùng đang online</Text>*/}
+                {/*    </div>*/}
+                {/*    <Divider type="vertical" style={{height: 32}}/>*/}
+                {/*    <div className={styles.alertItem}>*/}
+                {/*        <CheckCircleOutlined style={{color: '#10b981', fontSize: 18}}/>*/}
+                {/*        <Text strong>{realTimeData.transactionsToday}</Text>*/}
+                {/*        <Text type="secondary">Giao dịch hôm nay</Text>*/}
+                {/*    </div>*/}
+                {/*    <Divider type="vertical" style={{height: 32}}/>*/}
+                {/*    <div className={styles.alertItem}>*/}
+                {/*        <DollarOutlined style={{color: '#6366f1', fontSize: 18}}/>*/}
+                {/*        <Text strong>{(realTimeData.revenueToday / 1000000).toFixed(1)}M</Text>*/}
+                {/*        <Text type="secondary">Doanh thu hôm nay</Text>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
 
                 {/* Key Metrics Section */}
                 <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <Title level={3} className={styles.sectionTitle}>
-                            <LineChartOutlined/> Chỉ số Hiệu suất Chính
-                        </Title>
-                        <Tag color="success" className={styles.statusTag}>Tất cả hệ thống đang hoạt động bình
-                            thường.</Tag>
-                    </div>
+                    {/*<div className={styles.sectionHeader}>*/}
+                    {/*    <Title level={3} className={styles.sectionTitle}>*/}
+                    {/*        <LineChartOutlined/> Chỉ số Hiệu suất Chính*/}
+                    {/*    </Title>*/}
+                    {/*    <Tag color="success" className={styles.statusTag}>Tất cả hệ thống đang hoạt động bình*/}
+                    {/*        thường.</Tag>*/}
+                    {/*</div>*/}
 
                     <Row gutter={[24, 24]}>
                         {[
@@ -438,7 +433,7 @@ function AdminDashboard() {
                                 icon: <DollarOutlined/>,
                                 gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                 target: 85,
-                                description: '+385M vs last month'
+                                description: '+385M vs tháng trước'
                             },
                             {
                                 title: 'Người dùng đang hoạt động',
@@ -449,7 +444,7 @@ function AdminDashboard() {
                                 icon: <TeamOutlined/>,
                                 gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                                 target: 92,
-                                description: '+2,435 new this month'
+                                description: '+2,435 mới trong tháng này'
                             },
                             {
                                 title: 'Tổng số phòng đang quản lý',
@@ -460,7 +455,7 @@ function AdminDashboard() {
                                 icon: <HomeOutlined/>,
                                 gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                                 target: 78,
-                                description: '+389 new listings'
+                                description: '+389 phòng mới trong tháng này'
                             },
                             {
                                 title: 'Tổng số giao dịch',
@@ -471,7 +466,7 @@ function AdminDashboard() {
                                 icon: <ShoppingOutlined/>,
                                 gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                                 target: 88,
-                                description: '+1,756 this month'
+                                description: '+1,756 tháng này'
                             },
                         ].map((metric, idx) => (
                             <Col xs={24} sm={12} xl={6} key={idx}>
@@ -495,18 +490,6 @@ function AdminDashboard() {
                                         <Text type="secondary" className={styles.kpiDescription}>
                                             {metric.description}
                                         </Text>
-                                        <div className={styles.kpiProgress}>
-                                            <Text type="secondary" style={{fontSize: 12}}>Tiến độ đạt mục tiêu</Text>
-                                            <Progress
-                                                percent={metric.target}
-                                                strokeColor={{
-                                                    '0%': metric.gradient.match(/#[a-f0-9]{6}/gi)[0],
-                                                    '100%': metric.gradient.match(/#[a-f0-9]{6}/gi)[1]
-                                                }}
-                                                strokeWidth={6}
-                                                showInfo={false}
-                                            />
-                                        </div>
                                     </div>
                                 </Card>
                             </Col>
@@ -516,11 +499,11 @@ function AdminDashboard() {
 
                 {/* Traffic & Engagement */}
                 <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <Title level={3} className={styles.sectionTitle}>
-                            <GlobalOutlined/> Lưu lượng truy cập & mức độ tương tác của người dùng
-                        </Title>
-                    </div>
+                    {/*<div className={styles.sectionHeader}>*/}
+                    {/*    <Title level={3} className={styles.sectionTitle}>*/}
+                    {/*        <GlobalOutlined/> Lưu lượng truy cập & mức độ tương tác của người dùng*/}
+                    {/*    </Title>*/}
+                    {/*</div>*/}
 
                     <Row gutter={[24, 24]}>
                         <Col xs={24} xl={16}>
@@ -591,11 +574,11 @@ function AdminDashboard() {
 
                 {/* Revenue Analytics */}
                 <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <Title level={3} className={styles.sectionTitle}>
-                            <BarChartOutlined/> Phân tích Doanh thu
-                        </Title>
-                    </div>
+                    {/*<div className={styles.sectionHeader}>*/}
+                    {/*    <Title level={3} className={styles.sectionTitle}>*/}
+                    {/*        <BarChartOutlined/> Phân tích Doanh thu*/}
+                    {/*    </Title>*/}
+                    {/*</div>*/}
 
                     <Row gutter={[24, 24]}>
                         <Col xs={24} lg={14}>
@@ -635,16 +618,6 @@ function AdminDashboard() {
                                         <Text className={styles.insightValue}>Dec</Text>
                                     </div>
                                     <div className={styles.insightItem}>
-                                        <div className={styles.insightBadge} style={{background: '#f59e0b'}}>
-                                            <ThunderboltOutlined/>
-                                        </div>
-                                        <div className={styles.insightContent}>
-                                            <Text strong>Phân khúc tăng trưởng nhanh nhất</Text>
-                                            <Text type="secondary">Dịch vụ tư vấn</Text>
-                                        </div>
-                                        <Text className={styles.insightValue}>+48%</Text>
-                                    </div>
-                                    <div className={styles.insightItem}>
                                         <div className={styles.insightBadge} style={{background: '#ec4899'}}>
                                             <RiseOutlined/>
                                         </div>
@@ -657,44 +630,6 @@ function AdminDashboard() {
                                 </div>
                             </Card>
                         </Col>
-                    </Row>
-                </div>
-
-                {/* Regional Performance */}
-                <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <Title level={3} className={styles.sectionTitle}>
-                            <EnvironmentOutlined/> Hiệu suất Theo Vùng
-                        </Title>
-                    </div>
-
-                    <Row gutter={[24, 24]}>
-                        {regionData.map((region, idx) => (
-                            <Col xs={24} sm={12} lg={8} xl={4.8} key={idx}>
-                                <Card className={styles.regionCard} bordered={false}>
-                                    <div className={styles.regionHeader}>
-                                        <span className={styles.regionFlag}>{region.flag}</span>
-                                        <Tag color={region.growth > 25 ? 'success' : 'processing'}
-                                             className={styles.regionTag}>
-                                            +{region.growth}%
-                                        </Tag>
-                                    </div>
-                                    <Title level={5} className={styles.regionName}>{region.region}</Title>
-                                    <div className={styles.regionStats}>
-                                        <div className={styles.regionStat}>
-                                            <UserOutlined style={{color: '#6366f1'}}/>
-                                            <Text strong>{region.users.toLocaleString()}</Text>
-                                            <Text type="secondary">Users</Text>
-                                        </div>
-                                        <div className={styles.regionStat}>
-                                            <DollarOutlined style={{color: '#10b981'}}/>
-                                            <Text strong>{(region.revenue / 1000000).toFixed(0)}M</Text>
-                                            <Text type="secondary">Revenue</Text>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </Col>
-                        ))}
                     </Row>
                 </div>
 
@@ -754,50 +689,6 @@ function AdminDashboard() {
                             ))}
                         </div>
                     </Card>
-                </div>
-
-                {/* Feature Usage */}
-                <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <Title level={3} className={styles.sectionTitle}>
-                            <PieChartOutlined/> Phân tích Sử dụng Tính năng
-                        </Title>
-                    </div>
-
-                    <Row gutter={[24, 24]}>
-                        {featureUsageData.map((feature, idx) => (
-                            <Col xs={24} sm={12} lg={8} key={idx}>
-                                <Card className={styles.featureCard} bordered={false}>
-                                    <div className={styles.featureHeader}>
-                                        <span className={styles.featureIcon}>{feature.icon}</span>
-                                        <Tag className={`${styles.trendTag} ${styles.up}`}>
-                                            <CaretUpOutlined/> {feature.trend}%
-                                        </Tag>
-                                    </div>
-                                    <Title level={5} className={styles.featureName}>{feature.feature}</Title>
-                                    <div className={styles.featureStats}>
-                                        <div className={styles.featureStat}>
-                                            <Text strong style={{fontSize: 24}}>{feature.usage.toLocaleString()}</Text>
-                                            <Text type="secondary">Total Usage</Text>
-                                        </div>
-                                        <div className={styles.featureStat}>
-                                            <Text strong style={{fontSize: 24}}>{feature.users.toLocaleString()}</Text>
-                                            <Text type="secondary">Active Users</Text>
-                                        </div>
-                                    </div>
-                                    <Progress
-                                        percent={(feature.usage / 3000) * 100}
-                                        strokeColor={{
-                                            '0%': '#6366f1',
-                                            '100%': '#ec4899'
-                                        }}
-                                        showInfo={false}
-                                        strokeWidth={8}
-                                    />
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
                 </div>
             </div>
         </div>
