@@ -17,6 +17,8 @@ public class SubscriptionPlanCreateRequest {
 
     private String description;
 
+    private String fullDescription; // Lưu Markdown
+
     @NotNull
     @Min(0)
     private Integer maxBoardingHouses;
@@ -29,6 +31,11 @@ public class SubscriptionPlanCreateRequest {
     @Min(0)
     private Integer maxRooms;
 
+    private Integer maxTenants;
+
+    private Integer maxActiveContracts;
+
     private BigDecimal pricePerMonth;
+
     private Integer durationDays;
 }

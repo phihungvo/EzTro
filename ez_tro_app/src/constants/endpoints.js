@@ -136,6 +136,7 @@ const API_ENDPOINTS = {
     },
     SUBSCRIPTION: {
         MY_LIMIT: `${BASE_URL}/subscriptions/my-limits`,
+        CREATE: `${BASE_URL}/subscriptions/plans`,
     },
 
     // FOR USER ROLE
