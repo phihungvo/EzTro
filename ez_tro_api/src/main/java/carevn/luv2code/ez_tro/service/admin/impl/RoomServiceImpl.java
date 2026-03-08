@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,11 +11,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
@@ -26,6 +29,7 @@ import carevn.luv2code.ez_tro.repository.UtilityRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import carevn.luv2code.ez_tro.specification.RoomSpecs;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -200,6 +204,105 @@ public class RoomServiceImpl implements RoomService {
         }
 
         return roomRepository.findAll(spec, pageable).map(roomMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RoomResponse> filterRooms(
+            String search,
+            String status,
+            Integer boardingHouseId,
+            Integer minArea,
+            Integer maxArea,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean hasActiveContract,
+            Pageable pageable) {
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        Specification<Room> spec = Specification.where(null);
+
+        // Quyền owner
+        if (!safe.isAdmin()) {
+            spec = spec.and(RoomSpecs.ownedBy(safe.get()));
+        }
+
+        // Search: số phòng, tên nhà trọ, địa chỉ nhà trọ
+        if (StringUtils.hasText(search)) {
+            String lowerSearch = search.toLowerCase().trim();
+            spec = spec.and((root, query, cb) -> {
+                Join<Room, BoardingHouse> bhJoin = root.join("boardingHouse", JoinType.LEFT);
+
+                Predicate roomNumberPred = cb.like(cb.lower(root.get("roomNumber")), "%" + lowerSearch + "%");
+                Predicate bhNamePred = cb.like(cb.lower(bhJoin.get("name")), "%" + lowerSearch + "%");
+                Predicate addressPred = cb.like(cb.lower(bhJoin.get("address")), "%" + lowerSearch + "%");
+
+                // Tìm theo SĐT tenant (chỉ khi phòng có hợp đồng active)
+                Join<Room, Contract> contractJoin = root.join("contracts", JoinType.LEFT);
+                Join<Contract, Tenant> tenantJoin = contractJoin.join("tenant", JoinType.LEFT);
+                Join<Tenant, User> userJoin = tenantJoin.join("user", JoinType.LEFT);
+
+                Predicate phonePred = cb.like(cb.lower(userJoin.get("phoneNumber")), "%" + lowerSearch + "%");
+
+                return cb.or(roomNumberPred, bhNamePred, addressPred, phonePred);
+            });
+        }
+
+        // Lọc theo trạng thái phòng
+        if (StringUtils.hasText(status) && !"ALL".equalsIgnoreCase(status)) {
+            try {
+                RoomStatus roomStatus = RoomStatus.valueOf(status.toUpperCase());
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), roomStatus));
+            } catch (IllegalArgumentException e) {
+                //                log.warn("Invalid room status filter: {}", status);
+            }
+        }
+
+        // Lọc theo nhà trọ cụ thể
+        if (boardingHouseId != null) {
+            spec = spec.and(
+                    (root, query, cb) -> cb.equal(root.get("boardingHouse").get("id"), boardingHouseId));
+        }
+
+        // Diện tích
+        if (minArea != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("area"), minArea));
+        }
+        if (maxArea != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("area"), maxArea));
+        }
+
+        // Giá thuê
+        if (minPrice != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("rentPrice"), minPrice));
+        }
+        if (maxPrice != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("rentPrice"), maxPrice));
+        }
+
+        // Phòng đang có hợp đồng hiệu lực
+        if (hasActiveContract != null) {
+            spec = spec.and((root, query, cb) -> {
+                Subquery<Contract> subquery = query.subquery(Contract.class);
+                Root<Contract> contractRoot = subquery.from(Contract.class);
+                subquery.select(contractRoot);
+                Join<Contract, Room> roomJoin = contractRoot.join("room", JoinType.INNER);
+
+                LocalDate today = LocalDate.now();
+                Predicate statusPred = cb.equal(contractRoot.get("status"), ContractStatus.ACTIVE);
+                Predicate startPred = cb.lessThanOrEqualTo(contractRoot.get("startDate"), today);
+                Predicate endPred = cb.or(
+                        cb.isNull(contractRoot.get("endDate")),
+                        cb.greaterThanOrEqualTo(contractRoot.get("endDate"), today));
+
+                subquery.where(cb.equal(roomJoin.get("id"), root.get("id")), statusPred, startPred, endPred);
+
+                return hasActiveContract ? cb.exists(subquery) : cb.not(cb.exists(subquery));
+            });
+        }
+
+        Page<Room> pageResult = roomRepository.findAll(spec, pageable);
+        return pageResult.map(roomMapper::toResponse);
     }
 
     @Override

@@ -12,12 +12,13 @@
   }
 
   :global(.ant-table) {
-    background-color: white !important;
+    background-color: #1e2230 !important;
     color: #000 !important;
   }
 
   :global(.ant-table-thead > tr > th) {
-    color: #000 !important;
+    color: #555f78 !important;
+    background-color: #0d0f14;
     font-weight: 600;
     text-align: center;
     &.ant-table-cell-fix-left, &.ant-table-cell-fix-right {
@@ -26,8 +27,8 @@
   }
 
   :global(.ant-table-tbody > tr > td) {
-    background-color: white !important;
-    color: #000 !important;
+    background-color: #1e2230 !important;
+    color: #ffffff !important;
     &.ant-table-cell-fix-left, &.ant-table-cell-fix-right {
       background-color: #1f1f1f !important;
     }

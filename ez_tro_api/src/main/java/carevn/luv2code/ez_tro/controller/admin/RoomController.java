@@ -1,9 +1,12 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -66,6 +69,28 @@ public class RoomController {
         return ResponseEntity.ok(roomService.getAllRoomsByRole(pageable));
     }
 
+    @GetMapping("/filter")
+    public ResponseEntity<Page<RoomResponse>> filterRooms(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer boardingHouseId,
+            @RequestParam(required = false) Integer minArea,
+            @RequestParam(required = false) Integer maxArea,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean hasActiveContract,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        Pageable pageable = createPageable(page, size, sort);
+
+        Page<RoomResponse> result = roomService.filterRooms(
+                search, status, boardingHouseId, minArea, maxArea, minPrice, maxPrice, hasActiveContract, pageable);
+
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping
     public ApiResponse<List<RoomResponse>> getAll() {
         List<RoomResponse> responses = roomService.getAllByRole();
@@ -94,5 +119,12 @@ public class RoomController {
                 .message("Get all rooms by boarding house successfully")
                 .result(rooms)
                 .build();
+    }
+
+    private Pageable createPageable(int page, int size, String sort) {
+        String[] sortParts = sort.split(",");
+        Sort.Direction direction = Sort.Direction.fromString(sortParts[1].trim());
+        Sort sortBy = Sort.by(direction, sortParts[0].trim());
+        return PageRequest.of(page, size, sortBy);
     }
 }

@@ -17,6 +17,9 @@ public interface RoomMapper {
     @Mapping(source = "building.name", target = "buildingName")
     @Mapping(target = "startDate", expression = "java(getLatestContractStartDate(room))")
     @Mapping(target = "endDate", expression = "java(getLatestContractEndDate(room))")
+    @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
+    @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
+    @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
     RoomResponse toResponse(Room room);
 
     @Mapping(target = "id", ignore = true)
@@ -48,6 +51,45 @@ public interface RoomMapper {
                 .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
                 .max(Comparator.comparing(Contract::getStartDate))
                 .map(Contract::getEndDate)
+                .orElse(null);
+    }
+
+    default String getTenantName(Room room) {
+
+        if (room.getContracts() == null) return null;
+
+        return room.getContracts().stream()
+                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                .max(Comparator.comparing(Contract::getStartDate))
+                .map(c -> c.getTenant().getUser().getFullName())
+                .orElse(null);
+    }
+
+    default String getTenantPhone(Room room) {
+
+        if (room.getContracts() == null) return null;
+
+        return room.getContracts().stream()
+                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                .max(Comparator.comparing(Contract::getStartDate))
+                .map(c -> c.getTenant().getUser().getPhoneNumber())
+                .orElse(null);
+    }
+
+    default Long getRemainingDays(Room room) {
+
+        if (room.getContracts() == null) return null;
+
+        return room.getContracts().stream()
+                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                .max(Comparator.comparing(Contract::getStartDate))
+                .map(c -> {
+                    if (c.getEndDate() == null) return null;
+
+                    long diff = c.getEndDate().getTime() - new java.util.Date().getTime();
+
+                    return diff / (1000 * 60 * 60 * 24);
+                })
                 .orElse(null);
     }
 }

@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.service.admin;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -24,6 +25,17 @@ public interface RoomService {
     Page<RoomResponse> getAllRoomsPaged(int page, int size);
 
     Page<RoomResponse> getAllRoomsByRole(Pageable pageable);
+
+    Page<RoomResponse> filterRooms(
+            String search,
+            String status,
+            Integer boardingHouseId,
+            Integer minArea,
+            Integer maxArea,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean hasActiveContract,
+            Pageable pageable);
 
     List<RoomResponse> getAllByRole();
 
