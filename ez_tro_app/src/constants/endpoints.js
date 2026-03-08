@@ -64,6 +64,7 @@ const API_ENDPOINTS = {
     ROOM: {
         GET_ALL: `${BASE_URL}/rooms/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/rooms`,
+        FILTER: `${BASE_URL}/rooms/filter`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
         CREATE: `${BASE_URL}/rooms`,

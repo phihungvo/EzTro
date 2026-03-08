@@ -28,6 +28,47 @@ export const getAllRoomNoPaged = async () => {
     }
 };
 
+export const filterRooms = async ({
+                                      search,
+                                      status,
+                                      boardingHouseId,
+                                      minArea,
+                                      maxArea,
+                                      minPrice,
+                                      maxPrice,
+                                      hasActiveContract,
+                                      page = 0,
+                                      pageSize = 10,
+                                  }) => {
+    try {
+        const params = {
+            search,
+            status,
+            boardingHouseId,
+            minArea,
+            maxArea,
+            minPrice,
+            maxPrice,
+            hasActiveContract,
+            page,
+            size: pageSize,
+            // sort mặc định (có thể thêm param sort sau nếu cần)
+        };
+
+        // Loại bỏ các param undefined/null để tránh gửi lên backend
+        Object.keys(params).forEach(key =>
+            (params[key] === undefined || params[key] === null) && delete params[key]
+        );
+
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.FILTER, {params});
+        return response.data; // giả sử trả về { content: [], totalElements: ..., ... }
+    } catch (error) {
+        console.error('Error filtering rooms:', error);
+        // message.error('Lỗi khi lọc danh sách phòng');
+        return null;
+    }
+};
+
 export const getAllRoomAvailable = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_AVAILABLE);
