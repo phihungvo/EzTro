@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import jakarta.validation.Valid;
@@ -91,6 +93,31 @@ public class RoomController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/rented-active")
+    public ResponseEntity<Page<RentedRoomContextResponse>> getRentedActiveRooms(
+            @RequestParam(required = false) Integer boardingHouseId, // lọc theo khu nhà
+            @RequestParam(required = false) Integer floor, // lọc theo tầng (tùy chọn)
+            @RequestParam int month, // tháng cần kiểm tra bill
+            @RequestParam int year, // năm cần kiểm tra bill
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("roomNumber").ascending());
+
+        Page<RentedRoomContextResponse> result =
+                roomService.getRentedActiveRooms(boardingHouseId, floor, month, year, pageable);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{roomId}/rented-context")
+    public ResponseEntity<RentedRoomDetailResponse> getRentedRoomDetail(
+            @PathVariable Integer roomId, @RequestParam int month, @RequestParam int year) {
+
+        RentedRoomDetailResponse response = roomService.getRentedRoomDetail(roomId, month, year);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     public ApiResponse<List<RoomResponse>> getAll() {
         List<RoomResponse> responses = roomService.getAllByRole();
@@ -117,6 +144,16 @@ public class RoomController {
         return ApiResponse.<List<RoomResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get all rooms by boarding house successfully")
+                .result(rooms)
+                .build();
+    }
+
+    @GetMapping("/by-building/{buildingId}")
+    public ApiResponse<List<RoomResponse>> getRoomsByBuilding(@PathVariable Integer buildingId) {
+        List<RoomResponse> rooms = roomService.getByBuildingId(buildingId);
+        return ApiResponse.<List<RoomResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get all rooms by building successfully")
                 .result(rooms)
                 .build();
     }

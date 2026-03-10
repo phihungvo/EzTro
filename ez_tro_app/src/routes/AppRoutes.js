@@ -12,7 +12,7 @@ import Room from "~/pages/Admin/Room";
 import Tenant from "~/pages/Admin/Tenant";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import Contract from "~/pages/Admin/Contract";
-import Bill from "~/pages/Admin/Bill";
+import Bill from "src/pages/Admin/Bill";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
 import UserManagement from "~/pages/Admin/User/UserManagement";
@@ -30,6 +30,7 @@ import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
 import React from "react";
+import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -62,6 +63,7 @@ const AppRoutes = () => {
                                 <Route path="tenants/:id" element={<TenantDetail />} />
                                 <Route path="contracts" element={<Contract />} />
                                 <Route path="bills" element={<Bill />} />
+                                <Route path="bills/create-bill" element={<BillCreator />} />
                                 <Route path="revenues" element={<Revenue />} />
                                 <Route path="appointments" element={<Appointment />} />
                                 <Route path="assets" element={<Asset />} />

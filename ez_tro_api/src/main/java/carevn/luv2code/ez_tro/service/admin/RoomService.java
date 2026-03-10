@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 
 public interface RoomService {
@@ -37,7 +39,14 @@ public interface RoomService {
             Boolean hasActiveContract,
             Pageable pageable);
 
+    Page<RentedRoomContextResponse> getRentedActiveRooms(
+            Integer boardingHouseId, Integer floor, int month, int year, Pageable pageable);
+
+    RentedRoomDetailResponse getRentedRoomDetail(Integer roomId, int month, int year);
+
     List<RoomResponse> getAllByRole();
 
     List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId);
+
+    List<RoomResponse> getByBuildingId(Integer buildingId);
 }

@@ -2,12 +2,15 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,17 +18,21 @@ import org.springframework.util.StringUtils;
 
 import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
+import carevn.luv2code.ez_tro.dto.response.MeterReadingPrevDTO;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
+import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
+import carevn.luv2code.ez_tro.enums.ServiceType;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
+import carevn.luv2code.ez_tro.mapper.BillMapper;
+import carevn.luv2code.ez_tro.mapper.ContractMapper;
 import carevn.luv2code.ez_tro.mapper.RoomMapper;
-import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
-import carevn.luv2code.ez_tro.repository.BuildingRepository;
-import carevn.luv2code.ez_tro.repository.RoomRepository;
-import carevn.luv2code.ez_tro.repository.UtilityRepository;
+import carevn.luv2code.ez_tro.mapper.TenantMapper;
+import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import carevn.luv2code.ez_tro.specification.RoomSpecs;
@@ -42,6 +49,11 @@ public class RoomServiceImpl implements RoomService {
     private final BuildingRepository buildingRepository;
     private final UtilityRepository utilityRepository;
     private final RoomMapper roomMapper;
+    private final ContractMapper contractMapper;
+    private final TenantMapper tenantMapper;
+    private final BillRepository billRepository;
+    private final BillMapper billMapper;
+    private final MeterReadingRepository meterReadingRepository;
 
     //    @Override
     //    @Transactional
@@ -306,6 +318,180 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<RentedRoomContextResponse> getRentedActiveRooms(
+            Integer boardingHouseId, Integer floor, int month, int year, Pageable pageable) {
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        Specification<Room> spec = Specification.where(null);
+
+        // 1. Quyền: chỉ lấy phòng của chủ trọ hiện tại
+        if (!safe.isAdmin()) {
+            spec = spec.and(RoomSpecs.ownedBy(safe.get()));
+        }
+
+        // 2. Chỉ lấy phòng đang cho thuê (có hợp đồng active)
+        spec = spec.and((root, query, cb) -> {
+            Join<Room, Contract> contractJoin = root.join("contracts", JoinType.INNER);
+            LocalDate today = LocalDate.now();
+
+            Predicate activeStatus = cb.equal(contractJoin.get("status"), ContractStatus.ACTIVE);
+            Predicate startValid = cb.lessThanOrEqualTo(contractJoin.get("startDate"), today);
+            Predicate endValid = cb.or(
+                    cb.isNull(contractJoin.get("endDate")),
+                    cb.greaterThanOrEqualTo(contractJoin.get("endDate"), today));
+
+            return cb.and(activeStatus, startValid, endValid);
+        });
+
+        // 3. Lọc theo khu nhà trọ (boarding house)
+        if (boardingHouseId != null) {
+            spec = spec.and(
+                    (root, query, cb) -> cb.equal(root.get("boardingHouse").get("id"), boardingHouseId));
+        }
+
+        // 4. Lọc theo tầng (nếu có)
+        if (floor != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("floorNumber"), floor));
+        }
+
+        // 5. Thực hiện query
+        Page<Room> roomsPage = roomRepository.findAll(spec, pageable);
+
+        // 6. Map sang DTO, thêm thông tin cần thiết
+        return roomsPage.map(room -> {
+            RentedRoomContextResponse dto = roomMapper.toRentedContext(room);
+
+            // Lấy hợp đồng active mới nhất
+            //            Contract activeContract = room.getContracts().stream()
+            //                    .filter(c -> c.getStatus() == ContractStatus.ACTIVE
+            //                            && !c.getStartDate().after(new Date()))
+            //                            && (c.getEndDate() == null || !c.getEndDate().isBefore(LocalDate.now())))
+            //                    .max(Comparator.comparing(Contract::getStartDate))
+            //                    .orElse(null);
+            Contract activeContract = getActiveContract(room);
+
+            if (activeContract != null) {
+                dto.setCurrentContract(contractMapper.toResponse(activeContract));
+                //                dto.setTenant(tenantMapper.toBasicResponse(activeContract.getTenant()));
+                dto.setRentPrice(activeContract.getRentPrice());
+                //                dto.setMonthsLeft(calculateMonthsLeft(activeContract));
+                //                dto.setServices(activeContract.getServices().stream()
+                //                        .map(Service::getKey)
+                //                        .collect(Collectors.toList()));
+
+                // Lấy danh sách Utility USAGE_BASED từ hợp đồng hoặc khu nhà
+                List<Utility> usageUtilities = room.getRoomUtilities().stream()
+                        .map(RoomUtility::getUtility)
+                        .filter(u -> u.getType() == ServiceType.USAGE_BASED)
+                        .toList();
+
+                dto.setUsageBasedServices(usageUtilities.stream()
+                        .map(u -> u.getName()) // hoặc map sang DTO nhỏ nếu cần
+                        .collect(Collectors.toList()));
+            }
+
+            List<MeterReadingPrevDTO> prevReadings =
+                    meterReadingRepository.findLatestByRoomAndPeriod(room.getId(), month, year).stream()
+                            .map(mr -> MeterReadingPrevDTO.builder()
+                                    .utilityName(mr.getUtility().getName())
+                                    .previousIndex(mr.getCurrentIndex().intValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
+            dto.setPrevMeterReadings(prevReadings);
+
+            // Lấy chỉ số cũ từ bill gần nhất (trước tháng/năm chỉ định)
+            //            Optional<Bill> lastBill =
+            // billRepository.findTopByRoomIdAndYearLessThanEqualAndMonthLessThanEqualOrderByYearDescMonthDesc(
+            //                    room.getId(), year, month);
+
+            //            if (lastBill != null) {
+            //                dto.setElecPrev(lastBill.getElecNew());
+            //                dto.setWaterPrev(lastBill.getWaterNew());
+            //                dto.setLastBill(billMapper.toBasic(lastBill));
+            //            } else {
+            //                dto.setElecPrev(0);
+            //                dto.setWaterPrev(0);
+            //            }
+
+            // Kiểm tra đã có bill trong tháng/năm này chưa (để cảnh báo)
+            boolean hasBillThisMonth = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month, year);
+            dto.setHasBillThisMonth(hasBillThisMonth);
+
+            return dto;
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RentedRoomDetailResponse getRentedRoomDetail(Integer roomId, int month, int year) {
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+
+        // Quyền owner
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        RentedRoomDetailResponse dto = roomMapper.toRentedDetail(room);
+
+        // Hợp đồng active hiện tại
+        Contract activeContract = room.getContracts().stream()
+                .filter(c -> c.getStatus() == ContractStatus.ACTIVE
+                        && !c.getStartDate().after(new Date())
+                        && (c.getEndDate() == null || !c.getEndDate().before(new Date())))
+                .max(Comparator.comparing(Contract::getStartDate))
+                .orElseThrow(() -> new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT));
+
+        dto.setCurrentContract(contractMapper.toResponse(activeContract));
+        //        dto.setTenant(tenantMapper.toBasicResponse(activeContract.getTenant()));
+        //        dto.setRentPrice(activeContract.getRentPrice());
+        //        dto.setMonthsLeft(calculateMonthsLeft(activeContract));
+        //        dto.setServices(activeContract.getServices().stream()
+        //                .map(Service::getKey)
+        //                .collect(Collectors.toList()));
+
+        // Chỉ số cũ từ bill gần nhất
+        //        Optional<Bill> lastBill =
+        //                billRepository.findTopByRoomIdAndDueDateBeforeOrderByDueDateDesc(
+        //                        roomId, year, month);
+
+        List<MeterReadingPrevDTO> prevReadings =
+                meterReadingRepository.findLatestByRoomAndPeriod(room.getId(), month, year).stream()
+                        .map(mr -> MeterReadingPrevDTO.builder()
+                                .utilityName(mr.getUtility().getName())
+                                .previousIndex(mr.getCurrentIndex().intValue())
+                                .unit(mr.getUtility().getUnit())
+                                .build())
+                        .collect(Collectors.toList());
+        dto.setPrevMeterReadings(prevReadings);
+
+        //        if (lastBill != null) {
+        //            dto.setElecPrev(lastBill.getElecNew());
+        //            dto.setWaterPrev(lastBill.getWaterNew());
+        //            dto.setLastBill(billMapper.toBasic(lastBill));
+        //        } else {
+        //            dto.setElecPrev(0);
+        //            dto.setWaterPrev(0);
+        //        }
+
+        // Đã có bill tháng này chưa
+        boolean hasBillThisMonth = billRepository.existsByRoomIdAndMonthAndYear(roomId, month, year);
+        dto.setHasBillThisMonth(hasBillThisMonth);
+
+        // Lịch sử thanh toán gần đây (3 bản ghi)
+        //        List<PaymentHistoryResponse> history =
+        // paymentHistoryRepository.findTop3ByRoomIdOrderByPaymentDateDesc(roomId)
+        //                .stream()
+        //                .map(paymentMapper::toHistoryResponse)
+        //                .collect(Collectors.toList());
+        //        dto.setPaymentHistory(history);
+
+        return dto;
+    }
+
+    @Override
     public List<RoomResponse> getAllByRole() {
         return getAllRoomsByRole(Pageable.unpaged()).getContent();
     }
@@ -313,6 +499,29 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId) {
         return roomRepository.findByBoardingHouseId(boardingHouseId).stream()
+                .map(roomMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getByBuildingId(Integer buildingId) {
+        Building building = buildingRepository
+                .findById(buildingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin() && !building.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        Specification<Room> spec =
+                Specification.where(RoomSpecs.hasBoardingHouse()).and(RoomSpecs.inBuilding(buildingId));
+        if (!safe.isAdmin()) {
+            spec = spec.and(RoomSpecs.ownedBy(safe.get()));
+        }
+
+        return roomRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "roomNumber")).stream()
                 .map(roomMapper::toResponse)
                 .toList();
     }
@@ -328,5 +537,29 @@ public class RoomServiceImpl implements RoomService {
         return boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+    }
+
+    private Contract getActiveContract(Room room) {
+        if (room == null || room.getContracts() == null || room.getContracts().isEmpty()) {
+            return null;
+        }
+
+        LocalDate today = LocalDate.now();
+
+        return room.getContracts().stream()
+                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                .filter(c -> !c.getStartDate()
+                        .toInstant()
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDate()
+                        .isAfter(today)) // startDate <= today
+                .filter(c -> c.getEndDate() == null
+                        || !c.getEndDate()
+                                .toInstant()
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                                .isBefore(today))
+                .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
+                .orElse(null);
     }
 }

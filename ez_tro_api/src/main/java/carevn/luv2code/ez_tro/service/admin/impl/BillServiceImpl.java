@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,25 @@ public class BillServiceImpl implements BillService {
 
         Room room = contract.getRoom();
         Tenant tenant = contract.getTenant();
+
+        // Quyền: chỉ owner của boarding house hoặc admin mới được tạo hóa đơn
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // Validate due date
+        LocalDate dueDate = request.getDueDate();
+        if (dueDate == null) {
+            throw new AppException(ErrorCode.CONTRACT_MONTHLY_PAYMENT_DAY_INVALID);
+        }
+
+        // Chặn tạo trùng hóa đơn cho cùng phòng trong cùng tháng/năm
+        boolean existsForPeriod =
+                billRepository.existsByRoomIdAndMonthAndYear(room.getId(), dueDate.getMonthValue(), dueDate.getYear());
+        if (existsForPeriod) {
+            throw new AppException(ErrorCode.BILL_ALREADY_EXISTS);
+        }
 
         BigDecimal rentPrice = contract.getRentPrice();
         BigDecimal serviceAmount = request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;

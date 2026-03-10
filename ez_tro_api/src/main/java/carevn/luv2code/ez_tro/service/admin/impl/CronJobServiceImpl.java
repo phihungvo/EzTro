@@ -3,7 +3,6 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.quartz.*;
@@ -152,9 +151,10 @@ public class CronJobServiceImpl implements CronJobService {
         for (Contract contract : activeContracts) {
             try {
                 // Skip nếu đã có bill tháng này
-                Optional<Bill> existingBill =
-                        billRepository.findByContractAndMonthYear(contract, currentMonth, currentYear);
-                if (existingBill.isPresent()) continue;
+                //                Optional<Bill> existingBill =
+                //                        billRepository.findByContractAndMonthYear(contract, currentMonth,
+                // currentYear);
+                //                if (existingBill.isPresent()) continue;
 
                 // 2. Validate room & tenant
                 Room room = contract.getRoom();

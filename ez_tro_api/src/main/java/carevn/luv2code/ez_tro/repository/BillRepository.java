@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,7 @@ import carevn.luv2code.ez_tro.entity.Contract;
 
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecificationExecutor<Bill> {
+
     List<Bill> findByContract(Contract contract);
 
     List<Bill> findByContractId(Integer contractId);
@@ -26,13 +28,34 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
 
     Optional<Bill> findTopByContractOrderByCreatedAtDesc(Contract contract);
 
-    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.createdAt IS NOT NULL "
-            + "AND function('YEAR', b.createdAt) = :year "
-            + "AND function('MONTH', b.createdAt) = :month")
-    Optional<Bill> findByContractAndMonthYear(
-            @Param("contractId") Integer contractId, @Param("month") int month, @Param("year") int year);
+    // Kiểm tra tồn tại bill trong tháng/năm chỉ định
+    @Query("SELECT COUNT(b) > 0 FROM Bill b " + "WHERE b.room.id = :roomId "
+            + "AND YEAR(b.dueDate) = :year "
+            + "AND MONTH(b.dueDate) = :month")
+    boolean existsByRoomIdAndMonthAndYear(
+            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
 
-    default Optional<Bill> findByContractAndMonthYear(Contract contract, int month, int year) {
-        return findByContractAndMonthYear(contract.getId(), month, year);
-    }
+    // Tìm bill gần nhất trước tháng/năm chỉ định (lấy chỉ số cũ)
+    @Query("SELECT b FROM Bill b " + "WHERE b.room.id = :roomId "
+            + "AND b.dueDate < :endOfPeriod "
+            + "ORDER BY b.dueDate DESC")
+    Optional<Bill> findTopByRoomIdAndDueDateBeforeOrderByDueDateDesc(
+            @Param("roomId") Integer roomId, @Param("endOfPeriod") LocalDate endOfPeriod);
+
+    // Tìm tất cả bill của một phòng, sắp xếp mới nhất trước
+    //    List<Bill> findByRoomIdOrderByYearDescMonthDesc(Integer roomId);
+
+    // Đếm số bill trong tháng/năm cụ thể của phòng
+    //    @Query("SELECT COUNT(b) FROM Bill b WHERE b.room.id = :roomId AND b.month = :month AND b.year = :year")
+    //    long countByRoomIdAndMonthAndYear(
+    //            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
+
+    // Tìm bill theo contract và tháng/năm (nếu cần)
+    //    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.month = :month AND b.year = :year")
+    //    Optional<Bill> findByContractAndMonthYear(
+    //            @Param("contractId") Integer contractId, @Param("month") int month, @Param("year") int year);
+
+    //    default Optional<Bill> findByContractAndMonthYear(Contract contract, int month, int year) {
+    //        return findByContractAndMonthYear(contract.getId(), month, year);
+    //    }
 }
