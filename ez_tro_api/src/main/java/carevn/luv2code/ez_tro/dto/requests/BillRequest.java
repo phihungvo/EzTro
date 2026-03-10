@@ -22,5 +22,6 @@ public class BillRequest {
 
     private String note;
 
+    @NotNull(message = "Due date không được để trống")
     private LocalDate dueDate;
 }

@@ -33,7 +33,7 @@ import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
 import Amenity from "src/pages/Admin/Utility";
-import Bill from "~/pages/Admin/Bill";
+import Bill from "src/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
@@ -47,6 +47,7 @@ import SystemLogs from "~/pages/Admin/SystemLogs";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
+import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -322,6 +323,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/rooms" element={<Room/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
                         <Route path="/bills" element={<Bill/>}/>
+                        {/*<Route path="/bills/create-bill" element={<BillCreator />} />*/}
                         <Route path="/services" element={<Amenity/>}/>
                         <Route path="/revenues" element={<Revenue/>}/>
                         <Route path="/users" element={<UserManagement/>}/>

@@ -1,0 +1,25 @@
+ .app {
+   font-family: var(--font-body);
+   background: var(--bg-void);
+   color: var(--text);
+   min-height: 100vh;
+ }
+
+ .page {
+   max-width: 1300px;
+   margin: 0 auto;
+   padding: 28px 24px 80px;
+   display: grid;
+   grid-template-columns: 1fr 364px;
+   gap: 20px;
+   align-items: flex-start;
+   position: relative;
+   z-index: 1;
+ }
+
+ .formCol {
+   display: flex;
+   flex-direction: column;
+   gap: 14px;
+ }
+
