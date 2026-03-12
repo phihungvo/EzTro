@@ -1,62 +1,269 @@
 .table-container {
-  // padding-top: 20px;
-  // max-height: 600px;
-  // overflow: auto;
+  --st-bg: #0d0f14;
+  --st-panel: #121621;
+  --st-panel-2: #151b28;
+  --st-panel-3: #0f1320;
+  --st-border: rgba(255, 255, 255, 0.08);
+  --st-border-2: rgba(255, 255, 255, 0.12);
+  --st-text: rgba(255, 255, 255, 0.92);
+  --st-muted: rgba(255, 255, 255, 0.58);
+  --st-faint: rgba(255, 255, 255, 0.38);
+  --st-accent: #00f5e9;
+  --st-accent-dim: rgba(0, 245, 233, 0.12);
+  --st-accent-dim-2: rgba(0, 245, 233, 0.08);
+
+  border-radius: 12px;
 
   :global(.ant-table-wrapper) {
     height: 100%;
   }
 
-  :global(.ant-table-body) {
-    overflow: auto !important;
+  :global(.ant-spin-nested-loading) {
+    border-radius: 12px;
+  }
+
+  // Outer container (rounded, modern)
+  :global(.ant-table-container) {
+    border: 1px solid var(--st-border) !important;
+    border-radius: 12px !important;
+    background: radial-gradient(1200px 600px at 20% -20%, rgba(0, 245, 233, 0.08), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(61, 143, 255, 0.08), transparent 62%),
+      linear-gradient(180deg, var(--st-panel), var(--st-bg)) !important;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
   }
 
   :global(.ant-table) {
-    background-color: #1e2230 !important;
-    color: #000 !important;
+    background: transparent !important;
+    color: var(--st-text) !important;
+    font-size: 13px;
+    line-height: 1.35;
   }
 
+  // Header
   :global(.ant-table-thead > tr > th) {
-    color: #555f78 !important;
-    background-color: #0d0f14;
-    font-weight: 600;
+    background: linear-gradient(180deg, rgba(13, 15, 20, 0.92), rgba(13, 15, 20, 0.82)) !important;
+    color: var(--st-muted) !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--st-border) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
     text-align: center;
-    &.ant-table-cell-fix-left, &.ant-table-cell-fix-right {
-      background-color: #1f1f1f !important;
+    padding: 12px 12px !important;
+    white-space: nowrap;
+
+    &.ant-table-cell-fix-left,
+    &.ant-table-cell-fix-right,
+    &.ant-table-cell-fix-left-first,
+    &.ant-table-cell-fix-left-last,
+    &.ant-table-cell-fix-right-first,
+    &.ant-table-cell-fix-right-last {
+      background: var(--st-bg) !important;
+    }
+
+    :global(.ant-table-column-sorter) {
+      color: var(--st-faint);
     }
   }
 
+  // Body cells
   :global(.ant-table-tbody > tr > td) {
-    background-color: #1e2230 !important;
-    color: #ffffff !important;
-    &.ant-table-cell-fix-left, &.ant-table-cell-fix-right {
-      background-color: #1f1f1f !important;
+    background: transparent !important;
+    color: var(--st-text) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 12px 12px !important;
+    line-height: 1.35;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    &.ant-table-cell-fix-left,
+    &.ant-table-cell-fix-right,
+    &.ant-table-cell-fix-left-first,
+    &.ant-table-cell-fix-left-last,
+    &.ant-table-cell-fix-right-first,
+    &.ant-table-cell-fix-right-last {
+      background: var(--st-panel-2) !important;
     }
+  }
+
+  // Ant Design internal sizing row (must stay invisible)
+  :global(.ant-table-tbody > tr.ant-table-measure-row > td) {
+    padding: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  // Remove sticky overlay/shadow that can look "transparent"
+  :global(.ant-table-cell-fix-left)::after,
+  :global(.ant-table-cell-fix-right)::after,
+  :global(.ant-table-cell-fix-left-first)::after,
+  :global(.ant-table-cell-fix-left-last)::after,
+  :global(.ant-table-cell-fix-right-first)::after,
+  :global(.ant-table-cell-fix-right-last)::after {
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  // Zebra striping for scanability
+  :global(.ant-table-tbody > tr:nth-child(2n) > td:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right):not(.ant-table-cell-fix-left-first):not(.ant-table-cell-fix-left-last):not(.ant-table-cell-fix-right-first):not(.ant-table-cell-fix-right-last)) {
+    background: rgba(255, 255, 255, 0.02) !important;
+  }
+
+  // Stabilize row height (SmartTable sets rowClassName = fixed-row-height)
+  :global(.ant-table-tbody > tr.fixed-row-height > td) {
+    height: 48px;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  // Row states
+  :global(.ant-table-tbody > tr:hover > td:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right):not(.ant-table-cell-fix-left-first):not(.ant-table-cell-fix-left-last):not(.ant-table-cell-fix-right-first):not(.ant-table-cell-fix-right-last)) {
+    background: var(--st-accent-dim-2) !important;
+  }
+
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right):not(.ant-table-cell-fix-left-first):not(.ant-table-cell-fix-left-last):not(.ant-table-cell-fix-right-first):not(.ant-table-cell-fix-right-last)) {
+    background: var(--st-accent-dim) !important;
+  }
+
+  // Fixed columns should stay solid even on hover/selected
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-left),
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-right),
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-left-first),
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-left-last),
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-right-first),
+  :global(.ant-table-tbody > tr:hover > td.ant-table-cell-fix-right-last),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left-first),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left-last),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right-first),
+  :global(.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right-last) {
+    background: var(--st-panel-2) !important;
+  }
+
+  // Sort/filter accent
+  :global(.ant-table-column-sorter-up.active),
+  :global(.ant-table-column-sorter-down.active),
+  :global(.ant-table-filter-trigger.active) {
+    color: var(--st-accent) !important;
+  }
+
+  :global(.ant-table-filter-trigger) {
+    color: var(--st-faint) !important;
+  }
+
+  // Checkbox
+  :global(.ant-checkbox-inner) {
+    background: rgba(0, 0, 0, 0.25);
+    border-color: var(--st-border-2);
+  }
+
+  :global(.ant-checkbox-checked .ant-checkbox-inner) {
+    background: rgba(0, 245, 233, 0.16);
+    border-color: rgba(0, 245, 233, 0.45);
+  }
+
+  :global(.ant-checkbox-checked .ant-checkbox-inner::after) {
+    border-color: var(--st-accent);
+  }
+
+  // Empty state
+  :global(.ant-empty-description) {
+    color: var(--st-muted) !important;
+  }
+
+  // Scrollbar (table body)
+  :global(.ant-table-body) {
+    overflow: auto !important;
+    scrollbar-color: rgba(0, 245, 233, 0.25) rgba(255, 255, 255, 0.04);
+  }
+
+  :global(.ant-table-body::-webkit-scrollbar) {
+    width: 8px;
+    height: 8px;
+  }
+
+  :global(.ant-table-body::-webkit-scrollbar-track) {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+  }
+
+  :global(.ant-table-body::-webkit-scrollbar-thumb) {
+    background: rgba(0, 245, 233, 0.18);
+    border: 1px solid rgba(0, 245, 233, 0.12);
+    border-radius: 999px;
+  }
+
+  :global(.ant-table-body::-webkit-scrollbar-thumb:hover) {
+    background: rgba(0, 245, 233, 0.26);
+  }
+
+  // Pagination (scoped inside this table container)
+  :global(.ant-pagination) {
+    margin-top: 14px !important;
+    color: var(--st-muted);
+  }
+
+  :global(.ant-pagination-item),
+  :global(.ant-pagination-prev),
+  :global(.ant-pagination-next) {
+    background: rgba(18, 22, 33, 0.7) !important;
+    border: 1px solid var(--st-border) !important;
+    margin: 0 4px !important;
+    border-radius: 10px !important;
+    transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+  }
+
+  :global(.ant-pagination-item a) {
+    color: var(--st-muted) !important;
+  }
+
+  :global(.ant-pagination-item:hover),
+  :global(.ant-pagination-prev:hover),
+  :global(.ant-pagination-next:hover) {
+    border-color: rgba(0, 245, 233, 0.22) !important;
+    transform: translateY(-1px);
+  }
+
+  :global(.ant-pagination-item-active) {
+    background: rgba(0, 245, 233, 0.12) !important;
+    border-color: rgba(0, 245, 233, 0.35) !important;
+  }
+
+  :global(.ant-pagination-item-active a) {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  :global(.ant-pagination-prev button),
+  :global(.ant-pagination-next button) {
+    color: var(--st-muted) !important;
+  }
+
+  :global(.ant-pagination-options) {
+    color: var(--st-muted);
+  }
+
+  // pageSize select
+  :global(.ant-select-selector) {
+    background: rgba(18, 22, 33, 0.7) !important;
+    border-color: var(--st-border) !important;
+    color: var(--st-text) !important;
+    border-radius: 10px !important;
+  }
+
+  :global(.ant-select-arrow) {
+    color: var(--st-faint) !important;
   }
 }
 
-:global(.ant-pagination-item),
-:global(.ant-pagination-prev),
-:global(.ant-pagination-next) {
-  background-color: #ffffff !important;
-  border: 1px solid #d9d9d9 !important;
-  margin: 0 4px !important;
-}
-
-:global(.ant-pagination-item a) {
-  color: #000000 !important;
-}
-
-:global(.ant-pagination-item-active) {
-  background-color: #1890ff !important;
-  border-color: #1890ff !important;
-}
-
-:global(.ant-pagination-item-active a) {
-  color: #ffffff !important;
-}
-
-:global(.ant-pagination-prev button),
-:global(.ant-pagination-next button) {
-  color: #000000 !important;
+.customTable {
+  // hook className={styles.customTable}
 }
