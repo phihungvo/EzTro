@@ -12,10 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
-import carevn.luv2code.ez_tro.dto.response.ApiResponse;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
-import carevn.luv2code.ez_tro.dto.response.RoomResponse;
+import carevn.luv2code.ez_tro.dto.response.*;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -116,6 +113,21 @@ public class RoomController {
 
         RentedRoomDetailResponse response = roomService.getRentedRoomDetail(roomId, month, year);
         return ResponseEntity.ok(response);
+    }
+
+    // Lấy danh sách phòng theo kỳ (tháng, năm) và khu nhà, bao gồm thông tin hợp đồng, hóa đơn, tiền điện nước nếu có
+    @GetMapping("/boarding-houses/{boardingHouseId}/rooms-period-summary")
+    public ResponseEntity<ApiResponse<List<RoomPeriodSummaryResponse>>> getRoomsPeriodSummary(
+            @PathVariable Integer boardingHouseId, @RequestParam int month, @RequestParam int year) {
+
+        List<RoomPeriodSummaryResponse> result =
+                roomService.getRoomsSummaryByBoardingHouseAndPeriod(boardingHouseId, month, year);
+
+        return ResponseEntity.ok(ApiResponse.<List<RoomPeriodSummaryResponse>>builder()
+                .code(200)
+                .message("Lấy danh sách phòng theo kỳ thành công")
+                .result(result)
+                .build());
     }
 
     @GetMapping

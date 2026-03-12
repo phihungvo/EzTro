@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
 import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
+import carevn.luv2code.ez_tro.dto.response.RoomPeriodSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.RoomResponse;
 
 public interface RoomService {
@@ -43,6 +44,11 @@ public interface RoomService {
             Integer boardingHouseId, Integer floor, int month, int year, Pageable pageable);
 
     RentedRoomDetailResponse getRentedRoomDetail(Integer roomId, int month, int year);
+
+    List<RoomPeriodSummaryResponse> getRoomsSummaryByBoardingHouseAndPeriod(
+            Integer boardingHouseId,
+            Integer month, // 1-12
+            Integer year);
 
     List<RoomResponse> getAllByRole();
 
