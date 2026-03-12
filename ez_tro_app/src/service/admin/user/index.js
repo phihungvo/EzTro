@@ -1,10 +1,7 @@
-import axios from 'axios';
-import API_ENDPOINTS from '../../../constants/endpoints';
-import { getToken } from '~/constants/token';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
-import { setAuthToken } from '~/service/api/api';
 import axiosInstance from '~/utils/axiosInstance';
+import API_ENDPOINTS from "~/constants/endpoints";
 
 export const login = async (username, password) => {
     try {
@@ -15,6 +12,18 @@ export const login = async (username, password) => {
         return response.data.result.token;
     } catch (error) {
         message.error(error.response?.data?.message || 'Đăng nhập thất bại');
+        throw error;
+    }
+};
+
+export const googleLogin = async (idToken) => {
+    try {
+        const response = await axiosInstance.post('/auth/google', {
+            idToken,
+        });
+        return response.data.result.token;
+    } catch (error) {
+        message.error(error.response?.data?.message || 'Đăng nhập Google thất bại');
         throw error;
     }
 };
@@ -143,7 +152,7 @@ export const updateUser = async (userId, formData) => {
 
 export const deleteUser = async (userIds) => {
     try {
-        const response = await axios.delete(API_ENDPOINTS.USER.DELETE, {data: userIds});
+        const response = await apiClient.delete(API_ENDPOINTS.USER.DELETE, {data: userIds});
 
         if (response.data) {
             message.success('User deleted successfully!');

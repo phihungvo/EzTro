@@ -101,6 +101,8 @@ public enum ErrorCode {
     NO_ACTIVE_SUBSCRIPTION(1073, "No active subscription found", HttpStatus.NOT_FOUND),
     NOT_AN_OWNER(1074, "User is not an owner", HttpStatus.FORBIDDEN),
     ALREADY_HAS_ACTIVE_SUBSCRIPTION(1075, "Owner already has an active subscription", HttpStatus.CONFLICT),
+    GOOGLE_ID_TOKEN_INVALID(1076, "Google ID token is invalid", HttpStatus.UNAUTHORIZED),
+    GOOGLE_EMAIL_NOT_VERIFIED(1077, "Google email is not verified", HttpStatus.UNAUTHORIZED),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

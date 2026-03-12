@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import GlobalStyles from './components/GlobalStyles';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // Import React Query
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -22,9 +23,11 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     // <React.StrictMode> // Tạm comment nếu bạn đang dev, vì StrictMode có thể gây double render
     <QueryClientProvider client={queryClient}>
-        <GlobalStyles>
-            <App/>
-        </GlobalStyles>
+        <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}>
+            <GlobalStyles>
+                <App/>
+            </GlobalStyles>
+        </GoogleOAuthProvider>
     </QueryClientProvider>
     // </React.StrictMode>
 );
