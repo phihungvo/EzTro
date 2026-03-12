@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 
 import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
+import Landing from "~/pages/General/Landing";
 
 import AdminDashboard from "~/pages/Admin/HomeDashboard";
 import Building from "~/pages/Admin/Building";
@@ -37,6 +38,16 @@ const AppRoutes = () => {
 
     return (
         <Routes>
+            <Route
+                path="/"
+                element={
+                    user?.role === "ADMIN"
+                        ? <Navigate to="/admin/dashboard" replace />
+                        : user?.role === "OWNER"
+                            ? <Navigate to="/owner/dashboard" replace />
+                            : <Landing />
+                }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
@@ -57,6 +68,7 @@ const AppRoutes = () => {
                     <PrivateRoute allowedRoles={["OWNER"]}>
                         <SharedLayout>
                             <Routes>
+                                <Route path="dashboard" element={<AdminDashboard />} />
                                 <Route path="buildings" element={<Building />} />
                                 <Route path="rooms" element={<Room />} />
                                 <Route path="tenants" element={<Tenant />} />
@@ -95,7 +107,7 @@ const AppRoutes = () => {
                 path="*"
                 element={
                     <Navigate
-                        to={user ? `/${user.role.toLowerCase()}/dashboard` : "/login"}
+                        to={user ? `/${user.role.toLowerCase()}/dashboard` : "/"}
                         replace
                     />
                 }
