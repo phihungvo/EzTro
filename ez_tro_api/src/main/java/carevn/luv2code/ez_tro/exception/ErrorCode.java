@@ -102,6 +102,7 @@ public enum ErrorCode {
     NOT_AN_OWNER(1074, "User is not an owner", HttpStatus.FORBIDDEN),
     ALREADY_HAS_ACTIVE_SUBSCRIPTION(1075, "Owner already has an active subscription", HttpStatus.CONFLICT),
 
+    INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
     NOTIFICATION_NOT_FOUND(9994, "Notification not found", HttpStatus.NOT_FOUND),
     OWNER_NOT_FOUND(9995, "Owner not found", HttpStatus.NOT_FOUND),

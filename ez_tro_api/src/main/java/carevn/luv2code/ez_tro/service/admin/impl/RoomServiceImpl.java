@@ -7,10 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +15,7 @@ import org.springframework.util.StringUtils;
 
 import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
-import carevn.luv2code.ez_tro.dto.response.MeterReadingPrevDTO;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
-import carevn.luv2code.ez_tro.dto.response.RoomResponse;
+import carevn.luv2code.ez_tro.dto.response.*;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
@@ -489,6 +483,105 @@ public class RoomServiceImpl implements RoomService {
         //        dto.setPaymentHistory(history);
 
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomPeriodSummaryResponse> getRoomsSummaryByBoardingHouseAndPeriod(
+            Integer boardingHouseId,
+            Integer month, // 1-12
+            Integer year) {
+
+        // Validate input
+        if (month < 1 || month > 12 || year < 2000 || year > 2100) {
+            throw new AppException(ErrorCode.INVALID_PERIOD);
+        }
+
+        // Kiểm tra quyền
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin()) {
+            BoardingHouse bh = boardingHouseRepository
+                    .findById(boardingHouseId)
+                    .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+            if (!bh.getOwner().getId().equals(safe.getId())) {
+                throw new AppException(ErrorCode.ACCESS_DENIED);
+            }
+        }
+
+        // Lấy tất cả phòng của boarding house (kể cả phòng trống)
+        List<Room> rooms = roomRepository.findByBoardingHouseId(boardingHouseId);
+
+        // Ngày hiện tại để so sánh
+        LocalDate today = LocalDate.now();
+
+        return rooms.stream()
+                .map(room -> {
+
+                    // 1. Số người ở hiện tại (tính đến thời điểm hiện tại)
+                    long currentOccupants = room.getContracts().stream()
+                            .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                            .filter(c -> !today.isBefore(c.getStartDate()
+                                    .toInstant()
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()))
+                            .filter(c -> c.getEndDate() == null
+                                    || !today.isAfter(c.getEndDate()
+                                            .toInstant()
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .toLocalDate()))
+                            .count();
+
+                    // 2. Tìm hợp đồng active hiện tại
+                    Contract activeContract = room.getContracts().stream()
+                            .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+                            .filter(c -> !today.isBefore(c.getStartDate()
+                                    .toInstant()
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()))
+                            .filter(c -> c.getEndDate() == null
+                                    || !today.isAfter(c.getEndDate()
+                                            .toInstant()
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .toLocalDate()))
+                            .max(Comparator.comparing(Contract::getStartDate))
+                            .orElse(null);
+
+                    // 3. Kiểm tra bill trong kỳ (tháng/năm)
+                    boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month, year);
+
+                    Bill latestBill = null;
+                    if (hasBillThisPeriod) {
+                        // Nếu cần lấy thông tin bill chi tiết (status, amount, ...)
+                        // Bạn có thể thêm method findFirst... như mình gợi ý trước đó
+                        // Hiện tại giả sử chỉ cần biết có/không, nếu cần thì thêm sau
+                        // latestBill = billRepository.findFirstBy... (tùy chọn)
+                    }
+
+                    // 4. Xác định periodStatus
+                    String periodStatus;
+                    if (activeContract == null) {
+                        periodStatus = "Phòng trống";
+                    } else if (!hasBillThisPeriod) {
+                        periodStatus = "Chưa có HĐ";
+                    } else {
+                        // Nếu có bill → mặc định "Đã tạo HĐ"
+                        // Nếu bạn muốn phân biệt "Đã thanh toán" hoặc "Quá hạn"
+                        // cần lấy latestBill → tạm thời comment phần quá hạn như code gốc
+                        periodStatus = "Đã tạo HĐ";
+                    }
+
+                    return RoomPeriodSummaryResponse.builder()
+                            .roomId(room.getId())
+                            .roomNumber(room.getRoomNumber())
+                            .floorNumber(room.getFloorNumber())
+                            .currentOccupants((int) currentOccupants)
+                            .roomStatus(room.getStatus().name())
+                            .periodStatus(periodStatus)
+                            .hasBillThisPeriod(hasBillThisPeriod)
+                            .billStatus(null) // nếu không lấy bill chi tiết thì để null
+                            .billAmount(null) // nếu không lấy bill chi tiết thì để null
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
