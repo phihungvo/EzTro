@@ -210,19 +210,19 @@
   :global(.ant-pagination) {
     margin-top: 14px !important;
     color: var(--st-muted);
-  }
+}
 
-  :global(.ant-pagination-item),
-  :global(.ant-pagination-prev),
-  :global(.ant-pagination-next) {
+:global(.ant-pagination-item),
+:global(.ant-pagination-prev),
+:global(.ant-pagination-next) {
     background: rgba(18, 22, 33, 0.7) !important;
     border: 1px solid var(--st-border) !important;
-    margin: 0 4px !important;
+  margin: 0 4px !important;
     border-radius: 10px !important;
     transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
-  }
+}
 
-  :global(.ant-pagination-item a) {
+:global(.ant-pagination-item a) {
     color: var(--st-muted) !important;
   }
 
@@ -231,19 +231,19 @@
   :global(.ant-pagination-next:hover) {
     border-color: rgba(0, 245, 233, 0.22) !important;
     transform: translateY(-1px);
-  }
+}
 
-  :global(.ant-pagination-item-active) {
+:global(.ant-pagination-item-active) {
     background: rgba(0, 245, 233, 0.12) !important;
     border-color: rgba(0, 245, 233, 0.35) !important;
-  }
+}
 
-  :global(.ant-pagination-item-active a) {
+:global(.ant-pagination-item-active a) {
     color: rgba(255, 255, 255, 0.95) !important;
-  }
+}
 
-  :global(.ant-pagination-prev button),
-  :global(.ant-pagination-next button) {
+:global(.ant-pagination-prev button),
+:global(.ant-pagination-next button) {
     color: var(--st-muted) !important;
   }
 
