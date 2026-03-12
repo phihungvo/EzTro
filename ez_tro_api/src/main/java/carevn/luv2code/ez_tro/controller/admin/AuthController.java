@@ -5,6 +5,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.AuthRequest;
+import carevn.luv2code.ez_tro.dto.requests.GoogleLoginRequest;
 import carevn.luv2code.ez_tro.dto.requests.LogoutRequest;
 import carevn.luv2code.ez_tro.dto.requests.RegisterRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
@@ -41,6 +42,16 @@ public class AuthController {
         return ApiResponse.<AuthResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Register successful")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/google")
+    public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        AuthResponse response = authService.googleLogin(request);
+        return ApiResponse.<AuthResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Login successful")
                 .result(response)
                 .build();
     }

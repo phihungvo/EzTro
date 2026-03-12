@@ -44,6 +44,7 @@ public class SecurityConfig {
                         // ✅ Cho phép API public khác
                         .requestMatchers(
                                 "/api/auth/login",
+                                "/api/auth/google",
                                 "/api/auth/register",
                                 "/api/auth/logout",
                                 "/api/files/**",
