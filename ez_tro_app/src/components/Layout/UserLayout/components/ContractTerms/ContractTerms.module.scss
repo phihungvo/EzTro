@@ -1,20 +1,22 @@
 .contractTerms {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
+  background: radial-gradient(580px 360px at 0% 0%, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
 
   :global {
     .ant-card-head {
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 
       .ant-card-head-title {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 600;
+        color: #e5f0ff;
       }
     }
 
     .ant-card-body {
-      padding: 24px;
+      padding: 20px 22px 22px;
     }
   }
 
@@ -30,9 +32,9 @@
     line-height: 1.6;
 
     .termNumber {
-      font-weight: 700;
-      color: #7c3aed;
-      font-size: 16px;
+      font-weight: 600;
+      color: #7dd3fc;
+      font-size: 15px;
       flex-shrink: 0;
     }
 
@@ -41,14 +43,14 @@
 
       .termTitle {
         font-weight: 600;
-        color: #1f2937;
-        font-size: 15px;
-        margin-bottom: 4px;
+        color: #e5e7eb;
+        font-size: 14px;
+        margin-bottom: 2px;
       }
 
       .termDescription {
-        color: #6b7280;
-        font-size: 14px;
+        color: #9ca3af;
+        font-size: 13px;
       }
     }
   }

@@ -1,29 +1,41 @@
 .servicesCard {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 18px !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  background: radial-gradient(600px 400px at 0% 0%, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.8);
+  overflow: hidden;
 
   :global {
     .ant-card-head {
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 0 20px;
+      min-height: 52px;
+      background: radial-gradient(400px 300px at 0% 0%, rgba(56, 189, 248, 0.14), transparent);
+    }
+
+    .ant-card-head-title {
+      padding: 14px 0;
+      font-weight: 600;
+      font-size: 15px;
+      color: #e5f0ff;
     }
 
     .ant-card-body {
-      padding: 24px;
+      padding: 18px 20px 20px;
     }
   }
 }
 
 .servicesGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 880px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 520px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
