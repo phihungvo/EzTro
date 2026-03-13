@@ -42,8 +42,6 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     Optional<Bill> findTopByRoomIdAndDueDateBeforeOrderByDueDateDesc(
             @Param("roomId") Integer roomId, @Param("endOfPeriod") LocalDate endOfPeriod);
 
-    // Trong BillRepository.java
-
     @Query(
             """
 				SELECT b FROM Bill b
