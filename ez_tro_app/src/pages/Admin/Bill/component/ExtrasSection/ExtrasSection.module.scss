@@ -108,6 +108,23 @@
   grid-template-columns: 1fr 140px 32px;
   gap: 8px;
   align-items: center;
+  background: var(--st-panel-2, rgba(21,27,40,0.8));
+  border: 1px solid var(--st-border, rgba(255,255,255,0.06));
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.extraItem:hover {
+  border-color: var(--st-accent-dim);
+  box-shadow: 0 4px 12px rgba(0,245,233,0.1);
+}
+
+.extraItem {
+  display: grid;
+  grid-template-columns: 1fr 140px 32px;
+  gap: 8px;
+  align-items: center;
 }
 
 .addBtn {

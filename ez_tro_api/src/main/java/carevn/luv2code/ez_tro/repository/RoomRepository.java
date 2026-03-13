@@ -24,4 +24,14 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
 
     @Query("SELECT COUNT(r) FROM Room r WHERE r.boardingHouse.owner.id = :ownerId")
     long countByBoardingHouse_Owner_Id(@Param("ownerId") Integer ownerId);
+
+    @Query(
+            """
+			SELECT r FROM Room r
+			LEFT JOIN FETCH r.contracts c
+			LEFT JOIN FETCH c.tenant t
+			LEFT JOIN FETCH t.user u
+			WHERE r.boardingHouse.id = :boardingHouseId
+			""")
+    List<Room> findByBoardingHouseIdWithContracts(@Param("boardingHouseId") Integer boardingHouseId);
 }

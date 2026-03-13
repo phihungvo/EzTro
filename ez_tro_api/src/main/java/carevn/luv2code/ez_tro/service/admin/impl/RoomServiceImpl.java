@@ -2,6 +2,9 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +20,7 @@ import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.*;
 import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.enums.ServiceType;
@@ -485,11 +489,26 @@ public class RoomServiceImpl implements RoomService {
         return dto;
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Lấy danh sách tóm tắt phòng theo khu nhà trọ và kỳ thanh toán (tháng/năm).
+     * <p>
+     * API này trả về thông tin tất cả phòng trong một khu nhà trọ cụ thể,
+     * bao gồm trạng thái hiện tại, số người ở, hợp đồng active, thông tin người thuê,
+     * và tình trạng hóa đơn trong kỳ tháng/năm được chỉ định.
+     * <p>
+     * - Chỉ chủ nhà trọ (owner) của khu nhà hoặc admin mới được truy cập.
+     * - Dữ liệu hợp đồng được fetch eager qua repository để tránh LazyInitializationException.
+     * - Hóa đơn được lọc dựa trên dueDate (không cần field month/year riêng trong entity Bill).
+     *
+     * @param boardingHouseId ID của khu nhà trọ
+     * @param month           Tháng (1-12)
+     * @param year            Năm (ví dụ: 2025)
+     * @return Danh sách RoomPeriodSummaryResponse chứa thông tin tóm tắt từng phòng
+     * @throws AppException Nếu kỳ không hợp lệ, khu nhà không tồn tại, hoặc không có quyền truy cập
+     */
+    @Transactional
     public List<RoomPeriodSummaryResponse> getRoomsSummaryByBoardingHouseAndPeriod(
-            Integer boardingHouseId,
-            Integer month, // 1-12
-            Integer year) {
+            Integer boardingHouseId, Integer month, Integer year) {
 
         // Validate input
         if (month < 1 || month > 12 || year < 2000 || year > 2100) {
@@ -507,81 +526,243 @@ public class RoomServiceImpl implements RoomService {
             }
         }
 
-        // Lấy tất cả phòng của boarding house (kể cả phòng trống)
-        List<Room> rooms = roomRepository.findByBoardingHouseId(boardingHouseId);
-
-        // Ngày hiện tại để so sánh
+        List<Room> rooms = roomRepository.findByBoardingHouseIdWithContracts(boardingHouseId);
         LocalDate today = LocalDate.now();
 
-        return rooms.stream()
-                .map(room -> {
+        List<RoomPeriodSummaryResponse> responses = new ArrayList<>();
 
-                    // 1. Số người ở hiện tại (tính đến thời điểm hiện tại)
-                    long currentOccupants = room.getContracts().stream()
-                            .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                            .filter(c -> !today.isBefore(c.getStartDate()
-                                    .toInstant()
-                                    .atZone(java.time.ZoneId.systemDefault())
-                                    .toLocalDate()))
-                            .filter(c -> c.getEndDate() == null
-                                    || !today.isAfter(c.getEndDate()
-                                            .toInstant()
-                                            .atZone(java.time.ZoneId.systemDefault())
-                                            .toLocalDate()))
-                            .count();
+        for (Room room : rooms) {
 
-                    // 2. Tìm hợp đồng active hiện tại
-                    Contract activeContract = room.getContracts().stream()
-                            .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                            .filter(c -> !today.isBefore(c.getStartDate()
-                                    .toInstant()
-                                    .atZone(java.time.ZoneId.systemDefault())
-                                    .toLocalDate()))
-                            .filter(c -> c.getEndDate() == null
-                                    || !today.isAfter(c.getEndDate()
-                                            .toInstant()
-                                            .atZone(java.time.ZoneId.systemDefault())
-                                            .toLocalDate()))
-                            .max(Comparator.comparing(Contract::getStartDate))
-                            .orElse(null);
+            // Lấy danh sách hợp đồng active hiện tại
+            List<Contract> activeContracts = new ArrayList<>();
 
-                    // 3. Kiểm tra bill trong kỳ (tháng/năm)
-                    boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month, year);
+            for (Contract c : room.getContracts()) {
+                if (c.getStatus() == ContractStatus.ACTIVE && isActiveContract(c, today)) {
+                    activeContracts.add(c);
+                }
+            }
 
-                    Bill latestBill = null;
-                    if (hasBillThisPeriod) {
-                        // Nếu cần lấy thông tin bill chi tiết (status, amount, ...)
-                        // Bạn có thể thêm method findFirst... như mình gợi ý trước đó
-                        // Hiện tại giả sử chỉ cần biết có/không, nếu cần thì thêm sau
-                        // latestBill = billRepository.findFirstBy... (tùy chọn)
-                    }
+            long currentOccupants = activeContracts.size();
 
-                    // 4. Xác định periodStatus
-                    String periodStatus;
-                    if (activeContract == null) {
-                        periodStatus = "Phòng trống";
-                    } else if (!hasBillThisPeriod) {
-                        periodStatus = "Chưa có HĐ";
+            // Hợp đồng active mới nhất
+            Contract activeContract = null;
+            for (Contract c : activeContracts) {
+                if (activeContract == null || c.getStartDate().after(activeContract.getStartDate())) {
+                    activeContract = c;
+                }
+            }
+
+            // Kiểm tra có bill trong kỳ không
+            boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month, year);
+
+            String billStatus = null;
+            BigDecimal billAmount = null;
+            String dueDateStr = null;
+            boolean isOverdue = false;
+
+            if (hasBillThisPeriod) {
+
+                List<Bill> billsInPeriod = billRepository.findByRoomAndPeriod(room.getId(), month, year);
+
+                if (!billsInPeriod.isEmpty()) {
+
+                    Bill bill = billsInPeriod.get(0);
+
+                    if (bill.getStatus() != null) {
+                        billStatus = bill.getStatus().name();
                     } else {
-                        // Nếu có bill → mặc định "Đã tạo HĐ"
-                        // Nếu bạn muốn phân biệt "Đã thanh toán" hoặc "Quá hạn"
-                        // cần lấy latestBill → tạm thời comment phần quá hạn như code gốc
-                        periodStatus = "Đã tạo HĐ";
+                        billStatus = "UNKNOWN";
                     }
 
-                    return RoomPeriodSummaryResponse.builder()
-                            .roomId(room.getId())
-                            .roomNumber(room.getRoomNumber())
-                            .floorNumber(room.getFloorNumber())
-                            .currentOccupants((int) currentOccupants)
-                            .roomStatus(room.getStatus().name())
-                            .periodStatus(periodStatus)
-                            .hasBillThisPeriod(hasBillThisPeriod)
-                            .billStatus(null) // nếu không lấy bill chi tiết thì để null
-                            .billAmount(null) // nếu không lấy bill chi tiết thì để null
-                            .build();
-                })
-                .collect(Collectors.toList());
+                    billAmount = bill.getAmount();
+
+                    if (bill.getDueDate() != null) {
+
+                        dueDateStr = bill.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+                        if (BillStatus.UNPAID.equals(bill.getStatus())
+                                && bill.getDueDate().isBefore(today)) {
+                            isOverdue = true;
+                        }
+                    }
+                }
+            }
+
+            // Thông tin tenant & hợp đồng
+            String tenantName = null;
+            String tenantPhone = null;
+            String contractEndDate = "Vô thời hạn";
+            Integer monthsRemaining = null;
+
+            if (activeContract != null) {
+
+                Tenant tenant = activeContract.getTenant();
+
+                if (tenant != null && tenant.getUser() != null) {
+                    tenantName = tenant.getUser().getFullName();
+                    tenantPhone = tenant.getUser().getPhoneNumber();
+                }
+
+                if (activeContract.getEndDate() != null) {
+
+                    LocalDate endDate = toLocalDate(activeContract.getEndDate());
+
+                    if (endDate != null) {
+
+                        contractEndDate = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+                        long months = ChronoUnit.MONTHS.between(today, endDate);
+
+                        if (months > 0) {
+                            monthsRemaining = (int) months;
+                        } else {
+                            monthsRemaining = 0;
+                        }
+                    }
+                }
+            }
+
+            // Xác định periodStatus
+            String periodStatus;
+
+            if (activeContract == null) {
+                periodStatus = "Phòng trống";
+            } else if (!hasBillThisPeriod) {
+                periodStatus = "Chưa có HĐ";
+            } else if (isOverdue) {
+                periodStatus = "Quá hạn thanh toán";
+            } else if (BillStatus.PAID.name().equals(billStatus)) {
+                periodStatus = "Đã thanh toán";
+            } else {
+                periodStatus = "Đã tạo HĐ";
+            }
+
+            RoomPeriodSummaryResponse response = RoomPeriodSummaryResponse.builder()
+                    .roomId(room.getId())
+                    .roomNumber(room.getRoomNumber())
+                    .floorNumber(room.getFloorNumber())
+                    .currentOccupants((int) currentOccupants)
+                    .roomStatus(room.getStatus().name())
+                    .periodStatus(periodStatus)
+                    .hasBillThisPeriod(hasBillThisPeriod)
+                    .billStatus(billStatus)
+                    .billAmount(billAmount)
+                    .dueDate(dueDateStr)
+                    .tenantName(tenantName)
+                    .tenantPhone(tenantPhone)
+                    .contractEndDate(contractEndDate)
+                    .monthsRemaining(monthsRemaining)
+                    .build();
+
+            responses.add(response);
+        }
+
+        return responses;
+        //        return rooms.stream()
+        //                .map(room -> {
+        //
+        //                    // Lấy danh sách hợp đồng active hiện tại
+        //                    List<Contract> activeContracts = room.getContracts().stream()
+        //                            .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+        //                            .filter(c -> isActiveContract(c, today))
+        //                            .toList();
+        //
+        //                    long currentOccupants = activeContracts.size();
+        //
+        //                    // Hợp đồng active mới nhất
+        //                    Contract activeContract = activeContracts.stream()
+        //                            .max(Comparator.comparing(Contract::getStartDate))
+        //                            .orElse(null);
+        //
+        //                    // Kiểm tra có bill trong kỳ không
+        //                    boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(),
+        // month, year);
+        //
+        //                    // Lấy bill mới nhất trong kỳ (nếu có)
+        //                    String billStatus = null;
+        //                    BigDecimal billAmount = null;
+        //                    String dueDateStr = null;
+        //                    boolean isOverdue = false;
+        //
+        //                    if (hasBillThisPeriod) {
+        //                        // Lấy bill mới nhất (giả sử đã order by createdAt DESC trong query)
+        //                        List<Bill> billsInPeriod = billRepository.findByRoomAndPeriod(room.getId(), month,
+        // year);
+        //
+        //                        if (!billsInPeriod.isEmpty()) {
+        //                            Bill bill = billsInPeriod.get(0); // bill mới nhất
+        //
+        //                            billStatus =
+        //                                    bill.getStatus() != null ? bill.getStatus().name() : "UNKNOWN";
+        //                            billAmount = bill.getAmount();
+        //
+        //                            // dueDate đã là LocalDate → không cần convert phức tạp
+        //                            if (bill.getDueDate() != null) {
+        //                                dueDateStr =
+        // bill.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        //                                isOverdue = BillStatus.UNPAID.equals(bill.getStatus())
+        //                                        && bill.getDueDate().isBefore(today);
+        //                            }
+        //                        }
+        //                    }
+        //
+        //                    // Thông tin tenant & hợp đồng
+        //                    String tenantName = null;
+        //                    String tenantPhone = null;
+        //                    String contractEndDate = "Vô thời hạn";
+        //                    Integer monthsRemaining = null;
+        //
+        //                    if (activeContract != null) {
+        //                        Tenant tenant = activeContract.getTenant();
+        //                        if (tenant != null && tenant.getUser() != null) {
+        //                            tenantName = tenant.getUser().getFullName();
+        //                            tenantPhone = tenant.getUser().getPhoneNumber();
+        //                        }
+        //
+        //                        if (activeContract.getEndDate() != null) {
+        //                            LocalDate endDate = toLocalDate(activeContract.getEndDate());
+        //                            if (endDate != null) {
+        //                                contractEndDate = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        //
+        //                                // Tính số tháng còn lại (chỉ dương)
+        //                                long months = ChronoUnit.MONTHS.between(today, endDate);
+        //                                monthsRemaining = months > 0 ? (int) months : 0;
+        //                            }
+        //                        }
+        //                    }
+        //
+        //                    // Xác định periodStatus chi tiết
+        //                    String periodStatus;
+        //                    if (activeContract == null) {
+        //                        periodStatus = "Phòng trống";
+        //                    } else if (!hasBillThisPeriod) {
+        //                        periodStatus = "Chưa có HĐ";
+        //                    } else if (isOverdue) {
+        //                        periodStatus = "Quá hạn thanh toán";
+        //                    } else if (BillStatus.PAID.name().equals(billStatus)) {
+        //                        periodStatus = "Đã thanh toán";
+        //                    } else {
+        //                        periodStatus = "Đã tạo HĐ";
+        //                    }
+        //
+        //                    return RoomPeriodSummaryResponse.builder()
+        //                            .roomId(room.getId())
+        //                            .roomNumber(room.getRoomNumber())
+        //                            .floorNumber(room.getFloorNumber())
+        //                            .currentOccupants((int) currentOccupants)
+        //                            .roomStatus(room.getStatus().name())
+        //                            .periodStatus(periodStatus)
+        //                            .hasBillThisPeriod(hasBillThisPeriod)
+        //                            .billStatus(billStatus)
+        //                            .billAmount(billAmount)
+        //                            .dueDate(dueDateStr) // thêm field này vào DTO nếu cần
+        //                            .tenantName(tenantName)
+        //                            .tenantPhone(tenantPhone)
+        //                            .contractEndDate(contractEndDate)
+        //                            .monthsRemaining(monthsRemaining)
+        //                            .build();
+        //                })
+        //                .toList();
     }
 
     @Override
@@ -654,5 +835,29 @@ public class RoomServiceImpl implements RoomService {
                                 .isBefore(today))
                 .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
                 .orElse(null);
+    }
+
+    private boolean isActiveContract(Contract c, LocalDate today) {
+
+        LocalDate startDate = toLocalDate(c.getStartDate());
+        LocalDate endDate = toLocalDate(c.getEndDate());
+
+        if (startDate == null) {
+            return false;
+        }
+
+        if (today.isBefore(startDate)) {
+            return false;
+        }
+
+        if (endDate != null && today.isAfter(endDate)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date == null ? null : new java.sql.Date(date.getTime()).toLocalDate();
     }
 }

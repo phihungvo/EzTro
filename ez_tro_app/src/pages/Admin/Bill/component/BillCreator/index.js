@@ -151,7 +151,7 @@ export default function InvoiceCreator() {
                                     flex: 1,
                                     padding: "12px 18px",
                                     background: "none",
-                                    border: "1px solid var(--border-mid)",
+                                    // border: "1px solid var(--border-mid)",
                                     borderRadius: 3,
                                     color: "var(--text-faint)",
                                     fontSize: 13,
