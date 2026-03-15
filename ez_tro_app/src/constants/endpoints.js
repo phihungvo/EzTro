@@ -8,7 +8,7 @@ const API_ENDPOINTS = {
     },
     FILE: {
         UPLOAD: `${BASE_URL}/files/upload`,
-        UPLOAD_CONTRACT: (contractId) =>  `${BASE_URL}/files/upload/contract/${contractId}`,
+        UPLOAD_CONTRACT: (contractId) => `${BASE_URL}/files/upload/contract/${contractId}`,
         CHECK_EXISTED: (file) =>
             `${BASE_URL}/storage/checkFileExists/${file.name}`,
         PRESIGNED_URL: (fileId) => `${BASE_URL}/files/${fileId}/presigned-url`,
@@ -32,7 +32,7 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/user/createUser`,
         UPDATE: (userId) => `${BASE_URL}/user/${userId}`,
         DELETE: `${BASE_URL}/user`,
-        UPLOAD_FILE: (userId) =>  `${BASE_URL}/user/upload/${userId}`,
+        UPLOAD_FILE: (userId) => `${BASE_URL}/user/upload/${userId}`,
     },
     ROLE: {
         GET_ALL: `${BASE_URL}/roles`,
@@ -73,6 +73,8 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/rooms`,
         UPDATE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
         DELETE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
+        ROOMS_PERIOD_SUMMARY: (boardingHouseId, month, year) =>
+            `${BASE_URL}/rooms/boarding-houses/${boardingHouseId}/rooms-period-summary?month=${month}&year=${year}`,
     },
     TENANTS: {
         CREATE: `${BASE_URL}/tenants`,
@@ -145,7 +147,7 @@ const API_ENDPOINTS = {
 
     // FOR USER ROLE
     DASHBOARD: {
-        SUMMARY:  `${BASE_URL}/user/dashboard/summary`,
+        SUMMARY: `${BASE_URL}/user/dashboard/summary`,
         GET_MY_BILL: `${BASE_URL}/user/bills`,
     },
     MY_ROOM: {

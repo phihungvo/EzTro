@@ -1,41 +1,124 @@
+import { useEffect, useState, useCallback } from "react";
 import styles from "./RoomSelector.module.scss";
-import { MOCK_ROOMS as RAW_MOCK_ROOMS, fmt } from "../data.js";
+import { message } from "antd";
+import apiClient from "~/service/api/api";
+import { getAllBoardingHousesNoPaged } from "~/service/admin/boarding_house";
+import { getAllRoomPeriodSummary } from "~/service/admin/room";
 
-// Fallback để tránh crash nếu import bị lỗi trong quá trình hot-reload
-const MOCK_ROOMS = RAW_MOCK_ROOMS || {};
+export default function RoomSelector({
+                                         selectedRoom,
+                                         month,
+                                         year,
+                                         onSelectRoom,
+                                         onMonthChange,
+                                         onYearChange,
+                                     }) {
+    const [boardingHouses, setBoardingHouses] = useState([]);
+    const [boardingHouseId, setBoardingHouseId] = useState("");
+    const [rooms, setRooms] = useState([]); // dữ liệu từ API
+    const [loadingRooms, setLoadingRooms] = useState(false);
 
-const INVOICED_ROOMS = ["103", "302"];
+    // Fetch danh sách khu nhà trọ khi mount
+    useEffect(() => {
+        const fetchBoardingHouses = async () => {
+            try {
+                const data = await getAllBoardingHousesNoPaged();
+                setBoardingHouses(data || []);
+            } catch (err) {
+                console.error("Fetch boarding houses failed", err);
+                message.error("Không thể tải danh sách khu nhà trọ");
+            }
+        };
+        fetchBoardingHouses();
+    }, []);
 
-export default function RoomSelector({ selectedRoom, month, year, onSelectRoom, onMonthChange, onYearChange }) {
-    const roomData = MOCK_ROOMS[selectedRoom];
+    // Fetch danh sách phòng theo kỳ
+    const fetchRoomsByPeriod = useCallback(async () => {
+        if (!boardingHouseId || !month || !year) {
+            setRooms([]);
+            return;
+        }
 
-    const getHistoryBadge = (r) => {
-        if (r.months_left <= 2) return { cls: styles.badgeRed, text: "HĐ sắp HH" };
-        if (r.history === "late") return { cls: styles.badgeAmber, text: "Hay trễ hạn" };
+        setLoadingRooms(true);
+        try {
+            const response = await getAllRoomPeriodSummary(boardingHouseId, month, year);
+
+            // Kiểm tra response an toàn
+            if (response && response.code === 200 && Array.isArray(response.result)) {
+                setRooms(response.result);
+
+                // Reset nếu phòng đang chọn không còn hợp lệ
+                if (selectedRoom && !response.result.some((r) => r.roomNumber === selectedRoom)) {
+                    onSelectRoom(null, null);
+                }
+            } else {
+                setRooms([]);
+                message.warning("Không có dữ liệu phòng cho kỳ này");
+            }
+        } catch (err) {
+            console.error("Fetch rooms period summary failed", err);
+            message.error("Lỗi khi tải danh sách phòng: " + (err.message || "Unknown error"));
+            setRooms([]);
+        } finally {
+            setLoadingRooms(false);
+        }
+    }, [boardingHouseId, month, year, selectedRoom, onSelectRoom]);
+
+    useEffect(() => {
+        fetchRoomsByPeriod();
+    }, [fetchRoomsByPeriod]);
+
+    // Badge trạng thái hợp đồng
+    const getHistoryBadge = (room) => {
+        if (room.monthsRemaining != null && room.monthsRemaining <= 2) {
+            return { cls: styles.badgeRed, text: "HĐ sắp HH" };
+        }
         return { cls: styles.badgeGreen, text: "Đúng hạn" };
     };
+
+    // Handler chọn phòng từ grid card
+    const handleSelectRoomLocal = useCallback((roomNumber) => {
+        const selected = rooms.find((r) => r.roomNumber === roomNumber);
+        if (selected) {
+            onSelectRoom(roomNumber, selected); // truyền lên parent
+        } else {
+            onSelectRoom(null, null);
+        }
+    }, [rooms, onSelectRoom]);
+
+    // Lấy dữ liệu phòng đang chọn
+    const selectedRoomData = rooms.find((r) => r.roomNumber === selectedRoom);
 
     return (
         <div className={styles.card}>
             <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>① Thông tin phòng &amp; hợp đồng</span>
+                <span className={styles.cardTitle}>① Thông tin phòng & hợp đồng</span>
                 <span className={styles.chip}>
           Tháng <strong>{month}/{year}</strong>
         </span>
             </div>
 
             <div className={styles.cardBody}>
-                {/* Period + Month/Year */}
-                <div className={styles.periodRow}>
-                    <div className={styles.fieldGroup}>
-                        <label className={styles.label}>Kỳ hoá đơn</label>
-                        <div className={styles.segmented}>
-                            <button className={`${styles.segBtn} ${styles.segActive}`}>Hàng tháng</button>
-                            <button className={styles.segBtn}>Tùy chỉnh</button>
-                        </div>
-                    </div>
+                {/* Chọn khu nhà trọ */}
+                <div className={styles.fieldGroup} style={{ paddingBottom: 20 }}>
+                    <label className={styles.label}>
+                        Khu nhà trọ <span className={styles.req}>*</span>
+                    </label>
+                    <select
+                        className={styles.select}
+                        value={boardingHouseId}
+                        onChange={(e) => setBoardingHouseId(e.target.value)}
+                    >
+                        <option value="">-- Chọn khu nhà trọ --</option>
+                        {boardingHouses.map((bh) => (
+                            <option key={bh.id} value={bh.id}>
+                                {bh.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
+                {/* Tháng / Năm */}
                 <div className={styles.row2}>
                     <div className={styles.fieldGroup}>
                         <label className={styles.label}>Tháng <span className={styles.req}>*</span></label>
@@ -57,72 +140,103 @@ export default function RoomSelector({ selectedRoom, month, year, onSelectRoom, 
                 <div className={styles.sep} />
                 <div className={styles.sectionLabel}>Chọn phòng</div>
 
-                {INVOICED_ROOMS.includes(selectedRoom) && (
+                {/* Alert nếu phòng đã có hóa đơn */}
+                {selectedRoomData?.hasBillThisPeriod && (
                     <div className={styles.alertWarn}>
                         <span>⚠️</span>
-                        <span>Phòng này đã có hoá đơn tháng <strong>{month}/{year}</strong>. Bạn có muốn tạo hoá đơn bổ sung?</span>
+                        <span>
+              Phòng này đã có hoá đơn tháng <strong>{month}/{year}</strong>. Bạn có muốn tạo hoá đơn bổ sung?
+            </span>
                     </div>
                 )}
 
-                {/* Room grid */}
-                <div className={styles.roomGrid}>
-                    {Object.entries(MOCK_ROOMS).map(([id, r]) => {
-                        const isSelected = selectedRoom === id;
-                        const isEmpty = r.status === "empty";
-                        const isInvoiced = r.status === "invoiced";
-
-                        return (
-                            <div
-                                key={id}
-                                className={`${styles.roomCard} ${isSelected ? styles.selected : ""} ${isEmpty ? styles.empty : ""}`}
-                                onClick={() => !isEmpty && onSelectRoom(id)}
-                            >
-                <span
-                    className={`${styles.statusDot} ${
-                        isEmpty ? styles.dotEmpty : isInvoiced ? styles.dotInvoiced : styles.dotAvailable
-                    }`}
-                />
-                                <div className={styles.roomNum}>P.{id}</div>
-                                <div className={styles.roomMeta}>
-                                    T{r.floor} · {isEmpty ? "Trống" : `${r.people} người`}
-                                </div>
+                {/* Loading / Empty / Room Grid */}
+                {boardingHouseId && (
+                    <>
+                        {loadingRooms ? (
+                            <div className={styles.loading}>Đang tải danh sách phòng...</div>
+                        ) : rooms.length === 0 ? (
+                            <div style={{ color: "#999", textAlign: "center", padding: "20px" }}>
+                                Không có phòng nào trong khu này cho kỳ {month}/{year}
                             </div>
-                        );
-                    })}
-                </div>
+                        ) : (
+                            <>
+                                <div className={styles.roomGrid}>
+                                    {rooms.map((room) => {
+                                        const isSelected = selectedRoom === room.roomNumber;
+                                        const isEmpty = room.periodStatus === "Phòng trống" && room.currentOccupants === 0;
+                                        const isInvoiced = room.hasBillThisPeriod;
 
-                {/* Legend */}
-                <div className={styles.legend}>
-                    <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.dotAvailable}`} />Chưa có HĐ</span>
-                    <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.dotInvoiced}`} />Đã tạo HĐ</span>
-                    <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.dotEmpty}`} />Phòng trống</span>
-                </div>
+                                        return (
+                                            <div
+                                                key={room.roomId}
+                                                className={`${styles.roomCard} ${isSelected ? styles.selected : ""} ${isEmpty ? styles.empty : ""}`}
+                                                onClick={() => !isEmpty && handleSelectRoomLocal(room.roomNumber)}
+                                            >
+                        <span
+                            className={`${styles.statusDot} ${
+                                isEmpty ? styles.dotEmpty : isInvoiced ? styles.dotInvoiced : styles.dotAvailable
+                            }`}
+                        />
+                                                <div className={styles.roomNum}>P.{room.roomNumber}</div>
+                                                <div className={styles.roomMeta}>
+                                                    T{room.floorNumber} · {room.currentOccupants} người
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Legend */}
+                                <div className={styles.legend}>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.dotAvailable}`} />Chưa có HĐ
+                  </span>
+                                    <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.dotInvoiced}`} />Đã tạo HĐ
+                  </span>
+                                    <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.dotEmpty}`} />Phòng trống
+                  </span>
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
 
                 {/* Tenant card */}
-                {roomData && roomData.tenant && (
+                {selectedRoomData && (
                     <div className={styles.tenantCard}>
                         <div className={styles.tenantAvatar}>👤</div>
                         <div className={styles.tenantInfo}>
                             <div className={styles.tenantNameRow}>
-                                <span className={styles.tenantName}>{roomData.tenant}</span>
-                                <span className={styles.badgeCyan}>Đang ở</span>
+                <span className={styles.tenantName}>
+                  {selectedRoomData.tenantName || "Chưa có người thuê"}
+                </span>
+                                {selectedRoomData.tenantName && (
+                                    <span className={styles.badgeCyan}>Đang ở</span>
+                                )}
                             </div>
                             <div className={styles.tenantMeta}>
-                                <span>📱 {roomData.phone}</span>
-                                <span>
-                  📋 HĐ: <strong>{roomData.contract}</strong> · Còn{" "}
-                                    <strong
-                                        className={roomData.months_left <= 2 ? styles.textRed : styles.textCyan}
-                                    >
-                    {roomData.months_left} tháng
-                  </strong>
-                </span>
+                                {selectedRoomData.tenantPhone && <span>📱 {selectedRoomData.tenantPhone}</span>}
+                                {selectedRoomData.contractEndDate && (
+                                    <span>
+                    📋 HĐ: <strong>{selectedRoomData.contractEndDate}</strong> · Còn{" "}
+                                        <strong
+                                            className={selectedRoomData.monthsRemaining <= 2 ? styles.textRed : styles.textCyan}
+                                        >
+                      {selectedRoomData.monthsRemaining != null
+                          ? `${selectedRoomData.monthsRemaining} tháng`
+                          : "Vô thời hạn"}
+                    </strong>
+                  </span>
+                                )}
                             </div>
                         </div>
                         <div className={styles.tenantRight}>
-                            <span className={styles.badgeAmber}>{roomData.people} người</span>
-                            <span className={`${getHistoryBadge(roomData).cls}`}>
-                {getHistoryBadge(roomData).text}
+                            <span className={styles.badgeAmber}>{selectedRoomData.currentOccupants} người</span>
+                            <span className={`${getHistoryBadge(selectedRoomData).cls}`}>
+                {getHistoryBadge(selectedRoomData).text}
               </span>
                         </div>
                     </div>

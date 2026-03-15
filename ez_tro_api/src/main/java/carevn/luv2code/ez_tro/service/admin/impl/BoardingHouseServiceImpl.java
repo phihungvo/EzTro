@@ -123,6 +123,14 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
     }
 
     @Override
+    public List<BoardingHouseResponse> getAllForOwner() {
+        User user = SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+
+        return List.of();
+    }
+
+    @Override
     public Page<BoardingHouseResponse> getAllBoardingHousesPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         return boardingHouseRepository.findAll(pageRequest).map(boardingHouseMapper::toResponse);
