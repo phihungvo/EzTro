@@ -909,21 +909,60 @@ public class RoomServiceImpl implements RoomService {
 
         LocalDate today = LocalDate.now();
 
-        return room.getContracts().stream()
-                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                .filter(c -> !c.getStartDate()
-                        .toInstant()
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toLocalDate()
-                        .isAfter(today)) // startDate <= today
-                .filter(c -> c.getEndDate() == null
-                        || !c.getEndDate()
-                                .toInstant()
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                                .isBefore(today))
-                .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
-                .orElse(null);
+        Contract latestContract = null;
+
+        for (Contract c : room.getContracts()) {
+
+            if (c.getStatus() != ContractStatus.ACTIVE) {
+                continue;
+            }
+
+            //            LocalDate startDate =
+            //                    c.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            LocalDate startDate = toLocalDate(c.getStartDate());
+
+            if (startDate.isAfter(today)) {
+                continue;
+            }
+
+            if (c.getEndDate() != null) {
+                //                LocalDate endDate = c.getEndDate()
+                //                        .toInstant()
+                //                        .atZone(ZoneId.systemDefault())
+                //                        .toLocalDate();
+                LocalDate endDate = toLocalDate(c.getEndDate());
+
+                if (endDate.isBefore(today)) {
+                    continue;
+                }
+            }
+
+            if (latestContract == null
+                    || c.getStartDate()
+                            .toInstant()
+                            .isAfter(latestContract.getStartDate().toInstant())) {
+                latestContract = c;
+            }
+        }
+
+        return latestContract;
+
+        //        return room.getContracts().stream()
+        //                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+        //                .filter(c -> !c.getStartDate()
+        //                        .toInstant()
+        //                        .atZone(java.time.ZoneId.systemDefault())
+        //                        .toLocalDate()
+        //                        .isAfter(today)) // startDate <= today
+        //                .filter(c -> c.getEndDate() == null
+        //                        || !c.getEndDate()
+        //                                .toInstant()
+        //                                .atZone(java.time.ZoneId.systemDefault())
+        //                                .toLocalDate()
+        //                                .isBefore(today))
+        //                .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
+        //                .orElse(null);
     }
 
     private boolean isActiveContract(Contract c, LocalDate today) {

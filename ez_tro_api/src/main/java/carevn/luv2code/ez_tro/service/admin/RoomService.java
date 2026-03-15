@@ -7,10 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomContextResponse;
-import carevn.luv2code.ez_tro.dto.response.RentedRoomDetailResponse;
-import carevn.luv2code.ez_tro.dto.response.RoomPeriodSummaryResponse;
-import carevn.luv2code.ez_tro.dto.response.RoomResponse;
+import carevn.luv2code.ez_tro.dto.response.*;
 
 public interface RoomService {
     RoomResponse create(RoomRequest request);
