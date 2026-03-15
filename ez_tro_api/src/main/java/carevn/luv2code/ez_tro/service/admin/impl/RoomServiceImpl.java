@@ -553,7 +553,10 @@ public class RoomServiceImpl implements RoomService {
             }
 
             // Kiểm tra có bill trong kỳ không
-            boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month, year);
+            //            boolean hasBillThisPeriod = billRepository.existsByRoomIdAndMonthAndYear(room.getId(), month,
+            // year);
+            Long count = billRepository.countByRoomIdAndMonthAndYear(room.getId(), month, year);
+            boolean hasBillThisPeriod = count != null && count > 0;
 
             String billStatus = null;
             BigDecimal billAmount = null;

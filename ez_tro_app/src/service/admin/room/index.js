@@ -16,6 +16,17 @@ export const getAllRooms = async ({page, pageSize}) => {
     }
 };
 
+export const getAllRoomPeriodSummary = async (boardingHouseId, month, year) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.ROOMS_PERIOD_SUMMARY(boardingHouseId, month, year));
+
+        return response.data;
+    } catch (err) {
+        console.error("Fetch rooms period summary failed", err);
+        message.error("Lỗi khi tải danh sách phòng");
+    }
+};
+
 export const getAllRoomNoPaged = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_NO_PAGING);

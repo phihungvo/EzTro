@@ -29,11 +29,40 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     Optional<Bill> findTopByContractOrderByCreatedAtDesc(Contract contract);
 
     // Kiểm tra tồn tại bill trong tháng/năm chỉ định
-    @Query("SELECT COUNT(b) > 0 FROM Bill b " + "WHERE b.room.id = :roomId "
-            + "AND YEAR(b.dueDate) = :year "
-            + "AND MONTH(b.dueDate) = :month")
+    //    @Query("SELECT COUNT(b) > 0 FROM Bill b " + "WHERE b.room.id = :roomId "
+    //            + "AND YEAR(b.dueDate) = :year "
+    //            + "AND MONTH(b.dueDate) = :month")
+    //    boolean existsByRoomIdAndMonthAndYear(
+    //            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
+
+    // Kiểm tra tồn tại bill trong tháng/năm
+    @Query(
+            value =
+                    """
+								SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+								FROM bills b
+								WHERE b.room_id = :roomId
+								AND EXTRACT(YEAR FROM b.due_date) = :year
+								AND EXTRACT(MONTH FROM b.due_date) = :month
+							""",
+            nativeQuery = true)
     boolean existsByRoomIdAndMonthAndYear(
-            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
+            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
+
+    // Tìm bill trong kỳ (mới nhất trước)
+    @Query(
+            value =
+                    """
+								SELECT * FROM bills b
+								WHERE b.room_id = :roomId
+								AND EXTRACT(YEAR FROM b.due_date) = :year
+								AND EXTRACT(MONTH FROM b.due_date) = :month
+								ORDER BY b.created_at DESC
+								LIMIT 10
+							""",
+            nativeQuery = true)
+    List<Bill> findByRoomAndPeriod(
+            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
 
     // Tìm bill gần nhất trước tháng/năm chỉ định (lấy chỉ số cũ)
     @Query("SELECT b FROM Bill b " + "WHERE b.room.id = :roomId "
@@ -42,24 +71,33 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     Optional<Bill> findTopByRoomIdAndDueDateBeforeOrderByDueDateDesc(
             @Param("roomId") Integer roomId, @Param("endOfPeriod") LocalDate endOfPeriod);
 
-    @Query(
-            """
-				SELECT b FROM Bill b
-				WHERE b.room.id = :roomId
-				AND FUNCTION('MONTH', b.dueDate) = :month
-				AND FUNCTION('YEAR', b.dueDate) = :year
-				ORDER BY b.createdAt DESC
-			""")
-    List<Bill> findByRoomAndPeriod(
-            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
+    //    @Query(
+    //            """
+    //                    	SELECT b FROM Bill b
+    //                    	WHERE b.room.id = :roomId
+    //                    	AND FUNCTION('MONTH', b.dueDate) = :month
+    //                    	AND FUNCTION('YEAR', b.dueDate) = :year
+    //                    	ORDER BY b.createdAt DESC
+    //                    """)
+    //    List<Bill> findByRoomAndPeriod(
+    //            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
 
     // Tìm tất cả bill của một phòng, sắp xếp mới nhất trước
     //    List<Bill> findByRoomIdOrderByYearDescMonthDesc(Integer roomId);
 
     // Đếm số bill trong tháng/năm cụ thể của phòng
-    //    @Query("SELECT COUNT(b) FROM Bill b WHERE b.room.id = :roomId AND b.month = :month AND b.year = :year")
-    //    long countByRoomIdAndMonthAndYear(
-    //            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
+    @Query(
+            value =
+                    """
+				SELECT COUNT(*)
+				FROM bills b
+				WHERE b.room_id = :roomId
+				AND EXTRACT(YEAR FROM b.due_date) = :year
+				AND EXTRACT(MONTH FROM b.due_date) = :month
+			""",
+            nativeQuery = true)
+    Long countByRoomIdAndMonthAndYear(
+            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
 
     // Tìm bill theo contract và tháng/năm (nếu cần)
     //    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.month = :month AND b.year = :year")

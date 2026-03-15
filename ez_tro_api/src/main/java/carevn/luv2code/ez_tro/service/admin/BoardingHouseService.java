@@ -23,5 +23,7 @@ public interface BoardingHouseService {
 
     Page<BoardingHouseResponse> getAllPagedByRole(Pageable pageable);
 
+    List<BoardingHouseResponse> getAllForOwner();
+
     Page<BoardingHouseResponse> getAllBoardingHousesPaged(int page, int size);
 }

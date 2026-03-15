@@ -49,16 +49,27 @@ export default function InvoiceCreator() {
         setTimeout(() => setToast(null), 3500);
     }, []);
 
-    const handleSelectRoom = useCallback((id) => {
-        const r = MOCK_ROOMS[id];
-        if (!r || r.status === "empty") return;
-        patch({
-            room: id, roomPrice: r.rent,
-            elecPrev: r.elec_prev, elecNew: Math.round(r.elec_prev * 1.035),
-            waterPrev: r.water_prev, waterNew: Math.round(r.water_prev * 1.015),
-        });
-        if (r.months_left <= 2) showToast(`⚠️ HĐ phòng ${id} còn ${r.months_left} tháng, nhắc gia hạn!`, "warn");
-    }, [patch, showToast]);
+    const handleSelectRoom = useCallback((roomNumber, roomData) => {
+        // const r = MOCK_ROOMS[id];
+        // if (!r || r.status === "empty") return;
+        // patch({
+        //     room: id, roomPrice: r.rent,
+        //     elecPrev: r.elec_prev, elecNew: Math.round(r.elec_prev * 1.035),
+        //     waterPrev: r.water_prev, waterNew: Math.round(r.water_prev * 1.015),
+        // });
+        // if (r.months_left <= 2) showToast(`⚠️ HĐ phòng ${id} còn ${r.months_left} tháng, nhắc gia hạn!`, "warn");
+        // }, [patch, showToast]);
+
+        setState(prev => ({
+            ...prev,
+            room: roomNumber,
+            // roomPrice: roomData.rent,
+            tenantName: roomData?.tenantName || "",
+            tenantPhone: roomData?.tenantPhone || "",
+            monthsRemaining: roomData?.monthsRemaining || 0,
+            contractEndDate: roomData?.contractEndDate || "Vô thời hạn",
+        }))
+    }, []);
 
     // Computed
     const elecTotal = Math.max(0, (state.elecNew - state.elecPrev) * state.elecPrice);
@@ -81,8 +92,8 @@ export default function InvoiceCreator() {
                         month={state.month}
                         year={state.year}
                         onSelectRoom={handleSelectRoom}
-                        onMonthChange={(m) => patch({month: m})}
-                        onYearChange={(y) => patch({year: y})}
+                        onMonthChange={(m) => setState(prev => ({ ...prev, month: m }))}
+                        onYearChange={(y) => setState(prev => ({ ...prev, year: y }))}
                     />
                     <RentSectionCard
                         state={state}
