@@ -68,6 +68,8 @@ const API_ENDPOINTS = {
         FILTER: `${BASE_URL}/rooms/filter`,
         RENTED_ACTIVE: `${BASE_URL}/rooms/rented-active`,
         RENTED_CONTEXT: (roomId) => `${BASE_URL}/rooms/${roomId}/rented-context`,
+        CREATOR_BILL_CONTEXT: (roomId, month, year) =>
+            `${BASE_URL}/rooms/${roomId}/creator-bill-context?month=${month}&year=${year}`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
         CREATE: `${BASE_URL}/rooms`,

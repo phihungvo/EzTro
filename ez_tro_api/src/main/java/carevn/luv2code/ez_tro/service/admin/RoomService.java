@@ -45,6 +45,8 @@ public interface RoomService {
 
     RentedRoomDetailResponse getRentedRoomDetail(Integer roomId, int month, int year);
 
+    CreatorBillContextResponse getCreatorBillContext(Integer roomId, int month, int year);
+
     List<RoomPeriodSummaryResponse> getRoomsSummaryByBoardingHouseAndPeriod(
             Integer boardingHouseId,
             Integer month, // 1-12
