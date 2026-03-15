@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import styles from "./RoomSelector.module.scss";
 import { message } from "antd";
-import apiClient from "~/service/api/api";
 import { getAllBoardingHousesNoPaged } from "~/service/admin/boarding_house";
 import { getAllRoomPeriodSummary } from "~/service/admin/room";
 
@@ -31,6 +30,12 @@ export default function RoomSelector({
         };
         fetchBoardingHouses();
     }, []);
+
+    useEffect(() => {
+        if (!boardingHouseId && boardingHouses.length > 0) {
+            setBoardingHouseId(String(boardingHouses[0].id));
+        }
+    }, [boardingHouses, boardingHouseId]);
 
     // Fetch danh sách phòng theo kỳ
     const fetchRoomsByPeriod = useCallback(async () => {

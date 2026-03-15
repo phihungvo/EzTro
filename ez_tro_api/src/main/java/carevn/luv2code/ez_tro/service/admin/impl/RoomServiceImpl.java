@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.*;
@@ -489,6 +491,90 @@ public class RoomServiceImpl implements RoomService {
         return dto;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CreatorBillContextResponse getCreatorBillContext(Integer roomId, int month, int year) {
+        if (month < 1 || month > 12 || year < 2000 || year > 2100) {
+            throw new AppException(ErrorCode.INVALID_PERIOD);
+        }
+
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        Contract activeContract = getActiveContract(room);
+        if (activeContract == null) {
+            throw new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT);
+        }
+
+        List<Utility> usageBasedUtilities = Optional.ofNullable(room.getRoomUtilities()).orElse(List.of()).stream()
+                .map(RoomUtility::getUtility)
+                .filter(u -> u != null && u.getType() == ServiceType.USAGE_BASED)
+                .filter(u -> u.getIsActive() == null || Boolean.TRUE.equals(u.getIsActive()))
+                .toList();
+
+        Map<Integer, MeterReading> readingsInPeriod =
+                meterReadingRepository.findByRoomIdAndPeriodMonthAndPeriodYear(roomId, month, year).stream()
+                        .filter(r -> r.getUtility() != null && r.getUtility().getId() != null)
+                        .collect(Collectors.toMap(r -> r.getUtility().getId(), r -> r, (a, b) -> a));
+
+        List<CreatorBillMeterItemResponse> meterItems = usageBasedUtilities.stream()
+                .map(utility -> {
+                    MeterReading reading = readingsInPeriod.get(utility.getId());
+                    BigDecimal prevIndex = BigDecimal.ZERO;
+                    BigDecimal currentIndex = null;
+                    BigDecimal unitPrice = utility.getUnitPrice();
+
+                    if (reading != null) {
+                        if (reading.getPreviousIndex() != null) {
+                            prevIndex = reading.getPreviousIndex();
+                        }
+                        currentIndex = reading.getCurrentIndex();
+                        if (reading.getUnitPrice() != null) {
+                            unitPrice = reading.getUnitPrice();
+                        }
+                    } else {
+                        Optional<MeterReading> prevOpt =
+                                meterReadingRepository.findLatestPrevious(roomId, utility.getId(), year, month);
+                        if (prevOpt.isPresent() && prevOpt.get().getCurrentIndex() != null) {
+                            prevIndex = prevOpt.get().getCurrentIndex();
+                        }
+                    }
+
+                    return CreatorBillMeterItemResponse.builder()
+                            .utilityId(utility.getId())
+                            .utilityName(utility.getName())
+                            .unit(utility.getUnit())
+                            .previousIndex(prevIndex)
+                            .currentIndex(currentIndex)
+                            .unitPrice(unitPrice)
+                            .build();
+                })
+                .toList();
+
+        List<CreatorBillUtilityItemResponse> utilityItems = usageBasedUtilities.stream()
+                .map(u -> CreatorBillUtilityItemResponse.builder()
+                        .id(u.getId())
+                        .name(u.getName())
+                        .type(u.getType() != null ? u.getType().name() : null)
+                        .unitPrice(u.getUnitPrice())
+                        .unit(u.getUnit())
+                        .build())
+                .toList();
+
+        return CreatorBillContextResponse.builder()
+                .roomId(room.getId())
+                .roomNumber(room.getRoomNumber())
+                .contractId(activeContract.getId())
+                .rentPrice(activeContract.getRentPrice())
+                .usageBasedUtilities(utilityItems)
+                .meterReadings(meterItems)
+                .build();
+    }
+
     /**
      * Lấy danh sách tóm tắt phòng theo khu nhà trọ và kỳ thanh toán (tháng/năm).
      * <p>
@@ -823,21 +909,60 @@ public class RoomServiceImpl implements RoomService {
 
         LocalDate today = LocalDate.now();
 
-        return room.getContracts().stream()
-                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                .filter(c -> !c.getStartDate()
-                        .toInstant()
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toLocalDate()
-                        .isAfter(today)) // startDate <= today
-                .filter(c -> c.getEndDate() == null
-                        || !c.getEndDate()
-                                .toInstant()
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                                .isBefore(today))
-                .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
-                .orElse(null);
+        Contract latestContract = null;
+
+        for (Contract c : room.getContracts()) {
+
+            if (c.getStatus() != ContractStatus.ACTIVE) {
+                continue;
+            }
+
+            //            LocalDate startDate =
+            //                    c.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            LocalDate startDate = toLocalDate(c.getStartDate());
+
+            if (startDate.isAfter(today)) {
+                continue;
+            }
+
+            if (c.getEndDate() != null) {
+                //                LocalDate endDate = c.getEndDate()
+                //                        .toInstant()
+                //                        .atZone(ZoneId.systemDefault())
+                //                        .toLocalDate();
+                LocalDate endDate = toLocalDate(c.getEndDate());
+
+                if (endDate.isBefore(today)) {
+                    continue;
+                }
+            }
+
+            if (latestContract == null
+                    || c.getStartDate()
+                            .toInstant()
+                            .isAfter(latestContract.getStartDate().toInstant())) {
+                latestContract = c;
+            }
+        }
+
+        return latestContract;
+
+        //        return room.getContracts().stream()
+        //                .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
+        //                .filter(c -> !c.getStartDate()
+        //                        .toInstant()
+        //                        .atZone(java.time.ZoneId.systemDefault())
+        //                        .toLocalDate()
+        //                        .isAfter(today)) // startDate <= today
+        //                .filter(c -> c.getEndDate() == null
+        //                        || !c.getEndDate()
+        //                                .toInstant()
+        //                                .atZone(java.time.ZoneId.systemDefault())
+        //                                .toLocalDate()
+        //                                .isBefore(today))
+        //                .max(Comparator.comparing(c -> c.getStartDate().toInstant())) // lấy hợp đồng mới nhất
+        //                .orElse(null);
     }
 
     private boolean isActiveContract(Contract c, LocalDate today) {

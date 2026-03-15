@@ -1,4 +1,4 @@
-import {useState, useCallback, useId} from "react";
+import {useState, useCallback, useEffect} from "react";
 import Toast from "~/components/Layout/AdminLayout/components/Toast";
 import RoomSelector from "../RoomSelector";
 import RentSectionCard from "../RentSection";
@@ -10,6 +10,19 @@ import PreviewModalCard from "../PreviewModal";
 import {MOCK_ROOMS} from "~/pages/Admin/Bill/component/data";
 import ServicesSection from "~/pages/Admin/Bill/component/ServicesSection";
 import styles from "./BillCreator.module.scss";
+import { getCreatorBillContext } from "~/service/admin/room";
+
+const pad2 = (n) => String(n).padStart(2, "0");
+
+const shiftDateToMonthYear = (dateStr, month, year) => {
+    if (!dateStr || typeof dateStr !== "string") return dateStr;
+    const parts = dateStr.split("-").map((p) => Number(p));
+    if (parts.length !== 3 || parts.some((p) => Number.isNaN(p))) return dateStr;
+    const [, , day] = parts;
+    const lastDay = new Date(year, month, 0).getDate(); // month is 1-based here
+    const safeDay = Math.max(1, Math.min(day, lastDay));
+    return `${year}-${pad2(month)}-${pad2(safeDay)}`;
+};
 
 const SERVICES_CONFIG = {
     wifi: {name: "Internet / WiFi", price: 100000, icon: "📶"},
@@ -21,12 +34,15 @@ const SERVICES_CONFIG = {
 };
 
 const INITIAL = {
-    room: "101", month: 3, year: 2026,
+    room: null,
+    roomId: null,
+    contractId: null,
+    month: 3,
+    year: 2026,
     periodType: "monthly",
     issueDate: "2026-03-07", dueDate: "2026-03-15",
     roomPrice: 3500000, daysInMonth: 31,
-    elecPrev: 3842, elecNew: 3975, elecPrice: 3500,
-    waterPrev: 1024, waterNew: 1039, waterPrice: 15000,
+    meterReadings: [],
     services: {wifi: true, parking: true, cleaning: false, cable: false, trash: false, elevator: false},
     extras: [], extraNextId: 1,
     discountType: "none", discountVal: 0, discountReason: "",
@@ -43,6 +59,15 @@ export default function InvoiceCreator() {
     const [toast, setToast] = useState(null);
 
     const patch = useCallback((updates) => setState(prev => ({...prev, ...updates})), []);
+    const setPeriod = useCallback((nextMonth, nextYear) => {
+        setState((prev) => ({
+            ...prev,
+            month: nextMonth,
+            year: nextYear,
+            issueDate: shiftDateToMonthYear(prev.issueDate, nextMonth, nextYear),
+            dueDate: shiftDateToMonthYear(prev.dueDate, nextMonth, nextYear),
+        }));
+    }, []);
 
     const showToast = useCallback((msg, type = "success") => {
         setToast({msg, type});
@@ -63,6 +88,7 @@ export default function InvoiceCreator() {
         setState(prev => ({
             ...prev,
             room: roomNumber,
+            roomId: roomData?.roomId || null,
             // roomPrice: roomData.rent,
             tenantName: roomData?.tenantName || "",
             tenantPhone: roomData?.tenantPhone || "",
@@ -71,17 +97,69 @@ export default function InvoiceCreator() {
         }))
     }, []);
 
+    useEffect(() => {
+        const fetchContext = async () => {
+            if (!state.roomId || !state.month || !state.year) return;
+            const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
+            if (!resp || resp.code !== 200 || !resp.result) return;
+
+            const ctx = resp.result;
+            const rentPrice = Number(ctx.rentPrice || 0);
+            const meterReadings = Array.isArray(ctx.meterReadings) ? ctx.meterReadings : [];
+
+            setState((prev) => ({
+                ...prev,
+                contractId: ctx.contractId || null,
+                roomPrice: rentPrice,
+                meterReadings: meterReadings.map((m) => ({
+                    utilityId: m.utilityId,
+                    utilityName: m.utilityName,
+                    unit: m.unit,
+                    previousIndex: Number(m.previousIndex || 0),
+                    currentIndex: m.currentIndex == null ? "" : String(m.currentIndex),
+                    unitPrice: Number(m.unitPrice || 0),
+                })),
+            }));
+        };
+        fetchContext();
+    }, [state.roomId, state.month, state.year]);
+
+    const onMeterCurrentChange = useCallback((utilityId, value) => {
+        setState((prev) => ({
+            ...prev,
+            meterReadings: (prev.meterReadings || []).map((r) =>
+                r.utilityId === utilityId ? { ...r, currentIndex: value } : r
+            ),
+        }));
+    }, []);
+
+    const onMeterPriceChange = useCallback((utilityId, value) => {
+        const price = parseFloat(value);
+        setState((prev) => ({
+            ...prev,
+            meterReadings: (prev.meterReadings || []).map((r) =>
+                r.utilityId === utilityId ? { ...r, unitPrice: Number.isFinite(price) ? price : 0 } : r
+            ),
+        }));
+    }, []);
+
     // Computed
-    const elecTotal = Math.max(0, (state.elecNew - state.elecPrev) * state.elecPrice);
-    const waterTotal = Math.max(0, (state.waterNew - state.waterPrev) * state.waterPrice);
+    const meterTotal = (state.meterReadings || []).reduce((sum, r) => {
+        const prev = Number(r.previousIndex || 0);
+        const curr = r.currentIndex === "" || r.currentIndex == null ? null : Number(r.currentIndex);
+        const price = Number(r.unitPrice || 0);
+        if (curr == null) return sum;
+        const diff = curr - prev;
+        return sum + Math.max(0, diff * price);
+    }, 0);
     const servicesTotal = Object.entries(state.services).filter(([, on]) => on).reduce((s, [k]) => s + SERVICES_CONFIG[k].price, 0);
     const extrasTotal = state.extras.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    const subtotal = state.roomPrice + elecTotal + waterTotal + servicesTotal + extrasTotal;
+    const subtotal = state.roomPrice + meterTotal + servicesTotal + extrasTotal;
     const discount = state.discountType === "percent"
         ? Math.round(subtotal * state.discountVal / 100)
         : state.discountType === "fixed" ? state.discountVal : 0;
     const total = Math.max(0, subtotal - discount);
-    const computed = {elecTotal, waterTotal, servicesTotal, extrasTotal, subtotal, discount, total};
+    const computed = {meterTotal, servicesTotal, extrasTotal, subtotal, discount, total};
 
     return (
         <div className={styles.app}>
@@ -92,8 +170,8 @@ export default function InvoiceCreator() {
                         month={state.month}
                         year={state.year}
                         onSelectRoom={handleSelectRoom}
-                        onMonthChange={(m) => setState(prev => ({ ...prev, month: m }))}
-                        onYearChange={(y) => setState(prev => ({ ...prev, year: y }))}
+                        onMonthChange={(m) => setPeriod(m, state.year)}
+                        onYearChange={(y) => setPeriod(state.month, y)}
                     />
                     <RentSectionCard
                         state={state}
@@ -102,10 +180,8 @@ export default function InvoiceCreator() {
                     />
                     <UtilitySectionCard
                         state={state}
-                        onElecNewChange={(val) => patch({ elecNew: val })}
-                        onWaterNewChange={(val) => patch({ waterNew: val })}
-                        onElecPriceChange={(val) => patch({ elecPrice: val })}
-                        onWaterPriceChange={(val) => patch({ waterPrice: val })}
+                        onMeterCurrentChange={onMeterCurrentChange}
+                        onMeterPriceChange={onMeterPriceChange}
                     />
                     <ServicesSection state={state} patch={patch}/>
                     <ExtrasSectionCard

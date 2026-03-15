@@ -3,16 +3,21 @@ import { fmt, SERVICES_CONFIG } from "../data.js";
 
 export default function PreviewModal({ state, computed, roomData, onClose, onPublish, onPrint }) {
     const { room, month, year, issueDate, dueDate, services, extras, paymentMethod, notePublic } = state;
-    const { elecTotal, waterTotal, total } = computed;
-
-    const elecDiff  = state.elecNew  - state.elecPrev;
-    const waterDiff = state.waterNew - state.waterPrev;
+    const { meterTotal, total } = computed;
     const activeServices = Object.entries(services).filter(([, on]) => on);
     const activeExtras   = extras.filter(e => parseFloat(e.amount) > 0);
 
     const pmLabels = { cash: "Tiền mặt", bank: "Chuyển khoản Vietcombank", momo: "Momo / ZaloPay" };
 
     const fmtDate = (str) => str ? new Date(str).toLocaleDateString("vi-VN") : "—";
+    const meterLines = (state.meterReadings || []).map((r) => {
+        const prev = Number(r.previousIndex || 0);
+        const curr = r.currentIndex === "" || r.currentIndex == null ? null : Number(r.currentIndex);
+        const price = Number(r.unitPrice || 0);
+        const diff = curr == null ? null : curr - prev;
+        const amount = curr == null ? 0 : Math.max(0, (diff || 0) * price);
+        return { ...r, prev, curr, diff, amount, price };
+    }).filter((r) => r.curr != null);
 
     return (
         <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -57,14 +62,14 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
                                 <span>Tiền phòng (tháng {month})</span>
                                 <span>{fmt(state.roomPrice)} ₫</span>
                             </div>
-                            <div className={styles.lineItem}>
-                                <span>Điện ({state.elecPrev}→{state.elecNew} = {elecDiff} kWh × {fmt(state.elecPrice)}₫)</span>
-                                <span>{fmt(elecTotal)} ₫</span>
-                            </div>
-                            <div className={styles.lineItem}>
-                                <span>Nước ({state.waterPrev}→{state.waterNew} = {waterDiff} m³ × {fmt(state.waterPrice)}₫)</span>
-                                <span>{fmt(waterTotal)} ₫</span>
-                            </div>
+                            {meterLines.map((r) => (
+                                <div key={r.utilityId} className={styles.lineItem}>
+                                    <span>
+                                        {r.utilityName} ({r.prev}→{r.curr} = {r.diff} {r.unit} × {fmt(r.price)}₫)
+                                    </span>
+                                    <span>{fmt(r.amount)} ₫</span>
+                                </div>
+                            ))}
                             {activeServices.map(([key]) => (
                                 <div key={key} className={styles.lineItem}>
                                     <span>{SERVICES_CONFIG[key].name}</span>

@@ -115,6 +115,18 @@ public class RoomController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{roomId}/creator-bill-context")
+    public ResponseEntity<ApiResponse<CreatorBillContextResponse>> getCreatorBillContext(
+            @PathVariable Integer roomId, @RequestParam int month, @RequestParam int year) {
+
+        CreatorBillContextResponse result = roomService.getCreatorBillContext(roomId, month, year);
+        return ResponseEntity.ok(ApiResponse.<CreatorBillContextResponse>builder()
+                .code(200)
+                .message("Lấy dữ liệu tạo hoá đơn thành công")
+                .result(result)
+                .build());
+    }
+
     // Lấy danh sách phòng theo kỳ (tháng, năm) và khu nhà, bao gồm thông tin hợp đồng, hóa đơn, tiền điện nước nếu có
     @GetMapping("/boarding-houses/{boardingHouseId}/rooms-period-summary")
     public ResponseEntity<ApiResponse<List<RoomPeriodSummaryResponse>>> getRoomsPeriodSummary(

@@ -3,10 +3,16 @@ import { fmt, SERVICES_CONFIG } from "../data.js";
 
 export default function SummaryPanel({ state, computed, roomData, onPublish, onPreview, onShare }) {
     const { room, month, year, dueDate, services } = state;
-    const { elecTotal, waterTotal, subtotal, discount, total } = computed;
+    const { meterTotal, subtotal, discount, total } = computed;
 
-    const elecDiff  = state.elecNew  - state.elecPrev;
-    const waterDiff = state.waterNew - state.waterPrev;
+    const meterLines = (state.meterReadings || []).map((r) => {
+        const prev = Number(r.previousIndex || 0);
+        const curr = r.currentIndex === "" || r.currentIndex == null ? null : Number(r.currentIndex);
+        const price = Number(r.unitPrice || 0);
+        const diff = curr == null ? null : curr - prev;
+        const amount = curr == null ? 0 : Math.max(0, (diff || 0) * price);
+        return { ...r, prev, curr, diff, amount };
+    }).filter((r) => r.curr != null);
 
     const daysLeft = dueDate ? Math.round((new Date(dueDate) - new Date()) / 86400000) : 0;
     const isOverdue = daysLeft < 0;
@@ -74,14 +80,14 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
                             <span className={styles.lineName}>🏠 Tiền phòng</span>
                             <span className={styles.lineVal}>{fmt(state.roomPrice)}</span>
                         </div>
-                        <div className={styles.line_}>
-                            <span className={styles.lineName}>⚡ Điện ({elecDiff} kWh)</span>
-                            <span className={styles.lineVal}>{fmt(elecTotal)}</span>
-                        </div>
-                        <div className={styles.line_}>
-                            <span className={styles.lineName}>💧 Nước ({waterDiff} m³)</span>
-                            <span className={styles.lineVal}>{fmt(waterTotal)}</span>
-                        </div>
+                        {meterLines.map((r) => (
+                            <div key={r.utilityId} className={styles.line_}>
+                                <span className={styles.lineName}>
+                                    🧾 {r.utilityName} ({r.diff} {r.unit})
+                                </span>
+                                <span className={styles.lineVal}>{fmt(r.amount)}</span>
+                            </div>
+                        ))}
 
                         {activeServices.map(([key]) => (
                             <div key={key} className={styles.line_}>

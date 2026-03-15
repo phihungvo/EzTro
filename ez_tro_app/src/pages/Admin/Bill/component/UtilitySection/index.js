@@ -4,26 +4,30 @@ import {fmt} from "../data.js";
 
 function consumptionClass(diff, type) {
     if (diff < 0) return styles.error;
-    if (type === "elec" && diff > 200) return styles.high;
-    if (type === "water" && diff > 30) return styles.high;
+    if (diff > 200) return styles.high;
     return styles.normal;
 }
 
 export default function UtilitySection({
                                            state,
-                                           onElecNewChange,
-                                           onWaterNewChange,
-                                           onElecPriceChange,
-                                           onWaterPriceChange
+                                           onMeterCurrentChange,
+                                           onMeterPriceChange,
                                        }) {
-    const {elecPrev, elecNew, elecPrice, waterPrev, waterNew, waterPrice} = state;
-    const elecDiff = elecNew - elecPrev;
-    const waterDiff = waterNew - waterPrev;
-    const elecTotal = Math.max(0, elecDiff * elecPrice);
-    const waterTotal = Math.max(0, waterDiff * waterPrice);
-    const utilityTotal = elecTotal + waterTotal;
+    const readings = Array.isArray(state.meterReadings) ? state.meterReadings : [];
 
-    const hasError = elecDiff < 0 || waterDiff < 0;
+    const rows = readings.map((r) => {
+        const prev = Number(r.previousIndex || 0);
+        const curr = r.currentIndex === "" || r.currentIndex === null || r.currentIndex === undefined
+            ? null
+            : Number(r.currentIndex);
+        const price = Number(r.unitPrice || 0);
+        const diff = curr == null ? 0 : curr - prev;
+        const total = curr == null ? 0 : Math.max(0, diff * price);
+        return { ...r, prev, curr, diff, total, price };
+    });
+
+    const utilityTotal = rows.reduce((s, r) => s + (r.total || 0), 0);
+    const hasError = rows.some((r) => r.curr != null && r.diff < 0);
 
     return (
         <div className={cardStyles.card}>
@@ -36,8 +40,7 @@ export default function UtilitySection({
                     <div className={cardStyles.alertDanger}>
                         <span>⚠️</span>
                         <span>
-              {elecDiff < 0 ? "Chỉ số điện hiện tại thấp hơn kỳ trước! " : ""}
-                            {waterDiff < 0 ? "Chỉ số nước hiện tại thấp hơn kỳ trước!" : ""}
+              Có chỉ số hiện tại thấp hơn kỳ trước!
             </span>
                     </div>
                 )}
@@ -56,83 +59,59 @@ export default function UtilitySection({
                         </tr>
                         </thead>
                         <tbody>
-                        {/* Electricity */}
-                        <tr>
-                            <td className={styles.icon}>⚡</td>
-                            <td>
-                                <div className={styles.utilName}>Điện</div>
-                                <div className={styles.utilSub}>Kỳ: 1–31/03</div>
-                            </td>
-                            <td>
-                                <div className={styles.prevReading}>{fmt(elecPrev)}</div>
-                                <div className={styles.unit}>kWh</div>
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    className={styles.utilInput}
-                                    value={elecNew}
-                                    onChange={(e) => onElecNewChange(+e.target.value)}
-                                />
-                                <div className={styles.unit}>kWh</div>
-                            </td>
-                            <td>
-                  <span className={`${styles.consumBadge} ${consumptionClass(elecDiff, "elec")}`}>
-                    {elecDiff}
+                        {rows.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: "center", color: "#999", padding: 16 }}>
+                                    Phòng này chưa có dịch vụ điện/nước theo chỉ số (USAGE_BASED).
+                                </td>
+                            </tr>
+                        ) : (
+                            rows.map((r) => (
+                                <tr key={r.utilityId}>
+                                    <td className={styles.icon}>
+                                        {String(r.utilityName || "").toLowerCase().includes("điện")
+                                            ? "⚡"
+                                            : String(r.utilityName || "").toLowerCase().includes("nước")
+                                                ? "💧"
+                                                : "🧾"}
+                                    </td>
+                                    <td>
+                                        <div className={styles.utilName}>{r.utilityName}</div>
+                                        <div className={styles.utilSub}>Kỳ: {state.month}/{state.year}</div>
+                                    </td>
+                                    <td>
+                                        <div className={styles.prevReading}>{fmt(r.prev)}</div>
+                                        <div className={styles.unit}>{r.unit || ""}</div>
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            className={styles.utilInput}
+                                            value={r.currentIndex ?? ""}
+                                            onChange={(e) => onMeterCurrentChange(r.utilityId, e.target.value)}
+                                        />
+                                        <div className={styles.unit}>{r.unit || ""}</div>
+                                    </td>
+                                    <td>
+                  <span className={`${styles.consumBadge} ${consumptionClass(r.curr == null ? 0 : r.diff)}`}>
+                    {r.curr == null ? "—" : r.diff}
                   </span>
-                                <div className={styles.unit}>kWh</div>
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    className={styles.utilInput}
-                                    value={elecPrice}
-                                    onChange={(e) => onElecPriceChange(+e.target.value)}
-                                    style={{width: 80}}
-                                />
-                                <div className={styles.unit}>₫/kWh</div>
-                            </td>
-                            <td className={styles.subtotal}>{fmt(elecTotal)}</td>
-                        </tr>
-
-                        {/* Water */}
-                        <tr>
-                            <td className={styles.icon}>💧</td>
-                            <td>
-                                <div className={styles.utilName}>Nước</div>
-                                <div className={styles.utilSub}>Kỳ: 1–31/03</div>
-                            </td>
-                            <td>
-                                <div className={styles.prevReading}>{fmt(waterPrev)}</div>
-                                <div className={styles.unit}>m³</div>
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    className={styles.utilInput}
-                                    value={waterNew}
-                                    onChange={(e) => onWaterNewChange(+e.target.value)}
-                                />
-                                <div className={styles.unit}>m³</div>
-                            </td>
-                            <td>
-                  <span className={`${styles.consumBadge} ${consumptionClass(waterDiff, "water")}`}>
-                    {waterDiff}
-                  </span>
-                                <div className={styles.unit}>m³</div>
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    className={styles.utilInput}
-                                    value={waterPrice}
-                                    onChange={(e) => onWaterPriceChange(+e.target.value)}
-                                    style={{width: 80}}
-                                />
-                                <div className={styles.unit}>₫/m³</div>
-                            </td>
-                            <td className={styles.subtotal}>{fmt(waterTotal)}</td>
-                        </tr>
+                                        <div className={styles.unit}>{r.unit || ""}</div>
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            className={styles.utilInput}
+                                            value={r.price}
+                                            onChange={(e) => onMeterPriceChange(r.utilityId, e.target.value)}
+                                            style={{width: 80}}
+                                        />
+                                        <div className={styles.unit}>₫/{r.unit || ""}</div>
+                                    </td>
+                                    <td className={styles.subtotal}>{fmt(r.total)}</td>
+                                </tr>
+                            ))
+                        )}
                         </tbody>
                         <tfoot>
                         <tr>

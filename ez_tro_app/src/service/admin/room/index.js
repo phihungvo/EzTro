@@ -27,6 +27,16 @@ export const getAllRoomPeriodSummary = async (boardingHouseId, month, year) => {
     }
 };
 
+export const getCreatorBillContext = async (roomId, month, year) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.CREATOR_BILL_CONTEXT(roomId, month, year));
+        return response.data;
+    } catch (err) {
+        console.error("Fetch creator bill context failed", err);
+        message.error("Lỗi khi tải dữ liệu tạo hoá đơn");
+    }
+};
+
 export const getAllRoomNoPaged = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_NO_PAGING);
