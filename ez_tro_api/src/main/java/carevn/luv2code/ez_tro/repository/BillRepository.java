@@ -35,20 +35,6 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     //    boolean existsByRoomIdAndMonthAndYear(
     //            @Param("roomId") Integer roomId, @Param("month") int month, @Param("year") int year);
 
-    // Kiểm tra tồn tại bill trong tháng/năm
-    @Query(
-            value =
-                    """
-								SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
-								FROM bills b
-								WHERE b.room_id = :roomId
-								AND EXTRACT(YEAR FROM b.due_date) = :year
-								AND EXTRACT(MONTH FROM b.due_date) = :month
-							""",
-            nativeQuery = true)
-    boolean existsByRoomIdAndMonthAndYear(
-            @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
-
     // Tìm bill trong kỳ (mới nhất trước)
     @Query(
             value =
@@ -98,6 +84,10 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
             nativeQuery = true)
     Long countByRoomIdAndMonthAndYear(
             @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
+
+    default boolean existsByRoomIdAndMonthAndYear(Integer roomId, Integer month, Integer year) {
+        return countByRoomIdAndMonthAndYear(roomId, month, year) > 0;
+    }
 
     // Tìm bill theo contract và tháng/năm (nếu cần)
     //    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.month = :month AND b.year = :year")

@@ -32,7 +32,7 @@ export default function UtilitySection({
     return (
         <div className={cardStyles.card}>
             <div className={cardStyles.header}>
-                <span className={cardStyles.title}>③ Chỉ số điện — nước</span>
+                <span className={cardStyles.title}>③ Dịch vụ tính theo chỉ số</span>
                 <span className={cardStyles.chipInfo}>📸 Có ảnh chụp đồng hồ</span>
             </div>
             <div className={cardStyles.body}>
@@ -62,7 +62,7 @@ export default function UtilitySection({
                         {rows.length === 0 ? (
                             <tr>
                                 <td colSpan={7} style={{ textAlign: "center", color: "#999", padding: 16 }}>
-                                    Phòng này chưa có dịch vụ điện/nước theo chỉ số (USAGE_BASED).
+                                    Phòng này chưa có dịch vụ nào tính theo chỉ số (USAGE_BASED).
                                 </td>
                             </tr>
                         ) : (

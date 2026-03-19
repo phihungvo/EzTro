@@ -19,5 +19,6 @@ public class CreatorBillContextResponse {
     private BigDecimal rentPrice;
 
     private List<CreatorBillUtilityItemResponse> usageBasedUtilities;
+    private List<CreatorBillUtilityItemResponse> fixedChargeUtilities;
     private List<CreatorBillMeterItemResponse> meterReadings;
 }

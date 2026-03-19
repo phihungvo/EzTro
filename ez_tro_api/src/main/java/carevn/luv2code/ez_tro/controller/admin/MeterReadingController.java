@@ -29,6 +29,16 @@ public class MeterReadingController {
                 .build();
     }
 
+    @PutMapping("/upsert")
+    public ApiResponse<MeterReadingResponse> upsert(@Valid @RequestBody MeterReadingRequest request) {
+        MeterReadingResponse response = meterReadingService.upsert(request);
+        return ApiResponse.<MeterReadingResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Lưu chỉ số thành công")
+                .result(response)
+                .build();
+    }
+
     @GetMapping("/room/{roomId}/period/{month}/{year}")
     public ApiResponse<List<MeterReadingResponse>> getByPeriod(
             @PathVariable Integer roomId, @PathVariable Integer month, @PathVariable Integer year) {

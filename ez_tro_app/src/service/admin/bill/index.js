@@ -27,10 +27,11 @@ export const createBill = async (formData) => {
             API_ENDPOINTS.BILL.CREATE,
             formData,
         );
-        message.success('Bill created successfully');
         return response.data;
     } catch (error) {
         console.error('Error when creating bill: ', error);
+        message.error(error.response?.data?.message || 'Lỗi tạo hoá đơn');
+        throw error;
     }
 };
 //

@@ -142,6 +142,10 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/meter-periods`,
         CREATE: `${BASE_URL}/meter-periods`,
     },
+    METER_READING: {
+        CREATE: `${BASE_URL}/meter-readings`,
+        UPSERT: `${BASE_URL}/meter-readings/upsert`,
+    },
     SUBSCRIPTION: {
         MY_LIMIT: `${BASE_URL}/subscriptions/my-limits`,
         CREATE: `${BASE_URL}/subscriptions/plans`,

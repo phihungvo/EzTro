@@ -1,9 +1,9 @@
 import styles from "./SummaryPanel.module.scss";
-import { fmt, SERVICES_CONFIG } from "../data.js";
+import { fmt } from "../data.js";
 
 export default function SummaryPanel({ state, computed, roomData, onPublish, onPreview, onShare }) {
-    const { room, month, year, dueDate, services } = state;
-    const { meterTotal, subtotal, discount, total } = computed;
+    const { room, month, year, dueDate } = state;
+    const { subtotal, discount, total } = computed;
 
     const meterLines = (state.meterReadings || []).map((r) => {
         const prev = Number(r.previousIndex || 0);
@@ -21,8 +21,7 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
         ? new Date(dueDate).toLocaleDateString("vi-VN")
         : "—";
 
-    const activeServices = Object.entries(services).filter(([, on]) => on);
-    const extrasTotal = state.extras.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const fixedServiceLines = (state.fixedServices || []).filter((item) => Number(item.totalAmount || 0) > 0);
 
     return (
         <aside className={styles.panel}>
@@ -89,12 +88,12 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
                             </div>
                         ))}
 
-                        {activeServices.map(([key]) => (
-                            <div key={key} className={styles.line_}>
-                <span className={styles.lineName}>
-                  {SERVICES_CONFIG[key].icon} {SERVICES_CONFIG[key].name}
-                </span>
-                                <span className={styles.lineVal}>{fmt(SERVICES_CONFIG[key].price)}</span>
+                        {fixedServiceLines.map((item) => (
+                            <div key={item.id} className={styles.line_}>
+                                <span className={styles.lineName}>
+                                    🧩 {item.name} ({item.quantity} x {fmt(item.unitPrice)})
+                                </span>
+                                <span className={styles.lineVal}>{fmt(item.totalAmount)}</span>
                             </div>
                         ))}
 

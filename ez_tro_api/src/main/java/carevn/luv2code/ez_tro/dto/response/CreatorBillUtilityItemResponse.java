@@ -15,4 +15,7 @@ public class CreatorBillUtilityItemResponse {
     private String type;
     private BigDecimal unitPrice;
     private String unit;
+    private Integer quantity;
+    private BigDecimal usageAmount;
+    private BigDecimal totalAmount;
 }

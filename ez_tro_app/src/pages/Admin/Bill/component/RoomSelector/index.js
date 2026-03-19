@@ -85,11 +85,11 @@ export default function RoomSelector({
     const handleSelectRoomLocal = useCallback((roomNumber) => {
         const selected = rooms.find((r) => r.roomNumber === roomNumber);
         if (selected) {
-            onSelectRoom(roomNumber, selected); // truyền lên parent
+            onSelectRoom(roomNumber, { ...selected, boardingHouseId: Number(boardingHouseId) }); // truyền lên parent
         } else {
             onSelectRoom(null, null);
         }
-    }, [rooms, onSelectRoom]);
+    }, [rooms, onSelectRoom, boardingHouseId]);
 
     // Lấy dữ liệu phòng đang chọn
     const selectedRoomData = rooms.find((r) => r.roomNumber === selectedRoom);
