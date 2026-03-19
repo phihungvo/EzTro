@@ -1,0 +1,7 @@
+#target/
+*.log
+*.jar
+*.rpm
+.git/
+.gitignore
+node_modules/
