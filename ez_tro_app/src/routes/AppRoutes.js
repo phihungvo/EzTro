@@ -32,6 +32,7 @@ import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
 import React from "react";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -74,6 +75,7 @@ const AppRoutes = () => {
                                 <Route path="tenants" element={<Tenant />} />
                                 <Route path="tenants/:id" element={<TenantDetail />} />
                                 <Route path="contracts" element={<Contract />} />
+                                <Route path="contracts/create-contract" element={<ContractCreatorPage />} />
                                 <Route path="bills" element={<Bill />} />
                                 <Route path="bills/create-bill" element={<BillCreator />} />
                                 <Route path="revenues" element={<Revenue />} />

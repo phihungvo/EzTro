@@ -90,6 +90,18 @@ export const filterRooms = async ({
     }
 };
 
+export const getAllRoomAvailableByBoardingHouse = async (boardingHouseId) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.AVAILABLE_BY_BOARDING_HOUSE(boardingHouseId));
+        return response.data.result;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message,
+        );
+        throw error;
+    }
+};
+
 export const getAllRoomAvailable = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_AVAILABLE);

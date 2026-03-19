@@ -48,6 +48,7 @@ import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -322,6 +323,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
+                        <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
                         <Route path="/bills" element={<Bill/>}/>
                         {/*<Route path="/bills/create-bill" element={<BillCreator />} />*/}
                         <Route path="/services" element={<Amenity/>}/>

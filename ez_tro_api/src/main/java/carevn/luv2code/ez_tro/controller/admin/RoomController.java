@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.*;
+import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -148,6 +149,16 @@ public class RoomController {
         return ApiResponse.<List<RoomResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get all rooms successfully")
+                .result(responses)
+                .build();
+    }
+
+    @GetMapping("/{boardingHouseId}/available")
+    public ApiResponse<List<RoomResponse>> getAvailableRoomsByStatus(@PathVariable Integer boardingHouseId) {
+        List<RoomResponse> responses = roomService.getAvailableByStatus(boardingHouseId, RoomStatus.AVAILABLE);
+        return ApiResponse.<List<RoomResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get all rooms available successfully")
                 .result(responses)
                 .build();
     }

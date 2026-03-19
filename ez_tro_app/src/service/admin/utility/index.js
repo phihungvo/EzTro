@@ -1,9 +1,6 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
-import Utility from "~/pages/Admin/Utility";
-
-
 export const getAllUtilities = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.UTILITY.GET_ALL, {
@@ -37,9 +34,11 @@ export const createUtility = async (formData) => {
             formData,
         );
         message.success('Utility created successfully');
-        return response.data;
+        return response.data.result;
     } catch (error) {
         console.error('Error when creating utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo tiện ích');
+        throw error;
     }
 };
 

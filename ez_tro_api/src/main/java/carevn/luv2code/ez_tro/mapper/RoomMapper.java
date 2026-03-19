@@ -24,9 +24,9 @@ public abstract class RoomMapper {
     // Map cơ bản cho Room → RoomResponse (danh sách phòng thông thường)
     @Mapping(source = "boardingHouse.name", target = "boardingHouseName")
     @Mapping(source = "building.name", target = "buildingName")
-    @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
-    @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
-    @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
+    //    @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
+    //    @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
+    //    @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
     public abstract RoomResponse toResponse(Room room);
 
     @Mapping(target = "id", ignore = true)
@@ -136,6 +136,16 @@ public abstract class RoomMapper {
         if (active == null || active.getEndDate() == null) return null;
         long diff = active.getEndDate().getTime() - new java.util.Date().getTime();
         return diff / (1000 * 60 * 60 * 24);
+    }
+
+    protected java.util.Date getContractStartDate(Room room) {
+        Contract active = getActiveContract(room);
+        return active != null ? active.getStartDate() : null;
+    }
+
+    protected java.util.Date getContractEndDate(Room room) {
+        Contract active = getActiveContract(room);
+        return active != null ? active.getEndDate() : null;
     }
 
     //    protected List<String> getServices(Room room) {

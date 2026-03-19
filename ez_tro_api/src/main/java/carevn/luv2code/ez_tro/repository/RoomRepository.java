@@ -15,6 +15,8 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
 
     List<Room> findByBoardingHouseId(Integer boardingHouseId);
 
+    List<Room> findByBoardingHouseIdAndStatus(Integer boardingHouseId, RoomStatus status);
+
     List<Room> findByStatus(RoomStatus status);
 
     @Query("SELECT MAX(CAST(r.roomNumber AS int)) FROM Room r WHERE r.building.id = :buildingId")

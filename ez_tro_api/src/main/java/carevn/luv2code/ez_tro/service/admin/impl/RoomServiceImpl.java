@@ -184,6 +184,14 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<RoomResponse> getAvailableByStatus(Integer boardingHouseId, RoomStatus status) {
+        return roomRepository.findByBoardingHouseIdAndStatus(boardingHouseId, status).stream()
+                .map(roomMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<RoomResponse> getAvailableRooms() {
         SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
 
