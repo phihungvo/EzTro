@@ -16,4 +16,6 @@ public interface CronJobService {
     String getJobDetails(String jobId);
 
     void scheduleBillGenerationJob(String cronExpression);
+
+    int syncContractStatusesDaily();
 }

@@ -5,8 +5,11 @@ import static carevn.luv2code.ez_tro.constants.AppConstants.CONTRACT_CODE_PREFIX
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -66,7 +69,8 @@ public class ContractServiceImpl implements ContractService {
                 .findById(request.getTenantId())
                 .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
-        if (contractRepository.existsByRoomIdAndStatus(request.getRoomId(), ContractStatus.ACTIVE)) {
+        if (contractRepository.existsByRoomIdAndStatusIn(
+                request.getRoomId(), Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
             throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
         }
         if (request.getEndDate() != null && request.getEndDate().before(request.getStartDate())) {
@@ -76,7 +80,7 @@ public class ContractServiceImpl implements ContractService {
         Contract contract = contractMapper.toEntity(request);
         contract.setRoom(room);
         contract.setTenant(tenant);
-        contract.setStatus(ContractStatus.ACTIVE);
+        contract.setStatus(resolveLifecycleStatus(request.getStatus(), request.getStartDate(), request.getEndDate()));
 
         if (contract.getContractCode() == null) {
             String timestamp = new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date());
@@ -84,11 +88,7 @@ public class ContractServiceImpl implements ContractService {
         }
 
         contractRepository.saveAndFlush(contract);
-
-        if (contract.getStatus() == ContractStatus.ACTIVE) {
-            room.setStatus(RoomStatus.OCCUPIED);
-            roomRepository.saveAndFlush(room);
-        }
+        syncRoomOccupancyStatus(room);
         return contractMapper.toResponse(contract);
     }
 
@@ -96,12 +96,16 @@ public class ContractServiceImpl implements ContractService {
     public ContractResponse update(Integer id, ContractRequest request) {
         Contract contract =
                 contractRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        Room previousRoom = contract.getRoom();
+        Set<Integer> roomIdsToSync = new HashSet<>();
+        roomIdsToSync.add(previousRoom.getId());
 
         if (request.getRoomId() != null) {
             Room room = roomRepository
                     .findById(request.getRoomId())
                     .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
             contract.setRoom(room);
+            roomIdsToSync.add(room.getId());
         }
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository
@@ -114,11 +118,19 @@ public class ContractServiceImpl implements ContractService {
         contract.setEndDate(request.getEndDate());
         contract.setDeposit(request.getDeposit());
         contract.setRentPrice(request.getRentPrice());
-        contract.setStatus(request.getStatus());
+        contract.setStatus(resolveLifecycleStatus(request.getStatus(), request.getStartDate(), request.getEndDate()));
         contract.setNote(request.getNote());
+        contract.setDepositReceivedAt(request.getDepositReceivedAt());
+        contract.setDepositPaymentMethod(request.getDepositPaymentMethod());
+        contract.setPaymentCycleMonths(request.getPaymentCycleMonths());
+        contract.setMonthlyPaymentDay(request.getMonthlyPaymentDay());
         contract.setUpdatedAt(new Date());
 
-        contractRepository.save(contract);
+        contractRepository.saveAndFlush(contract);
+
+        for (Integer roomId : roomIdsToSync) {
+            roomRepository.findById(roomId).ifPresent(this::syncRoomOccupancyStatus);
+        }
         return contractMapper.toResponse(contract);
     }
 
@@ -277,5 +289,46 @@ public class ContractServiceImpl implements ContractService {
         Page<Contract> pageResult = contractRepository.findAll(spec, pageable);
         Page<ContractResponse> dtoPage = pageResult.map(contractMapper::toResponse);
         return dtoPage;
+    }
+
+    private ContractStatus resolveLifecycleStatus(ContractStatus requestedStatus, Date startDate, Date endDate) {
+        if (requestedStatus == ContractStatus.CANCELLED) {
+            return ContractStatus.CANCELLED;
+        }
+
+        LocalDate today = LocalDate.now();
+        if (startDate != null && toLocalDate(startDate).isAfter(today)) {
+            return ContractStatus.PENDING;
+        }
+
+        if (endDate != null && toLocalDate(endDate).isBefore(today)) {
+            return ContractStatus.EXPIRED;
+        }
+
+        return ContractStatus.ACTIVE;
+    }
+
+    private void syncRoomOccupancyStatus(Room room) {
+        if (Boolean.TRUE.equals(room.getIsDeleted())) {
+            return;
+        }
+
+        boolean hasEffectiveActiveContract =
+                contractRepository.existsEffectiveActiveContractByRoomId(room.getId(), LocalDate.now());
+
+        if (hasEffectiveActiveContract && room.getStatus() == RoomStatus.AVAILABLE) {
+            room.setStatus(RoomStatus.OCCUPIED);
+            roomRepository.saveAndFlush(room);
+            return;
+        }
+
+        if (!hasEffectiveActiveContract && room.getStatus() == RoomStatus.OCCUPIED) {
+            room.setStatus(RoomStatus.AVAILABLE);
+            roomRepository.saveAndFlush(room);
+        }
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }

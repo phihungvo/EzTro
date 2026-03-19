@@ -93,6 +93,10 @@ file:
   upload-dir: ${FILE_UPLOAD_DIR:/var/uploads}
 
 app:
+  jobs:
+    contract-status-sync:
+      cron: ${CONTRACT_STATUS_SYNC_CRON:0 10 0 * * *}
+      batch-size: ${CONTRACT_STATUS_SYNC_BATCH_SIZE:100}
   system-config:
     default-plan-id: ${DEFAULT_PLAN_ID:}
 
