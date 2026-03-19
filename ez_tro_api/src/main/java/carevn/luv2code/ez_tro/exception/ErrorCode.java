@@ -103,6 +103,10 @@ public enum ErrorCode {
     ALREADY_HAS_ACTIVE_SUBSCRIPTION(1075, "Owner already has an active subscription", HttpStatus.CONFLICT),
     GOOGLE_ID_TOKEN_INVALID(1076, "Google ID token is invalid", HttpStatus.UNAUTHORIZED),
     GOOGLE_EMAIL_NOT_VERIFIED(1077, "Google email is not verified", HttpStatus.UNAUTHORIZED),
+    SYSTEM_CONFIG_NOT_FOUND(1078, "System config not found", HttpStatus.NOT_FOUND),
+    SYSTEM_CONFIG_INVALID_VALUE(1079, "System config value is invalid", HttpStatus.BAD_REQUEST),
+    DEFAULT_SUBSCRIPTION_PLAN_INACTIVE(1080, "Default subscription plan must be active", HttpStatus.BAD_REQUEST),
+    SYSTEM_CONFIG_KEY_ALREADY_EXISTS(1081, "System config key already exists", HttpStatus.CONFLICT),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
