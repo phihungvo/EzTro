@@ -66,4 +66,21 @@ public class CronJobController {
                     .build();
         }
     }
+
+    @PostMapping("/contracts/sync-status/manual")
+    public ApiResponse<String> manualSyncContractStatuses() {
+        try {
+            int updated = cronJobService.syncContractStatusesDaily();
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Manual contract status sync completed successfully")
+                    .result("Updated contracts: " + updated)
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message("Failed to sync contract statuses: " + e.getMessage())
+                    .build();
+        }
+    }
 }
