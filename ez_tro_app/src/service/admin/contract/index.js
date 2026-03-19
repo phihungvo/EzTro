@@ -125,6 +125,7 @@ export const createContract = async (formData) => {
                 message.error(data?.message || 'Error when creating contract');
             }
         }
+        throw error;
     }
 };
 
@@ -138,6 +139,8 @@ export const updateContract = async (contractId, formData) => {
         return response.data;
     } catch (error) {
         console.error('Error when updating contract: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi cập nhật hợp đồng');
+        throw error;
     }
 };
 
@@ -149,5 +152,7 @@ export const deleteContract = async (contractId) => {
         return response.data;
     } catch (error) {
         console.error('Error when deleting contract: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi xóa hợp đồng');
+        throw error;
     }
 };

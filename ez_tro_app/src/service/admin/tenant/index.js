@@ -9,9 +9,11 @@ export const createTenant = async (formData) => {
             API_ENDPOINTS.TENANTS.CREATE,
             formData,
         );
-        return response.data;
+        return response.data.result;
     } catch (error) {
         console.error('Error when creating tenant: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo người thuê');
+        throw error;
     }
 };
 

@@ -1,0 +1,59 @@
+.page {
+  /* ── Design tokens ── */
+  --bg-base:        #0d0f14;
+  --bg-surface:     #141720;
+  --bg-card:        #1a1e2a;
+  --bg-input:       #1f2436;
+  --bg-hover:       #252b3b;
+  --border:         #2a3047;
+  --border-hover:   #3a4260;
+  --border-focus:   #4f6ef7;
+  --accent:         #4f6ef7;
+  --accent-soft:    rgba(79, 110, 247, 0.12);
+  --accent-glow:    rgba(79, 110, 247, 0.25);
+  --gold:           #e8b84b;
+  --gold-soft:      rgba(232, 184, 75, 0.1);
+  --success:        #34c98a;
+  --success-soft:   rgba(52, 201, 138, 0.1);
+  --danger:         #f05c5c;
+  --danger-soft:    rgba(240, 92, 92, 0.1);
+  --warning:        #f0934a;
+  --warning-soft:   rgba(240, 147, 74, 0.1);
+  --text-primary:   #eef0f8;
+  --text-secondary: #8891b0;
+  --text-muted:     #545d7a;
+  --radius:         12px;
+  --radius-sm:      8px;
+
+  /* ── Layout ── */
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  background-image:
+          radial-gradient(ellipse at 20% 20%, rgba(79, 110, 247, 0.04) 0%, transparent 60%),
+          radial-gradient(ellipse at 80% 80%, rgba(232, 184, 75, 0.03) 0%, transparent 60%);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainContent {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-base);
+}
+
+.formBody {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .formBody {
+    padding: 16px;
+  }
+}

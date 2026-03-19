@@ -71,6 +71,7 @@ const API_ENDPOINTS = {
         CREATOR_BILL_CONTEXT: (roomId, month, year) =>
             `${BASE_URL}/rooms/${roomId}/creator-bill-context?month=${month}&year=${year}`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
+        AVAILABLE_BY_BOARDING_HOUSE:(boardingHouseId) => `${BASE_URL}/rooms/${boardingHouseId}/available`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
         CREATE: `${BASE_URL}/rooms`,
         UPDATE: (roomId) => `${BASE_URL}/rooms/${roomId}`,

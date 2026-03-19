@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.*;
+import carevn.luv2code.ez_tro.enums.RoomStatus;
 
 public interface RoomService {
     RoomResponse create(RoomRequest request);
@@ -19,6 +20,8 @@ public interface RoomService {
     RoomResponse getById(Integer id);
 
     List<RoomResponse> getAll();
+
+    List<RoomResponse> getAvailableByStatus(Integer boardingHouseId, RoomStatus status);
 
     List<RoomResponse> getAvailableRooms();
 
