@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f6f8fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background: #fff;
+            max-width: 420px;
+            margin: 40px auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            padding: 32px 28px 24px 28px;
+        }
+        h2 {
+            color: #2d7ff9;
+            margin-top: 0;
+        }
+        p {
+            color: #333;
+            font-size: 16px;
+        }
+        b {
+            color: #e67e22;
+            font-size: 18px;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 24px 0 16px 0;
+        }
+        small {
+            color: #888;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Xin chào [[${fullName}]]!</h2>
+    <p>Cảm ơn bạn đã đăng ký sử dụng TEVC CMS.</p>
+    <p>Mã kích hoạt của bạn là: <b>[[${code}]]</b></p>
+    <hr/>
+    <small>Đây là email tự động, vui lòng không trả lời.</small>
+</div>
+</body>
+</html>

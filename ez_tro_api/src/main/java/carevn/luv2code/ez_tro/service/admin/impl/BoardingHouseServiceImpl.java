@@ -19,6 +19,7 @@ import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BoardingHouseService;
+import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import carevn.luv2code.ez_tro.specification.BoardingHouseSpecs;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +30,7 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final UserRepository userRepository;
     private final BoardingHouseMapper boardingHouseMapper;
     private final ResourceLimitServiceImpl resourceLimitService;
+    private final SystemConfigService systemConfigService;
 
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
@@ -37,12 +39,15 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         //                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         User currentUser = SecurityUtils.getCurrentUser();
-        if (!SecurityUtils.isOwner() || !SecurityUtils.isAdmin()) {
+        if (!SecurityUtils.isOwner() && !SecurityUtils.isAdmin()) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        // Kiểm tra quota
-        resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
+        if (SecurityUtils.isOwner()) {
+            // Owner mới có thể chưa được admin gán gói thủ công, nên tự cấp default plan trước khi check quota.
+            systemConfigService.ensureDefaultSubscriptionForOwner(currentUser);
+            resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
+        }
 
         BoardingHouse house = boardingHouseMapper.toEntity(request);
         house.setOwner(currentUser);

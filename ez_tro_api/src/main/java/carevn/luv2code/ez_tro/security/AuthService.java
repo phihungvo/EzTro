@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.AuthRequest;
 import carevn.luv2code.ez_tro.dto.requests.GoogleLoginRequest;
@@ -16,13 +17,12 @@ import carevn.luv2code.ez_tro.dto.requests.RegisterRequest;
 import carevn.luv2code.ez_tro.dto.response.AuthResponse;
 import carevn.luv2code.ez_tro.entity.Role;
 import carevn.luv2code.ez_tro.entity.User;
-import carevn.luv2code.ez_tro.entity.UserSubscription;
-import carevn.luv2code.ez_tro.enums.SubscriptionStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.PermissionRepository;
 import carevn.luv2code.ez_tro.repository.RoleRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
+import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,6 +34,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final SystemConfigService systemConfigService;
 
     @org.springframework.beans.factory.annotation.Value("${google.client-id:}")
     private String googleClientId;
@@ -53,6 +54,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUserName(request.getUsername())) {
             throw new AppException(ErrorCode.USER_EXISTED);
@@ -72,6 +74,7 @@ public class AuthService {
         user.setRoles(Set.of(userRole));
 
         User savedUser = userRepository.save(user);
+        systemConfigService.ensureDefaultSubscriptionForOwner(savedUser);
         String jwt = jwtService.generateToken(savedUser);
 
         return AuthResponse.builder()
@@ -81,6 +84,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse googleLogin(GoogleLoginRequest request) {
         GoogleTokenInfo info = GoogleTokenInfo.fetchAndValidate(request.getIdToken(), googleClientId);
 
@@ -125,12 +129,9 @@ public class AuthService {
         user.setEnabled(true);
         user.setRoles(Set.of(userRole));
 
-        UserSubscription sub = new UserSubscription();
-        sub.setOwner(user);
-        sub.setPlan(null); // Gói mặc định, có thể gán sau
-        sub.setStartDate(java.time.LocalDateTime.now());
-        sub.setStatus(SubscriptionStatus.ACTIVE);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        systemConfigService.ensureDefaultSubscriptionForOwner(savedUser);
+        return savedUser;
     }
 
     private String deriveUsernameFromEmail(String email) {
