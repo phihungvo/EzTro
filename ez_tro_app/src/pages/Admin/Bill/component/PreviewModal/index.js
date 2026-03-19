@@ -1,10 +1,10 @@
 import styles from "./PreviewModal.module.scss";
-import { fmt, SERVICES_CONFIG } from "../data.js";
+import { fmt } from "../data.js";
 
 export default function PreviewModal({ state, computed, roomData, onClose, onPublish, onPrint }) {
-    const { room, month, year, issueDate, dueDate, services, extras, paymentMethod, notePublic } = state;
-    const { meterTotal, total } = computed;
-    const activeServices = Object.entries(services).filter(([, on]) => on);
+    const { room, month, year, issueDate, dueDate, extras, paymentMethod, notePublic, paymentInstructions } = state;
+    const { total } = computed;
+    const fixedServiceLines = (state.fixedServices || []).filter((item) => Number(item.totalAmount || 0) > 0);
     const activeExtras   = extras.filter(e => parseFloat(e.amount) > 0);
 
     const pmLabels = { cash: "Tiền mặt", bank: "Chuyển khoản Vietcombank", momo: "Momo / ZaloPay" };
@@ -70,10 +70,10 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
                                     <span>{fmt(r.amount)} ₫</span>
                                 </div>
                             ))}
-                            {activeServices.map(([key]) => (
-                                <div key={key} className={styles.lineItem}>
-                                    <span>{SERVICES_CONFIG[key].name}</span>
-                                    <span>{fmt(SERVICES_CONFIG[key].price)} ₫</span>
+                            {fixedServiceLines.map((item) => (
+                                <div key={item.id} className={styles.lineItem}>
+                                    <span>{item.name} ({item.quantity} x {fmt(item.unitPrice)}₫)</span>
+                                    <span>{fmt(item.totalAmount)} ₫</span>
                                 </div>
                             ))}
                             {activeExtras.map((e) => (
@@ -92,6 +92,7 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
                         <div className={styles.previewNote}>
                             <strong>Hạn thanh toán:</strong> {fmtDate(dueDate)}<br />
                             <strong>Phương thức:</strong> {pmLabels[paymentMethod] || paymentMethod}<br />
+                            <strong>Hướng dẫn:</strong> {paymentInstructions}<br />
                             <em>{notePublic}</em>
                         </div>
 

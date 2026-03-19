@@ -152,12 +152,14 @@ export function PaymentSection({dueDate, paymentMethod, onDueDateChange, onMetho
 export function NotesSection({
                                  notePublic,
                                  noteInternal,
+                                 paymentInstructions,
                                  sendZalo,
                                  sendSms,
                                  sendEmail,
                                  sendNow,
                                  onNotePublicChange,
                                  onNoteInternalChange,
+                                 onPaymentInstructionsChange,
                                  onToggleZalo,
                                  onToggleSms,
                                  onToggleEmail,
@@ -184,6 +186,15 @@ export function NotesSection({
                         className={cardStyles.textarea}
                         value={notePublic}
                         onChange={(e) => onNotePublicChange(e.target.value)}
+                    />
+                </div>
+                <div className={cardStyles.fieldGroup} style={{marginTop: 14}}>
+                    <label className={cardStyles.label}>Hướng dẫn thanh toán</label>
+                    <textarea
+                        className={cardStyles.textarea}
+                        placeholder="VD: Chuyển khoản đúng nội dung phòng + kỳ thanh toán..."
+                        value={paymentInstructions}
+                        onChange={(e) => onPaymentInstructionsChange(e.target.value)}
                     />
                 </div>
 

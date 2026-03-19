@@ -9,6 +9,8 @@ public interface MeterReadingService {
 
     MeterReadingResponse create(MeterReadingRequest request);
 
+    MeterReadingResponse upsert(MeterReadingRequest request);
+
     List<MeterReadingResponse> getByRoomAndPeriod(Integer roomId, Integer month, Integer year);
 
     List<MeterReadingResponse> getHistoryByRoom(Integer roomId);

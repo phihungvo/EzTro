@@ -19,6 +19,12 @@ public class BillRequest {
     private Integer contractId;
 
     private BigDecimal serviceAmount;
+    private BigDecimal extraAmount;
+    private BigDecimal discountAmount;
+    private String discountReason;
+    private String publicNote;
+    private String internalNote;
+    private String paymentInstructions;
 
     private String note;
 

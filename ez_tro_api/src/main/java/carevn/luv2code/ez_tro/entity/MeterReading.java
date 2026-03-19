@@ -32,6 +32,10 @@ public class MeterReading {
     @JoinColumn(name = "utility_id", nullable = false)
     Utility utility;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "period_id", nullable = false)
+    MeterReadingPeriod period;
+
     @Column(name = "period_month", nullable = false)
     Integer periodMonth; // 1-12
 

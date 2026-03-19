@@ -510,10 +510,23 @@ public class RoomServiceImpl implements RoomService {
             throw new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT);
         }
 
-        List<Utility> usageBasedUtilities = Optional.ofNullable(room.getRoomUtilities()).orElse(List.of()).stream()
-                .map(RoomUtility::getUtility)
-                .filter(u -> u != null && u.getType() == ServiceType.USAGE_BASED)
-                .filter(u -> u.getIsActive() == null || Boolean.TRUE.equals(u.getIsActive()))
+        LocalDate periodStart = LocalDate.of(year, month, 1);
+        LocalDate periodEnd = periodStart.withDayOfMonth(periodStart.lengthOfMonth());
+
+        List<RoomUtility> activeRoomUtilities = Optional.ofNullable(room.getRoomUtilities()).orElse(List.of()).stream()
+                .filter(ru -> ru.getUtility() != null)
+                .filter(ru -> ru.getUtility().getIsActive() == null
+                        || Boolean.TRUE.equals(ru.getUtility().getIsActive()))
+                .filter(ru -> !ru.getStartDate().isAfter(periodEnd))
+                .filter(ru -> ru.getEndDate() == null || !ru.getEndDate().isBefore(periodStart))
+                .toList();
+
+        List<RoomUtility> usageBasedRoomUtilities = activeRoomUtilities.stream()
+                .filter(ru -> ru.getUtility().getType() == ServiceType.USAGE_BASED)
+                .toList();
+
+        List<RoomUtility> fixedChargeRoomUtilities = activeRoomUtilities.stream()
+                .filter(ru -> ru.getUtility().getType() != ServiceType.USAGE_BASED)
                 .toList();
 
         Map<Integer, MeterReading> readingsInPeriod =
@@ -521,8 +534,9 @@ public class RoomServiceImpl implements RoomService {
                         .filter(r -> r.getUtility() != null && r.getUtility().getId() != null)
                         .collect(Collectors.toMap(r -> r.getUtility().getId(), r -> r, (a, b) -> a));
 
-        List<CreatorBillMeterItemResponse> meterItems = usageBasedUtilities.stream()
-                .map(utility -> {
+        List<CreatorBillMeterItemResponse> meterItems = usageBasedRoomUtilities.stream()
+                .map(roomUtility -> {
+                    Utility utility = roomUtility.getUtility();
                     MeterReading reading = readingsInPeriod.get(utility.getId());
                     BigDecimal prevIndex = BigDecimal.ZERO;
                     BigDecimal currentIndex = null;
@@ -555,14 +569,41 @@ public class RoomServiceImpl implements RoomService {
                 })
                 .toList();
 
-        List<CreatorBillUtilityItemResponse> utilityItems = usageBasedUtilities.stream()
-                .map(u -> CreatorBillUtilityItemResponse.builder()
-                        .id(u.getId())
-                        .name(u.getName())
-                        .type(u.getType() != null ? u.getType().name() : null)
-                        .unitPrice(u.getUnitPrice())
-                        .unit(u.getUnit())
+        List<CreatorBillUtilityItemResponse> usageBasedItems = usageBasedRoomUtilities.stream()
+                .map(ru -> CreatorBillUtilityItemResponse.builder()
+                        .id(ru.getUtility().getId())
+                        .name(ru.getUtility().getName())
+                        .type(
+                                ru.getUtility().getType() != null
+                                        ? ru.getUtility().getType().name()
+                                        : null)
+                        .unitPrice(ru.getUtility().getUnitPrice())
+                        .unit(ru.getUtility().getUnit())
+                        .quantity(ru.getQuantity())
+                        .usageAmount(ru.getUsageAmount())
+                        .totalAmount(BigDecimal.ZERO)
                         .build())
+                .toList();
+
+        List<CreatorBillUtilityItemResponse> fixedChargeItems = fixedChargeRoomUtilities.stream()
+                .map(ru -> {
+                    Utility utility = ru.getUtility();
+                    BigDecimal quantity = BigDecimal.valueOf(
+                            Optional.ofNullable(ru.getQuantity()).orElse(1));
+                    BigDecimal totalAmount = Optional.ofNullable(utility.getUnitPrice())
+                            .orElse(BigDecimal.ZERO)
+                            .multiply(quantity);
+                    return CreatorBillUtilityItemResponse.builder()
+                            .id(utility.getId())
+                            .name(utility.getName())
+                            .type(utility.getType() != null ? utility.getType().name() : null)
+                            .unitPrice(utility.getUnitPrice())
+                            .unit(utility.getUnit())
+                            .quantity(ru.getQuantity())
+                            .usageAmount(ru.getUsageAmount())
+                            .totalAmount(totalAmount)
+                            .build();
+                })
                 .toList();
 
         return CreatorBillContextResponse.builder()
@@ -570,7 +611,8 @@ public class RoomServiceImpl implements RoomService {
                 .roomNumber(room.getRoomNumber())
                 .contractId(activeContract.getId())
                 .rentPrice(activeContract.getRentPrice())
-                .usageBasedUtilities(utilityItems)
+                .usageBasedUtilities(usageBasedItems)
+                .fixedChargeUtilities(fixedChargeItems)
                 .meterReadings(meterItems)
                 .build();
     }
