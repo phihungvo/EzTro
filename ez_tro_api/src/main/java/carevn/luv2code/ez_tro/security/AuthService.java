@@ -16,6 +16,8 @@ import carevn.luv2code.ez_tro.dto.requests.RegisterRequest;
 import carevn.luv2code.ez_tro.dto.response.AuthResponse;
 import carevn.luv2code.ez_tro.entity.Role;
 import carevn.luv2code.ez_tro.entity.User;
+import carevn.luv2code.ez_tro.entity.UserSubscription;
+import carevn.luv2code.ez_tro.enums.SubscriptionStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.PermissionRepository;
@@ -97,7 +99,8 @@ public class AuthService {
     }
 
     private User createUserFromGoogle(GoogleTokenInfo info) {
-        Role userRole = roleRepository.findByName("USER").orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        Role userRole =
+                roleRepository.findByName("OWNER").orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         String baseUsername = deriveUsernameFromEmail(info.email());
         String username = baseUsername;
@@ -122,6 +125,11 @@ public class AuthService {
         user.setEnabled(true);
         user.setRoles(Set.of(userRole));
 
+        UserSubscription sub = new UserSubscription();
+        sub.setOwner(user);
+        sub.setPlan(null); // Gói mặc định, có thể gán sau
+        sub.setStartDate(java.time.LocalDateTime.now());
+        sub.setStatus(SubscriptionStatus.ACTIVE);
         return userRepository.save(user);
     }
 
