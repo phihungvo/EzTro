@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from '~/pages/Admin/Tenant/Tenant.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import {
@@ -37,11 +37,7 @@ import {
 } from 'antd';
 import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 import {
-    getAllTenants,
     filterTenants,
-    createTenant,
-    updateTenant,
-    deleteTenant,
 } from '~/service/admin/tenant';
 import useDebounce from '~/hooks/useDebounce';
 import { disablePastDates } from "~/utils/dateUtils";
@@ -66,6 +62,8 @@ function Tenant() {
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
     const navigate = useNavigate();
+    const location = useLocation();
+    const tenantBasePath = location.pathname.startsWith('/admin') ? '/admin/tenants' : '/owner/tenants';
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -189,7 +187,7 @@ function Tenant() {
                         type="default"
                         icon={<EyeOutlined />}
                         buttonWidth={50}
-                        onClick={() => navigate(`/admin/tenants/${record.id}`)}
+                        onClick={() => navigate(`${tenantBasePath}/${record.id}`)}
                     />
                     <SmartButton
                         type="primary"
@@ -371,44 +369,11 @@ function Tenant() {
             message.warning('Bạn đã đạt giới hạn số người thuê theo gói hiện tại. Vui lòng nâng cấp gói!');
             return;
         }
-        setModalMode('create');
-        setSelectedTenant(null);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleCallCreateTenant = async (formData) => {
-        try {
-            await createTenant(formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            // message.success('Tạo người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi tạo người thuê: ${error.response?.data?.message || error.message}`);
-        }
+        navigate(`${tenantBasePath}/create-tenant`);
     };
 
     const handleEditTenant = (record) => {
-        setSelectedTenant(record);
-        setModalMode('edit');
-        const formValues = {
-            ...record,
-            dateOfBirth: record.dateOfBirth ? new Date(record.dateOfBirth) : null,
-            // issueDate: record.issueDate ? new Date(record.issueDate) : null,
-        };
-        form.setFieldsValue(formValues);
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateTenant = async (formData) => {
-        try {
-            // await updateTenant(selectedTenant.id, formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            message.success('Cập nhật người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi cập nhật người thuê: ${error.response?.data?.message || error.message}`);
-        }
+        navigate(`${tenantBasePath}/${record.id}/edit`);
     };
 
     const handleDeleteTenant = (record) => {
@@ -435,11 +400,7 @@ function Tenant() {
             dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
         };
 
-        if (modalMode === 'create') {
-            handleCallCreateTenant(submitData);
-        } else if (modalMode === 'edit') {
-            handleCallUpdateTenant(submitData);
-        } else if (modalMode === 'delete') {
+        if (modalMode === 'delete') {
             handleCallDeleteTenant();
         }
         setIsModalOpen(false);

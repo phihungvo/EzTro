@@ -14,10 +14,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantUpdateRequest;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
+import carevn.luv2code.ez_tro.entity.BoardingHouse;
+import carevn.luv2code.ez_tro.entity.Building;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
@@ -26,6 +29,9 @@ import carevn.luv2code.ez_tro.enums.Gender;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.TenantMapper;
+import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
+import carevn.luv2code.ez_tro.repository.BuildingRepository;
+import carevn.luv2code.ez_tro.repository.RoleRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
@@ -45,13 +51,17 @@ public class TenantServiceImpl implements TenantService {
     private final TenantMapper tenantMapper;
     private final PasswordEncoder passwordEncoder;
     private final ResourceLimitServiceImpl resourceLimitService;
+    private final BoardingHouseRepository boardingHouseRepository;
+    private final BuildingRepository buildingRepository;
+    private final RoleRepository roleRepository;
 
     @Override
-    public TenantResponse create(TenantRequest request) {
+    public TenantResponse create(TenantCreateRequest request) {
         Integer ownerId = SecurityUtils.getCurrentUserId();
 
         // Validate quota tenant
         resourceLimitService.validateCanCreateTenant(ownerId);
+        validateCreateContext(request.getBoardingHouseId(), request.getBuildingId());
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -65,10 +75,14 @@ public class TenantServiceImpl implements TenantService {
                 .phoneNumber(request.getPhoneNumber())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .originalPassword(request.getPassword())
+                .address(request.getPermanentAddress())
                 .enabled(true)
                 .accountNonExpired(true)
                 .credentialsNonExpired(true)
                 .accountNonLocked(true)
+                .roles(java.util.Set.of(roleRepository
+                        .findByName("USER")
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND))))
                 .build();
 
         userRepository.save(user);
@@ -85,13 +99,38 @@ public class TenantServiceImpl implements TenantService {
     }
 
     @Override
-    public TenantResponse update(Integer id, TenantRequest request) {
+    public TenantResponse update(Integer id, TenantUpdateRequest request) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
+        User user = tenant.getUser();
+        if (user != null) {
+            boolean emailChanged = !user.getEmail().equalsIgnoreCase(request.getEmail());
+            if (emailChanged && userRepository.existsByEmail(request.getEmail())) {
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            }
+
+            user.setFullName(request.getFullName());
+            user.setPhoneNumber(request.getPhoneNumber());
+            user.setEmail(request.getEmail());
+            user.setUserName(request.getEmail());
+            user.setAddress(request.getPermanentAddress());
+
+            if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                user.setOriginalPassword(request.getPassword());
+            }
+            userRepository.save(user);
+        }
+
         tenant.setIdentityNumber(request.getIdentityNumber());
+        tenant.setIssueDate(request.getIssueDate());
+        tenant.setIssuePlace(request.getIssuePlace());
         tenant.setDateOfBirth(request.getDateOfBirth());
         tenant.setGender(request.getGender());
         tenant.setOccupation(request.getOccupation());
+        tenant.setPermanentAddress(request.getPermanentAddress());
+        tenant.setEmergencyContact(request.getEmergencyContact());
+        tenant.setEmergencyPhone(request.getEmergencyPhone());
         tenant.setNote(request.getNote());
 
         tenant = tenantRepository.save(tenant);
@@ -268,6 +307,28 @@ public class TenantServiceImpl implements TenantService {
 
     private Tenant getTenantWithDetails(Integer id) {
         return tenantRepository.findByIdWithDetails(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+    }
+
+    private void validateCreateContext(Integer boardingHouseId, Integer buildingId) {
+        BoardingHouse boardingHouse = boardingHouseRepository
+                .findById(boardingHouseId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+
+        Building building = buildingRepository
+                .findById(buildingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(role -> "ADMIN".equals(role.getName()));
+
+        if (!isAdmin && !boardingHouse.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if (building.getBoardingHouse() == null
+                || !building.getBoardingHouse().getId().equals(boardingHouseId)) {
+            throw new AppException(ErrorCode.BUILDING_NOT_FOUND);
+        }
     }
 
     private void setContractStatus(TenantDetailResponse response, List<Contract> contracts) {

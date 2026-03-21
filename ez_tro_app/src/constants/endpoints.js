@@ -81,6 +81,7 @@ const API_ENDPOINTS = {
     },
     TENANTS: {
         CREATE: `${BASE_URL}/tenants`,
+        UPDATE: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,

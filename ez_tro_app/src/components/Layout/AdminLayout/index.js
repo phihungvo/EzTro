@@ -49,6 +49,7 @@ import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
+import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -317,6 +318,8 @@ const AdminLayout = ({onLogout}) => {
                     <Routes>
                         <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
+                        <Route path="/tenants/create-tenant" element={<TenantCreatorPage/>}/>
+                        <Route path="/tenants/:id/edit" element={<TenantCreatorPage/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
                         <Route path="/boarding-houses" element={<BoardingHouses/>}/>
                         <Route path="/owners" element={<Owner/>}/>

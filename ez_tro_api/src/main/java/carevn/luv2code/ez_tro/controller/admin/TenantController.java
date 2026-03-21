@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantUpdateRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
@@ -25,7 +26,7 @@ public class TenantController {
     private final TenantService tenantService;
 
     @PostMapping
-    public ApiResponse<TenantResponse> create(@Valid @RequestBody TenantRequest request) {
+    public ApiResponse<TenantResponse> create(@Valid @RequestBody TenantCreateRequest request) {
         TenantResponse response = tenantService.create(request);
         return ApiResponse.<TenantResponse>builder()
                 .code(HttpStatus.CREATED.value())
@@ -35,7 +36,8 @@ public class TenantController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<TenantResponse> update(@PathVariable Integer id, @Valid @RequestBody TenantRequest request) {
+    public ApiResponse<TenantResponse> update(
+            @PathVariable Integer id, @Valid @RequestBody TenantUpdateRequest request) {
         TenantResponse response = tenantService.update(id, request);
         return ApiResponse.<TenantResponse>builder()
                 .code(HttpStatus.OK.value())
