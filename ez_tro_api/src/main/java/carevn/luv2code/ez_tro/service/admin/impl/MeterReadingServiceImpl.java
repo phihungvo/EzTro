@@ -36,15 +36,15 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @Transactional
     public MeterReadingResponse create(MeterReadingRequest request) {
         // Kiểm tra quyền sở hữu (chủ nhà trọ)
-        authorizationService.checkOwnerOfRoom(request.getRoomId());
-
-        MeterReadingPeriod period = meterReadingPeriodRepository
-                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
-                .orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
-
-        if (period.getStatus() == PeriodStatus.LOCKED) {
-            throw new AppException(ErrorCode.PERIOD_LOCKED_CANNOT_EDIT);
-        }
+        //        authorizationService.checkOwnerOfRoom(request.getRoomId());
+        //
+        //        MeterReadingPeriod period = meterReadingPeriodRepository
+        //                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
+        //                .orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
+        //
+        //        if (period.getStatus() == PeriodStatus.LOCKED) {
+        //            throw new AppException(ErrorCode.PERIOD_LOCKED_CANNOT_EDIT);
+        //        }
 
         // Kiểm tra trùng kỳ
         if (meterReadingRepository.existsByRoomIdAndUtilityIdAndPeriodMonthAndPeriodYear(
@@ -53,48 +53,17 @@ public class MeterReadingServiceImpl implements MeterReadingService {
             throw new AppException(ErrorCode.METER_READING_ALREADY_EXISTS_FOR_PERIOD);
         }
 
-        Room room = roomRepository
-                .findById(request.getRoomId())
-                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        MeterReading reading = buildReadingEntity(request, null);
+        return meterReadingMapper.toResponse(meterReadingRepository.save(reading));
+    }
 
-        Utility utility = utilityRepository
-                .findById(request.getUtilityId())
-                .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
+    @Override
+    @Transactional
+    public MeterReadingResponse upsert(MeterReadingRequest request) {
+        Optional<MeterReading> existing = meterReadingRepository.findByRoomIdAndUtilityIdAndPeriodMonthAndPeriodYear(
+                request.getRoomId(), request.getUtilityId(), request.getPeriodMonth(), request.getPeriodYear());
 
-        // Tìm chỉ số kỳ trước
-        BigDecimal previous = BigDecimal.ZERO;
-        Optional<MeterReading> prevOpt = meterReadingRepository.findLatestPrevious(
-                room.getId(), utility.getId(),
-                request.getPeriodYear(), request.getPeriodMonth());
-
-        if (prevOpt.isPresent()) {
-            previous = prevOpt.get().getCurrentIndex();
-        }
-
-        // Giá hiện hành (có thể cải tiến thêm bảng lịch sử giá)
-        BigDecimal unitPrice = utility.getUnitPrice();
-
-        BigDecimal consumption = request.getCurrentIndex().subtract(previous);
-        if (consumption.compareTo(BigDecimal.ZERO) < 0) {
-            throw new AppException(ErrorCode.INVALID_METER_READING_VALUE);
-        }
-
-        BigDecimal amount = consumption.multiply(unitPrice);
-
-        MeterReading reading = MeterReading.builder()
-                .room(room)
-                .utility(utility)
-                .periodMonth(request.getPeriodMonth())
-                .periodYear(request.getPeriodYear())
-                .readingDate(request.getReadingDate() != null ? request.getReadingDate() : new Date())
-                .previousIndex(previous)
-                .currentIndex(request.getCurrentIndex())
-                .consumption(consumption)
-                .unitPrice(unitPrice)
-                .amount(amount)
-                .note(request.getNote())
-                .build();
-
+        MeterReading reading = buildReadingEntity(request, existing.orElse(null));
         return meterReadingMapper.toResponse(meterReadingRepository.save(reading));
     }
 
@@ -117,5 +86,69 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @Override
     public List<MeterReadingResponse> batchCreate(List<MeterReadingRequest> requests) {
         return requests.stream().map(this::create).collect(Collectors.toList());
+    }
+
+    private MeterReading buildReadingEntity(MeterReadingRequest request, MeterReading existing) {
+        authorizationService.checkOwnerOfRoom(request.getRoomId());
+
+        //        MeterReadingPeriod period = meterReadingPeriodRepository
+        //                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
+        //                .orElseThrow(() -> new AppException(ErrorCode.PERIOD_NOT_FOUND));
+
+        MeterReadingPeriod period = meterReadingPeriodRepository
+                .findByPeriodMonthAndPeriodYear(request.getPeriodMonth(), request.getPeriodYear())
+                .orElseGet(() -> {
+                    MeterReadingPeriod p = new MeterReadingPeriod();
+                    p.setPeriodMonth(request.getPeriodMonth());
+                    p.setPeriodYear(request.getPeriodYear());
+                    p.setStatus(PeriodStatus.DRAFT);
+                    return meterReadingPeriodRepository.save(p);
+                });
+
+        if (period.getStatus() == PeriodStatus.LOCKED) {
+            throw new AppException(ErrorCode.PERIOD_LOCKED_CANNOT_EDIT);
+        }
+
+        Room room = roomRepository
+                .findById(request.getRoomId())
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+
+        Utility utility = utilityRepository
+                .findById(request.getUtilityId())
+                .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
+
+        BigDecimal previous =
+                existing != null && existing.getPreviousIndex() != null ? existing.getPreviousIndex() : BigDecimal.ZERO;
+
+        if (existing == null || existing.getPreviousIndex() == null) {
+            Optional<MeterReading> prevOpt = meterReadingRepository.findLatestPrevious(
+                    room.getId(), utility.getId(), request.getPeriodYear(), request.getPeriodMonth());
+
+            if (prevOpt.isPresent() && prevOpt.get().getCurrentIndex() != null) {
+                previous = prevOpt.get().getCurrentIndex();
+            }
+        }
+
+        BigDecimal unitPrice = request.getUnitPrice() != null ? request.getUnitPrice() : utility.getUnitPrice();
+        BigDecimal consumption = request.getCurrentIndex().subtract(previous);
+        if (consumption.compareTo(BigDecimal.ZERO) < 0) {
+            throw new AppException(ErrorCode.INVALID_METER_READING_VALUE);
+        }
+
+        BigDecimal amount = consumption.multiply(unitPrice);
+        MeterReading reading = existing != null ? existing : new MeterReading();
+        reading.setRoom(room);
+        reading.setUtility(utility);
+        reading.setPeriod(period);
+        reading.setPeriodMonth(request.getPeriodMonth());
+        reading.setPeriodYear(request.getPeriodYear());
+        reading.setReadingDate(request.getReadingDate() != null ? request.getReadingDate() : new Date());
+        reading.setPreviousIndex(previous);
+        reading.setCurrentIndex(request.getCurrentIndex());
+        reading.setConsumption(consumption);
+        reading.setUnitPrice(unitPrice);
+        reading.setAmount(amount);
+        reading.setNote(request.getNote());
+        return reading;
     }
 }

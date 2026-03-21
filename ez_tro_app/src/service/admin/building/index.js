@@ -36,7 +36,6 @@ export const createBuilding = async (formData) => {
             API_ENDPOINTS.BUILDING.CREATE,
             formData,
         );
-        message.success('Building created successfully');
         return response.data;
     } catch (error) {
         console.error('Error when creating building: ', error);

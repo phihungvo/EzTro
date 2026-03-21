@@ -41,4 +41,8 @@ public class RoomResponse {
     Boolean hasBathroom = true;
 
     Boolean hasKitchen = true;
+
+    String tenantName;
+    String tenantPhone;
+    Long remainingDays;
 }

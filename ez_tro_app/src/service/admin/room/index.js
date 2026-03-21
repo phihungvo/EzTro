@@ -16,6 +16,27 @@ export const getAllRooms = async ({page, pageSize}) => {
     }
 };
 
+export const getAllRoomPeriodSummary = async (boardingHouseId, month, year) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.ROOMS_PERIOD_SUMMARY(boardingHouseId, month, year));
+
+        return response.data;
+    } catch (err) {
+        console.error("Fetch rooms period summary failed", err);
+        message.error("Lỗi khi tải danh sách phòng");
+    }
+};
+
+export const getCreatorBillContext = async (roomId, month, year) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.CREATOR_BILL_CONTEXT(roomId, month, year));
+        return response.data;
+    } catch (err) {
+        console.error("Fetch creator bill context failed", err);
+        message.error("Lỗi khi tải dữ liệu tạo hoá đơn");
+    }
+};
+
 export const getAllRoomNoPaged = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_ALL_NO_PAGING);
@@ -23,6 +44,59 @@ export const getAllRoomNoPaged = async () => {
     } catch (error) {
         message.error(
             error.response?.data?.message || 'Lỗi lấy danh sách người dùng',
+        );
+        throw error;
+    }
+};
+
+export const filterRooms = async ({
+                                      search,
+                                      status,
+                                      boardingHouseId,
+                                      minArea,
+                                      maxArea,
+                                      minPrice,
+                                      maxPrice,
+                                      hasActiveContract,
+                                      page = 0,
+                                      pageSize = 10,
+                                  }) => {
+    try {
+        const params = {
+            search,
+            status,
+            boardingHouseId,
+            minArea,
+            maxArea,
+            minPrice,
+            maxPrice,
+            hasActiveContract,
+            page,
+            size: pageSize,
+            // sort mặc định (có thể thêm param sort sau nếu cần)
+        };
+
+        // Loại bỏ các param undefined/null để tránh gửi lên backend
+        Object.keys(params).forEach(key =>
+            (params[key] === undefined || params[key] === null) && delete params[key]
+        );
+
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.FILTER, {params});
+        return response.data; // giả sử trả về { content: [], totalElements: ..., ... }
+    } catch (error) {
+        console.error('Error filtering rooms:', error);
+        // message.error('Lỗi khi lọc danh sách phòng');
+        return null;
+    }
+};
+
+export const getAllRoomAvailableByBoardingHouse = async (boardingHouseId) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.AVAILABLE_BY_BOARDING_HOUSE(boardingHouseId));
+        return response.data.result;
+    } catch (error) {
+        message.error(
+            error.response?.data?.message,
         );
         throw error;
     }

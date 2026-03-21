@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import ReactApexChart from 'react-apexcharts';
 import styles from './HomeDashboard.module.scss';
+import {color} from "three/tsl";
 
 const {RangePicker} = DatePicker;
 const {Title, Text, Paragraph} = Typography;
@@ -193,7 +194,7 @@ function AdminDashboard() {
                             label: 'Avg Rating',
                             fontSize: '14px',
                             fontWeight: 600,
-                            color: '#64748b',
+                            color: 'white',
                             formatter: () => '4.6★'
                         }
                     }
@@ -511,7 +512,7 @@ function AdminDashboard() {
                                 <div className={styles.chartHeader}>
                                     <div>
                                         <Title level={4} className={styles.chartTitle}>Tổng quan Lưu lượng</Title>
-                                        <Text type="secondary">Theo dõi hiệu suất đa kênh</Text>
+                                        <Text type="secondary" style={{color: 'white'}}>Theo dõi hiệu suất đa kênh</Text>
                                     </div>
                                     <Space>
                                         <Button size="small" type="text">Day</Button>
@@ -533,7 +534,7 @@ function AdminDashboard() {
                                     <div className={styles.satisfactionItem}>
                                         <StarOutlined style={{color: '#fadb14', fontSize: 20}}/>
                                         <div>
-                                            <Text strong style={{fontSize: 24, color: '#1e293b'}}>4.6</Text>
+                                            <Text strong style={{fontSize: 24, color: '#fff'}}>4.6</Text>
                                             <Text type="secondary" style={{display: 'block', fontSize: 12}}>Avg
                                                 Rating</Text>
                                         </div>
@@ -542,8 +543,8 @@ function AdminDashboard() {
                                     <div className={styles.satisfactionItem}>
                                         <HeartOutlined style={{color: '#ef4444', fontSize: 20}}/>
                                         <div>
-                                            <Text strong style={{fontSize: 24, color: '#1e293b'}}>94%</Text>
-                                            <Text type="secondary" style={{display: 'block', fontSize: 12}}>Would
+                                            <Text strong style={{fontSize: 24, color: '#fff'}}>94%</Text>
+                                            <Text type="secondary" style={{display: 'block', fontSize: 12, color: 'white'}}>Would
                                                 Recommend</Text>
                                         </div>
                                     </div>

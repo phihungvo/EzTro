@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  cache:
+    type: simple
+    cache-names:
+      - userPermissions
+      - rolePermissions
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: false
+    default-schema: tevc_cms
+    drop-first: false
+    contexts: development, production
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: false
+
+#  session:
+#    store-type: hash_map
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: false
+            trust: smtp.gmail.com
+          connection-timeout: 5000
+          timeout: 5000
+          write-timeout: 5000
+        debug: ${MAIL_DEBUG}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+
+minio:
+  url: ${MINIO_URL}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket: ${MINIO_BUCKET}
+  base-path: ${MINIO_BASE_PATH:/uploads}
+
+logging:
+  level:
+    root: INFO
+    org.springframework: WARN
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/var/uploads}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

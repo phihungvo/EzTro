@@ -26,6 +26,7 @@ import carevn.luv2code.ez_tro.mapper.UserMapper;
 import carevn.luv2code.ez_tro.repository.PermissionRepository;
 import carevn.luv2code.ez_tro.repository.RoleRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
+import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import carevn.luv2code.ez_tro.service.admin.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -44,17 +45,20 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
+    private final SystemConfigService systemConfigService;
 
     public UserServiceImpl(
             PasswordEncoder passwordEncoder,
             UserRepository userRepository,
             PermissionRepository permissionRepository,
             RoleRepository roleRepository,
-            UserMapper userMapper) {
+            UserMapper userMapper,
+            SystemConfigService systemConfigService) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userMapper = userMapper;
+        this.systemConfigService = systemConfigService;
     }
 
     //    @Override
@@ -104,6 +108,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User savedUser = userRepository.save(user);
+        systemConfigService.ensureDefaultSubscriptionForOwner(savedUser);
 
         UserDTO dto = userMapper.toDTO(savedUser);
 
@@ -283,6 +288,7 @@ public class UserServiceImpl implements UserService {
         dto.setEmail(user.getEmail());
         dto.setAddress(user.getAddress());
         dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setOriginalPassword(user.getOriginalPassword());
         dto.setEnabled(user.isEnabled());
 
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {

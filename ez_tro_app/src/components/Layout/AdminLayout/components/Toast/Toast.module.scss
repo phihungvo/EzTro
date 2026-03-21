@@ -1,0 +1,33 @@
+ .toast {
+   position: fixed;
+   bottom: 24px;
+   right: 24px;
+   background: var(--bg-card);
+   border-radius: 4px;
+   padding: 13px 20px;
+   font-size: 13px;
+   font-weight: 600;
+   z-index: 300;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+   animation: fadeUp 0.3s ease;
+   font-family: var(--font-body);
+ }
+
+ .success {
+   color: var(--green);
+   border: 1px solid rgba(0, 229, 138, 0.3);
+ }
+
+ .warn {
+   color: var(--amber);
+   border: 1px solid rgba(255, 181, 71, 0.3);
+ }
+
+ .info {
+   color: var(--cyan);
+   border: 1px solid rgba(0, 245, 233, 0.25);
+ }
+

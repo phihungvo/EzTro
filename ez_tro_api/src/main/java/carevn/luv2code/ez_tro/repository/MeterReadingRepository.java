@@ -35,4 +35,14 @@ public interface MeterReadingRepository
     List<MeterReading> findByRoomIdAndPeriodMonthAndPeriodYear(Integer roomId, Integer month, Integer year);
 
     List<MeterReading> findByRoomId(Integer roomId);
+
+    @Query(
+            """
+			SELECT mr
+			FROM MeterReading mr
+			WHERE mr.room.id = :roomId
+			AND MONTH(mr.readingDate) = :month
+			AND YEAR(mr.readingDate) = :year
+			""")
+    List<MeterReading> findLatestByRoomAndPeriod(Integer roomId, int month, int year);
 }

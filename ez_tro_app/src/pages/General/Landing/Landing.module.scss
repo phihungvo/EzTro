@@ -1,0 +1,851 @@
+// Design tokens - Warm amber & cream
+$primary: #f59e0b;
+$primaryLight: rgba(245, 158, 11, 0.18);
+$primarySubtle: rgba(245, 158, 11, 0.08);
+$accent: #fbbf24;
+$coral: #f97316;
+$bgDark: #0f0d0b;
+$bgCard: rgba(26, 23, 18, 0.7);
+$textPrimary: rgba(255, 251, 235, 0.95);
+$textMuted: rgba(255, 251, 235, 0.68);
+$border: rgba(255, 251, 235, 0.1);
+$star: #fcd34d;
+
+.wrap {
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: radial-gradient(1400px 700px at 10% -5%, rgba(245, 158, 11, 0.12), transparent 55%),
+    radial-gradient(800px 500px at 95% 20%, rgba(249, 115, 22, 0.06), transparent 50%),
+    linear-gradient(180deg, #0f0d0b 0%, #16120e 50%, #0f0d0b 100%);
+  color: $textPrimary;
+}
+
+.promoBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(90deg, $primarySubtle, rgba(249, 115, 22, 0.06));
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  color: $textPrimary;
+  font-size: 14px;
+  font-weight: 600;
+  flex-wrap: wrap;
+
+  svg {
+    font-size: 18px;
+    color: $primary;
+  }
+}
+
+.promoBtn {
+  padding: 6px 16px;
+  border-radius: 10px;
+  background: $primaryLight;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 200ms ease;
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.35);
+    transform: translateY(-1px);
+  }
+}
+
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 13, 11, 0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid $border;
+}
+
+.headerInner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 0;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.logoDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: $primary;
+  box-shadow: 0 0 0 6px $primarySubtle, 0 0 24px rgba(245, 158, 11, 0.3);
+  flex-shrink: 0;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: $textMuted;
+  font-weight: 600;
+  font-size: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 10px;
+  transition: all 200ms ease;
+
+  &:hover {
+    color: $accent;
+    background: $primarySubtle;
+  }
+}
+
+.headerCta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+// Hero
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: 48px 0 56px;
+}
+
+.heroContent {
+  animation: fadeUp 0.6s ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroCard {
+  border: 1px solid $border;
+  background: $bgCard;
+  border-radius: 24px;
+  padding: 36px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 251, 235, 0.04);
+  backdrop-filter: blur(20px);
+}
+
+.heroTrust {
+  font-size: 12px;
+  font-weight: 700;
+  color: $primary;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 10px;
+}
+
+.titleSub {
+  font-size: 18px;
+  font-weight: 600;
+  color: $textMuted;
+  margin-bottom: 16px;
+}
+
+.titleAccent {
+  color: $primary;
+}
+
+.subtitle {
+  color: $textMuted;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btnPrimary {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #0f0d0b;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 220ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.35);
+  }
+}
+
+.btnGhost {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 14px;
+  border: 1px solid $border;
+  background: rgba(255, 251, 235, 0.04);
+  color: $textPrimary;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 220ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: $primarySubtle;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+}
+
+.heroImage {
+  animation: fadeUp 0.6s 0.15s ease both;
+}
+
+.heroImgWrap {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid $border;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 251, 235, 0.04);
+
+  img {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.heroImgOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+}
+
+.carouselWrap {
+  border: 1px solid $border;
+  border-radius: 24px;
+  overflow: hidden;
+  background: $bgCard;
+}
+
+.carouselSlide {
+  position: relative;
+  height: 340px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.carouselOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+:global(.ant-carousel .slick-dots li button) {
+  background: rgba(255, 251, 235, 0.35) !important;
+}
+
+:global(.ant-carousel .slick-dots li.slick-active button) {
+  background: $primary !important;
+  width: 24px !important;
+  border-radius: 4px !important;
+}
+
+// Section
+.section {
+  margin-top: 56px;
+}
+
+.sectionHead {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+}
+
+.sectionSub {
+  color: $textMuted;
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 56ch;
+}
+
+// Feature Grid (3x2 - 6 items như nTro)
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+// Steps - 3 bước
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.stepCard {
+  border: 1px solid $border;
+  background: $bgCard;
+  border-radius: 20px;
+  padding: 28px;
+  text-align: center;
+  transition: all 250ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.stepNum {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: $primarySubtle;
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 22px;
+  color: $primary;
+}
+
+.stepTitle {
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.stepDesc {
+  color: $textMuted;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.pricingPromo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  background: $primarySubtle;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  svg {
+    font-size: 24px;
+    color: $primary;
+  }
+
+  span {
+    flex: 1;
+    min-width: 200px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+}
+
+.btnSmall {
+  height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+}
+
+.featureItem {
+  border: 1px solid $border;
+  background: $bgCard;
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 250ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+}
+
+.featureIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: $primarySubtle;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: $primary;
+  margin-bottom: 14px;
+}
+
+.featureName {
+  font-weight: 800;
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+.featureDesc {
+  color: $textMuted;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+// Benefits
+.benefitGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.benefitCard {
+  border: 1px solid $border;
+  background: $bgCard;
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 250ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: $primarySubtle;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: $accent;
+  margin-bottom: 12px;
+}
+
+.benefitName {
+  font-weight: 800;
+  font-size: 17px;
+  margin-bottom: 10px;
+}
+
+.benefitDesc {
+  color: $textMuted;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+// Pricing
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.priceCard {
+  border: 1px solid $border;
+  background: $bgCard;
+  border-radius: 20px;
+  padding: 28px;
+  transition: all 250ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+
+  &.priceHighlight {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, $primarySubtle 0%, rgba(249, 115, 22, 0.04) 100%);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+  }
+}
+
+.priceIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: $primarySubtle;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: $primary;
+  margin-bottom: 16px;
+}
+
+.priceName {
+  font-weight: 800;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.priceVal {
+  font-size: 15px;
+  font-weight: 700;
+  color: $textMuted;
+  margin-bottom: 14px;
+}
+
+.priceNote {
+  color: $textMuted;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.feedbackWrap {
+  border: 1px solid $border;
+  border-radius: 24px;
+  overflow: hidden;
+  background: $bgCard;
+}
+
+.feedbackCard {
+  padding: 36px 44px;
+  min-height: 280px;
+}
+
+.feedbackStars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  color: $star;
+  font-size: 18px;
+}
+
+.feedbackText {
+  color: $textPrimary;
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+  max-width: 800px;
+}
+
+.feedbackMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    font-size: 15px;
+    color: $textPrimary;
+  }
+
+  span {
+    font-size: 13px;
+    color: $textMuted;
+  }
+}
+
+.faqWrap {
+  border: 1px solid $border;
+  border-radius: 22px;
+  overflow: hidden;
+  background: $bgCard;
+}
+
+.faqCollapse {
+  background: transparent !important;
+  border: none !important;
+
+  :global(.ant-collapse-item) {
+    border-bottom: 1px solid $border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-collapse-header) {
+    color: $textPrimary !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    padding: 18px 24px !important;
+
+    .ant-collapse-arrow {
+      color: $primary !important;
+    }
+  }
+
+  :global(.ant-collapse-content) {
+    background: transparent !important;
+  }
+
+  :global(.ant-collapse-content-box) {
+    padding: 0 24px 20px 48px !important;
+  }
+}
+
+.faqA {
+  color: $textMuted !important;
+  font-size: 14px !important;
+  line-height: 1.8 !important;
+  margin: 0 !important;
+}
+
+.finalCta {
+  margin-top: 56px;
+  border: 1px solid $border;
+  background: linear-gradient(135deg, $bgCard 0%, rgba(245, 158, 11, 0.04) 100%);
+  border-radius: 24px;
+  padding: 36px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.finalText {
+  color: $textMuted;
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 60ch;
+}
+
+.footer {
+  margin-top: 72px;
+  background: rgba(15, 13, 11, 0.95);
+  border-top: 1px solid $border;
+  padding: 52px 24px 28px;
+}
+
+.footerInner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.footerBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.footerDesc {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 40ch;
+}
+
+.footerTitle {
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 16px;
+  color: $textPrimary;
+}
+
+.footerCol {
+  display: flex;
+  flex-direction: column;
+
+  .footerLink {
+    color: $textMuted;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 0;
+    font-size: 14px;
+    text-align: left;
+    transition: color 200ms ease;
+
+    &:hover {
+      color: $primary;
+    }
+  }
+}
+
+.footerContact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: $textMuted;
+  font-size: 14px;
+  line-height: 1.5;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.footerBottom {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding-top: 28px;
+  margin-top: 36px;
+  border-top: 1px solid $border;
+  color: $textMuted;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+// Responsive
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 32px 0 40px;
+  }
+
+  .featureGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stepsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefitGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .footerInner {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .titleSub {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingPromo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px 48px;
+  }
+
+  .headerInner {
+    padding: 12px 16px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .heroCard {
+    padding: 24px;
+  }
+
+  .footerInner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .finalCta {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px;
+  }
+
+  .carouselSlide {
+    height: 240px;
+  }
+}

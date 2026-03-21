@@ -33,7 +33,7 @@ import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
 import Amenity from "src/pages/Admin/Utility";
-import Bill from "~/pages/Admin/Bill";
+import Bill from "src/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
@@ -45,6 +45,10 @@ import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
 import SystemLogs from "~/pages/Admin/SystemLogs";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
+import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
+import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
+import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -165,6 +169,20 @@ const adminMenuConfig = [
                 icon: <DollarOutlined/>,
                 color: "#16a34a",
                 path: "/admin/revenues",
+            },
+            {
+                key: "subscription-plan",
+                label: "Gói dịch vụ",
+                title: "Quản lý gói dịch vụ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/subscription-plan",
+            },
+            {
+                key: "payment-management",
+                label: "Đăng ký gói",
+                title: "Quản lý đăng ký gói dịch vụ chủ trọ",
+                icon: <CreditCardOutlined/>,
+                path: "/admin/admin-payment-management",
             },
             {
                 key: "assets",
@@ -300,12 +318,14 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
-                        <Route path="/boarding-houses" element={<Revenue/>}/>
+                        <Route path="/boarding-houses" element={<BoardingHouses/>}/>
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
+                        <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
                         <Route path="/bills" element={<Bill/>}/>
+                        {/*<Route path="/bills/create-bill" element={<BillCreator />} />*/}
                         <Route path="/services" element={<Amenity/>}/>
                         <Route path="/revenues" element={<Revenue/>}/>
                         <Route path="/users" element={<UserManagement/>}/>
@@ -314,6 +334,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/room-requests" element={<RequestManagement/>}/>
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
+                        <Route path="/subscription-plan" element={<SubscriptionPlan/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
                         <Route path="/system-log" element={<SystemLogs/>}/>
                         <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>

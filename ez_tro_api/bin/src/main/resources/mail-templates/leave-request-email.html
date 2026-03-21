@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${subject}"></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .header {
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            padding: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Thông Báo Đơn Xin Phép</h2>
+    </div>
+    <div class="content">
+        <p>Kính gửi Quản lý,</p>
+        <p>Nhân viên <strong th:text="${employeeName}"></strong> đã gửi một đơn xin phép với các thông tin sau:</p>
+        <ul>
+            <li><strong>Ngày bắt đầu:</strong> <span th:text="${#dates.format(startDate, 'dd/MM/yyyy')}"></span></li>
+            <li><strong>Ngày kết thúc:</strong> <span th:text="${#dates.format(endDate, 'dd/MM/yyyy')}"></span></li>
+            <li><strong>Lý do:</strong> <span th:text="${reason}"></span></li>
+            <li><strong>Trạng thái:</strong> <span th:text="${status}"></span></li>
+        </ul>
+        <p>Vui lòng xem xét và phê duyệt đơn xin phép này. Nếu cần thêm thông tin, hãy liên hệ trực tiếp với nhân
+            viên.</p>
+        <!-- Nút tùy chọn liên kết đến hệ thống phê duyệt -->
+        <p>
+            <a th:href="@{${approvalLink}}" class="button" th:if="${approvalLink != null}">Phê Duyệt Ngay</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>Đây là email tự động từ TEVC CMS. Vui lòng không trả lời trực tiếp vào email này.</p>
+        <p>&copy; 2025 TEVC CMS. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

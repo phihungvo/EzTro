@@ -1,0 +1,30 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+
+  .anticon {
+    margin-right: 6px;
+    font-size: 16px;
+  }
+}
+
+.maxed {
+  color: #cf1322;
+  font-weight: 600;
+}
+
+.addButton {
+  font-weight: 500;
+}

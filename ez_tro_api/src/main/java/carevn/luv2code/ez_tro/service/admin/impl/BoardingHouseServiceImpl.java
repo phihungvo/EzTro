@@ -19,6 +19,7 @@ import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BoardingHouseService;
+import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import carevn.luv2code.ez_tro.specification.BoardingHouseSpecs;
 import lombok.RequiredArgsConstructor;
 
@@ -28,19 +29,46 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final UserRepository userRepository;
     private final BoardingHouseMapper boardingHouseMapper;
+    private final ResourceLimitServiceImpl resourceLimitService;
+    private final SystemConfigService systemConfigService;
 
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
-        User owner = userRepository
-                .findById(request.getOwnerId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        //        User owner = userRepository
+        //                .findById(request.getOwnerId())
+        //                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!SecurityUtils.isOwner() && !SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if (SecurityUtils.isOwner()) {
+            // Owner mới có thể chưa được admin gán gói thủ công, nên tự cấp default plan trước khi check quota.
+            systemConfigService.ensureDefaultSubscriptionForOwner(currentUser);
+            resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
+        }
 
         BoardingHouse house = boardingHouseMapper.toEntity(request);
-        house.setOwner(owner);
+        house.setOwner(currentUser);
 
         boardingHouseRepository.save(house);
         return boardingHouseMapper.toResponse(house);
     }
+
+    //    User currentUser = SecurityUtils.getCurrentUser();
+    //    if (!currentUser.isOwner()) {
+    //        throw new AppException(ErrorCode.FORBIDDEN);
+    //    }
+    //
+    //    // Kiểm tra quota
+    //    resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
+    //
+    //    BoardingHouse house = boardingHouseMapper.toEntity(request);
+    //    house.setOwner(currentUser); // owner tự tạo, không cần ownerId từ request
+    //
+    //    boardingHouseRepository.save(house);
+    //    return boardingHouseMapper.toResponse(house);
 
     @Override
     public BoardingHouseResponse update(Integer id, BoardingHouseRequest request) {
@@ -97,6 +125,14 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         }
 
         return boardingHouseRepository.findAll(spec, pageable).map(boardingHouseMapper::toResponse);
+    }
+
+    @Override
+    public List<BoardingHouseResponse> getAllForOwner() {
+        User user = SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+
+        return List.of();
     }
 
     @Override

@@ -35,6 +35,7 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
 
     private final List<String> publicEndpoints = List.of(
             "/api/auth/login",
+            "/api/auth/google",
             "/api/auth/register",
             "/api/auth/logout",
             "/api/public/**",
@@ -55,6 +56,12 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
 
         String requestPath = request.getRequestURI();
         String requestMethod = request.getMethod();
+
+        // Always allow preflight requests
+        if ("OPTIONS".equalsIgnoreCase(requestMethod)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // Bỏ qua các endpoint công khai
         if (isPublicEndpoint(requestPath)) {

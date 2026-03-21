@@ -18,6 +18,7 @@ import {
 } from '~/service/admin/bill';
 import {getAllActiveContracts} from '~/service/admin/contract';
 import useDebounce from '~/hooks/useDebounce';
+import { useNavigate } from 'react-router-dom';
 
 const cx = classNames.bind(styles);
 const {RangePicker} = DatePicker;
@@ -31,6 +32,7 @@ function Bill() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
     const [viewMode, setViewMode] = useState('table');
+    const navigate = useNavigate();
     const [form] = Form.useForm();
 
     // Filter states
@@ -170,9 +172,9 @@ function Bill() {
     }, [pagination.current, pagination.pageSize]);
 
     const handleAdd = () => {
-        setModalMode('create');
-        form.resetFields();
-        setIsModalOpen(true);
+       navigate(`/owner/bills/create-bill`)
+       //  window.location.href = '/create-bill.html';
+
     };
 
     const handleEdit = (r) => {

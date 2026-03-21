@@ -1,0 +1,155 @@
+.app {
+  --st-bg: #0d0f14;
+  --st-panel: #121621;
+  --st-panel-2: #151b28;
+  --st-panel-3: #0f1320;
+  --st-border: rgba(255, 255, 255, 0.08);
+  --st-border-2: rgba(255, 255, 255, 0.12);
+  --st-text: rgba(255, 255, 255, 0.92);
+  --st-muted: rgba(255, 255, 255, 0.58);
+  --st-faint: rgba(255, 255, 255, 0.38);
+  --st-accent: #00f5e9;
+  --st-accent-dim: rgba(0, 245, 233, 0.12);
+  --st-accent-dim-2: rgba(0, 245, 233, 0.08);
+
+  font-family: var(--font-body, 'ProximaNova', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  background: radial-gradient(1200px 800px at 20% -20%, var(--st-accent-dim), transparent 50%),
+              radial-gradient(1000px 600px at 80% 10%, rgba(61, 143, 255, 0.1), transparent 50%),
+              linear-gradient(180deg, var(--st-bg), var(--st-bg));
+  color: var(--st-text);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--st-accent), rgba(61,143,255,0.5), transparent);
+  animation: scanShine 4s linear infinite;
+}
+
+@keyframes scanShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.page {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: flex-start;
+  position: relative;
+  z-index: 2;
+  background: rgba(18, 22, 33, 0.6);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid var(--st-border-2);
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.formCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formCol > * {
+  background: rgba(21, 27, 40, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--st-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.formCol > *:hover {
+  border-color: var(--st-accent-dim-2);
+  box-shadow: 
+    0 20px 60px rgba(0,245,233,0.15),
+    0 0 0 1px var(--st-accent-dim),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: translateY(-4px);
+}
+
+.formCol > *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--st-accent), transparent);
+  transition: left 0.6s;
+}
+
+.formCol > *:hover::before {
+  left: 100%;
+}
+
+/* Enhanced buttons */
+.app button {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 12px 24px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--st-border-2);
+  color: var(--st-text);
+  letter-spacing: 0.3px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.app button:hover {
+  transform: translateY(-2px);
+  border-color: var(--st-accent-dim);
+  box-shadow: 0 12px 40px rgba(0,245,233,0.25);
+  background: var(--st-accent-dim);
+  color: var(--st-accent);
+}
+
+.app button:active {
+  transform: translateY(0);
+}
+
+/* Shine effect on primary actions */
+.primaryShine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, 
+    transparent 0%, 
+    rgba(255,255,255,0.25) 50%, 
+    transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+

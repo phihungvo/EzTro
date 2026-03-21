@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/Building/Building.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
@@ -16,14 +16,17 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import { Form, message, Row, Col, Pagination, Segmented } from 'antd';
+import {Form, message, Row, Col, Pagination, Segmented} from 'antd';
 import {
     createBuilding,
     updateBuilding,
     deleteBuilding,
-    getAllBuildingsByRole
+    getAllBuildingsByRole,
 } from '~/service/admin/building';
 import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {useOwnerQuota} from '~/hooks/useOwnerQuota';
+import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
+import {useAuth} from "~/routes/AuthContext";
 
 const cx = classNames.bind(styles);
 
@@ -41,6 +44,17 @@ function Building() {
     const [selectedBuilding, setSelectedBuilding] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
+
+    const {data: quota} = useOwnerQuota();
+    const invalidateQuota = useInvalidateQuota();
+
+    const { user } = useAuth();
+    const isOwner = user?.isOwner || false;
+
+    const current = quota?.currentBuildings ?? 0;
+    const max = quota?.maxBuildings ?? 0;
+    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
+    const isAddDisabled = isOwner && current >= max;
 
     const columns = [
         {
@@ -81,16 +95,16 @@ function Building() {
                 <>
                     <SmartButton
                         type="primary"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleEditBuilding(record)}
                     />
                     <SmartButton
                         type="danger"
-                        icon={<DeleteOutlined />}
+                        icon={<DeleteOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleDeleteBuilding(record)}
-                        style={{ marginLeft: '8px' }}
+                        style={{marginLeft: '8px'}}
                     />
                 </>
             ),
@@ -99,16 +113,16 @@ function Building() {
 
     const buildingModalFields = [
         {
-            label: 'Tên khu nhà',
+            label: 'Tên tòa nhà',
             name: 'name',
             type: 'text',
-            rules: [{ required: true, message: 'Tên khu nhà là bắt buộc!' }],
+            rules: [{required: true, message: 'Tên tòa nhà là bắt buộc!'}],
         },
         {
             label: 'Khu nhà trọ',
             name: 'boardingHouseId',
             type: 'select',
-            options: boardingHouseOptionSource
+            options: boardingHouseOptionSource,
         },
         {
             label: 'Số tầng',
@@ -130,13 +144,13 @@ function Building() {
     const handleGetAllBoardingHouses = async () => {
         try {
             const response = await getAllBoardingHousesNoPaged();
-            const mappedUsers = response.map(usr => ({
-                value: usr.id,
-                label: usr.name,
+            const mapped = response.map((item) => ({
+                value: item.id,
+                label: item.name,
             }));
-            setBoardingHouseOptionSource(mappedUsers);
+            setBoardingHouseOptionSource(mapped);
         } catch (error) {
-            console.error('Error fetching users:', error);
+            console.error('Error fetching boarding houses:', error);
             setBoardingHouseOptionSource([]);
         }
     };
@@ -144,22 +158,20 @@ function Building() {
     const handleGetBuildings = async (page = 1, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            const response = await getAllBuildingsByRole({ page: page - 1, pageSize });
-
-            if (response && Array.isArray(response.content)) {
+            const response = await getAllBuildingsByRole({page: page - 1, pageSize});
+            if (response?.content) {
                 setBuildingSource(response.content);
                 setPagination({
                     current: page,
-                    pageSize: pageSize,
+                    pageSize,
                     total: response.totalElements,
                 });
-                console.log('Building sources: ',response.content);
             } else {
                 setBuildingSource([]);
-                message.error('Dữ liệu khu nhà không hợp lệ');
+                message.error('Dữ liệu tòa nhà không hợp lệ');
             }
         } catch (error) {
-            message.error(`Lỗi khi lấy danh sách khu nhà: ${error.response?.data?.message || error.message}`);
+            message.error(`Lỗi khi lấy danh sách tòa nhà: ${error.response?.data?.message || error.message}`);
             setBuildingSource([]);
         } finally {
             setLoading(false);
@@ -167,6 +179,10 @@ function Building() {
     };
 
     const handleAddBuilding = () => {
+        if (isAddDisabled) {
+            message.warning('Bạn đã đạt giới hạn số tòa nhà theo gói hiện tại. Vui lòng nâng cấp gói!');
+            return;
+        }
         setModalMode('create');
         setSelectedBuilding(null);
         form.resetFields();
@@ -176,14 +192,12 @@ function Building() {
     const handleCallCreateBuilding = async (formData) => {
         try {
             await createBuilding(formData);
-            handleGetBuildings();
+            invalidateQuota();           // Refetch quota ngay
+            handleGetBuildings();        // Refetch danh sách building
             setIsModalOpen(false);
+            message.success('Thêm tòa nhà thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi tạo khu nhà: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi tạo tòa nhà: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -199,12 +213,9 @@ function Building() {
             await updateBuilding(selectedBuilding.id, formData);
             handleGetBuildings();
             setIsModalOpen(false);
+            message.success('Cập nhật tòa nhà thành công!');
         } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật khu nhà: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
+            message.error(`Lỗi khi cập nhật tòa nhà: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -216,9 +227,15 @@ function Building() {
     };
 
     const handleCallDeleteBuilding = async () => {
-        await deleteBuilding(selectedBuilding.id);
-        handleGetBuildings();
-        setIsModalOpen(false);
+        try {
+            await deleteBuilding(selectedBuilding.id);
+            invalidateQuota();           // Refetch quota sau khi xóa
+            handleGetBuildings();
+            setIsModalOpen(false);
+            message.success('Xóa tòa nhà thành công!');
+        } catch (error) {
+            message.error(`Lỗi khi xóa tòa nhà: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     const handleFormSubmit = (formData) => {
@@ -229,51 +246,52 @@ function Building() {
         } else if (modalMode === 'delete') {
             handleCallDeleteBuilding();
         }
-        setIsModalOpen(false);
     };
 
-    const handleTableChange = (pagination) => {
-        handleGetBuildings(pagination.current, pagination.pageSize);
+    const handleTableChange = (newPagination) => {
+        handleGetBuildings(newPagination.current, newPagination.pageSize);
     };
 
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm toà nhà mới';
+                return 'Thêm tòa nhà mới';
             case 'edit':
-                return 'Chỉnh sửa toà nhà';
+                return 'Chỉnh sửa tòa nhà';
             case 'delete':
-                return 'Xóa toà nhà';
+                return 'Xóa tòa nhà';
             default:
-                return 'Chi tiết toà nhà';
+                return 'Chi tiết tòa nhà';
         }
-    };
-
-    const handleViewBuilding = (record) => {
-        setSelectedBuilding(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
     };
 
     return (
         <div className={cx('building-wrapper')}>
             {/* Header */}
             <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm khu nhà" icon={<SearchOutlined />} />
+                <SmartInput size="large" placeholder="Tìm kiếm tòa nhà" icon={<SearchOutlined/>}/>
                 <div className={cx('features')}>
                     <Segmented
                         value={viewMode}
                         onChange={setViewMode}
                         options={[
-                            { label: 'Bảng', value: 'table', icon: <TableOutlined /> },
-                            { label: 'Thẻ', value: 'card', icon: <AppstoreOutlined /> },
+                            {label: 'Bảng', value: 'table', icon: <TableOutlined/>},
+                            {label: 'Thẻ', value: 'card', icon: <AppstoreOutlined/>},
                         ]}
                         className={cx('view-toggle')}
                     />
-                    <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddBuilding} />
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+
+                    <SmartButton
+                        title={addButtonText}
+                        icon={<PlusOutlined/>}
+                        type="primary"
+                        onClick={handleAddBuilding}
+                        disabled={isAddDisabled}
+                        tooltip={isAddDisabled ? 'Đã đạt giới hạn – nâng cấp gói để thêm' : undefined}
+                    />
+
+                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
+                    <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
                 </div>
             </div>
 
@@ -294,7 +312,7 @@ function Building() {
                                 <Col xs={24} sm={24} md={12} lg={8} xl={6} key={building.id}>
                                     <BuildingCard
                                         building={building}
-                                        onView={() => handleViewBuilding(building)}
+                                        // onView={() => handleViewBuilding(building)}
                                         onEdit={() => handleEditBuilding(building)}
                                         onDelete={() => handleDeleteBuilding(building)}
                                     />
@@ -302,7 +320,6 @@ function Building() {
                             ))}
                         </Row>
 
-                        {/* ✅ Pagination riêng cho chế độ card */}
                         <div className={cx('pagination-wrapper')}>
                             <Pagination
                                 current={pagination.current}

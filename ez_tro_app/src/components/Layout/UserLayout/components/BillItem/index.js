@@ -2,7 +2,7 @@ import React from "react";
 import {Badge} from "antd";
 import styles from "./BillItem.module.scss";
 
-const BillItem = ({ bill }) => {
+const BillItem = ({bill}) => {
     return (
         <div className={styles.billItem}>
             <div className={styles.billInfo}>
@@ -20,7 +20,7 @@ const BillItem = ({ bill }) => {
                 </div>
                 <Badge
                     status={bill.paid ? 'success' : 'error'}
-                    text={bill.paid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
+                    text={<span style={{color: '#fff'}}>{bill.paid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}</span>}
                 />
             </div>
         </div>

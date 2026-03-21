@@ -1,0 +1,57 @@
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 2px;
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(0, 229, 138, .3);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.historyList {
+  margin-top: 6px;
+}
+
+.historyItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+
+.historyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.historyMeta {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.historyDesc {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.historyAmount {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-top: 2px;
+}
+

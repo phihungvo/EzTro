@@ -2,19 +2,25 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
@@ -33,6 +39,9 @@ public class CronJobServiceImpl implements CronJobService {
 
     @Autowired
     private Scheduler scheduler;
+
+    @Value("${app.jobs.contract-status-sync.batch-size:100}")
+    private int contractStatusSyncBatchSize;
 
     public CronJobServiceImpl(
             ContractRepository contractRepository,
@@ -139,6 +148,49 @@ public class CronJobServiceImpl implements CronJobService {
         log.info("Scheduled bill generation job with cron: {}", cronExpression);
     }
 
+    @Scheduled(cron = "${app.jobs.contract-status-sync.cron:0 10 0 * * *}")
+    public void runDailyContractStatusSync() {
+        int updated = syncContractStatusesDaily();
+        log.info("Daily contract status sync completed. Updated {} contract(s).", updated);
+    }
+
+    @Override
+    @Transactional
+    public int syncContractStatusesDaily() {
+        LocalDate today = LocalDate.now();
+        int totalUpdated = 0;
+
+        while (true) {
+            List<Contract> batch = contractRepository.findContractsNeedingStatusSync(
+                    today, PageRequest.of(0, contractStatusSyncBatchSize));
+            if (batch.isEmpty()) {
+                break;
+            }
+
+            Set<Integer> touchedRoomIds = new HashSet<>();
+            for (Contract contract : batch) {
+                ContractStatus nextStatus = resolveStatusForToday(contract, today);
+                if (contract.getStatus() == nextStatus) {
+                    continue;
+                }
+
+                contract.setStatus(nextStatus);
+                touchedRoomIds.add(contract.getRoom().getId());
+                totalUpdated++;
+            }
+
+            contractRepository.saveAll(batch);
+
+            for (Integer roomId : touchedRoomIds) {
+                roomRepository.findById(roomId).ifPresent(room -> syncRoomOccupancyStatus(room, today));
+            }
+
+            log.info("Processed contract status sync batch with {} record(s).", batch.size());
+        }
+
+        return totalUpdated;
+    }
+
     // Business logic: Generate bills for current month
     public void generateMonthlyBills() {
         LocalDate now = LocalDate.now(); // 2025-10-26
@@ -152,9 +204,10 @@ public class CronJobServiceImpl implements CronJobService {
         for (Contract contract : activeContracts) {
             try {
                 // Skip nếu đã có bill tháng này
-                Optional<Bill> existingBill =
-                        billRepository.findByContractAndMonthYear(contract, currentMonth, currentYear);
-                if (existingBill.isPresent()) continue;
+                //                Optional<Bill> existingBill =
+                //                        billRepository.findByContractAndMonthYear(contract, currentMonth,
+                // currentYear);
+                //                if (existingBill.isPresent()) continue;
 
                 // 2. Validate room & tenant
                 Room room = contract.getRoom();
@@ -232,6 +285,54 @@ public class CronJobServiceImpl implements CronJobService {
         //        }
 
         return total;
+    }
+
+    private ContractStatus resolveStatusForToday(Contract contract, LocalDate today) {
+        if (contract.getStatus() == ContractStatus.CANCELLED) {
+            return ContractStatus.CANCELLED;
+        }
+
+        if (contract.getStartDate() != null) {
+            LocalDate startDate = contract.getStartDate()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+            if (startDate.isAfter(today)) {
+                return ContractStatus.PENDING;
+            }
+        }
+
+        if (contract.getEndDate() != null) {
+            LocalDate endDate = contract.getEndDate()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+            if (endDate.isBefore(today)) {
+                return ContractStatus.EXPIRED;
+            }
+        }
+
+        return ContractStatus.ACTIVE;
+    }
+
+    private void syncRoomOccupancyStatus(Room room, LocalDate today) {
+        if (Boolean.TRUE.equals(room.getIsDeleted())) {
+            return;
+        }
+
+        boolean hasEffectiveActiveContract =
+                contractRepository.existsEffectiveActiveContractByRoomId(room.getId(), today);
+
+        if (hasEffectiveActiveContract && room.getStatus() == RoomStatus.AVAILABLE) {
+            room.setStatus(RoomStatus.OCCUPIED);
+            roomRepository.save(room);
+            return;
+        }
+
+        if (!hasEffectiveActiveContract && room.getStatus() == RoomStatus.OCCUPIED) {
+            room.setStatus(RoomStatus.AVAILABLE);
+            roomRepository.save(room);
+        }
     }
 
     public static class RunnableJob implements Job {

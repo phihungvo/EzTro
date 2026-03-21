@@ -1,28 +1,25 @@
 import dayjs from 'dayjs';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import classNames from 'classnames/bind';
+import {useLocation, useNavigate} from 'react-router-dom';
 // import moment from 'moment';
 import styles from '~/pages/Admin/Contract/Contract.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
 import ContractFileUploadModal from '~/components/Layout/AdminLayout/components/ContractFileUploadModal';
 import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal';
+// import ContractEditor from '~/pages/Admin/Contract/components/ContractEditor';
 import {
-    SearchOutlined,
     PlusOutlined,
-    FilterOutlined,
     CloudUploadOutlined,
     EditOutlined,
     DeleteOutlined,
     TableOutlined,
     AppstoreOutlined,
-    CloseCircleOutlined,
     UploadOutlined,
     FileTextOutlined,
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
-import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {
     Form,
     message,
@@ -31,43 +28,43 @@ import {
     Pagination,
     Segmented,
     Tag,
-    DatePicker,
-    Card,
-    Space,
     Empty,
-    Select,
     Spin,
-    Statistic,
     ConfigProvider,
+    Modal,
 } from 'antd';
 import {
-    getAllContracts,
     filterContracts,
     createContract,
     updateContract,
     deleteContract,
 } from '~/service/admin/contract';
-import {getAllRoomAvailable, getAllRoomNoPaged, getRoomsByBoardingHouse} from "~/service/admin/room";
+import {getAllRoomAvailable, getRoomsByBoardingHouse} from "~/service/admin/room";
 import {getAllTenantNoPaged} from "~/service/admin/tenant";
 import useDebounce from '~/hooks/useDebounce';
 import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
-import {disablePastDates} from "~/utils/dateUtils";
 import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 
 const cx = classNames.bind(styles);
-const {RangePicker} = DatePicker;
 
 function Contract() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const contractBasePath = location.pathname.startsWith('/admin') ? '/admin/contracts' : '/owner/contracts';
     const [contractSource, setContractSource] = useState([]);
     const [roomOptions, setRoomOptions] = useState([]);
-    const [tenantOptions, setTenantOptions] = useState([]);
+    const [roomCatalog, setRoomCatalog] = useState([]);
+    const [tenantCatalog, setTenantCatalog] = useState([]);
     const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [editorSubmitting, setEditorSubmitting] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
         total: 0,
     });
+    const currentPage = pagination.current;
+    const currentPageSize = pagination.pageSize;
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedContract, setSelectedContract] = useState(null);
@@ -89,17 +86,10 @@ function Contract() {
     const [roomFilter, setRoomFilter] = useState(null);
     const [roomsLoading, setRoomsLoading] = useState(false);
 
-    const [statistics, setStatistics] = useState({
-        active: 0,
-        expired: 0,
-        cancelled: 0,
-    });
-
-    const disabledWhenEdit = modalMode === 'edit';
-
     const getStatusTag = (status) => {
         const statusConfig = {
             'ACTIVE': {color: 'success', text: 'Đang hiệu lực'},
+            'PENDING': {color: 'processing', text: 'Sắp hiệu lực'},
             'CANCELLED': {color: 'warning', text: 'Đã chấm dứt'},
             'EXPIRED': {color: 'error', text: 'Hết hạn'},
         };
@@ -110,32 +100,6 @@ function Contract() {
     const handleViewFileList = (contract) => {
         setSelectedContractForViewFiles(contract);
         setIsFileListModalOpen(true);
-    };
-
-    const calculateStatistics = (data) => {
-        const stats = {
-            active: 0,
-            expired: 0,
-            cancelled: 0,
-        };
-
-        data.forEach(item => {
-            switch (item.status) {
-                case 'ACTIVE':
-                    stats.active++;
-                    break;
-                case 'EXPIRED':
-                    stats.expired++;
-                    break;
-                case 'CANCELLED':
-                    stats.cancelled++;
-                    break;
-                default:
-                    break;
-            }
-        });
-
-        setStatistics(stats);
     };
 
     const handleResetFilters = () => {
@@ -301,90 +265,6 @@ function Contract() {
         },
     ];
 
-    const contractModalFields = [
-        {
-            label: 'Phòng',
-            name: 'roomId',
-            type: 'select',
-            placeholder: 'Chọn phòng còn trống để cho thuê',
-            options: roomOptions,
-            disabled: disabledWhenEdit,
-        },
-        {
-            label: 'Người thuê',
-            name: 'tenantId',
-            type: 'select',
-            options: tenantOptions,
-            disabled: disabledWhenEdit,
-        },
-        {
-            label: 'Ngày bắt đầu hợp đồng',
-            name: 'startDate',
-            type: 'date',
-            format: 'DD/MM/YYYY',
-            placeholder: 'Chọn ngày bắt đầu',
-            disabledDate: disablePastDates
-        },
-        {
-            label: 'Ngày kết thúc hợp đồng',
-            name: 'endDate',
-            type: 'date',
-            format: 'DD/MM/YYYY',
-            placeholder: 'Chọn ngày kết thúc (nếu có)',
-            disabledDate: disablePastDates
-        },
-        {
-            label: 'Tiền cọc (VNĐ)',
-            name: 'deposit',
-            type: 'number',
-            placeholder: 'Nhập số tiền cọc (VNĐ)',
-        },
-        {
-            label: 'Giá thuê (VNĐ / tháng)',
-            name: 'rentPrice',
-            type: 'number',
-            placeholder: 'Nhập giá thuê mỗi tháng (VNĐ)',
-        },
-        {
-            label: 'Ngày nhận cọc',
-            name: 'depositReceivedAt',
-            type: 'date',
-            format: 'DD/MM/YYYY',
-            placeholder: 'Chọn ngày đã nhận tiền cọc',
-            disabledDate: disablePastDates
-        },
-        {
-            label: 'Phương thức thanh toán cọc',
-            name: 'depositPaymentMethod',
-            type: 'select',
-            placeholder: 'Chọn phương thức thanh toán tiền cọc',
-            options: [
-                {label: 'Tiền mặt', value: 'CASH'},
-                {label: 'Chuyển khoản ngân hàng', value: 'BANK_TRANSFER'},
-                {label: 'Ví MoMo', value: 'MOMO'},
-                {label: 'Ví ZaloPay', value: 'ZALO_PAY'},
-            ],
-        },
-        {
-            label: 'Chu kỳ thanh toán (tháng)',
-            name: 'paymentCycleMonths',
-            type: 'number',
-            placeholder: 'VD: 1 cho mỗi tháng',
-        },
-        {
-            label: 'Ngày thanh toán hàng tháng',
-            name: 'monthlyPaymentDay',
-            type: 'number',
-            placeholder: 'VD: 5 nghĩa là trả vào ngày 5 mỗi tháng',
-        },
-        {
-            label: 'Ghi chú',
-            name: 'note',
-            type: 'textarea',
-            placeholder: 'Nhập ghi chú thêm (nếu có)',
-        },
-    ];
-
     const loadRoomsForBoardingHouse = async (boardingHouseId) => {
         if (!boardingHouseId) {
             setRoomOptions([]);
@@ -432,11 +312,7 @@ function Contract() {
 
             const tenantResponse = await getAllTenantNoPaged();
             if (tenantResponse && Array.isArray(tenantResponse)) {
-                const tenants = tenantResponse.map((tenant) => ({
-                    label: `${tenant.userId} - ${tenant.fullName}`,
-                    value: tenant.id,
-                }));
-                setTenantOptions(tenants);
+                setTenantCatalog(tenantResponse);
             }
 
         } catch (error) {
@@ -444,12 +320,12 @@ function Contract() {
         }
     };
 
-    const handleFilterContracts = async () => {
+    const handleFilterContracts = useCallback(async () => {
         setLoading(true);
         try {
             const params = {
-                page: pagination.current - 1,
-                pageSize: pagination.pageSize,
+                page: currentPage - 1,
+                pageSize: currentPageSize,
             };
 
             if (debouncedSearchTerm) {
@@ -479,14 +355,12 @@ function Contract() {
             if (response && Array.isArray(response.content)) {
                 setContractSource(response.content);
                 setPagination({
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
+                    current: currentPage,
+                    pageSize: currentPageSize,
                     total: response.totalElements,
                 });
-                calculateStatistics(response.content);
             } else {
                 setContractSource([]);
-                setStatistics({active: 0, expired: 0, cancelled: 0});
             }
         } catch (error) {
             console.error('Error filtering contracts:', error);
@@ -495,96 +369,139 @@ function Contract() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [
+        currentPage,
+        currentPageSize,
+        debouncedSearchTerm,
+        dateRange,
+        statusFilter,
+        boardingHouseFilter,
+        roomFilter,
+    ]);
 
     useEffect(() => {
         setPagination(prev => ({...prev, current: 1}));
-        handleFilterContracts();
     }, [debouncedSearchTerm, dateRange, statusFilter, boardingHouseFilter, roomFilter]);
 
     useEffect(() => {
         handleFilterContracts();
-    }, [pagination.current, pagination.pageSize]);
+    }, [handleFilterContracts]);
 
     const loadAllRoomsAvailability = async () => {
         try {
             const rooms = await getAllRoomAvailable();
             if (rooms && Array.isArray(rooms)) {
-                const roomOpts = rooms.map(room => ({
-                    label: `Phòng: ${room.roomNumber || 'N/A'} — ${room.boardingHouseName || 'N/A'} (ID: ${room.id})`,
-                    value: room.id,
-                }));
-                setRoomOptions(roomOpts);
+                setRoomCatalog(rooms);
             }
         } catch (error) {
             console.error("Error loading all rooms:", error);
-            setRoomOptions([]);
+            setRoomCatalog([]);
         }
     };
 
+    const buildFallbackRoomFromContract = (contract) => ({
+        id: contract.roomId,
+        roomNumber: contract.roomNumber,
+        boardingHouseName: contract.boardingHouseName,
+        price: contract.rentPrice,
+        floorNumber: null,
+        maxOccupants: null,
+    });
+
+    const buildFallbackTenantFromContract = (contract) => ({
+        id: contract.tenantId,
+        fullName: contract.tenantFullName || contract.tenantName,
+        phoneNumber: null,
+        email: null,
+        identityNumber: null,
+        occupation: null,
+    });
+
+    const ensureEditorEntities = (contract) => {
+        if (!contract) {
+            return;
+        }
+
+        setRoomCatalog(prev => prev.some((item) => item.id === contract.roomId)
+            ? prev
+            : [...prev, buildFallbackRoomFromContract(contract)]);
+        setTenantCatalog(prev => prev.some((item) => item.id === contract.tenantId)
+            ? prev
+            : [...prev, buildFallbackTenantFromContract(contract)]);
+    };
+
     const handleAddContract = async () => {
-        setModalMode('create');
-        setSelectedContract(null);
-        form.resetFields();
-        await loadAllRoomsAvailability();
-        setIsModalOpen(true);
+        navigate(`${contractBasePath}/create-contract`);
     };
 
     const handleCallCreateContract = async (formData) => {
+        setEditorSubmitting(true);
         try {
             await createContract(formData);
-            handleFilterContracts();
+            await handleFilterContracts();
             setIsModalOpen(false);
+            form.resetFields();
         } catch (error) {
             message.error(
                 `Lỗi khi tạo hợp đồng: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+        } finally {
+            setEditorSubmitting(false);
         }
     };
 
-    const handleEditContract = (record) => {
+    const handleEditContract = async (record) => {
         setSelectedContract(record);
         setModalMode('edit');
+        await loadAllRoomsAvailability();
+        ensureEditorEntities(record);
         const formValues = {
             ...record,
             startDate: record.startDate ? dayjs(record.startDate) : null,
             endDate: record.endDate ? dayjs(record.endDate) : null,
+            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
+            paymentCycleMonths: record.paymentCycleMonths || 1,
         };
         form.setFieldsValue(formValues);
         setIsModalOpen(true);
     };
 
     const handleCallUpdateContract = async (formData) => {
+        setEditorSubmitting(true);
         try {
             await updateContract(selectedContract.id, formData);
-            handleFilterContracts();
+            await handleFilterContracts();
             setIsModalOpen(false);
+            form.resetFields();
         } catch (error) {
             message.error(
                 `Lỗi khi cập nhật hợp đồng: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+        } finally {
+            setEditorSubmitting(false);
         }
     };
 
     const handleDeleteContract = (record) => {
-        setModalMode('delete');
-        setSelectedContract(record);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleCallDeleteContract = async () => {
-        try {
-            await deleteContract(selectedContract.id);
-            handleFilterContracts();
-            setIsModalOpen(false);
-        } catch (error) {
-            message.error(`Lỗi khi xóa hợp đồng: ${error.response?.data?.message || error.message}`);
-        }
+        Modal.confirm({
+            title: 'Xóa hợp đồng',
+            content: `Bạn có chắc muốn xóa hợp đồng ${record.contractCode || ''} của phòng ${record.roomNumber || ''}?`,
+            okText: 'Xóa',
+            cancelText: 'Hủy',
+            okButtonProps: {danger: true},
+            onOk: async () => {
+                try {
+                    await deleteContract(record.id);
+                    await handleFilterContracts();
+                } catch (error) {
+                    message.error(`Lỗi khi xóa hợp đồng: ${error.response?.data?.message || error.message}`);
+                }
+            },
+        });
     };
 
     const handleUploadContract = (record) => {
@@ -592,21 +509,19 @@ function Contract() {
         setIsUploadModalOpen(true);
     };
 
-    const handleFormSubmit = (formData) => {
+    const handleFormSubmit = async (formData) => {
         const submitData = {
             ...formData,
             startDate: formData.startDate ? formData.startDate.format('YYYY-MM-DD') : null,
             endDate: formData.endDate ? formData.endDate.format('YYYY-MM-DD') : null,
+            depositReceivedAt: formData.depositReceivedAt ? formData.depositReceivedAt.format('YYYY-MM-DD') : null,
         };
 
         if (modalMode === 'create') {
-            handleCallCreateContract(submitData);
+            await handleCallCreateContract(submitData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateContract(submitData);
-        } else if (modalMode === 'delete') {
-            handleCallDeleteContract();
+            await handleCallUpdateContract(submitData);
         }
-        setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
@@ -617,24 +532,25 @@ function Contract() {
         }));
     };
 
-    const getModalTitle = () => {
-        switch (modalMode) {
-            case 'create':
-                return 'Thêm hợp đồng mới';
-            case 'edit':
-                return 'Chỉnh sửa hợp đồng';
-            case 'delete':
-                return 'Xóa hợp đồng';
-            default:
-                return 'Chi tiết hợp đồng';
-        }
-    };
-
-    const handleViewContract = (record) => {
+    const handleViewContract = async (record) => {
         setSelectedContract(record);
         setModalMode('view');
-        form.setFieldsValue(record);
+        await loadAllRoomsAvailability();
+        ensureEditorEntities(record);
+        form.setFieldsValue({
+            ...record,
+            startDate: record.startDate ? dayjs(record.startDate) : null,
+            endDate: record.endDate ? dayjs(record.endDate) : null,
+            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
+            paymentCycleMonths: record.paymentCycleMonths || 1,
+        });
         setIsModalOpen(true);
+    };
+
+    const handleEditorClose = () => {
+        setIsModalOpen(false);
+        setSelectedContract(null);
+        form.resetFields();
     };
 
     const handlePaginationChange = (page, pageSize) => {
@@ -677,6 +593,7 @@ function Contract() {
                             options: [
                                 { value: 'ALL', label: 'Tất cả' },
                                 { value: 'ACTIVE', label: 'Đang hiệu lực' },
+                                { value: 'PENDING', label: 'Sắp hiệu lực' },
                                 { value: 'EXPIRED', label: 'Đã hết hạn' },
                                 { value: 'CANCELLED', label: 'Đã hủy' },
                             ],
@@ -832,16 +749,18 @@ function Contract() {
                     )}
                 </div>
 
-                <PopupModal
-                    isModalOpen={isModalOpen}
-                    setIsModalOpen={setIsModalOpen}
-                    title={getModalTitle()}
-                    fields={modalMode === 'delete' ? [] : contractModalFields}
-                    onSubmit={handleFormSubmit}
-                    initialValues={selectedContract}
-                    isDeleteMode={modalMode === 'delete'}
-                    formInstance={form}
-                />
+                {/*<ContractEditor*/}
+                {/*    open={isModalOpen && modalMode !== 'delete'}*/}
+                {/*    mode={modalMode}*/}
+                {/*    form={form}*/}
+                {/*    onClose={handleEditorClose}*/}
+                {/*    onSubmit={handleFormSubmit}*/}
+                {/*    onEditRequest={() => setModalMode('edit')}*/}
+                {/*    submitting={editorSubmitting}*/}
+                {/*    roomCatalog={roomCatalog}*/}
+                {/*    tenantCatalog={tenantCatalog}*/}
+                {/*    selectedContract={selectedContract}*/}
+                {/*/>*/}
 
                 <ContractFileUploadModal
                     isOpen={isUploadModalOpen}

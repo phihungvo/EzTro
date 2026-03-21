@@ -75,6 +75,16 @@ public class BoardingHouseController {
                 .build();
     }
 
+    @GetMapping("/owner")
+    public ApiResponse<List<BoardingHouseResponse>> getAllForOwner() {
+        List<BoardingHouseResponse> responses = boardingHouseService.getAllForOwner();
+        return ApiResponse.<List<BoardingHouseResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get all boarding houses for owner successfully")
+                .result(responses)
+                .build();
+    }
+
     @GetMapping("/paged")
     public ResponseEntity<Page<BoardingHouseResponse>> getAllPagedByRole(Pageable pageable) {
         Page<BoardingHouseResponse> responses = boardingHouseService.getAllPagedByRole(pageable);

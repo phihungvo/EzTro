@@ -1,9 +1,11 @@
 package carevn.luv2code.ez_tro.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -29,9 +31,15 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     boolean existsByRoomIdAndStatus(Integer roomId, ContractStatus status);
 
+    boolean existsByRoomIdAndStatusIn(Integer roomId, Collection<ContractStatus> statuses);
+
     Optional<Contract> findTopByOrderByIdDesc();
 
     Optional<Contract> findByRoomIdAndStatus(Integer roomId, ContractStatus status);
+
+    // Đếm số hợp đồng theo ownerId và status
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.room.boardingHouse.owner.id = :ownerId AND c.status = :status")
+    long countByOwnerIdAndStatus(@Param("ownerId") Integer ownerId, @Param("status") ContractStatus status);
 
     @Query(
             """
@@ -70,6 +78,42 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
             + "AND c.startDate <= :endOfMonth AND (c.endDate IS NULL OR c.endDate >= :startOfMonth)")
     List<Contract> findActiveContractsForBilling(
             @Param("startOfMonth") LocalDate startOfMonth, @Param("endOfMonth") LocalDate endOfMonth);
+
+    @Query(
+            """
+			SELECT c
+			FROM Contract c
+			WHERE c.status <> carevn.luv2code.ez_tro.enums.ContractStatus.CANCELLED
+			AND (
+					(c.status = carevn.luv2code.ez_tro.enums.ContractStatus.PENDING
+					AND c.endDate IS NOT NULL
+					AND c.endDate < :today)
+				OR (c.status = carevn.luv2code.ez_tro.enums.ContractStatus.PENDING
+					AND c.startDate <= :today)
+				OR (c.status = carevn.luv2code.ez_tro.enums.ContractStatus.EXPIRED
+					AND c.startDate > :today)
+				OR (c.status = carevn.luv2code.ez_tro.enums.ContractStatus.EXPIRED
+					AND c.startDate <= :today
+					AND (c.endDate IS NULL OR c.endDate >= :today))
+				OR
+					(c.status = carevn.luv2code.ez_tro.enums.ContractStatus.ACTIVE
+					AND c.endDate IS NOT NULL
+					AND c.endDate < :today)
+			)
+			ORDER BY c.id ASC
+			""")
+    List<Contract> findContractsNeedingStatusSync(@Param("today") LocalDate today, Pageable pageable);
+
+    @Query(
+            """
+			SELECT COUNT(c) > 0
+			FROM Contract c
+			WHERE c.room.id = :roomId
+			AND c.status = carevn.luv2code.ez_tro.enums.ContractStatus.ACTIVE
+			AND c.startDate <= :today
+			AND (c.endDate IS NULL OR c.endDate >= :today)
+			""")
+    boolean existsEffectiveActiveContractByRoomId(@Param("roomId") Integer roomId, @Param("today") LocalDate today);
 
     default List<Contract> findActiveContractsForBilling(int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);

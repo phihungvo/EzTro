@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 
 import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
+import Landing from "~/pages/General/Landing";
 
 import AdminDashboard from "~/pages/Admin/HomeDashboard";
 import Building from "~/pages/Admin/Building";
@@ -12,7 +13,7 @@ import Room from "~/pages/Admin/Room";
 import Tenant from "~/pages/Admin/Tenant";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import Contract from "~/pages/Admin/Contract";
-import Bill from "~/pages/Admin/Bill";
+import Bill from "src/pages/Admin/Bill";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
 import UserManagement from "~/pages/Admin/User/UserManagement";
@@ -30,12 +31,24 @@ import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
 import React from "react";
+import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 
 const AppRoutes = () => {
     const { user } = useAuth();
 
     return (
         <Routes>
+            <Route
+                path="/"
+                element={
+                    user?.role === "ADMIN"
+                        ? <Navigate to="/admin/dashboard" replace />
+                        : user?.role === "OWNER"
+                            ? <Navigate to="/owner/dashboard" replace />
+                            : <Landing />
+                }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
@@ -56,12 +69,15 @@ const AppRoutes = () => {
                     <PrivateRoute allowedRoles={["OWNER"]}>
                         <SharedLayout>
                             <Routes>
+                                <Route path="dashboard" element={<AdminDashboard />} />
                                 <Route path="buildings" element={<Building />} />
                                 <Route path="rooms" element={<Room />} />
                                 <Route path="tenants" element={<Tenant />} />
                                 <Route path="tenants/:id" element={<TenantDetail />} />
                                 <Route path="contracts" element={<Contract />} />
+                                <Route path="contracts/create-contract" element={<ContractCreatorPage />} />
                                 <Route path="bills" element={<Bill />} />
+                                <Route path="bills/create-bill" element={<BillCreator />} />
                                 <Route path="revenues" element={<Revenue />} />
                                 <Route path="appointments" element={<Appointment />} />
                                 <Route path="assets" element={<Asset />} />
@@ -93,7 +109,7 @@ const AppRoutes = () => {
                 path="*"
                 element={
                     <Navigate
-                        to={user ? `/${user.role.toLowerCase()}/dashboard` : "/login"}
+                        to={user ? `/${user.role.toLowerCase()}/dashboard` : "/"}
                         replace
                     />
                 }

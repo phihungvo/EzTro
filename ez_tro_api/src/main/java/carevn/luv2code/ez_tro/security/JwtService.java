@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.entity.User;
@@ -60,11 +59,11 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("roles", user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toList()));
-        claims.put(
-                "authorities",
-                user.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList()));
+        //        claims.put(
+        //                "authorities",
+        //                user.getAuthorities().stream()
+        //                        .map(GrantedAuthority::getAuthority)
+        //                        .collect(Collectors.toList()));
         return createToken(claims, user.getUsername());
     }
 

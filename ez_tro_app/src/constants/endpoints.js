@@ -3,11 +3,12 @@ const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 const API_ENDPOINTS = {
     AUTH: {
         LOGIN: `${BASE_URL}/auth/login`,
+        GOOGLE_LOGIN: `${BASE_URL}/auth/google`,
         REGISTER: `${BASE_URL}/auth/register`,
     },
     FILE: {
         UPLOAD: `${BASE_URL}/files/upload`,
-        UPLOAD_CONTRACT: (contractId) =>  `${BASE_URL}/files/upload/contract/${contractId}`,
+        UPLOAD_CONTRACT: (contractId) => `${BASE_URL}/files/upload/contract/${contractId}`,
         CHECK_EXISTED: (file) =>
             `${BASE_URL}/storage/checkFileExists/${file.name}`,
         PRESIGNED_URL: (fileId) => `${BASE_URL}/files/${fileId}/presigned-url`,
@@ -31,7 +32,7 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/user/createUser`,
         UPDATE: (userId) => `${BASE_URL}/user/${userId}`,
         DELETE: `${BASE_URL}/user`,
-        UPLOAD_FILE: (userId) =>  `${BASE_URL}/user/upload/${userId}`,
+        UPLOAD_FILE: (userId) => `${BASE_URL}/user/upload/${userId}`,
     },
     ROLE: {
         GET_ALL: `${BASE_URL}/roles`,
@@ -64,13 +65,22 @@ const API_ENDPOINTS = {
     ROOM: {
         GET_ALL: `${BASE_URL}/rooms/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/rooms`,
+        FILTER: `${BASE_URL}/rooms/filter`,
+        RENTED_ACTIVE: `${BASE_URL}/rooms/rented-active`,
+        RENTED_CONTEXT: (roomId) => `${BASE_URL}/rooms/${roomId}/rented-context`,
+        CREATOR_BILL_CONTEXT: (roomId, month, year) =>
+            `${BASE_URL}/rooms/${roomId}/creator-bill-context?month=${month}&year=${year}`,
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
+        AVAILABLE_BY_BOARDING_HOUSE:(boardingHouseId) => `${BASE_URL}/rooms/${boardingHouseId}/available`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
         CREATE: `${BASE_URL}/rooms`,
         UPDATE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
         DELETE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
+        ROOMS_PERIOD_SUMMARY: (boardingHouseId, month, year) =>
+            `${BASE_URL}/rooms/boarding-houses/${boardingHouseId}/rooms-period-summary?month=${month}&year=${year}`,
     },
     TENANTS: {
+        CREATE: `${BASE_URL}/tenants`,
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
@@ -133,10 +143,18 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/meter-periods`,
         CREATE: `${BASE_URL}/meter-periods`,
     },
+    METER_READING: {
+        CREATE: `${BASE_URL}/meter-readings`,
+        UPSERT: `${BASE_URL}/meter-readings/upsert`,
+    },
+    SUBSCRIPTION: {
+        MY_LIMIT: `${BASE_URL}/subscriptions/my-limits`,
+        CREATE: `${BASE_URL}/subscriptions/plans`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {
-        SUMMARY:  `${BASE_URL}/user/dashboard/summary`,
+        SUMMARY: `${BASE_URL}/user/dashboard/summary`,
         GET_MY_BILL: `${BASE_URL}/user/bills`,
     },
     MY_ROOM: {

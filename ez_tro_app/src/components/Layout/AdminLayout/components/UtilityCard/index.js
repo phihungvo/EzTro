@@ -33,8 +33,7 @@ const UtilityCard = ({ utility, onEdit, onDelete }) => {
         };
         return icons[type] || <AppstoreOutlined />;
     };
-    // i love u Phi Hung hahhahaha; Toi la Truc Vy em be cua Phi Hung; Nho si quan khung
-    // Will you marry me ? 💍💍💍💍💍💍💍🫦🤰
+
     const getHeaderClass = (type) => {
         const classes = {
             ELECTRIC: 'electric',

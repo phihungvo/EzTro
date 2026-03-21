@@ -2,6 +2,8 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -54,15 +56,40 @@ public class BillServiceImpl implements BillService {
         Room room = contract.getRoom();
         Tenant tenant = contract.getTenant();
 
+        // Quyền: chỉ owner của boarding house hoặc admin mới được tạo hóa đơn
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // Validate due date
+        LocalDate dueDate = request.getDueDate();
+        if (dueDate == null) {
+            throw new AppException(ErrorCode.CONTRACT_MONTHLY_PAYMENT_DAY_INVALID);
+        }
+
+        // Chặn tạo trùng hóa đơn cho cùng phòng trong cùng tháng/năm
+        boolean existsForPeriod =
+                billRepository.existsByRoomIdAndMonthAndYear(room.getId(), dueDate.getMonthValue(), dueDate.getYear());
+        if (existsForPeriod) {
+            throw new AppException(ErrorCode.BILL_ALREADY_EXISTS);
+        }
+
         BigDecimal rentPrice = contract.getRentPrice();
-        BigDecimal serviceAmount = request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;
-        BigDecimal totalAmount = rentPrice.add(serviceAmount);
+        BigDecimal baseServiceAmount =
+                request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;
+        BigDecimal extraAmount = request.getExtraAmount() != null ? request.getExtraAmount() : BigDecimal.ZERO;
+        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal grossServiceAmount = baseServiceAmount.add(extraAmount);
+        BigDecimal totalAmount = rentPrice.add(grossServiceAmount).subtract(discountAmount);
 
         Bill bill = billMapper.toEntity(request);
         bill.setContract(contract);
         bill.setRoom(room);
         bill.setTenant(tenant);
+        bill.setServiceAmount(grossServiceAmount);
         bill.setAmount(totalAmount);
+        bill.setNote(buildBillNote(request));
         bill.setStatus(BillStatus.UNPAID);
         bill.setCreatedAt(new Date());
 
@@ -81,6 +108,40 @@ public class BillServiceImpl implements BillService {
                 Map.of("billId", bill.getId(), "roomNumber", room.getRoomNumber()));
 
         return billMapper.toResponse(bill);
+    }
+
+    private String buildBillNote(BillRequest request) {
+        List<String> sections = new ArrayList<>();
+
+        if (request.getExtraAmount() != null && request.getExtraAmount().compareTo(BigDecimal.ZERO) > 0) {
+            sections.add("Phí phát sinh / bổ sung: " + request.getExtraAmount());
+        }
+        if (request.getDiscountAmount() != null && request.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+            StringBuilder discountSection = new StringBuilder("Giảm giá / ưu đãi: " + request.getDiscountAmount());
+            if (request.getDiscountReason() != null
+                    && !request.getDiscountReason().isBlank()) {
+                discountSection
+                        .append(" | Ly do: ")
+                        .append(request.getDiscountReason().trim());
+            }
+            sections.add(discountSection.toString());
+        }
+        if (request.getPublicNote() != null && !request.getPublicNote().isBlank()) {
+            sections.add("Ghi chú hóa đơn: " + request.getPublicNote().trim());
+        }
+        if (request.getPaymentInstructions() != null
+                && !request.getPaymentInstructions().isBlank()) {
+            sections.add(
+                    "Hướng dẫn thanh toán: " + request.getPaymentInstructions().trim());
+        }
+        if (request.getInternalNote() != null && !request.getInternalNote().isBlank()) {
+            sections.add("Ghi chú nội bộ: " + request.getInternalNote().trim());
+        }
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            sections.add(request.getNote().trim());
+        }
+
+        return sections.isEmpty() ? null : String.join("\n\n", sections);
     }
 
     @Override

@@ -1,199 +1,395 @@
-.room-card {
-  border-radius: 16px !important;
-  border: 2px solid #e6f7ff !important;
-  overflow: hidden;
-  background: #fff !important;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08) !important;
+// ─── DESIGN TOKENS ───
+$bg-card:        #16192a;
+$bg-header:      #0f1120;
+$bg-body:        #16192a;
+$bg-footer:      #0f1120;
+$bg-chip:        #1e2235;
+$bg-tenant:      #1c2038;
+
+$text-primary:   #f0f2ff;
+$text-secondary: #7b859e;
+$text-muted:     #3f4660;
+
+$green:   #34d399;
+$blue:    #60a5fa;
+$orange:  #fb923c;
+$red:     #f87171;
+
+$border:         rgba(255,255,255,0.06);
+$border-strong:  rgba(255,255,255,0.12);
+
+$radius: 20px;
+
+// ─── KEYFRAMES ───
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 0 0 transparent; }
+  50%      { box-shadow: 0 0 20px 4px rgba(96,165,250,0.12); }
+}
+
+@keyframes dotBlink {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.3; transform: scale(0.65); }
+}
+
+// ─── ROOT CARD ───
+.card {
+  position: relative;
+  background: $bg-card;
+  border-radius: $radius;
+  border: 1.5px solid $border;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  animation: fadeSlideUp 0.35s ease-out both;
   height: 100%;
-  transition: all 0.3s ease;
-  animation: fadeInUp 0.4s ease-out;
+
+  // top accent line
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2.5px;
+    z-index: 2;
+  }
+
+  &[data-status='OCCUPIED']::before    { background: linear-gradient(90deg,$green 0%,transparent 70%); }
+  &[data-status='AVAILABLE']::before   { background: linear-gradient(90deg,$blue 0%,transparent 70%); }
+  &[data-status='MAINTENANCE']::before { background: linear-gradient(90deg,$orange 0%,transparent 70%); }
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(24, 144, 255, 0.2) !important;
-    border-color: #91d5ff !important;
+    transform: translateY(-5px);
+    box-shadow: 0 24px 52px rgba(0,0,0,0.55);
   }
+  &:hover[data-status='OCCUPIED']    { border-color: rgba($green,0.28); }
+  &:hover[data-status='AVAILABLE']   { border-color: rgba($blue,0.28); box-shadow: 0 24px 52px rgba(0,0,0,0.55), 0 0 30px rgba($blue,0.08); }
+  &:hover[data-status='MAINTENANCE'] { border-color: rgba($orange,0.28); }
 }
 
-/* ================= Header ================= */
-.card-header {
-  background: #fff;
-  padding: 16px 20px;
+// ─── HEADER ───
+.header {
+  background: $bg-header;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid $border;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid #f0f0f0;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 18px; // tránh accent line
 }
 
-.header-content {
+.headerLeft {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 7px;
+  min-width: 0;
 }
 
-.room-id {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1890ff;
-  letter-spacing: 0.5px;
+.roomMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.room-id-label {
-  font-size: 13px;
-  color: #8c8c8c;
-  font-weight: 500;
+.roomNumber {
+  font-size: 26px;
+  font-weight: 900;
+  color: $text-primary;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.status-tag {
+.buildingTag {
+  font-size: 11px;
   font-weight: 600;
-  font-size: 13px;
-  border-radius: 10px !important;
-  padding: 4px 12px !important;
-  border: none;
+  color: $text-secondary;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 
-/* ================= Body ================= */
-.card-body {
-  padding: 16px 20px;
+.boardingHouse {
+  font-size: 11.5px;
+  color: $text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+// ─── STATUS BADGE ───
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+
+  &[data-status='OCCUPIED']    { background: rgba($green,0.12); color: $green; border-color: rgba($green,0.22); }
+  &[data-status='AVAILABLE']   { background: rgba($blue,0.12); color: $blue; border-color: rgba($blue,0.2); }
+  &[data-status='MAINTENANCE'] { background: rgba($orange,0.12); color: $orange; border-color: rgba($orange,0.2); }
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+
+  .statusBadge[data-status='OCCUPIED']    & { background: $green; }
+  .statusBadge[data-status='AVAILABLE']   & { background: $blue; animation: dotBlink 2.2s ease-in-out infinite; }
+  .statusBadge[data-status='MAINTENANCE'] & { background: $orange; animation: dotBlink 1.6s ease-in-out infinite; }
+}
+
+// ─── BODY ───
+.body {
+  padding: 14px 18px 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #fafafa;
+  gap: 10px;
+  background: $bg-body;
 }
 
-/* Info row */
-.info-row {
+// ─── CHIP ROW (diện tích, sức chứa) ───
+.chipRow {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: $bg-chip;
+  border: 1px solid $border;
+  border-radius: 9px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: $text-secondary;
+  transition: border-color 0.18s;
+
+  .chipIcon { font-size: 13px; line-height: 1; }
+  .chipVal  { color: $text-primary; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  &:hover { border-color: $border-strong; }
+}
+
+// ─── AMENITIES ───
+.amenities {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid $border;
+  color: $text-muted;
+  background: rgba(255,255,255,0.03);
+  transition: all 0.18s;
+
+  &.on {
+    color: rgba($green,0.85);
+    background: rgba($green,0.07);
+    border-color: rgba($green,0.18);
+  }
+}
+
+// ─── DIVIDER ───
+.divider {
+  height: 1px;
+  background: $border;
+  margin: 2px 0;
+}
+
+// ─── TENANT ───
+.tenantRow {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
+  background: $bg-tenant;
+  border-radius: 12px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.2s;
 
-  .icon {
-    color: #595959 !important;
-    font-size: 16px !important;
-    min-width: 20px;
-  }
-
-  .text {
-    font-size: 14px;
-    color: #262626;
-    font-weight: 500;
-    line-height: 1.5;
-  }
+  .card:hover & { background: #202440; }
 }
 
-/* Bottom info section */
-.bottom-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid #e8e8e8;
-}
-
-.price-info {
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
-  gap: 6px;
-
-  .price-icon {
-    color: #52c41a !important;
-    font-size: 18px !important;
-  }
-
-  .price-value {
-    font-size: 16px;
-    color: #262626;
-    font-weight: 700;
-  }
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.capacity-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #d9d9d9;
+.tenantInfo { flex: 1; min-width: 0; }
 
-  .capacity-icon {
-    color: #1890ff !important;
-    font-size: 16px !important;
-  }
-
-  .capacity-value {
-    font-size: 14px;
-    color: #262626;
-    font-weight: 600;
-  }
-}
-
-/* ================= Footer ================= */
-.card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-  background: #fff;
-}
-
-.hold-button {
-  background: #faad14 !important;
-  border-color: #faad14 !important;
-  color: #fff !important;
-  font-weight: 600;
+.tenantName {
   font-size: 13px;
+  font-weight: 600;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
 
-  &:hover {
-    background: #ffc53d !important;
-    border-color: #ffc53d !important;
+.tenantPhone {
+  font-size: 11px;
+  color: $text-secondary;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.contractBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 1px;
+}
+
+.contractDays {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+
+  &.good    { color: $green; }
+  &.warning { color: $orange; }
+  &.expired { color: $red; }
+}
+
+.contractLabel {
+  font-size: 10px;
+  color: $text-muted;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+// ─── CONTRACT PERIOD BAR ───
+.periodBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: $text-muted;
+  gap: 6px;
+
+  .periodDates {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    .arrow { color: $text-muted; font-size: 9px; }
+    .date  { color: $text-secondary; font-weight: 500; font-variant-numeric: tabular-nums; }
   }
 }
 
-.hold-icon {
-  font-size: 16px;
-  margin-right: 4px;
+// ─── EMPTY TENANT ───
+.emptyTenant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1.5px dashed rgba($blue,0.2);
+  border-radius: 12px;
+  padding: 11px;
+  color: rgba($blue,0.5);
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba($blue,0.03);
+  letter-spacing: 0.2px;
 }
 
-/* ================= Responsive ================= */
-@media (max-width: 576px) {
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .room-id {
-    font-size: 18px;
-  }
-
-  .bottom-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .card-footer {
-    flex-wrap: wrap;
-  }
+// ─── FOOTER ───
+.footer {
+  padding: 11px 18px;
+  background: $bg-footer;
+  border-top: 1px solid $border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-/* ================= Animation ================= */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.priceBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: 900;
+  color: $text-primary;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.priceUnit {
+  font-size: 11px;
+  color: $text-muted;
+}
+
+.footerActions {
+  display: flex;
+  gap: 5px;
+}
+
+.iconBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid $border;
+  background: rgba(255,255,255,0.04);
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.18s ease;
+  padding: 0;
+
+  &:hover { background: rgba(255,255,255,0.09); color: $text-primary; border-color: $border-strong; }
+  &.view:hover   { color: $blue;   border-color: rgba($blue,0.35);   background: rgba($blue,0.1); }
+  &.edit:hover   { color: $green;  border-color: rgba($green,0.35);  background: rgba($green,0.1); }
+  &.delete:hover { color: $red;    border-color: rgba($red,0.35);    background: rgba($red,0.1); }
+}
+
+// ─── RESPONSIVE ───
+@media (max-width: 480px) {
+  .roomNumber { font-size: 22px; }
+  .header, .body, .footer { padding-left: 14px; padding-right: 14px; }
 }

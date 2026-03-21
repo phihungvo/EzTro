@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import classNames from 'classnames/bind';
 import styles from '~/pages/Admin/User/User.module.scss';
 import moment from 'moment';
@@ -9,15 +9,15 @@ import {
     FilterOutlined,
     CloudUploadOutlined,
     EditOutlined,
-    DeleteOutlined,
+    DeleteOutlined, CopyOutlined,
 } from '@ant-design/icons';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import { Form, message, Tag } from 'antd';
-import { getAllUser, createUser, updateUser, deleteUser } from '~/service/admin/user';
-import { getAllRolesNoPaging } from '~/service/admin/role';
-import { exportExcelFile } from '~/service/admin/export_service';
+import {Button, Form, message, Space, Tag, Tooltip} from 'antd';
+import {getAllUser, createUser, updateUser, deleteUser} from '~/service/admin/user';
+import {getAllRolesNoPaging} from '~/service/admin/role';
+import {exportExcelFile} from '~/service/admin/export_service';
 
 const cx = classNames.bind(styles);
 
@@ -99,6 +99,58 @@ function UserList() {
             render: (phone) => (phone ? phone : 'N/A'),
         },
         {
+            title: 'Original Password',
+            dataIndex: 'originalPassword',
+            key: 'originalPassword',
+            width: 180,
+            align: 'center',
+            render: (text, record) => {
+                if (!text) {
+                    return <span style={{ color: '#999' }}>N/A</span>;
+                }
+
+                const displayText = text.length > 15 ? text.slice(0, 15) + '...' : text;
+
+                return (
+                    <Space size="small" style={{ maxWidth: '100%', justifyContent: 'center' }}>
+                        <Tooltip title={text} placement="top">
+                            <span
+                                style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '120px',
+                                    display: 'inline-block',
+                                }}
+                            >
+            {displayText}
+          </span>
+                        </Tooltip>
+
+                        <Tooltip title="Copy mật khẩu">
+                            <Button
+                                type="text"
+                                icon={<CopyOutlined />}
+                                size="small"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText(text)
+                                        .then(() => {
+                                            message.success('Đã copy mật khẩu!', 1.5);
+                                        })
+                                        .catch(() => {
+                                            message.error('Không thể copy, vui lòng thử lại');
+                                        });
+                                }}
+                            />
+                        </Tooltip>
+                    </Space>
+                );
+            },
+        },
+        {
             title: 'Enable',
             dataIndex: 'enabled',
             key: 'enabled',
@@ -132,16 +184,16 @@ function UserList() {
                 <>
                     <SmartButton
                         type="primary"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         buttonWidth={50}
                         onClick={() => handleEditUser(record)}
                     />
                     <SmartButton
                         type="danger"
-                        icon={<DeleteOutlined />}
+                        icon={<DeleteOutlined/>}
                         buttonWidth={50}
                         onClick={() => handleDeleteUser(record)}
-                        style={{ marginLeft: '8px' }}
+                        style={{marginLeft: '8px'}}
                     />
                 </>
             ),
@@ -163,9 +215,9 @@ function UserList() {
         }));
 
         setDynamicColumns([
-            { ...baseColumns[0], filters: userNameFilters },
-            { ...baseColumns[1], filters: emailFilters },
-            { ...baseColumns[2], filters: roleFilters },
+            {...baseColumns[0], filters: userNameFilters},
+            {...baseColumns[1], filters: emailFilters},
+            {...baseColumns[2], filters: roleFilters},
             ...baseColumns.slice(3),
         ]);
     }, [userSource]);
@@ -175,7 +227,7 @@ function UserList() {
             label: 'User Name',
             name: 'userName',
             type: 'text',
-            rules: [{ required: true, message: 'User Name is required!' }],
+            rules: [{required: true, message: 'User Name is required!'}],
         },
         {
             label: 'First Name',
@@ -192,7 +244,7 @@ function UserList() {
             name: 'email',
             type: 'text',
             disabled: modalMode === 'edit',
-            rules: modalMode === 'create' ? [{ required: true, message: 'Email is required!' }] : [],
+            rules: modalMode === 'create' ? [{required: true, message: 'Email is required!'}] : [],
         },
         {
             label: 'Address',
@@ -203,7 +255,7 @@ function UserList() {
             label: 'Password',
             name: 'password',
             type: 'text',
-            rules: [{ required: true, message: 'Password is required!' }],
+            rules: [{required: true, message: 'Password is required!'}],
         },
         {
             label: 'Phone Number',
@@ -234,7 +286,7 @@ function UserList() {
     const handleGetAllUsers = async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
-            const response = await getAllUser({ page: page - 1, pageSize });
+            const response = await getAllUser({page: page - 1, pageSize});
             const userList = response.content;
 
             if (response && Array.isArray(userList)) {
@@ -395,11 +447,11 @@ function UserList() {
     return (
         <div className={cx('trailer-wrapper')}>
             <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm" icon={<SearchOutlined />} />
+                <SmartInput size="large" placeholder="Tìm kiếm" icon={<SearchOutlined/>}/>
                 <div className={cx('features')}>
-                    <SmartButton title="Thêm mới" icon={<PlusOutlined />} type="primary" onClick={handleAddUser} />
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined />} onClick={handleExportFile} />
+                    <SmartButton title="Thêm mới" icon={<PlusOutlined/>} type="primary" onClick={handleAddUser}/>
+                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
+                    <SmartButton title="Excel" icon={<CloudUploadOutlined/>} onClick={handleExportFile}/>
                 </div>
             </div>
             <div className={cx('trailer-container')}>
