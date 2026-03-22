@@ -8,6 +8,7 @@ import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
 import ContractFileUploadModal from '~/components/Layout/AdminLayout/components/ContractFileUploadModal';
 import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
 // import ContractEditor from '~/pages/Admin/Contract/components/ContractEditor';
 import {
     PlusOutlined,
@@ -25,7 +26,6 @@ import {
     message,
     Row,
     Col,
-    Pagination,
     Segmented,
     Tag,
     Empty,
@@ -42,6 +42,7 @@ import {
 import {getAllRoomAvailable, getRoomsByBoardingHouse} from "~/service/admin/room";
 import {getAllTenantNoPaged} from "~/service/admin/tenant";
 import useDebounce from '~/hooks/useDebounce';
+import usePagination from '~/hooks/usePagination';
 import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
 import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 
@@ -58,13 +59,12 @@ function Contract() {
     const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [editorSubmitting, setEditorSubmitting] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
-    const currentPage = pagination.current;
-    const currentPageSize = pagination.pageSize;
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        reset: resetPagination,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedContract, setSelectedContract] = useState(null);
@@ -109,7 +109,7 @@ function Contract() {
         setBoardingHouseFilter(null);
         setRoomFilter(null);
         setRoomOptions([]);
-        setPagination(prev => ({...prev, current: 1}));
+        resetPagination();
         message.success('Đã reset bộ lọc!');
     };
 
@@ -324,8 +324,8 @@ function Contract() {
         setLoading(true);
         try {
             const params = {
-                page: currentPage - 1,
-                pageSize: currentPageSize,
+                page: pagination.current - 1,
+                pageSize: pagination.pageSize,
             };
 
             if (debouncedSearchTerm) {
@@ -354,38 +354,47 @@ function Contract() {
 
             if (response && Array.isArray(response.content)) {
                 setContractSource(response.content);
-                setPagination({
-                    current: currentPage,
-                    pageSize: currentPageSize,
-                    total: response.totalElements,
-                });
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setContractSource([]);
+                setPaginationTotal(0);
             }
         } catch (error) {
             console.error('Error filtering contracts:', error);
             message.error(`Lỗi khi lọc hợp đồng: ${error.response?.data?.message || error.message}`);
             setContractSource([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     }, [
-        currentPage,
-        currentPageSize,
+        pagination.current,
+        pagination.pageSize,
         debouncedSearchTerm,
         dateRange,
         statusFilter,
         boardingHouseFilter,
         roomFilter,
+        setPaginationTotal,
     ]);
 
     useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-    }, [debouncedSearchTerm, dateRange, statusFilter, boardingHouseFilter, roomFilter]);
-
-    useEffect(() => {
+        if (pagination.current !== 1) {
+            resetPagination();
+            return;
+        }
         handleFilterContracts();
-    }, [handleFilterContracts]);
+    }, [
+        debouncedSearchTerm,
+        dateRange,
+        statusFilter,
+        boardingHouseFilter,
+        roomFilter,
+        pagination.current,
+        pagination.pageSize,
+        handleFilterContracts,
+        resetPagination,
+    ]);
 
     const loadAllRoomsAvailability = async () => {
         try {
@@ -525,11 +534,7 @@ function Contract() {
     };
 
     const handleTableChange = (pagination) => {
-        setPagination(prev => ({
-            ...prev,
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-        }));
+        handlePaginationChange(pagination.current, pagination.pageSize);
     };
 
     const handleViewContract = async (record) => {
@@ -551,14 +556,6 @@ function Contract() {
         setIsModalOpen(false);
         setSelectedContract(null);
         form.resetFields();
-    };
-
-    const handlePaginationChange = (page, pageSize) => {
-        setPagination(prev => ({
-            ...prev,
-            current: page,
-            pageSize,
-        }));
     };
 
     const handleViewModeChange = (value) => {
@@ -666,13 +663,12 @@ function Contract() {
                                 onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
                             />
                         </div>
-                        <Pagination
+                        <AppPagination
                             current={pagination.current}
                             pageSize={pagination.pageSize}
                             total={pagination.total}
                             onChange={handlePaginationChange}
-                            showSizeChanger
-                            showTotal={(total) => `Tổng ${total} hợp đồng`}
+                            showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} hợp đồng`}
                             pageSizeOptions={['10', '20', '30']}
                         />
                     </div>
@@ -705,46 +701,6 @@ function Contract() {
                                     </Row>
                                 )}
                             </Spin>
-                            {/* Pagination bottom for card view */}
-                            <div className={cx('pagination-wrapper')}>
-                                <div className={cx('left-actions')}>
-                                    <div className={cx('view-mode-toggle')}>
-                                        <Segmented
-                                            options={[
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <TableOutlined/>
-                                                            Bảng
-                                                        </>
-                                                    ),
-                                                    value: 'table',
-                                                },
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <AppstoreOutlined/>
-                                                            Thẻ
-                                                        </>
-                                                    ),
-                                                    value: 'card',
-                                                },
-                                            ]}
-                                            value={viewMode}
-                                            onChange={handleViewModeChange}
-                                        />
-                                    </div>
-                                </div>
-                                <Pagination
-                                    current={pagination.current}
-                                    pageSize={pagination.pageSize}
-                                    total={pagination.total}
-                                    onChange={handlePaginationChange}
-                                    showSizeChanger
-                                    showQuickJumper
-                                    pageSizeOptions={['10', '20', '30']}
-                                />
-                            </div>
                         </>
                     )}
                 </div>

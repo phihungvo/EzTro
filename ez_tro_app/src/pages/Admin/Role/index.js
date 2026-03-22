@@ -14,7 +14,7 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import { Form, message } from 'antd';
+import { Form, message, Pagination } from 'antd';
 import { getAllPermissionsNoPaging } from '~/service/admin/permission';
 import { getAllRoles, createRole, updateRole, deleteRole } from '~/service/admin/role';
 
@@ -276,6 +276,15 @@ function RoleList() {
                     />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showTotal={(total) => `Tổng ${total} vai trò`}
+                        pageSizeOptions={['5', '10', '20', '50']}
+                        onChange={(page, pageSize) => handleGetAllRoles(page, pageSize)}
+                    />
                 </div>
             </div>
             <div className={cx('trailer-container')}>
@@ -283,7 +292,7 @@ function RoleList() {
                     columns={columns}
                     dataSources={roleSource}
                     loading={loading}
-                    pagination={pagination}
+                    pagination={false}
                     onTableChange={handleTableChange}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={handleSelectChange}

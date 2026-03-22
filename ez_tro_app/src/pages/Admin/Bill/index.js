@@ -12,12 +12,14 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
-import {Form, message, Pagination, Segmented, Tag, DatePicker, Spin, Empty, Row, Col} from 'antd';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import {Form, message, Segmented, Tag, DatePicker, Spin, Empty, Row, Col} from 'antd';
 import {
     getAllBills, createBill, updateBill, deleteBill, filterBills
 } from '~/service/admin/bill';
 import {getAllActiveContracts} from '~/service/admin/contract';
 import useDebounce from '~/hooks/useDebounce';
+import usePagination from '~/hooks/usePagination';
 import { useNavigate } from 'react-router-dom';
 
 const cx = classNames.bind(styles);
@@ -27,7 +29,12 @@ function Bill() {
     const [bills, setBills] = useState([]);
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({current: 1, pageSize: 10, total: 0});
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        reset: resetPagination,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
@@ -153,23 +160,33 @@ function Bill() {
 
             const res = await filterBills(params);
             setBills(res.content || []);
-            setPagination(p => ({...p, total: res.totalElements}));
+            setPaginationTotal(res.totalElements || 0);
         } catch (e) {
             message.error('Lỗi tải hóa đơn');
             setBills([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        setPagination(p => ({...p, current: 1}));
+        if (pagination.current !== 1) {
+            resetPagination();
+            return;
+        }
         fetchBills();
-    }, [debouncedSearch, dateRange, statusFilter, monthFilter, yearFilter, contractFilter]);
-
-    useEffect(() => {
-        fetchBills();
-    }, [pagination.current, pagination.pageSize]);
+    }, [
+        debouncedSearch,
+        dateRange,
+        statusFilter,
+        monthFilter,
+        yearFilter,
+        contractFilter,
+        pagination.current,
+        pagination.pageSize,
+        resetPagination,
+    ]);
 
     const handleAdd = () => {
        navigate(`/owner/bills/create-bill`)
@@ -268,12 +285,12 @@ function Bill() {
                         <SmartButton title="Excel" icon={<CloudUploadOutlined/>}
                                      onClick={() => message.info('Sắp có!')}/>
                     </div>
-                    <Pagination
+                    <AppPagination
                         current={pagination.current}
                         pageSize={pagination.pageSize}
                         total={pagination.total}
-                        onChange={(p, s) => setPagination({...pagination, current: p, pageSize: s})}
-                        showSizeChanger
+                        onChange={handlePaginationChange}
+                        showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} hóa đơn`}
                     />
                 </div>
 
