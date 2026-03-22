@@ -2,6 +2,7 @@
   width: 100%;
   display: block;
   min-height: 100vh;
+  background: linear-gradient(180deg, rgba(18, 24, 38, 0.96) 0%, rgba(14, 20, 31, 0.98) 100%);
 }
 
 .contract-container {
@@ -18,6 +19,7 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 19px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sub_header {
@@ -38,7 +40,7 @@
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 16px; /* Add gap between left and right sides */
 }
 

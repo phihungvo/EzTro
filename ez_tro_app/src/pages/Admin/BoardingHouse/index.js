@@ -16,7 +16,8 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Pagination, Segmented} from 'antd';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import {Form, message, Row, Col, Segmented} from 'antd';
 import {exportExcelFile} from '~/service/admin/export_service';
 import {
     getAllBoardingHouses,
@@ -28,6 +29,7 @@ import {getAllOwners} from '~/service/admin/user';
 import {useOwnerQuota} from '~/hooks/useOwnerQuota';
 import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
 import {useAuth} from "~/routes/AuthContext";
+import usePagination from '~/hooks/usePagination';
 
 const cx = classNames.bind(styles);
 
@@ -35,11 +37,11 @@ function BoardingHouses() {
     const [boardingHouses, setBoardingHouses] = useState([]);
     const [userOptionSource, setUserOptionSource] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBoardingHouses, setSelectedBoardingHouses] = useState(null);
@@ -176,7 +178,6 @@ function BoardingHouses() {
 
     useEffect(() => {
         handleGetAllUsers();
-        handleGetBoardingHouses();
     }, []);
 
     const handleGetAllUsers = async () => {
@@ -193,28 +194,30 @@ function BoardingHouses() {
         }
     };
 
-    const handleGetBoardingHouses = async (page = 1, pageSize = pagination.pageSize) => {
+    const handleGetBoardingHouses = async (page = pagination.current, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
             const response = await getAllBoardingHouses({page: page - 1, pageSize});
             if (response?.content) {
                 setBoardingHouses(response.content);
-                setPagination({
-                    current: page,
-                    pageSize,
-                    total: response.totalElements,
-                });
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setBoardingHouses([]);
+                setPaginationTotal(0);
                 message.error('Dữ liệu khu nhà không hợp lệ');
             }
         } catch (error) {
             message.error(`Lỗi khi lấy danh sách khu nhà: ${error.response?.data?.message || error.message}`);
             setBoardingHouses([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        handleGetBoardingHouses();
+    }, [pagination.current, pagination.pageSize]);
 
     const handleAddBoardingHouses = () => {
         if (isAddDisabled) {
@@ -313,7 +316,7 @@ function BoardingHouses() {
     };
 
     const handleTableChange = (newPagination) => {
-        handleGetBoardingHouses(newPagination.current, newPagination.pageSize);
+        handlePaginationChange(newPagination.current, newPagination.pageSize);
     };
 
     const getModalTitle = () => {
@@ -356,6 +359,14 @@ function BoardingHouses() {
 
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>} onClick={handleExportFile}/>
+                    <AppPagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={handlePaginationChange}
+                        showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} khu nhà`}
+                    />
                 </div>
             </div>
 
@@ -366,36 +377,22 @@ function BoardingHouses() {
                         columns={columns}
                         dataSources={boardingHouses}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {boardingHouses.map((boardingHouse) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={boardingHouse.id}>
-                                    <BoardingHousesCard
-                                        boardingHouse={boardingHouse}
-                                        // onView={() => handleViewBoardingHouses(boardingHouse)}
-                                        onEdit={() => handleEditBoardingHouses(boardingHouse)}
-                                        onDelete={() => handleDeleteBoardingHouses(boardingHouse)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetBoardingHouses(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {boardingHouses.map((boardingHouse) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={boardingHouse.id}>
+                                <BoardingHousesCard
+                                    boardingHouse={boardingHouse}
+                                    // onView={() => handleViewBoardingHouses(boardingHouse)}
+                                    onEdit={() => handleEditBoardingHouses(boardingHouse)}
+                                    onDelete={() => handleDeleteBoardingHouses(boardingHouse)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

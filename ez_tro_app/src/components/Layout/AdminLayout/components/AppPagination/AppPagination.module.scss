@@ -1,0 +1,267 @@
+/* ══════════════════════════════════════
+   AppPagination.module.scss
+   Dark / neon theme — khớp với table-container
+══════════════════════════════════════ */
+
+/* ── Tokens (dùng lại từ bộ màu table) ── */
+$bg-item:        rgba(18, 22, 33, 0.80);
+$border:         rgba(255, 255, 255, 0.08);
+$border-hover:   rgba(0, 245, 233, 0.30);
+$border-active:  rgba(0, 245, 233, 0.55);
+$bg-active:      rgba(0, 245, 233, 0.12);
+$text-muted:     rgba(255, 255, 255, 0.52);
+$text-active:    rgba(255, 255, 255, 0.95);
+$accent:         #00f5e9;
+$accent-glow:    rgba(0, 245, 233, 0.30);
+$bg-select:      rgba(18, 22, 33, 0.90);
+$radius:         8px;
+
+/* ── Outer wrapper ── */
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  //padding: 12px 0 4px;
+  user-select: none;
+}
+
+/* ══════════════════════════════════════
+   Ant Design overrides — scoped via
+   rootClassName={styles.pagination}
+══════════════════════════════════════ */
+.pagination {
+  /* ── Layout ── */
+  :global(.ant-pagination) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Shared: item + prev + next ── */
+  :global(.ant-pagination-item),
+  :global(.ant-pagination-prev),
+  :global(.ant-pagination-next) {
+    min-width: 32px;
+    height: 32px;
+    margin: 0;
+    border-radius: $radius;
+    border: 1px solid $border;
+    background: $bg-item;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    // Không transition — instant như yêu cầu
+    transition: none;
+  }
+
+  /* ── Page number link ── */
+  :global(.ant-pagination-item a) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    color: $text-muted;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* ── Hover: page + prev + next ── */
+  :global(.ant-pagination-item:not(.ant-pagination-item-active):hover),
+  :global(.ant-pagination-prev:not(.ant-pagination-disabled):hover),
+  :global(.ant-pagination-next:not(.ant-pagination-disabled):hover) {
+    border-color: $border-hover;
+    background: rgba(0, 245, 233, 0.06);
+
+    :global(.ant-pagination-item-link),
+    a {
+      color: $accent;
+    }
+  }
+
+  /* ── Active page ── */
+  :global(.ant-pagination-item-active) {
+    background: $bg-active;
+    border-color: $border-active;
+    box-shadow: 0 0 10px $accent-glow;
+
+    a {
+      color: $text-active;
+      font-weight: 800;
+      text-shadow: 0 0 8px rgba(0, 245, 233, 0.60);
+    }
+
+    &:hover a {
+      color: $text-active;
+    }
+  }
+
+  /* ── Prev / Next arrow buttons ── */
+  :global(.ant-pagination-prev .ant-pagination-item-link),
+  :global(.ant-pagination-next .ant-pagination-item-link) {
+    background: transparent;
+    border: none;
+    color: $text-muted;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Disabled ── */
+  :global(.ant-pagination-disabled),
+  :global(.ant-pagination-disabled:hover) {
+    opacity: 0.28;
+    cursor: not-allowed;
+    border-color: $border;
+    background: $bg-item;
+
+    :global(.ant-pagination-item-link) {
+      color: $text-muted;
+    }
+  }
+
+  /* ── Ellipsis ── */
+  :global(.ant-pagination-jump-prev),
+  :global(.ant-pagination-jump-next) {
+    min-width: 32px;
+    height: 32px;
+    margin: 0;
+    border-radius: $radius;
+    border: 1px solid $border;
+    background: $bg-item;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    :global(.ant-pagination-item-container) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    :global(.ant-pagination-item-ellipsis) {
+      color: $text-muted;
+      letter-spacing: 1px;
+      font-size: 11px;
+    }
+
+    :global(.ant-pagination-item-link-icon) {
+      color: $accent;
+      font-size: 11px;
+    }
+
+    &:hover {
+      border-color: $border-hover;
+      background: rgba(0, 245, 233, 0.06);
+    }
+  }
+
+  /* ── Total label ── */
+  :global(.ant-pagination-total-text) {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+    font-size: 12px;
+    color: $text-muted;
+    order: -1; // luôn đứng đầu
+  }
+
+  /* ── Options (pageSize selector) ── */
+  :global(.ant-pagination-options) {
+    margin-inline-start: 6px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+  }
+
+  :global(.ant-select-selector) {
+    height: 32px !important;
+    padding: 0 28px 0 10px !important;
+    background: $bg-item !important;
+    border-color: $border !important;
+    border-radius: $radius !important;
+    color: $text-muted !important;
+    font-size: 12.5px !important;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+
+  :global(.ant-select-selection-item) {
+    line-height: 30px !important;
+    color: $text-muted;
+    font-size: 12.5px;
+  }
+
+  :global(.ant-select-arrow) {
+    color: rgba(255, 255, 255, 0.28) !important;
+    font-size: 10px;
+  }
+
+  :global(.ant-select:hover .ant-select-selector) {
+    border-color: $border-hover !important;
+    color: $accent !important;
+  }
+
+  :global(.ant-select-focused .ant-select-selector),
+  :global(.ant-select-open .ant-select-selector) {
+    border-color: $border-active !important;
+    box-shadow: 0 0 0 2px rgba(0, 245, 233, 0.12) !important;
+    color: $text-active !important;
+  }
+
+  /* ── Dropdown popup ── */
+  :global(.ant-select-dropdown) {
+    background: #141824;
+    border: 1px solid $border;
+    border-radius: $radius;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    padding: 4px;
+  }
+
+  :global(.ant-select-item) {
+    color: $text-muted;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  :global(.ant-select-item:hover),
+  :global(.ant-select-item-option-active) {
+    background: rgba(0, 245, 233, 0.07);
+    color: $accent;
+  }
+
+  :global(.ant-select-item-option-selected) {
+    background: rgba(0, 245, 233, 0.12);
+    color: $text-active;
+
+    &::after {
+      color: $accent;
+    }
+  }
+}
+
+/* ── Total label inner styles ── */
+.totalLabel {
+  font-size: 12px;
+  color: $text-muted;
+
+  b {
+    color: $text-active;
+    font-weight: 700;
+  }
+}

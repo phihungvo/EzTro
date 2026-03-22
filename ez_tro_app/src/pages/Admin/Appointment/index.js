@@ -546,6 +546,15 @@ function Appointment() {
                         icon={<CloudUploadOutlined/>}
                         onClick={() => message.info('Xuất Excel sắp có!')}
                     />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetAppointments(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -563,37 +572,23 @@ function Appointment() {
                         columns={columns}
                         dataSources={appointmentSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {appointmentSource.map((appointment) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={appointment.id}>
-                                    <AppointmentCard
-                                        appointment={appointment}
-                                        onView={() => handleViewAppointment(appointment)}
-                                        onConfirm={() => handleConfirmAppointment(appointment)}
-                                        onCancel={() => handleCancelAppointment(appointment)}
-                                        renderStatusTag={renderStatusTag}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetAppointments(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {appointmentSource.map((appointment) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={appointment.id}>
+                                <AppointmentCard
+                                    appointment={appointment}
+                                    onView={() => handleViewAppointment(appointment)}
+                                    onConfirm={() => handleConfirmAppointment(appointment)}
+                                    onCancel={() => handleCancelAppointment(appointment)}
+                                    renderStatusTag={renderStatusTag}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

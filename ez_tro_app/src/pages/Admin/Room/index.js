@@ -15,7 +15,8 @@ import {
 } from '@ant-design/icons';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Segmented, Pagination, Spin, Empty, ConfigProvider, Tag} from 'antd';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import {Form, message, Row, Col, Segmented, Spin, Empty, ConfigProvider, Tag} from 'antd';
 import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 import {
     filterRooms,
@@ -32,6 +33,7 @@ import {useOwnerQuota} from '~/hooks/useOwnerQuota';
 import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
 import {useAuth} from "~/routes/AuthContext";
 import useDebounce from '~/hooks/useDebounce';
+import usePagination from '~/hooks/usePagination';
 
 const cx = classNames.bind(styles);
 
@@ -41,11 +43,12 @@ function Room() {
     const [buildingOption, setBuildingOption] = useState([]);
     const [boardingHouseOption, setBoardingHouseOption] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        reset: resetPagination,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState(null);
@@ -127,16 +130,15 @@ function Room() {
 
             if (response && Array.isArray(response.content)) {
                 setRoomSource(response.content);
-                setPagination(prev => ({
-                    ...prev,
-                    total: response.totalElements || 0,
-                }));
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setRoomSource([]);
+                setPaginationTotal(0);
             }
         } catch (error) {
             message.error('Lỗi tải danh sách phòng');
             setRoomSource([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
@@ -150,7 +152,7 @@ function Room() {
         setAreaRange([null, null]);
         setPriceRange([null, null]);
         setHasActiveContractFilter(null);
-        setPagination(prev => ({...prev, current: 1}));
+        resetPagination();
         message.success('Đã reset bộ lọc!');
     };
 
@@ -184,17 +186,22 @@ function Room() {
 
     // Tự động gọi API khi filter thay đổi
     useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-    }, [debouncedSearch, statusFilter, boardingHouseFilter, areaRange, priceRange, hasActiveContractFilter]);
-
-    useEffect(() => {
+        if (pagination.current !== 1) {
+            resetPagination();
+            return;
+        }
         fetchRooms();
-    }, [pagination.current, pagination.pageSize, debouncedSearch, statusFilter, boardingHouseFilter, areaRange, priceRange, hasActiveContractFilter]);
-
-    // Load ban đầu
-    useEffect(() => {
-        fetchRooms();
-    }, []);
+    }, [
+        debouncedSearch,
+        statusFilter,
+        boardingHouseFilter,
+        areaRange,
+        priceRange,
+        hasActiveContractFilter,
+        pagination.current,
+        pagination.pageSize,
+        resetPagination,
+    ]);
 
     // Xử lý thêm phòng
     const handleAddRoom = () => {
@@ -527,6 +534,14 @@ function Room() {
                         />
                         <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
                     </div>
+                    <AppPagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onChange={handlePaginationChange}
+                        pageSizeOptions={['6', '12', '24', '48']}
+                        showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} phòng`}
+                    />
                 </div>
 
                 {/* Nội dung */}
@@ -560,18 +575,6 @@ function Room() {
                         )}
                     </Spin>
 
-                    <Pagination
-                        current={pagination.current}
-                        pageSize={pagination.pageSize}
-                        total={pagination.total}
-                        showSizeChanger
-                        showQuickJumper
-                        pageSizeOptions={['6', '12', '24', '48']}
-                        onChange={(page, size) =>
-                            setPagination({current: page, pageSize: size})
-                        }
-                        style={{marginTop: 24, textAlign: 'right'}}
-                    />
                 </div>
 
                 {/* Modal */}

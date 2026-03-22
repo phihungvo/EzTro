@@ -336,6 +336,15 @@ function Utility() {
                     <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddUtility} />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -346,37 +355,22 @@ function Utility() {
                         columns={columns}
                         dataSources={utilitySource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {utilitySource.map((utility) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
-                                    <UtilityCard
-                                        utility={utility}
-                                        onView={() => handleViewUtility(utility)}
-                                        onEdit={() => handleEditUtility(utility)}
-                                        onDelete={() => handleDeleteUtility(utility)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {utilitySource.map((utility) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
+                                <UtilityCard
+                                    utility={utility}
+                                    onView={() => handleViewUtility(utility)}
+                                    onEdit={() => handleEditUtility(utility)}
+                                    onDelete={() => handleDeleteUtility(utility)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

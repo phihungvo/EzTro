@@ -1,0 +1,438 @@
+/* ─────────────────────────────────────────
+   shared.module.scss
+   CSS dùng chung cho tất cả component con
+   ───────────────────────────────────────── */
+
+/* ── FORM GROUP ── */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.req {
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.formHint {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ── FORM CONTROL ── */
+.formControl {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-1);
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+
+  &:focus {
+    border-color: var(--border-focus);
+    background: var(--bg-input-focus);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+
+  &.error {
+    border-color: var(--danger);
+  }
+}
+
+select.formControl {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ba5c0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+textarea.formControl {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── INPUT WITH ICON ── */
+.inputWithIcon {
+  position: relative;
+
+  .formControl {
+    padding-right: 36px;
+  }
+}
+
+.inputIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ── FORM GRIDS ── */
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.g2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.g3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.g4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+/* ── SECTION DIVIDER ── */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 14px;
+}
+
+.sectionDividerLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.sectionDividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── PERSON BLOCK ── */
+.personBlock {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.personHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.personTag {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+
+  &.main {
+    background: var(--badge-blue);
+    color: var(--primary-light);
+  }
+
+  &.member {
+    background: var(--badge-green);
+    color: var(--success);
+  }
+}
+
+.personHeaderRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.personBody {
+  padding: 14px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: #fff;
+
+  &:hover {
+    background: #3d5de8;
+    box-shadow: 0 4px 16px rgba(74, 108, 247, 0.4);
+  }
+}
+
+.btnSecondary {
+  background: var(--bg-input);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+  }
+}
+
+.btnIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+
+.btnAddMember {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.15s;
+  font-family: inherit;
+
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+    background: var(--primary-glow);
+  }
+}
+
+/* ── TOGGLE / SWITCH ── */
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.toggleLabel {
+  flex: 1;
+
+  strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    display: block;
+  }
+
+  span {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+}
+
+.switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-3);
+    left: 2px;
+    top: 2px;
+    transition: all 0.2s;
+  }
+}
+
+.switch input:checked + .slider {
+  background: var(--primary);
+  border-color: var(--primary);
+
+  &::before {
+    transform: translateX(18px);
+    background: #fff;
+  }
+}
+
+/* ── CHIP SELECT ── */
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+  }
+
+  &.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+}
+
+/* ── INFO BOX ── */
+.infoBox {
+  background: rgba(74, 108, 247, 0.07);
+  border: 1px solid rgba(74, 108, 247, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.infoIcon {
+  font-size: 14px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.infoText {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* ── PHOTO UPLOAD ── */
+.photoUploadRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.photoUploadBox {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card2);
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--primary);
+    background: var(--primary-glow);
+  }
+
+  .icon {
+    font-size: 22px;
+    color: var(--text-3);
+  }
+
+  p {
+    font-size: 11.5px;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+
+  small {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 700px) {
+  .g2, .g3, .g4 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,81 @@
+.smartButton {
+  width: var(--smart-button-width, 120px) !important;
+  height: var(--smart-button-height, 38px) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  background: linear-gradient(180deg, #182132 0%, #111827 100%) !important;
+  color: #dbe7f7 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.01em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 24px rgba(2, 8, 23, 0.2);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+
+  :global(.ant-btn-icon) {
+    color: currentColor;
+    font-size: 14px;
+  }
+
+  &:hover,
+  &:focus {
+    color: #f8fbff !important;
+    border-color: rgba(96, 165, 250, 0.5) !important;
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 16px 28px rgba(15, 23, 42, 0.28),
+      0 0 0 3px rgba(96, 165, 250, 0.12);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled,
+  &.ant-btn-loading,
+  &.ant-btn-disabled {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    color: rgba(219, 231, 247, 0.48) !important;
+    border-color: rgba(148, 163, 184, 0.12) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
+
+.primary {
+  border-color: rgba(56, 189, 248, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.2), transparent 42%),
+    linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%) !important;
+  color: #eff6ff !important;
+
+  &:hover,
+  &:focus {
+    border-color: rgba(125, 211, 252, 0.52) !important;
+    box-shadow:
+      0 18px 30px rgba(37, 99, 235, 0.28),
+      0 0 0 3px rgba(59, 130, 246, 0.16) !important;
+  }
+}
+
+.excel {
+  border-color: rgba(52, 211, 153, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(110, 231, 183, 0.18), transparent 42%),
+    linear-gradient(135deg, #0f766e 0%, #059669 100%) !important;
+  color: #ecfdf5 !important;
+
+  &:hover,
+  &:focus {
+    border-color: rgba(110, 231, 183, 0.5) !important;
+    box-shadow:
+      0 18px 30px rgba(5, 150, 105, 0.24),
+      0 0 0 3px rgba(16, 185, 129, 0.14) !important;
+  }
+}

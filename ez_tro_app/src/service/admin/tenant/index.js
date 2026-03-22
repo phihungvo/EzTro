@@ -17,6 +17,20 @@ export const createTenant = async (formData) => {
     }
 };
 
+export const updateTenant = async (tenantId, formData) => {
+    try {
+        const response = await apiClient.put(
+            API_ENDPOINTS.TENANTS.UPDATE(tenantId),
+            formData,
+        );
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when updating tenant: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi cập nhật người thuê');
+        throw error;
+    }
+};
+
 export const getAllTenants = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.TENANTS.GET_ALL, {
