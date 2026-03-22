@@ -40,6 +40,7 @@ import IncidentReport from "~/pages/Admin/IncidentReport";
 import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Revenue from "~/pages/Admin/Revenue";
+import Asset from "~/pages/Admin/Asset";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
@@ -50,6 +51,7 @@ import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
+import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -327,6 +329,8 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/rooms" element={<Room/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
                         <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
+                        <Route path="/assets" element={<Asset/>}/>
+                        <Route path="/assets/create" element={<PropertyAssetCreatorPage/>}/>
                         <Route path="/bills" element={<Bill/>}/>
                         {/*<Route path="/bills/create-bill" element={<BillCreator />} />*/}
                         <Route path="/services" element={<Amenity/>}/>

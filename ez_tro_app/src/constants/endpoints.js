@@ -105,6 +105,15 @@ const API_ENDPOINTS = {
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
         DELETE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
     },
+    PROPERTY_ASSET: {
+        GET_ALL: `${BASE_URL}/property-assets`,
+        FILTER: `${BASE_URL}/property-assets/filter`,
+        DETAIL: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        CREATE: `${BASE_URL}/property-assets`,
+        UPDATE: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        DELETE: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        BY_ROOM: (roomId) => `${BASE_URL}/property-assets/room/${roomId}`,
+    },
     AMENITY: {
         GET_ALL: `${BASE_URL}/amenities/paged`,
         CREATE: `${BASE_URL}/amenities`,

@@ -34,6 +34,7 @@ import React from "react";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
+import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -84,6 +85,7 @@ const AppRoutes = () => {
                                 <Route path="revenues" element={<Revenue />} />
                                 <Route path="appointments" element={<Appointment />} />
                                 <Route path="assets" element={<Asset />} />
+                                <Route path="assets/create" element={<PropertyAssetCreatorPage />} />
                                 <Route path="expenses" element={<OperatingCostTracker />} />
                                 <Route path="admin-payment-management" element={<AdminPaymentManagement/>}/>
                                 <Route path="owner-subscription" element={<OwnerSubscriptionPage/>}/>
