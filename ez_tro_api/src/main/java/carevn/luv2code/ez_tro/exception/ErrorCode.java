@@ -107,6 +107,11 @@ public enum ErrorCode {
     SYSTEM_CONFIG_INVALID_VALUE(1079, "System config value is invalid", HttpStatus.BAD_REQUEST),
     DEFAULT_SUBSCRIPTION_PLAN_INACTIVE(1080, "Default subscription plan must be active", HttpStatus.BAD_REQUEST),
     SYSTEM_CONFIG_KEY_ALREADY_EXISTS(1081, "System config key already exists", HttpStatus.CONFLICT),
+    PROPERTY_ASSET_NOT_FOUND(1082, "Property asset not found", HttpStatus.NOT_FOUND),
+    PROPERTY_ASSET_CODE_ALREADY_EXISTS(1083, "Property asset code already exists", HttpStatus.CONFLICT),
+    PROPERTY_ASSET_SERIAL_ALREADY_EXISTS(1084, "Property asset serial number already exists", HttpStatus.CONFLICT),
+    INVALID_BUILDING_FOR_BOARDING_HOUSE(
+            1085, "Building does not belong to the specified boarding house", HttpStatus.CONFLICT),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
