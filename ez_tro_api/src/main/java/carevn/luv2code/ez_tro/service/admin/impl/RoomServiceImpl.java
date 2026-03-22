@@ -447,8 +447,8 @@ public class RoomServiceImpl implements RoomService {
         // Hợp đồng active hiện tại
         Contract activeContract = room.getContracts().stream()
                 .filter(c -> c.getStatus() == ContractStatus.ACTIVE
-                        && !c.getStartDate().after(new Date())
-                        && (c.getEndDate() == null || !c.getEndDate().before(new Date())))
+                        && !c.getStartDate().isAfter(LocalDate.now())
+                        && (c.getEndDate() == null || !c.getEndDate().isAfter(LocalDate.now())))
                 .max(Comparator.comparing(Contract::getStartDate))
                 .orElseThrow(() -> new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT));
 
@@ -683,7 +683,7 @@ public class RoomServiceImpl implements RoomService {
             // Hợp đồng active mới nhất
             Contract activeContract = null;
             for (Contract c : activeContracts) {
-                if (activeContract == null || c.getStartDate().after(activeContract.getStartDate())) {
+                if (activeContract == null || c.getStartDate().isAfter(activeContract.getStartDate())) {
                     activeContract = c;
                 }
             }
@@ -744,19 +744,16 @@ public class RoomServiceImpl implements RoomService {
 
                 if (activeContract.getEndDate() != null) {
 
-                    LocalDate endDate = toLocalDate(activeContract.getEndDate());
+                    LocalDate endDate = activeContract.getEndDate();
 
-                    if (endDate != null) {
+                    contractEndDate = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-                        contractEndDate = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    long months = ChronoUnit.MONTHS.between(today, endDate);
 
-                        long months = ChronoUnit.MONTHS.between(today, endDate);
-
-                        if (months > 0) {
-                            monthsRemaining = (int) months;
-                        } else {
-                            monthsRemaining = 0;
-                        }
+                    if (months > 0) {
+                        monthsRemaining = (int) months;
+                    } else {
+                        monthsRemaining = 0;
                     }
                 }
             }
@@ -970,7 +967,7 @@ public class RoomServiceImpl implements RoomService {
             //            LocalDate startDate =
             //                    c.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-            LocalDate startDate = toLocalDate(c.getStartDate());
+            LocalDate startDate = c.getStartDate();
 
             if (startDate.isAfter(today)) {
                 continue;
@@ -981,17 +978,14 @@ public class RoomServiceImpl implements RoomService {
                 //                        .toInstant()
                 //                        .atZone(ZoneId.systemDefault())
                 //                        .toLocalDate();
-                LocalDate endDate = toLocalDate(c.getEndDate());
+                LocalDate endDate = c.getEndDate();
 
                 if (endDate.isBefore(today)) {
                     continue;
                 }
             }
 
-            if (latestContract == null
-                    || c.getStartDate()
-                            .toInstant()
-                            .isAfter(latestContract.getStartDate().toInstant())) {
+            if (latestContract == null || c.getStartDate().isAfter(latestContract.getStartDate())) {
                 latestContract = c;
             }
         }
@@ -1017,8 +1011,8 @@ public class RoomServiceImpl implements RoomService {
 
     private boolean isActiveContract(Contract c, LocalDate today) {
 
-        LocalDate startDate = toLocalDate(c.getStartDate());
-        LocalDate endDate = toLocalDate(c.getEndDate());
+        LocalDate startDate = c.getStartDate();
+        LocalDate endDate = c.getEndDate();
 
         if (startDate == null) {
             return false;

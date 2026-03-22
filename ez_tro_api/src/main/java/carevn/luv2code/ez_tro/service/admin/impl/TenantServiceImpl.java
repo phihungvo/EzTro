@@ -174,7 +174,7 @@ public class TenantServiceImpl implements TenantService {
         // Find the most recent active and current contract
         Contract currentContract = contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                .filter(c -> isCurrentContract(c, new Date()))
+                .filter(c -> isCurrentContract(c, LocalDate.now()))
                 .max(Comparator.comparing(Contract::getStartDate))
                 .orElse(null);
 
@@ -348,10 +348,9 @@ public class TenantServiceImpl implements TenantService {
             return;
         }
 
-        Date today = new Date();
-        boolean isCurrent = newestContract.getStartDate().before(today)
+        boolean isCurrent = newestContract.getStartDate().isBefore(LocalDate.now())
                 && (newestContract.getEndDate() == null
-                        || newestContract.getEndDate().after(today));
+                        || newestContract.getEndDate().isAfter(LocalDate.now()));
 
         if (newestContract.getStatus() == ContractStatus.ACTIVE && isCurrent) {
             response.setContractStatus("Đang thuê");
@@ -363,8 +362,8 @@ public class TenantServiceImpl implements TenantService {
     }
 
     // Helper: Check if contract is current
-    private boolean isCurrentContract(Contract contract, Date today) {
-        return contract.getStartDate().before(today)
-                && (contract.getEndDate() == null || contract.getEndDate().after(today));
+    private boolean isCurrentContract(Contract contract, LocalDate today) {
+        return contract.getStartDate().isBefore(today)
+                && (contract.getEndDate() == null || contract.getEndDate().isAfter(today));
     }
 }

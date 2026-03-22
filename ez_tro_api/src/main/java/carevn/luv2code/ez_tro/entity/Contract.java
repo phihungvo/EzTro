@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -48,13 +49,19 @@ public class Contract {
     @ToString.Exclude
     List<File> files;
 
-    @Temporal(TemporalType.DATE)
-    @Column(name = "start_date", nullable = false)
-    Date startDate;
+    //    @Temporal(TemporalType.DATE)
+    //    @Column(name = "start_date", nullable = false)
+    //    Date startDate;
+    //
+    //    @Temporal(TemporalType.DATE)
+    //    @Column(name = "end_date")
+    //    Date endDate;
 
-    @Temporal(TemporalType.DATE)
+    @Column(name = "start_date", nullable = false)
+    LocalDate startDate;
+
     @Column(name = "end_date")
-    Date endDate;
+    LocalDate endDate;
 
     @Column(precision = 12, scale = 2)
     BigDecimal deposit;

@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -293,20 +292,14 @@ public class CronJobServiceImpl implements CronJobService {
         }
 
         if (contract.getStartDate() != null) {
-            LocalDate startDate = contract.getStartDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate startDate = contract.getStartDate();
             if (startDate.isAfter(today)) {
                 return ContractStatus.PENDING;
             }
         }
 
         if (contract.getEndDate() != null) {
-            LocalDate endDate = contract.getEndDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate endDate = contract.getEndDate();
             if (endDate.isBefore(today)) {
                 return ContractStatus.EXPIRED;
             }

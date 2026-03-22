@@ -92,7 +92,7 @@ public class ContractServiceImpl implements ContractService {
                 request.getRoomId(), Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
             throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
         }
-        if (request.getEndDate() != null && request.getEndDate().before(request.getStartDate())) {
+        if (request.getEndDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
             throw new AppException(ErrorCode.CONTRACT_END_DATE_INVALID);
         }
 
@@ -315,17 +315,18 @@ public class ContractServiceImpl implements ContractService {
         return dtoPage;
     }
 
-    private ContractStatus resolveLifecycleStatus(ContractStatus requestedStatus, Date startDate, Date endDate) {
+    private ContractStatus resolveLifecycleStatus(
+            ContractStatus requestedStatus, LocalDate startDate, LocalDate endDate) {
         if (requestedStatus == ContractStatus.CANCELLED) {
             return ContractStatus.CANCELLED;
         }
 
         LocalDate today = LocalDate.now();
-        if (startDate != null && toLocalDate(startDate).isAfter(today)) {
+        if (startDate != null && startDate.isAfter(today)) {
             return ContractStatus.PENDING;
         }
 
-        if (endDate != null && toLocalDate(endDate).isBefore(today)) {
+        if (endDate != null && endDate.isBefore(today)) {
             return ContractStatus.EXPIRED;
         }
 
@@ -423,8 +424,8 @@ public class ContractServiceImpl implements ContractService {
 
             roomUtility.setQuantity(resolveQuantity(utilityRequest));
             roomUtility.setUsageAmount(utilityRequest.getUsageAmount());
-            roomUtility.setStartDate(toLocalDate(request.getStartDate()));
-            roomUtility.setEndDate(request.getEndDate() == null ? null : toLocalDate(request.getEndDate()));
+            roomUtility.setStartDate(request.getStartDate());
+            roomUtility.setEndDate(request.getEndDate() == null ? null : request.getEndDate());
             roomUtility.setNote(utilityRequest.getNote());
 
             roomUtilityRepository.save(roomUtility);
