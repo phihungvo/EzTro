@@ -24,9 +24,9 @@ public abstract class RoomMapper {
     // Map cơ bản cho Room → RoomResponse (danh sách phòng thông thường)
     @Mapping(source = "boardingHouse.name", target = "boardingHouseName")
     @Mapping(source = "building.name", target = "buildingName")
-    //    @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
-    //    @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
-    //    @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
+    @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
+    @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
+    @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
     public abstract RoomResponse toResponse(Room room);
 
     @Mapping(target = "id", ignore = true)
@@ -71,22 +71,16 @@ public abstract class RoomMapper {
     // Helper methods
 
     protected Contract getActiveContract(Room room) {
-        if (room.getContracts() == null || room.getContracts().isEmpty()) return null;
+        if (room.getContracts() == null || room.getContracts().isEmpty()) {
+            return null;
+        }
+
         LocalDate today = LocalDate.now();
         return room.getContracts().stream()
                 .filter(c -> c.getStatus() == ContractStatus.ACTIVE
-                        && !c.getStartDate()
-                                .toInstant()
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                                .isAfter(today)
-                        && (c.getEndDate() == null
-                                || !c.getEndDate()
-                                        .toInstant()
-                                        .atZone(java.time.ZoneId.systemDefault())
-                                        .toLocalDate()
-                                        .isBefore(today)))
-                .max(Comparator.comparing(c -> c.getStartDate().toInstant()))
+                        && (c.getStartDate() == null || !c.getStartDate().isAfter(today))
+                        && (c.getEndDate() == null || !c.getEndDate().isBefore(today)))
+                .max(Comparator.comparing(Contract::getStartDate))
                 .orElse(null);
     }
 
@@ -104,66 +98,60 @@ public abstract class RoomMapper {
                 : null;
     }
 
-    //    protected TenantBasicResponse getTenant(Room room) {
-    //        Contract active = getActiveContract(room);
-    //        return active != null && active.getTenant() != null ? tenantMapper.toBasicResponse(active.getTenant()) :
-    // null;
-    //    }
-    //
-    //    protected ContractResponse getCurrentContract(Room room) {
-    //        Contract active = getActiveContract(room);
-    //        return active != null ? contractMapper.toResponse(active) : null;
-    //    }
-    //
-    //    protected Long getRentPrice(Room room) {
-    //        Contract active = getActiveContract(room);
-    //        return active != null ? active.getRentPrice() : null;
-    //    }
-
+    /**
+     * Tính số tháng còn lại (dùng ChronoUnit.MONTHS)
+     * Kết quả là số tháng hoàn chỉnh giữa today và endDate
+     */
     protected Integer getRemainingMonths(Room room) {
         Contract active = getActiveContract(room);
-        if (active == null || active.getEndDate() == null) return null;
+        if (active == null || active.getEndDate() == null) {
+            return null;
+        }
+
         LocalDate today = LocalDate.now();
-        LocalDate end = active.getEndDate()
-                .toInstant()
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDate();
+        LocalDate end = active.getEndDate();
+
+        if (end.isBefore(today)) {
+            return 0;
+        }
+
         return (int) ChronoUnit.MONTHS.between(today, end);
     }
 
+    /**
+     * Tính số ngày còn lại chính xác (dùng ChronoUnit.DAYS)
+     */
     protected Long getRemainingDays(Room room) {
         Contract active = getActiveContract(room);
-        if (active == null || active.getEndDate() == null) return null;
-        long diff = active.getEndDate().getTime() - new java.util.Date().getTime();
-        return diff / (1000 * 60 * 60 * 24);
+        if (active == null || active.getEndDate() == null) {
+            return null;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate end = active.getEndDate();
+
+        if (end.isBefore(today)) {
+            return 0L;
+        }
+
+        return ChronoUnit.DAYS.between(today, end);
     }
 
     protected java.util.Date getContractStartDate(Room room) {
         Contract active = getActiveContract(room);
-        return active != null ? active.getStartDate() : null;
+        return active != null && active.getStartDate() != null
+                ? java.util.Date.from(active.getStartDate()
+                        .atStartOfDay(java.time.ZoneId.systemDefault())
+                        .toInstant())
+                : null;
     }
 
     protected java.util.Date getContractEndDate(Room room) {
         Contract active = getActiveContract(room);
-        return active != null ? active.getEndDate() : null;
+        return active != null && active.getEndDate() != null
+                ? java.util.Date.from(active.getEndDate()
+                        .atStartOfDay(java.time.ZoneId.systemDefault())
+                        .toInstant())
+                : null;
     }
-
-    //    protected List<String> getServices(Room room) {
-    //        Contract active = getActiveContract(room);
-    //        if (active == null || active.getServices() == null) return List.of();
-    //        return active.getServices().stream()
-    //                .map(Utility::getName) // hoặc getKey nếu bạn thêm field key vào Utility
-    //                .collect(Collectors.toList());
-    //    }
-    //
-    //    protected Integer getElecPrev(Room room) {
-    //        // Lấy bill gần nhất của phòng
-    //        Optional<Bill> lastBill = billRepository.findTopByRoomIdOrderByYearDescMonthDesc(room.getId());
-    //        return lastBill.map(Bill::getElecNew).orElse(0);
-    //    }
-    //
-    //    protected Integer getWaterPrev(Room room) {
-    //        Optional<Bill> lastBill = billRepository.findTopByRoomIdOrderByYearDescMonthDesc(room.getId());
-    //        return lastBill.map(Bill::getWaterNew).orElse(0);
-    //    }
 }

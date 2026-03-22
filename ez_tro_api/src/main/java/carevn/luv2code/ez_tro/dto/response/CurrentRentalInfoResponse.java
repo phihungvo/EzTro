@@ -1,7 +1,7 @@
 package carevn.luv2code.ez_tro.dto.response;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -15,11 +15,11 @@ public class CurrentRentalInfoResponse {
     String contractCode;
     String contractStatus;
     Boolean isLiving;
-    Date startDate;
-    Date endDate;
+    LocalDate startDate;
+    LocalDate endDate;
     BigDecimal rentPrice;
     BigDecimal deposit;
-    Date moveInDate;
+    LocalDate moveInDate;
     Boolean isContractRepresentative;
 
     String roomName;
