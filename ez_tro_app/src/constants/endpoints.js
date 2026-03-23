@@ -92,6 +92,7 @@ const API_ENDPOINTS = {
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/boarding-houses`,
+        DETAIL: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         CREATE: `${BASE_URL}/boarding-houses`,
         UPDATE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         DELETE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,

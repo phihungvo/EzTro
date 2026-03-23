@@ -19,9 +19,11 @@ import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BuildingMapper;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.BuildingRepository;
+import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BuildingService;
 import carevn.luv2code.ez_tro.specification.BuildingSpecs;
+import carevn.luv2code.ez_tro.specification.RoomSpecs;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -31,6 +33,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     private final BuildingRepository buildingRepository;
     private final BoardingHouseRepository boardingHouseRepository;
+    private final RoomRepository roomRepository;
     private final BuildingMapper buildingMapper;
     private final ResourceLimitServiceImpl resourceLimitService;
 
@@ -52,14 +55,8 @@ public class BuildingServiceImpl implements BuildingService {
         BoardingHouse house = boardingHouseRepository
                 .findById(request.getBoardingHouseId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
-
-        // Kiểm tra quyền sở hữu & quota
-        User currentUser = SecurityUtils.getCurrentUser();
-        if (!house.getOwner().getId().equals(currentUser.getId()) && !SecurityUtils.isAdmin()) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
-
-        resourceLimitService.validateCanCreateBuilding(currentUser.getId());
+        validateBoardingHouseAccess(house);
+        resourceLimitService.validateCanCreateBuilding(house.getOwner().getId());
 
         Building building = buildingMapper.toEntity(request);
         building.setBoardingHouse(house);
@@ -70,16 +67,17 @@ public class BuildingServiceImpl implements BuildingService {
     public BuildingResponse update(Integer id, BuildingRequest request) {
         Building building =
                 buildingRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+        validateBoardingHouseAccess(building.getBoardingHouse());
+
+        BoardingHouse targetBoardingHouse = boardingHouseRepository
+                .findById(request.getBoardingHouseId())
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        validateBoardingHouseAccess(targetBoardingHouse);
 
         building.setName(request.getName());
         building.setDescription(request.getDescription());
         building.setTotalFloors(request.getTotalFloors());
-
-        BoardingHouse existedBoardingHouse = boardingHouseRepository
-                .findById(request.getBoardingHouseId())
-                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
-
-        building.setBoardingHouse(existedBoardingHouse);
+        building.setBoardingHouse(targetBoardingHouse);
 
         return buildingMapper.toResponse(buildingRepository.save(building));
     }
@@ -88,6 +86,10 @@ public class BuildingServiceImpl implements BuildingService {
     public void delete(Integer id) {
         Building building =
                 buildingRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+        validateBoardingHouseAccess(building.getBoardingHouse());
+        if (!roomRepository.findAll(RoomSpecs.inBuilding(building.getId())).isEmpty()) {
+            throw new AppException(ErrorCode.BUILDING_DELETE_NOT_ALLOWED);
+        }
         buildingRepository.delete(building);
     }
 
@@ -96,15 +98,14 @@ public class BuildingServiceImpl implements BuildingService {
     public BuildingResponse getById(Integer id) {
         Building building =
                 buildingRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+        validateBoardingHouseAccess(building.getBoardingHouse());
         return buildingMapper.toResponse(building);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BuildingResponse> getAll() {
-        return buildingRepository.findAll().stream()
-                .map(buildingMapper::toResponse)
-                .toList();
+        return getAllBuildingsByRole(Pageable.unpaged()).getContent();
     }
 
     @Override
@@ -116,8 +117,24 @@ public class BuildingServiceImpl implements BuildingService {
     @Override
     @Transactional(readOnly = true)
     public List<BuildingResponse> getByBoardingHouse(Integer boardingHouseId) {
+        BoardingHouse house = boardingHouseRepository
+                .findById(boardingHouseId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        validateBoardingHouseAccess(house);
+
         return buildingRepository.findByBoardingHouseId(boardingHouseId).stream()
                 .map(buildingMapper::toResponse)
                 .toList();
+    }
+
+    private void validateBoardingHouseAccess(BoardingHouse house) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!SecurityUtils.isAdmin() && !house.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
     }
 }

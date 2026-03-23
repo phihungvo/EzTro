@@ -16,6 +16,7 @@ import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BoardingHouseMapper;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
+import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BoardingHouseService;
@@ -28,58 +29,45 @@ import lombok.RequiredArgsConstructor;
 public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final UserRepository userRepository;
+    private final RoomRepository roomRepository;
     private final BoardingHouseMapper boardingHouseMapper;
     private final ResourceLimitServiceImpl resourceLimitService;
     private final SystemConfigService systemConfigService;
 
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
-        //        User owner = userRepository
-        //                .findById(request.getOwnerId())
-        //                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
         User currentUser = SecurityUtils.getCurrentUser();
         if (!SecurityUtils.isOwner() && !SecurityUtils.isAdmin()) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        if (SecurityUtils.isOwner()) {
-            // Owner mới có thể chưa được admin gán gói thủ công, nên tự cấp default plan trước khi check quota.
-            systemConfigService.ensureDefaultSubscriptionForOwner(currentUser);
-            resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
-        }
+        User owner = resolveOwnerForMutation(request, currentUser);
+        systemConfigService.ensureDefaultSubscriptionForOwner(owner);
+        resourceLimitService.validateCanCreateBoardingHouse(owner.getId());
 
         BoardingHouse house = boardingHouseMapper.toEntity(request);
-        house.setOwner(currentUser);
+        house.setOwner(owner);
 
         boardingHouseRepository.save(house);
         return boardingHouseMapper.toResponse(house);
     }
-
-    //    User currentUser = SecurityUtils.getCurrentUser();
-    //    if (!currentUser.isOwner()) {
-    //        throw new AppException(ErrorCode.FORBIDDEN);
-    //    }
-    //
-    //    // Kiểm tra quota
-    //    resourceLimitService.validateCanCreateBoardingHouse(currentUser.getId());
-    //
-    //    BoardingHouse house = boardingHouseMapper.toEntity(request);
-    //    house.setOwner(currentUser); // owner tự tạo, không cần ownerId từ request
-    //
-    //    boardingHouseRepository.save(house);
-    //    return boardingHouseMapper.toResponse(house);
 
     @Override
     public BoardingHouseResponse update(Integer id, BoardingHouseRequest request) {
         BoardingHouse house = boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        validateAccess(house);
+
+        User owner = resolveOwnerForMutation(request, SecurityUtils.getCurrentUser());
 
         house.setName(request.getName());
         house.setAddress(request.getAddress());
+        house.setContactPhone(request.getContactPhone());
         house.setDescription(request.getDescription());
+        house.setTotalBuildings(request.getTotalBuildings());
         house.setTotalRooms(request.getTotalRooms());
+        house.setOwner(owner);
 
         boardingHouseRepository.save(house);
         return boardingHouseMapper.toResponse(house);
@@ -90,6 +78,12 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         BoardingHouse house = boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        validateAccess(house);
+        if ((house.getBuildings() != null && !house.getBuildings().isEmpty())
+                || (house.getUtilities() != null && !house.getUtilities().isEmpty())
+                || !roomRepository.findByBoardingHouseId(house.getId()).isEmpty()) {
+            throw new AppException(ErrorCode.BOARDING_HOUSE_DELETE_NOT_ALLOWED);
+        }
         boardingHouseRepository.delete(house);
     }
 
@@ -98,6 +92,7 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         BoardingHouse house = boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+        validateAccess(house);
         return boardingHouseMapper.toResponse(house);
     }
 
@@ -129,15 +124,42 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
 
     @Override
     public List<BoardingHouseResponse> getAllForOwner() {
-        User user = SecurityUtils.getCurrentUser();
-        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
-
-        return List.of();
+        return getAllPagedByRole(Pageable.unpaged()).getContent();
     }
 
     @Override
     public Page<BoardingHouseResponse> getAllBoardingHousesPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         return boardingHouseRepository.findAll(pageRequest).map(boardingHouseMapper::toResponse);
+    }
+
+    private User resolveOwnerForMutation(BoardingHouseRequest request, User currentUser) {
+        if (SecurityUtils.isOwner()) {
+            return currentUser;
+        }
+
+        Integer ownerId = request.getOwnerId();
+        if (ownerId == null) {
+            throw new AppException(ErrorCode.OWNER_NOT_FOUND);
+        }
+
+        User owner = userRepository.findById(ownerId).orElseThrow(() -> new AppException(ErrorCode.OWNER_NOT_FOUND));
+        boolean isOwnerRole = owner.getRoles().stream().anyMatch(role -> "OWNER".equals(role.getName()));
+        if (!isOwnerRole) {
+            throw new AppException(ErrorCode.NOT_AN_OWNER);
+        }
+
+        return owner;
+    }
+
+    private void validateAccess(BoardingHouse house) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!SecurityUtils.isAdmin() && !house.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
     }
 }

@@ -1,5 +1,4 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
-import { message } from 'antd';
 import apiClient from '~/service/api/api';
 
 export const getAllBuildings = async ({ page, pageSize }) => {
@@ -10,9 +9,7 @@ export const getAllBuildings = async ({ page, pageSize }) => {
 
         return response.data;
     } catch (error) {
-        console.log('Error when fetching all buildings ! Error: ', error);
-        message.error('Error get all buildings: ');
-        return null;
+        throw error;
     }
 };
 
@@ -24,54 +21,42 @@ export const getAllBuildingsByRole = async ({ page, pageSize }) => {
 
         return response.data;
     } catch (error) {
-        console.log('Error when fetching all buildings ! Error: ', error);
-        message.error('Error get all buildings: ');
-        return null;
+        throw error;
     }
 };
 
 export const createBuilding = async (formData) => {
     try {
-        const response = await apiClient.post(
-            API_ENDPOINTS.BUILDING.CREATE,
-            formData,
-        );
+        const response = await apiClient.post(API_ENDPOINTS.BUILDING.CREATE, formData);
         return response.data;
     } catch (error) {
-        console.error('Error when creating building: ', error);
+        throw error;
     }
 };
 
 export const updateBuilding = async (buildingId, formData) => {
     try {
-        const response = await apiClient.put(
-            API_ENDPOINTS.BUILDING.UPDATE(buildingId),
-            formData,
-        );
-        message.success('Building updated successfully');
+        const response = await apiClient.put(API_ENDPOINTS.BUILDING.UPDATE(buildingId), formData);
         return response.data;
     } catch (error) {
-        console.error('Error when updating building: ', error);
+        throw error;
     }
 };
 
 export const deleteBuilding = async (buildingId) => {
     try {
-        const response = await apiClient.delete(
-            API_ENDPOINTS.BUILDING.DELETE(buildingId));
-        message.success('Building deleting successfully');
+        const response = await apiClient.delete(API_ENDPOINTS.BUILDING.DELETE(buildingId));
         return response.data;
     } catch (error) {
-        console.error('Error when deleting building: ', error);
+        throw error;
     }
 };
 
 export const getByBoardingHouse = async (boardingHouseId) => {
     try {
-        const response = await apiClient.get(
-            API_ENDPOINTS.BUILDING.GET_BY_BOARDING_HOUSE(boardingHouseId));
+        const response = await apiClient.get(API_ENDPOINTS.BUILDING.GET_BY_BOARDING_HOUSE(boardingHouseId));
         return response.data;
     } catch (error) {
-        console.error('Error when get building by boarding house: ', error);
+        throw error;
     }
 };

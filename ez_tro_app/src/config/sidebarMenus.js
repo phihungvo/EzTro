@@ -223,6 +223,7 @@ export const MENU_CONFIG = {
                 {
                     key: "boarding-houses",
                     label: "Khu trọ",
+                    title: "Quản lý khu trọ",
                     icon: <AppstoreOutlined/>,
                     path: "/owner/boarding-houses",
                     color: "#10b981"

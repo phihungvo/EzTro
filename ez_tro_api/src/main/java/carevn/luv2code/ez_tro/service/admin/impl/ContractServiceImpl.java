@@ -88,7 +88,8 @@ public class ContractServiceImpl implements ContractService {
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
         validateRoomAccess(room);
 
-        Tenant tenant = resolveTenant(request);
+        Tenant tenant =
+                resolveTenant(request, room.getBoardingHouse().getOwner().getId());
 
         if (contractRepository.existsByRoomIdAndStatusIn(
                 request.getRoomId(), Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
@@ -166,6 +167,7 @@ public class ContractServiceImpl implements ContractService {
     public void delete(Integer id) {
         Contract contract =
                 contractRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
         Room room = contract.getRoom();
         contractRepository.delete(contract);
         contractRepository.flush();
@@ -200,7 +202,14 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @Transactional(readOnly = true)
     public List<ContractResponse> getAll() {
-        return contractRepository.findAll().stream()
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        Specification<Contract> spec = Specification.where(null);
+
+        if (!safe.isAdmin()) {
+            spec = spec.and(ContractSpecs.ownedByOwner(safe.get()));
+        }
+
+        return contractRepository.findAll(spec).stream()
                 .map(contractMapper::toResponse)
                 .toList();
     }
@@ -365,7 +374,7 @@ public class ContractServiceImpl implements ContractService {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private Tenant resolveTenant(ContractRequest request) {
+    private Tenant resolveTenant(ContractRequest request, Integer ownerId) {
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository
                     .findById(request.getTenantId())
@@ -379,7 +388,6 @@ public class ContractServiceImpl implements ContractService {
             throw new AppException(ErrorCode.TENANT_NOT_FOUND);
         }
 
-        Integer ownerId = SecurityUtils.getCurrentUserId();
         resourceLimitService.validateCanCreateTenant(ownerId);
 
         if (userRepository.existsByEmail(tenantRequest.getEmail())) {
@@ -403,9 +411,11 @@ public class ContractServiceImpl implements ContractService {
                 .build();
         userRepository.save(user);
 
+        User owner = userRepository.findById(ownerId).orElseThrow(() -> new AppException(ErrorCode.OWNER_NOT_FOUND));
+
         Tenant tenant = Tenant.builder()
                 .user(user)
-                .owner(SecurityUtils.getCurrentUser())
+                .owner(owner)
                 .identityNumber(tenantRequest.getIdentityNumber())
                 .dateOfBirth(tenantRequest.getDateOfBirth())
                 .occupation(tenantRequest.getOccupation())
@@ -428,7 +438,8 @@ public class ContractServiceImpl implements ContractService {
 
         Tenant existingTenant = contract.getTenant();
         if (existingTenant == null || existingTenant.getUser() == null) {
-            return resolveTenant(request);
+            return resolveTenant(
+                    request, contract.getRoom().getBoardingHouse().getOwner().getId());
         }
 
         User user = existingTenant.getUser();

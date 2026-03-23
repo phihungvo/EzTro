@@ -15,6 +15,17 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 const cx = classNames.bind(cardStyles);
 
 const BoardingHousesCard = ({ boardingHouse, onView, onEdit, onDelete }) => {
+    const handleView = () => {
+        if (typeof onView === 'function') {
+            onView(boardingHouse);
+            return;
+        }
+
+        if (typeof onEdit === 'function') {
+            onEdit(boardingHouse);
+        }
+    };
+
     return (
         <Card
             hoverable
@@ -58,7 +69,7 @@ const BoardingHousesCard = ({ boardingHouse, onView, onEdit, onDelete }) => {
                     type="default"
                     icon={<EyeOutlined />}
                     buttonWidth={36}
-                    onClick={() => onView(boardingHouse)}
+                    onClick={handleView}
                 />
                 <SmartButton
                     type="primary"
