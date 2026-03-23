@@ -1,8 +1,6 @@
-import dayjs from 'dayjs';
 import React, {useState, useEffect, useCallback} from 'react';
 import classNames from 'classnames/bind';
 import {useLocation, useNavigate} from 'react-router-dom';
-// import moment from 'moment';
 import styles from '~/pages/Admin/Contract/Contract.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
@@ -22,7 +20,6 @@ import {
 } from '@ant-design/icons';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import {
-    Form,
     message,
     Row,
     Col,
@@ -35,12 +32,9 @@ import {
 } from 'antd';
 import {
     filterContracts,
-    createContract,
-    updateContract,
     deleteContract,
 } from '~/service/admin/contract';
-import {getAllRoomAvailable, getRoomsByBoardingHouse} from "~/service/admin/room";
-import {getAllTenantNoPaged} from "~/service/admin/tenant";
+import {getRoomsByBoardingHouse} from "~/service/admin/room";
 import useDebounce from '~/hooks/useDebounce';
 import usePagination from '~/hooks/usePagination';
 import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
@@ -54,24 +48,16 @@ function Contract() {
     const contractBasePath = location.pathname.startsWith('/admin') ? '/admin/contracts' : '/owner/contracts';
     const [contractSource, setContractSource] = useState([]);
     const [roomOptions, setRoomOptions] = useState([]);
-    const [roomCatalog, setRoomCatalog] = useState([]);
-    const [tenantCatalog, setTenantCatalog] = useState([]);
     const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [editorSubmitting, setEditorSubmitting] = useState(false);
     const {
         pagination,
         handleChange: handlePaginationChange,
         reset: resetPagination,
         setTotal: setPaginationTotal,
     } = usePagination({ initialPageSize: 10 });
-    const [modalMode, setModalMode] = useState('create');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedContract, setSelectedContract] = useState(null);
     const [viewMode, setViewMode] = useState('table');
-    const [form] = Form.useForm();
 
-    // State cho modal upload file
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedContractForUpload, setSelectedContractForUpload] = useState(null);
 
@@ -310,11 +296,6 @@ function Contract() {
                 setBoardingHouseOptions(boardingHouses);
             }
 
-            const tenantResponse = await getAllTenantNoPaged();
-            if (tenantResponse && Array.isArray(tenantResponse)) {
-                setTenantCatalog(tenantResponse);
-            }
-
         } catch (error) {
             console.error('Error fetching options:', error);
         }
@@ -396,103 +377,12 @@ function Contract() {
         resetPagination,
     ]);
 
-    const loadAllRoomsAvailability = async () => {
-        try {
-            const rooms = await getAllRoomAvailable();
-            if (rooms && Array.isArray(rooms)) {
-                setRoomCatalog(rooms);
-            }
-        } catch (error) {
-            console.error("Error loading all rooms:", error);
-            setRoomCatalog([]);
-        }
-    };
-
-    const buildFallbackRoomFromContract = (contract) => ({
-        id: contract.roomId,
-        roomNumber: contract.roomNumber,
-        boardingHouseName: contract.boardingHouseName,
-        price: contract.rentPrice,
-        floorNumber: null,
-        maxOccupants: null,
-    });
-
-    const buildFallbackTenantFromContract = (contract) => ({
-        id: contract.tenantId,
-        fullName: contract.tenantFullName || contract.tenantName,
-        phoneNumber: null,
-        email: null,
-        identityNumber: null,
-        occupation: null,
-    });
-
-    const ensureEditorEntities = (contract) => {
-        if (!contract) {
-            return;
-        }
-
-        setRoomCatalog(prev => prev.some((item) => item.id === contract.roomId)
-            ? prev
-            : [...prev, buildFallbackRoomFromContract(contract)]);
-        setTenantCatalog(prev => prev.some((item) => item.id === contract.tenantId)
-            ? prev
-            : [...prev, buildFallbackTenantFromContract(contract)]);
-    };
-
     const handleAddContract = async () => {
         navigate(`${contractBasePath}/create-contract`);
     };
 
-    const handleCallCreateContract = async (formData) => {
-        setEditorSubmitting(true);
-        try {
-            await createContract(formData);
-            await handleFilterContracts();
-            setIsModalOpen(false);
-            form.resetFields();
-        } catch (error) {
-            message.error(
-                `Lỗi khi tạo hợp đồng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        } finally {
-            setEditorSubmitting(false);
-        }
-    };
-
     const handleEditContract = async (record) => {
-        setSelectedContract(record);
-        setModalMode('edit');
-        await loadAllRoomsAvailability();
-        ensureEditorEntities(record);
-        const formValues = {
-            ...record,
-            startDate: record.startDate ? dayjs(record.startDate) : null,
-            endDate: record.endDate ? dayjs(record.endDate) : null,
-            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
-            paymentCycleMonths: record.paymentCycleMonths || 1,
-        };
-        form.setFieldsValue(formValues);
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateContract = async (formData) => {
-        setEditorSubmitting(true);
-        try {
-            await updateContract(selectedContract.id, formData);
-            await handleFilterContracts();
-            setIsModalOpen(false);
-            form.resetFields();
-        } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật hợp đồng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        } finally {
-            setEditorSubmitting(false);
-        }
+        navigate(`${contractBasePath}/${record.id}/edit`);
     };
 
     const handleDeleteContract = (record) => {
@@ -518,44 +408,12 @@ function Contract() {
         setIsUploadModalOpen(true);
     };
 
-    const handleFormSubmit = async (formData) => {
-        const submitData = {
-            ...formData,
-            startDate: formData.startDate ? formData.startDate.format('YYYY-MM-DD') : null,
-            endDate: formData.endDate ? formData.endDate.format('YYYY-MM-DD') : null,
-            depositReceivedAt: formData.depositReceivedAt ? formData.depositReceivedAt.format('YYYY-MM-DD') : null,
-        };
-
-        if (modalMode === 'create') {
-            await handleCallCreateContract(submitData);
-        } else if (modalMode === 'edit') {
-            await handleCallUpdateContract(submitData);
-        }
-    };
-
     const handleTableChange = (pagination) => {
         handlePaginationChange(pagination.current, pagination.pageSize);
     };
 
     const handleViewContract = async (record) => {
-        setSelectedContract(record);
-        setModalMode('view');
-        await loadAllRoomsAvailability();
-        ensureEditorEntities(record);
-        form.setFieldsValue({
-            ...record,
-            startDate: record.startDate ? dayjs(record.startDate) : null,
-            endDate: record.endDate ? dayjs(record.endDate) : null,
-            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
-            paymentCycleMonths: record.paymentCycleMonths || 1,
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleEditorClose = () => {
-        setIsModalOpen(false);
-        setSelectedContract(null);
-        form.resetFields();
+        navigate(`${contractBasePath}/${record.id}/edit`);
     };
 
     const handleViewModeChange = (value) => {
@@ -704,19 +562,6 @@ function Contract() {
                         </>
                     )}
                 </div>
-
-                {/*<ContractEditor*/}
-                {/*    open={isModalOpen && modalMode !== 'delete'}*/}
-                {/*    mode={modalMode}*/}
-                {/*    form={form}*/}
-                {/*    onClose={handleEditorClose}*/}
-                {/*    onSubmit={handleFormSubmit}*/}
-                {/*    onEditRequest={() => setModalMode('edit')}*/}
-                {/*    submitting={editorSubmitting}*/}
-                {/*    roomCatalog={roomCatalog}*/}
-                {/*    tenantCatalog={tenantCatalog}*/}
-                {/*    selectedContract={selectedContract}*/}
-                {/*/>*/}
 
                 <ContractFileUploadModal
                     isOpen={isUploadModalOpen}

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractResponse;
 
 public interface ContractService {
@@ -15,7 +16,7 @@ public interface ContractService {
 
     void delete(Integer id);
 
-    ContractResponse getById(Integer id);
+    ContractDetailResponse getById(Integer id);
 
     List<ContractResponse> getAll();
 

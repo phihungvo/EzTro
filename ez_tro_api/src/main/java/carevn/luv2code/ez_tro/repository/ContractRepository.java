@@ -33,6 +33,8 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     boolean existsByRoomIdAndStatusIn(Integer roomId, Collection<ContractStatus> statuses);
 
+    boolean existsByRoomIdAndIdNotAndStatusIn(Integer roomId, Integer id, Collection<ContractStatus> statuses);
+
     Optional<Contract> findTopByOrderByIdDesc();
 
     Optional<Contract> findByRoomIdAndStatus(Integer roomId, ContractStatus status);

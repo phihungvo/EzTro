@@ -27,7 +27,9 @@ import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractTenantRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractUtilityRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractUtilityDetailResponse;
 import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Room;
@@ -107,7 +109,9 @@ public class ContractServiceImpl implements ContractService {
         }
 
         contractRepository.saveAndFlush(contract);
-        syncRoomUtilities(room, request);
+        if (request.getUtilities() != null) {
+            syncRoomUtilities(room, request);
+        }
         syncRoomOccupancyStatus(room);
         return contractMapper.toResponse(contract);
     }
@@ -116,22 +120,28 @@ public class ContractServiceImpl implements ContractService {
     public ContractResponse update(Integer id, ContractRequest request) {
         Contract contract =
                 contractRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-        Room previousRoom = contract.getRoom();
-        Set<Integer> roomIdsToSync = new HashSet<>();
-        roomIdsToSync.add(previousRoom.getId());
+        validateContractAccess(contract);
 
-        if (request.getRoomId() != null) {
-            Room room = roomRepository
-                    .findById(request.getRoomId())
-                    .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-            contract.setRoom(room);
-            roomIdsToSync.add(room.getId());
+        if (!contract.getRoom().getId().equals(request.getRoomId())) {
+            throw new AppException(ErrorCode.CONTRACT_ROOM_CHANGE_NOT_ALLOWED);
         }
-        if (request.getTenantId() != null) {
-            Tenant tenant = tenantRepository
-                    .findById(request.getTenantId())
-                    .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
-            contract.setTenant(tenant);
+        if (request.getTenantId() != null
+                && !request.getTenantId().equals(contract.getTenant().getId())) {
+            throw new AppException(ErrorCode.CONTRACT_TENANT_CHANGE_NOT_ALLOWED);
+        }
+        if (request.getTenant() != null) {
+            throw new AppException(ErrorCode.CONTRACT_TENANT_CHANGE_NOT_ALLOWED);
+        }
+        if (request.getUtilities() != null) {
+            throw new AppException(ErrorCode.CONTRACT_UTILITIES_UPDATE_NOT_ALLOWED);
+        }
+
+        if (contractRepository.existsByRoomIdAndIdNotAndStatusIn(
+                contract.getRoom().getId(), id, Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
+            throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
+        }
+        if (request.getEndDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
+            throw new AppException(ErrorCode.CONTRACT_END_DATE_INVALID);
         }
 
         contract.setStartDate(request.getStartDate());
@@ -147,10 +157,7 @@ public class ContractServiceImpl implements ContractService {
         contract.setUpdatedAt(new Date());
 
         contractRepository.saveAndFlush(contract);
-
-        for (Integer roomId : roomIdsToSync) {
-            roomRepository.findById(roomId).ifPresent(this::syncRoomOccupancyStatus);
-        }
+        syncRoomOccupancyStatus(contract.getRoom());
         return contractMapper.toResponse(contract);
     }
 
@@ -167,10 +174,11 @@ public class ContractServiceImpl implements ContractService {
 
     @Override
     @Transactional(readOnly = true)
-    public ContractResponse getById(Integer id) {
+    public ContractDetailResponse getById(Integer id) {
         Contract contract =
                 contractRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-        return contractMapper.toResponse(contract);
+        validateContractAccess(contract);
+        return toDetailResponse(contract);
     }
 
     @Override
@@ -359,9 +367,11 @@ public class ContractServiceImpl implements ContractService {
 
     private Tenant resolveTenant(ContractRequest request) {
         if (request.getTenantId() != null) {
-            return tenantRepository
+            Tenant tenant = tenantRepository
                     .findById(request.getTenantId())
                     .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+            validateTenantAccess(tenant);
+            return tenant;
         }
 
         ContractTenantRequest tenantRequest = request.getTenant();
@@ -374,6 +384,9 @@ public class ContractServiceImpl implements ContractService {
 
         if (userRepository.existsByEmail(tenantRequest.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+        if (tenantRequest.getPassword() == null || tenantRequest.getPassword().isBlank()) {
+            throw new AppException(ErrorCode.CONTRACT_TENANT_PASSWORD_REQUIRED);
         }
 
         User user = User.builder()
@@ -399,6 +412,48 @@ public class ContractServiceImpl implements ContractService {
                 .note(tenantRequest.getNote())
                 .build();
         return tenantRepository.save(tenant);
+    }
+
+    private Tenant resolveTenantForUpdate(Contract contract, ContractRequest request) {
+        if (request.getTenantId() != null) {
+            return tenantRepository
+                    .findById(request.getTenantId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+        }
+
+        ContractTenantRequest tenantRequest = request.getTenant();
+        if (tenantRequest == null) {
+            return contract.getTenant();
+        }
+
+        Tenant existingTenant = contract.getTenant();
+        if (existingTenant == null || existingTenant.getUser() == null) {
+            return resolveTenant(request);
+        }
+
+        User user = existingTenant.getUser();
+        boolean emailChanged = !user.getEmail().equalsIgnoreCase(tenantRequest.getEmail());
+        if (emailChanged && userRepository.existsByEmail(tenantRequest.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        user.setFullName(tenantRequest.getFullName());
+        user.setPhoneNumber(tenantRequest.getPhoneNumber());
+        user.setEmail(tenantRequest.getEmail());
+        user.setUserName(tenantRequest.getEmail());
+
+        if (tenantRequest.getPassword() != null && !tenantRequest.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(tenantRequest.getPassword()));
+            user.setOriginalPassword(tenantRequest.getPassword());
+        }
+        userRepository.save(user);
+
+        existingTenant.setIdentityNumber(tenantRequest.getIdentityNumber());
+        existingTenant.setDateOfBirth(tenantRequest.getDateOfBirth());
+        existingTenant.setOccupation(tenantRequest.getOccupation());
+        existingTenant.setNote(tenantRequest.getNote());
+
+        return tenantRepository.save(existingTenant);
     }
 
     private void syncRoomUtilities(Room room, ContractRequest request) {
@@ -476,6 +531,80 @@ public class ContractServiceImpl implements ContractService {
     private Integer resolveQuantity(ContractUtilityRequest utilityRequest) {
         Integer quantity = utilityRequest.getQuantity();
         return quantity == null || quantity < 1 ? 1 : quantity;
+    }
+
+    private void validateContractAccess(Contract contract) {
+        validateRoomAccess(contract.getRoom());
+    }
+
+    private void validateTenantAccess(Tenant tenant) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!SecurityUtils.isAdmin()
+                && (tenant.getOwner() == null || !tenant.getOwner().getId().equals(currentUser.getId()))) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    private ContractDetailResponse toDetailResponse(Contract contract) {
+        Tenant tenant = contract.getTenant();
+        User tenantUser = tenant == null ? null : tenant.getUser();
+        List<ContractUtilityDetailResponse> utilities = contract.getRoom().getRoomUtilities() == null
+                ? List.of()
+                : contract.getRoom().getRoomUtilities().stream()
+                        .filter(roomUtility -> roomUtility.getStartDate() != null)
+                        .filter(roomUtility -> roomUtility.getStartDate().equals(contract.getStartDate()))
+                        .map(roomUtility -> ContractUtilityDetailResponse.builder()
+                                .utilityId(roomUtility.getUtility().getId())
+                                .name(roomUtility.getUtility().getName())
+                                .type(roomUtility.getUtility().getType().name())
+                                .unitPrice(roomUtility.getUtility().getUnitPrice())
+                                .unit(roomUtility.getUtility().getUnit())
+                                .quantity(roomUtility.getQuantity())
+                                .usageAmount(roomUtility.getUsageAmount())
+                                .note(roomUtility.getNote())
+                                .build())
+                        .toList();
+
+        return ContractDetailResponse.builder()
+                .id(contract.getId())
+                .contractCode(contract.getContractCode())
+                .roomId(contract.getRoom().getId())
+                .roomNumber(contract.getRoom().getRoomNumber())
+                .boardingHouseId(contract.getRoom().getBoardingHouse().getId())
+                .boardingHouseName(contract.getRoom().getBoardingHouse().getName())
+                .tenantId(tenant == null ? null : tenant.getId())
+                .userId(tenantUser == null ? null : tenantUser.getId())
+                .tenantFullName(tenantUser == null ? null : tenantUser.getFullName())
+                .tenantPhoneNumber(tenantUser == null ? null : tenantUser.getPhoneNumber())
+                .tenantEmail(tenantUser == null ? null : tenantUser.getEmail())
+                .tenantIdentityNumber(tenant == null ? null : tenant.getIdentityNumber())
+                .tenantDateOfBirth(tenant == null ? null : tenant.getDateOfBirth())
+                .tenantOccupation(tenant == null ? null : tenant.getOccupation())
+                .tenantNote(tenant == null ? null : tenant.getNote())
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .deposit(contract.getDeposit())
+                .rentPrice(contract.getRentPrice())
+                .status(contract.getStatus())
+                .note(contract.getNote())
+                .depositReceivedAt(contract.getDepositReceivedAt())
+                .depositPaymentMethod(contract.getDepositPaymentMethod())
+                .paymentCycleMonths(contract.getPaymentCycleMonths())
+                .monthlyPaymentDay(contract.getMonthlyPaymentDay())
+                .fileCount(
+                        contract.getFiles() == null
+                                ? 0
+                                : (int) contract.getFiles().stream()
+                                        .filter(file -> !Boolean.TRUE.equals(file.isDeleted()))
+                                        .count())
+                .createdAt(contract.getCreatedAt())
+                .updatedAt(contract.getUpdatedAt())
+                .utilities(utilities)
+                .build();
     }
 
     private void validateRoomAccess(Room room) {

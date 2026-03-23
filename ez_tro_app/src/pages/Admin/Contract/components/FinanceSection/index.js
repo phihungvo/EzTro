@@ -2,14 +2,13 @@ import SectionCard from '../SectionCard/SectionCard';
 import { Field, InputSuffix, PrefixInput } from '../shared/FormFields';
 import sharedStyles from '../shared/FormFields.module.scss';
 import { PAYMENT_METHOD_OPTIONS } from '../shared/constants';
-import styles from './FinanceSection.module.scss';
 import FinanceSummary from "~/pages/Admin/Contract/components/FinanceSummary";
 import ServiceTable from "~/pages/Admin/Contract/components/ServiceTable";
 
 export default function FinanceSection({
                                            state, patch,
                                            services, onToggleService, onPatchService, onAddService, onRemoveService,
-                                           formatVND,
+                                           formatVND, isEditMode,
                                        }) {
     const rentNum      = Number(String(state.rentPrice).replace(/[^0-9]/g, '')) || 0;
     const depositNum   = Number(String(state.deposit).replace(/[^0-9]/g, '')) || rentNum * Number(state.depositMonths || 2);
@@ -99,6 +98,7 @@ export default function FinanceSection({
                 onAdd={onAddService}
                 onRemove={onRemoveService}
                 formatVND={formatVND}
+                editable={!isEditMode}
             />
 
             <div className={sharedStyles.sectionDivider} />
@@ -108,7 +108,9 @@ export default function FinanceSection({
                 <Field label="Ghi chú thanh toán">
                     <textarea
                         className={sharedStyles.textarea}
-                        defaultValue={'Chuyển khoản: MB Bank\nSTK: 0912345678\nChủ TK: NGUYEN VAN A'}
+                        value={state.note}
+                        onChange={(e) => patch({ note: e.target.value })}
+                        placeholder="Ghi chú thêm về hợp đồng hoặc thanh toán"
                     />
                 </Field>
 
