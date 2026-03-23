@@ -87,7 +87,8 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
 
         // Kiểm tra quyền truy cập động
         if (!hasPermission(user, requestPath, requestMethod)) {
-            sendAccessDeniedResponse(response, "Insufficient permissions");
+            //            sendAccessDeniedResponse(response, "Insufficient permissions");
+            sendAccessDeniedResponse(response, "");
             return;
         }
 

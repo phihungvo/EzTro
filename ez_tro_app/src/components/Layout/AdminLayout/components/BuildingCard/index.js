@@ -3,9 +3,7 @@ import classNames from 'classnames/bind';
 import cardStyles from './BuildingCard.module.scss';
 import { Card, Space } from 'antd';
 import {
-    EnvironmentOutlined,
     HomeOutlined,
-    ApartmentOutlined,
     EyeOutlined,
     EditOutlined,
     DeleteOutlined,
@@ -15,6 +13,17 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 const cx = classNames.bind(cardStyles);
 
 const BuildingCard = ({ building, onView, onEdit, onDelete }) => {
+    const handleView = () => {
+        if (typeof onView === 'function') {
+            onView(building);
+            return;
+        }
+
+        if (typeof onEdit === 'function') {
+            onEdit(building);
+        }
+    };
+
     return (
         <Card hoverable className={cx('building-card')}>
             <div className={cx('building-card-content')}>
@@ -70,7 +79,7 @@ const BuildingCard = ({ building, onView, onEdit, onDelete }) => {
                     type="default"
                     icon={<EyeOutlined />}
                     buttonWidth={40}
-                    onClick={() => onView(building)}
+                    onClick={handleView}
                 />
                 <SmartButton
                     type="primary"

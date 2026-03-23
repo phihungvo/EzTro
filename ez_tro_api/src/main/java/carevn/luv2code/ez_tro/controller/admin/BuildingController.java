@@ -11,6 +11,7 @@ import carevn.luv2code.ez_tro.dto.requests.BuildingRequest;
 import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
 import carevn.luv2code.ez_tro.service.admin.BuildingService;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -27,12 +28,13 @@ public class BuildingController {
     }
 
     @PostMapping
-    public ResponseEntity<BuildingResponse> create(@RequestBody BuildingRequest request) {
+    public ResponseEntity<BuildingResponse> create(@Valid @RequestBody BuildingRequest request) {
         return ResponseEntity.ok(buildingService.create(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BuildingResponse> update(@PathVariable Integer id, @RequestBody BuildingRequest request) {
+    public ResponseEntity<BuildingResponse> update(
+            @PathVariable Integer id, @Valid @RequestBody BuildingRequest request) {
         return ResponseEntity.ok(buildingService.update(id, request));
     }
 

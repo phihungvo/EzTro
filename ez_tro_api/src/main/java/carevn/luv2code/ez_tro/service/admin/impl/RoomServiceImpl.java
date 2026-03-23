@@ -89,17 +89,14 @@ public class RoomServiceImpl implements RoomService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        resourceLimitService.validateCanCreateRoom(currentUser.getId());
+        resourceLimitService.validateCanCreateRoom(boardingHouse.getOwner().getId());
 
         Building building = getBuildingOrThrow(request.getBuildingId());
         validateBuildingBelongsToBoardingHouse(building, boardingHouse);
         validateFloorAgainstBuilding(request.getFloorNumber(), building);
         validateRoomNumberUniqueness(building.getId(), request.getRoomNumber(), null);
 
-        List<Utility> utilities = utilityRepository.findAllByBoardingHouseId(boardingHouse.getId()).stream()
-                .filter(u -> request.getUtilityIds() != null
-                        && request.getUtilityIds().contains(u.getId()))
-                .toList();
+        List<Utility> utilities = resolveUtilitiesForBoardingHouse(boardingHouse, request.getUtilityIds());
 
         Room room = roomMapper.toEntity(request);
         room.setBoardingHouse(boardingHouse);
@@ -151,7 +148,8 @@ public class RoomServiceImpl implements RoomService {
         room.setStatus(resolveRoomStatus(request.getStatus(), hasEffectiveActiveContract(room)));
 
         if (request.getUtilityIds() != null) {
-            List<Utility> utilities = utilityRepository.findAllById(request.getUtilityIds());
+            List<Utility> utilities =
+                    resolveUtilitiesForBoardingHouse(room.getBoardingHouse(), request.getUtilityIds());
             List<RoomUtility> newRoomUtilities = utilities.stream()
                     .map(utility -> {
                         RoomUtilityId roomUtilityId = new RoomUtilityId(room.getId(), utility.getId());
@@ -192,7 +190,9 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional(readOnly = true)
     public RoomResponse getById(Integer id) {
-        return roomMapper.toResponse(getRoomOrThrow(id));
+        Room room = getRoomOrThrow(id);
+        validateOwnerAccess(room.getBoardingHouse());
+        return roomMapper.toResponse(room);
     }
 
     @Override
@@ -928,6 +928,8 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional(readOnly = true)
     public List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId) {
+        BoardingHouse boardingHouse = getBoardingHouseOrThrow(boardingHouseId);
+        validateOwnerAccess(boardingHouse);
         return roomRepository.findByBoardingHouseId(boardingHouseId).stream()
                 .map(roomMapper::toResponse)
                 .toList();
@@ -1056,6 +1058,26 @@ public class RoomServiceImpl implements RoomService {
         return boardingHouseRepository
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+    }
+
+    private List<Utility> resolveUtilitiesForBoardingHouse(BoardingHouse boardingHouse, List<Integer> utilityIds) {
+        if (utilityIds == null || utilityIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Utility> utilities = utilityRepository.findAllById(utilityIds);
+        if (utilities.size() != utilityIds.size()) {
+            throw new AppException(ErrorCode.UTILITY_NOT_FOUND);
+        }
+
+        boolean hasInvalidUtility = utilities.stream()
+                .anyMatch(utility -> utility.getBoardingHouse() == null
+                        || !utility.getBoardingHouse().getId().equals(boardingHouse.getId()));
+        if (hasInvalidUtility) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        return utilities;
     }
 
     private Contract getActiveContract(Room room) {

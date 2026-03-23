@@ -322,7 +322,7 @@ function Building() {
                             <Col xs={24} sm={24} md={12} lg={8} xl={6} key={building.id}>
                                 <BuildingCard
                                     building={building}
-                                    // onView={() => handleViewBuilding(building)}
+                                    onView={() => handleEditBuilding(building)}
                                     onEdit={() => handleEditBuilding(building)}
                                     onDelete={() => handleDeleteBuilding(building)}
                                 />

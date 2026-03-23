@@ -53,6 +53,7 @@ import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreat
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
+import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -325,6 +326,8 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/tenants/:id/edit" element={<TenantCreatorPage/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
                         <Route path="/boarding-houses" element={<BoardingHouses/>}/>
+                        <Route path="/boarding-houses/create" element={<BoardingHouseCreatorPage/>}/>
+                        <Route path="/boarding-houses/:id/edit" element={<BoardingHouseCreatorPage/>}/>
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>

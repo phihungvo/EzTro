@@ -120,6 +120,10 @@ public enum ErrorCode {
     ROOM_FLOOR_INVALID(1090, "Room floor does not match building configuration", HttpStatus.BAD_REQUEST),
     ROOM_DELETE_NOT_ALLOWED(
             1091, "Room cannot be deleted because it already has operational data", HttpStatus.BAD_REQUEST),
+    BOARDING_HOUSE_DELETE_NOT_ALLOWED(
+            1093, "Boarding house cannot be deleted because it already has dependent data", HttpStatus.BAD_REQUEST),
+    BUILDING_DELETE_NOT_ALLOWED(
+            1094, "Building cannot be deleted because it already has rooms", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),
