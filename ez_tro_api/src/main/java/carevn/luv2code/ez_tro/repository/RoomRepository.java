@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -23,6 +24,8 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
     Integer findMaxRoomNumberByBuildingId(@Param("buildingId") Integer buildingId);
 
     boolean existsByBuildingIdAndRoomNumber(Integer buildingId, String roomNumber);
+
+    Optional<Room> findByBuildingIdAndRoomNumber(Integer buildingId, String roomNumber);
 
     @Query("SELECT COUNT(r) FROM Room r WHERE r.boardingHouse.owner.id = :ownerId")
     long countByBoardingHouse_Owner_Id(@Param("ownerId") Integer ownerId);

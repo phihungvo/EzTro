@@ -13,6 +13,7 @@ import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractResponse;
 import carevn.luv2code.ez_tro.entity.File;
 import carevn.luv2code.ez_tro.exception.AppException;
@@ -64,9 +65,9 @@ public class ContractController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<ContractResponse> getById(@PathVariable Integer id) {
-        ContractResponse response = contractService.getById(id);
-        return ApiResponse.<ContractResponse>builder()
+    public ApiResponse<ContractDetailResponse> getById(@PathVariable Integer id) {
+        ContractDetailResponse response = contractService.getById(id);
+        return ApiResponse.<ContractDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get contract successfully")
                 .result(response)

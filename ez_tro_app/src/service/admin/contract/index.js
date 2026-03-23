@@ -66,11 +66,11 @@ export const filterContracts = async ({ startDate, endDate, status, search, boar
             startDate,
             endDate,
             status,
-            search,  // tenantFullName, roomNumber, contractCode
+            search,
             boardingHouseId,
             roomId,
             page,
-            pageSize,
+            size: pageSize,
         };
         const response = await apiClient.get(API_ENDPOINTS.CONTRACT.FILTER, { params });
         return response.data;
@@ -78,6 +78,17 @@ export const filterContracts = async ({ startDate, endDate, status, search, boar
         console.error('Error when filtering contracts: ', error);
         message.error('Lỗi khi lọc hợp đồng');
         return null;
+    }
+};
+
+export const getContractById = async (contractId) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.CONTRACT.DETAIL(contractId));
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when fetching contract detail: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi lấy chi tiết hợp đồng');
+        throw error;
     }
 };
 
@@ -135,7 +146,7 @@ export const updateContract = async (contractId, formData) => {
             API_ENDPOINTS.CONTRACT.UPDATE(contractId),
             formData,
         );
-        message.success('Contract updated successfully');
+        message.success('Cập nhật hợp đồng thành công');
         return response.data;
     } catch (error) {
         console.error('Error when updating contract: ', error);
@@ -148,7 +159,7 @@ export const deleteContract = async (contractId) => {
     try {
         const response = await apiClient.delete(
             API_ENDPOINTS.CONTRACT.DELETE(contractId));
-        message.success('Contract deleting successfully');
+        message.success('Xóa hợp đồng thành công');
         return response.data;
     } catch (error) {
         console.error('Error when deleting contract: ', error);

@@ -49,11 +49,13 @@ public class RoomServiceImpl implements RoomService {
     private final BuildingRepository buildingRepository;
     private final UtilityRepository utilityRepository;
     private final RoomMapper roomMapper;
+    private final ContractRepository contractRepository;
     private final ContractMapper contractMapper;
     private final TenantMapper tenantMapper;
     private final BillRepository billRepository;
     private final BillMapper billMapper;
     private final MeterReadingRepository meterReadingRepository;
+    private final PropertyAssetRepository propertyAssetRepository;
 
     //    @Override
     //    @Transactional
@@ -89,9 +91,10 @@ public class RoomServiceImpl implements RoomService {
 
         resourceLimitService.validateCanCreateRoom(currentUser.getId());
 
-        Building building = buildingRepository
-                .findById(request.getBuildingId())
-                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+        Building building = getBuildingOrThrow(request.getBuildingId());
+        validateBuildingBelongsToBoardingHouse(building, boardingHouse);
+        validateFloorAgainstBuilding(request.getFloorNumber(), building);
+        validateRoomNumberUniqueness(building.getId(), request.getRoomNumber(), null);
 
         List<Utility> utilities = utilityRepository.findAllByBoardingHouseId(boardingHouse.getId()).stream()
                 .filter(u -> request.getUtilityIds() != null
@@ -101,20 +104,8 @@ public class RoomServiceImpl implements RoomService {
         Room room = roomMapper.toEntity(request);
         room.setBoardingHouse(boardingHouse);
         room.setBuilding(building);
-        room.setStatus(RoomStatus.AVAILABLE);
-
-        if (request.getRoomNumber() == null || request.getRoomNumber().trim().isEmpty()) {
-
-            Integer maxRoomNumber = roomRepository.findMaxRoomNumberByBuildingId(building.getId());
-
-            int nextRoomNumber = (maxRoomNumber == null) ? AppConstants.DEFAULT_ROOM_START_NUMBER : maxRoomNumber + 1;
-
-            while (roomRepository.existsByBuildingIdAndRoomNumber(building.getId(), String.valueOf(nextRoomNumber))) {
-                nextRoomNumber++;
-            }
-
-            room.setRoomNumber(String.valueOf(nextRoomNumber));
-        }
+        room.setRoomNumber(resolveRoomNumber(request.getRoomNumber(), building.getId()));
+        room.setStatus(resolveRoomStatus(request.getStatus(), false));
 
         List<RoomUtility> roomUtilities = utilities.stream()
                 .map(utility -> RoomUtility.builder()
@@ -138,10 +129,26 @@ public class RoomServiceImpl implements RoomService {
      * Không cho phép thay đổi khu nhà trọ hoặc tòa nhà của phòng.
      */
     @Override
+    @Transactional
     public RoomResponse update(Integer id, RoomRequest request) {
         Room room = getRoomOrThrow(id);
+        validateOwnerAccess(room.getBoardingHouse());
+
+        if (request.getBoardingHouseId() != null
+                && !room.getBoardingHouse().getId().equals(request.getBoardingHouseId())) {
+            throw new AppException(ErrorCode.INVALID_ROOM_FOR_BOARDING_HOUSE);
+        }
+
+        if (request.getBuildingId() != null && !room.getBuilding().getId().equals(request.getBuildingId())) {
+            throw new AppException(ErrorCode.INVALID_BUILDING_FOR_BOARDING_HOUSE);
+        }
+
+        validateFloorAgainstBuilding(request.getFloorNumber(), room.getBuilding());
+        validateRoomNumberUniqueness(room.getBuilding().getId(), request.getRoomNumber(), room.getId());
 
         roomMapper.updateRoomFromRequest(request, room);
+        room.setRoomNumber(resolveExistingRoomNumber(request.getRoomNumber(), room.getRoomNumber()));
+        room.setStatus(resolveRoomStatus(request.getStatus(), hasEffectiveActiveContract(room)));
 
         if (request.getUtilityIds() != null) {
             List<Utility> utilities = utilityRepository.findAllById(request.getUtilityIds());
@@ -167,17 +174,29 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public void delete(Integer id) {
         Room room = getRoomOrThrow(id);
+        validateOwnerAccess(room.getBoardingHouse());
+        if ((room.getContracts() != null && !room.getContracts().isEmpty())
+                || (room.getBills() != null && !room.getBills().isEmpty())
+                || (room.getMeterReadings() != null && !room.getMeterReadings().isEmpty())
+                || !propertyAssetRepository
+                        .findByRoomIdAndIsDeletedFalse(room.getId())
+                        .isEmpty()) {
+            throw new AppException(ErrorCode.ROOM_DELETE_NOT_ALLOWED);
+        }
         roomRepository.delete(room);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RoomResponse getById(Integer id) {
         return roomMapper.toResponse(getRoomOrThrow(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoomResponse> getAll() {
         return roomRepository.findAll().stream().map(roomMapper::toResponse).toList();
     }
@@ -294,10 +313,10 @@ public class RoomServiceImpl implements RoomService {
 
         // Giá thuê
         if (minPrice != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("rentPrice"), minPrice));
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("price"), minPrice));
         }
         if (maxPrice != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("rentPrice"), maxPrice));
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("price"), maxPrice));
         }
 
         // Phòng đang có hợp đồng hiệu lực
@@ -907,6 +926,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoomResponse> getByBoardingHouseId(Integer boardingHouseId) {
         return roomRepository.findByBoardingHouseId(boardingHouseId).stream()
                 .map(roomMapper::toResponse)
@@ -941,6 +961,95 @@ public class RoomServiceImpl implements RoomService {
      */
     private Room getRoomOrThrow(Integer id) {
         return roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    private Building getBuildingOrThrow(Integer buildingId) {
+        return buildingRepository
+                .findById(buildingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+    }
+
+    private void validateOwnerAccess(BoardingHouse boardingHouse) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!SecurityUtils.isAdmin() && !boardingHouse.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    private void validateBuildingBelongsToBoardingHouse(Building building, BoardingHouse boardingHouse) {
+        if (!building.getBoardingHouse().getId().equals(boardingHouse.getId())) {
+            throw new AppException(ErrorCode.INVALID_BUILDING_FOR_BOARDING_HOUSE);
+        }
+    }
+
+    private void validateFloorAgainstBuilding(Integer floorNumber, Building building) {
+        if (floorNumber == null || building.getTotalFloors() == null) {
+            return;
+        }
+
+        if (floorNumber > building.getTotalFloors()) {
+            throw new AppException(ErrorCode.ROOM_FLOOR_INVALID);
+        }
+    }
+
+    private void validateRoomNumberUniqueness(Integer buildingId, String roomNumber, Integer excludeRoomId) {
+        if (!StringUtils.hasText(roomNumber)) {
+            return;
+        }
+
+        boolean exists = roomRepository.existsByBuildingIdAndRoomNumber(buildingId, roomNumber.trim());
+        if (!exists) {
+            return;
+        }
+
+        if (excludeRoomId == null) {
+            throw new AppException(ErrorCode.ROOM_ALREADY_EXISTS);
+        }
+
+        Room existingRoom = roomRepository
+                .findByBuildingIdAndRoomNumber(buildingId, roomNumber.trim())
+                .orElse(null);
+        if (existingRoom != null && !existingRoom.getId().equals(excludeRoomId)) {
+            throw new AppException(ErrorCode.ROOM_ALREADY_EXISTS);
+        }
+    }
+
+    private String resolveRoomNumber(String requestedRoomNumber, Integer buildingId) {
+        if (StringUtils.hasText(requestedRoomNumber)) {
+            return requestedRoomNumber.trim();
+        }
+
+        Integer maxRoomNumber = roomRepository.findMaxRoomNumberByBuildingId(buildingId);
+        int nextRoomNumber = (maxRoomNumber == null) ? AppConstants.DEFAULT_ROOM_START_NUMBER : maxRoomNumber + 1;
+
+        while (roomRepository.existsByBuildingIdAndRoomNumber(buildingId, String.valueOf(nextRoomNumber))) {
+            nextRoomNumber++;
+        }
+
+        return String.valueOf(nextRoomNumber);
+    }
+
+    private String resolveExistingRoomNumber(String requestedRoomNumber, String currentRoomNumber) {
+        return StringUtils.hasText(requestedRoomNumber) ? requestedRoomNumber.trim() : currentRoomNumber;
+    }
+
+    private RoomStatus resolveRoomStatus(RoomStatus requestedStatus, boolean hasActiveContract) {
+        if (hasActiveContract) {
+            return RoomStatus.OCCUPIED;
+        }
+
+        RoomStatus resolvedStatus = requestedStatus == null ? RoomStatus.AVAILABLE : requestedStatus;
+        if (resolvedStatus == RoomStatus.OCCUPIED) {
+            throw new AppException(ErrorCode.ROOM_STATUS_INVALID);
+        }
+        return resolvedStatus;
+    }
+
+    private boolean hasEffectiveActiveContract(Room room) {
+        if (room.getId() == null) {
+            return false;
+        }
+        return contractRepository.existsEffectiveActiveContractByRoomId(room.getId(), LocalDate.now());
     }
 
     private BoardingHouse getBoardingHouseOrThrow(Integer id) {

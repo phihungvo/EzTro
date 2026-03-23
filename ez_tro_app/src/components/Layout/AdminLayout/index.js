@@ -52,6 +52,7 @@ import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
+import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -327,8 +328,11 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
+                        <Route path="/rooms/create-room" element={<RoomCreatorPage/>}/>
+                        <Route path="/rooms/:id/edit" element={<RoomCreatorPage/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
                         <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
+                        <Route path="/contracts/:id/edit" element={<ContractCreatorPage/>}/>
                         <Route path="/assets" element={<Asset/>}/>
                         <Route path="/assets/create" element={<PropertyAssetCreatorPage/>}/>
                         <Route path="/bills" element={<Bill/>}/>

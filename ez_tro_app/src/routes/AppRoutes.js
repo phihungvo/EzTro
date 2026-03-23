@@ -35,6 +35,7 @@ import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
+import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -74,12 +75,15 @@ const AppRoutes = () => {
                                 <Route path="dashboard" element={<AdminDashboard />} />
                                 <Route path="buildings" element={<Building />} />
                                 <Route path="rooms" element={<Room />} />
+                                <Route path="rooms/create-room" element={<RoomCreatorPage />} />
+                                <Route path="rooms/:id/edit" element={<RoomCreatorPage />} />
                                 <Route path="tenants" element={<Tenant />} />
                                 <Route path="tenants/create-tenant" element={<TenantCreatorPage />} />
                                 <Route path="tenants/:id/edit" element={<TenantCreatorPage />} />
                                 <Route path="tenants/:id" element={<TenantDetail />} />
                                 <Route path="contracts" element={<Contract />} />
                                 <Route path="contracts/create-contract" element={<ContractCreatorPage />} />
+                                <Route path="contracts/:id/edit" element={<ContractCreatorPage />} />
                                 <Route path="bills" element={<Bill />} />
                                 <Route path="bills/create-bill" element={<BillCreator />} />
                                 <Route path="revenues" element={<Revenue />} />

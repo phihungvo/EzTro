@@ -62,6 +62,7 @@ public enum ErrorCode {
     UTILITY_NOT_FOUND(1045, "Utility not found", HttpStatus.NOT_FOUND),
     ROOM_UTILITY_NOT_FOUND(1046, "Room utility not found", HttpStatus.NOT_FOUND),
     ROOM_UTILITY_ALREADY_EXISTS(1047, "Room utility already exists", HttpStatus.CONFLICT),
+    ROOM_STATUS_INVALID(1092, "Room status is invalid for current operation", HttpStatus.BAD_REQUEST),
 
     CONTRACT_ROOM_ALREADY_ACTIVE(1048, "Room already has an active contract", HttpStatus.CONFLICT),
     CONTRACT_START_DATE_REQUIRED(1049, "Start date is required", HttpStatus.BAD_REQUEST),
@@ -112,6 +113,13 @@ public enum ErrorCode {
     PROPERTY_ASSET_SERIAL_ALREADY_EXISTS(1084, "Property asset serial number already exists", HttpStatus.CONFLICT),
     INVALID_BUILDING_FOR_BOARDING_HOUSE(
             1085, "Building does not belong to the specified boarding house", HttpStatus.CONFLICT),
+    CONTRACT_TENANT_PASSWORD_REQUIRED(1086, "Tenant password is required", HttpStatus.BAD_REQUEST),
+    CONTRACT_ROOM_CHANGE_NOT_ALLOWED(1087, "Updating contract room is not allowed", HttpStatus.BAD_REQUEST),
+    CONTRACT_TENANT_CHANGE_NOT_ALLOWED(1088, "Updating contract tenant is not allowed", HttpStatus.BAD_REQUEST),
+    CONTRACT_UTILITIES_UPDATE_NOT_ALLOWED(1089, "Updating contract utilities is not allowed", HttpStatus.BAD_REQUEST),
+    ROOM_FLOOR_INVALID(1090, "Room floor does not match building configuration", HttpStatus.BAD_REQUEST),
+    ROOM_DELETE_NOT_ALLOWED(
+            1091, "Room cannot be deleted because it already has operational data", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

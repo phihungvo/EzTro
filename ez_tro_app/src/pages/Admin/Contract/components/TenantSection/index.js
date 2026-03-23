@@ -5,14 +5,14 @@ import styles from './TenantSection.module.scss';
 
 export default function TenantSection({
                                           state, patch,
-                                          extraRows, onAddExtra, onRemoveExtra, onPatchExtra,
+                                          extraRows, onAddExtra, onRemoveExtra, onPatchExtra, isEditMode,
                                       }) {
     return (
         <SectionCard
             icon="👤"
             iconColor="gold"
             title="Thông tin người thuê"
-            desc="Chỉ xử lý người thuê chính khi tạo hợp đồng"
+            desc={isEditMode ? "Thông tin người thuê chỉ xem tại màn cập nhật hợp đồng" : "Chỉ xử lý người thuê chính khi tạo hợp đồng"}
         >
             <div className={styles.tenantList}>
                 <div className={styles.tenantRow}>
@@ -24,6 +24,7 @@ export default function TenantSection({
                             type="text"
                             placeholder="Nguyễn Văn A"
                             value={state.tenantFullName}
+                            readOnly={isEditMode}
                             onChange={(e) => patch({ tenantFullName: e.target.value })}
                         />
                     </Field>
@@ -34,6 +35,7 @@ export default function TenantSection({
                             type="tel"
                             placeholder="0901 234 567"
                             value={state.tenantPhoneNumber}
+                            readOnly={isEditMode}
                             onChange={(e) => patch({ tenantPhoneNumber: e.target.value })}
                         />
                     </Field>
@@ -44,6 +46,7 @@ export default function TenantSection({
                             type="text"
                             placeholder="012345678910"
                             value={state.tenantIdentityNumber}
+                            readOnly={isEditMode}
                             onChange={(e) => patch({ tenantIdentityNumber: e.target.value })}
                         />
                     </Field>
@@ -53,6 +56,8 @@ export default function TenantSection({
                             className={sharedStyles.input}
                             type="date"
                             value={state.tenantDateOfBirth}
+                            readOnly={isEditMode}
+                            disabled={isEditMode}
                             onChange={(e) => patch({ tenantDateOfBirth: e.target.value })}
                         />
                     </Field>
@@ -60,7 +65,7 @@ export default function TenantSection({
                     <div />
                 </div>
 
-                {extraRows.map((row, idx) => (
+                {!isEditMode && extraRows.map((row, idx) => (
                     <div key={row.id} className={styles.tenantRow}>
                         <div className={`${styles.tenantBadge} ${styles.extra}`}>
                             Người ở cùng #{idx + 1}
@@ -119,9 +124,11 @@ export default function TenantSection({
                 ))}
             </div>
 
-            <button className={styles.addTenantBtn} onClick={onAddExtra}>
-                ＋ Thêm người ở cùng
-            </button>
+            {!isEditMode && (
+                <button className={styles.addTenantBtn} onClick={onAddExtra}>
+                    ＋ Thêm người ở cùng
+                </button>
+            )}
 
             <div className={sharedStyles.sectionDivider} />
 
@@ -131,17 +138,19 @@ export default function TenantSection({
                         className={sharedStyles.input}
                         type="email"
                         value={state.tenantEmail}
+                        readOnly={isEditMode}
                         onChange={(e) => patch({ tenantEmail: e.target.value })}
                         placeholder="email@example.com"
                     />
                 </Field>
-                <Field label="Mật khẩu đăng nhập" required>
+                <Field label="Mật khẩu đăng nhập" required={!isEditMode} hint={isEditMode ? "Không chỉnh sửa từ màn cập nhật hợp đồng" : null}>
                     <input
                         className={sharedStyles.input}
                         type="text"
                         value={state.tenantPassword}
+                        readOnly={isEditMode}
                         onChange={(e) => patch({ tenantPassword: e.target.value })}
-                        placeholder="Tối thiểu 6 ký tự"
+                        placeholder={isEditMode ? 'Chỉnh sửa tại màn người thuê nếu cần đổi mật khẩu' : 'Tối thiểu 6 ký tự'}
                     />
                 </Field>
                 <Field label="Nghề nghiệp">
@@ -149,6 +158,7 @@ export default function TenantSection({
                         className={sharedStyles.input}
                         type="text"
                         value={state.tenantOccupation}
+                        readOnly={isEditMode}
                         onChange={(e) => patch({ tenantOccupation: e.target.value })}
                         placeholder="Nhân viên văn phòng"
                     />

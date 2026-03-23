@@ -6,8 +6,10 @@ export const PAYMENT_METHOD_OPTIONS = [
 ];
 
 export const INITIAL_STATE = {
+    contractCode:         '',
     boardingHouseId:      '',
     roomId:               '',
+    status:               '',
     tenantFullName:       '',
     tenantPhoneNumber:    '',
     tenantEmail:          '',

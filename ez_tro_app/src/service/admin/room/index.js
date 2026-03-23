@@ -49,6 +49,16 @@ export const getAllRoomNoPaged = async () => {
     }
 };
 
+export const getRoomById = async (roomId) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.ROOM.GET_BY_ID(roomId));
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when fetching room detail: ', error);
+        throw error;
+    }
+};
+
 export const filterRooms = async ({
                                       search,
                                       status,
@@ -127,37 +137,30 @@ export const getRoomsByBoardingHouse = async (boardingHouseId) => {
 
 export const createRoom = async (formData) => {
     try {
-        const response = await apiClient.post(
-            API_ENDPOINTS.ROOM.CREATE,
-            formData,
-        );
-        message.success('Room created successfully');
+        const response = await apiClient.post(API_ENDPOINTS.ROOM.CREATE, formData);
         return response.data;
     } catch (error) {
         console.error('Error when creating room: ', error);
+        throw error;
     }
 };
 
 export const updateRoom = async (roomId, formData) => {
     try {
-        const response = await apiClient.put(
-            API_ENDPOINTS.ROOM.UPDATE(roomId),
-            formData,
-        );
-        message.success('Room updated successfully');
+        const response = await apiClient.put(API_ENDPOINTS.ROOM.UPDATE(roomId), formData);
         return response.data;
     } catch (error) {
         console.error('Error when updating room: ', error);
+        throw error;
     }
 };
 
 export const deleteRoom = async (roomId) => {
     try {
-        const response = await apiClient.delete(
-            API_ENDPOINTS.ROOM.DELETE(roomId));
-        message.success('Room deleting successfully');
+        const response = await apiClient.delete(API_ENDPOINTS.ROOM.DELETE(roomId));
         return response.data;
     } catch (error) {
         console.error('Error when deleting room: ', error);
+        throw error;
     }
 };

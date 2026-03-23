@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import {message} from 'antd';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {
     DEFAULT_ASSETS,
@@ -14,8 +14,8 @@ import {
 } from '../shared/constants';
 
 import {getAllBoardingHousesNoPaged, getUtilityByBoardingHouse} from '~/service/admin/boarding_house';
-import {getAllRoomAvailableByBoardingHouse} from '~/service/admin/room';
-import {createContract} from '~/service/admin/contract';
+import {getAllRoomAvailableByBoardingHouse, getRoomsByBoardingHouse} from '~/service/admin/room';
+import {createContract, getContractById, updateContract} from '~/service/admin/contract';
 
 import styles from './ContractCreatorPage.module.scss';
 import StepsBar from "~/pages/Admin/Contract/components/StepsBar";
@@ -53,6 +53,96 @@ const mapUtilityToServiceRow = (utility) => {
 
 const normalizeMoney = (value) => Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
 
+const normalizeDateInput = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+    }
+    return new Date(value).toISOString().slice(0, 10);
+};
+
+const mapContractDetailToState = (detail) => {
+    const rentPrice = Number(detail?.rentPrice || 0);
+    const deposit = Number(detail?.deposit || 0);
+    const depositMonths = rentPrice > 0 && deposit > 0
+        ? String(Math.max(1, Math.round(deposit / rentPrice)))
+        : '2';
+
+    return {
+        contractCode: detail?.contractCode || '',
+        boardingHouseId: detail?.boardingHouseId ? String(detail.boardingHouseId) : '',
+        roomId: detail?.roomId ? String(detail.roomId) : '',
+        status: detail?.status || '',
+        tenantFullName: detail?.tenantFullName || '',
+        tenantPhoneNumber: detail?.tenantPhoneNumber || '',
+        tenantEmail: detail?.tenantEmail || '',
+        tenantPassword: '',
+        tenantIdentityNumber: detail?.tenantIdentityNumber || '',
+        tenantDateOfBirth: normalizeDateInput(detail?.tenantDateOfBirth),
+        tenantOccupation: detail?.tenantOccupation || '',
+        startDate: normalizeDateInput(detail?.startDate),
+        endDate: normalizeDateInput(detail?.endDate),
+        isOpenEnded: !detail?.endDate,
+        rentPrice: detail?.rentPrice ? String(detail.rentPrice) : '',
+        deposit: detail?.deposit ? String(detail.deposit) : '',
+        depositMonths,
+        depositReceivedAt: normalizeDateInput(detail?.depositReceivedAt),
+        depositPaymentMethod: detail?.depositPaymentMethod || '',
+        paymentCycleMonths: detail?.paymentCycleMonths || 1,
+        monthlyPaymentDay: detail?.monthlyPaymentDay ? String(detail.monthlyPaymentDay) : '',
+        note: detail?.note || '',
+    };
+};
+
+const mergeServiceSelections = (utilityData, selectedUtilities) => {
+    const normalizedSelected = Array.isArray(selectedUtilities) ? selectedUtilities : [];
+    const mappedUtilities = Array.isArray(utilityData) ? utilityData.map(mapUtilityToServiceRow) : [];
+
+    const selectedByUtilityId = new Map(
+        normalizedSelected
+            .filter((item) => item?.utilityId != null)
+            .map((item) => [String(item.utilityId), item]),
+    );
+
+    const mergedServices = mappedUtilities.map((service) => {
+        const selected = selectedByUtilityId.get(String(service.utilityId));
+        if (!selected) {
+            return {
+                ...service,
+                on: false,
+            };
+        }
+
+        return {
+            ...service,
+            name: selected.name || service.name,
+            unit: selected.unit || service.unit,
+            price: Number(selected.unitPrice ?? service.price ?? 0),
+            qty: selected.quantity ?? service.qty,
+            on: true,
+            byMeter: (selected.type || service.type) === 'USAGE_BASED' || service.byMeter,
+            type: selected.type || service.type,
+        };
+    });
+
+    const extraServices = normalizedSelected
+        .filter((item) => !mappedUtilities.some((service) => String(service.utilityId) === String(item.utilityId)))
+        .map((item) => ({
+            id: item.utilityId || nextId(),
+            utilityId: item.utilityId || null,
+            name: item.name || '',
+            unit: item.unit || 'Tháng',
+            price: Number(item.unitPrice || 0),
+            qty: item.quantity || 1,
+            on: true,
+            byMeter: item.type === 'USAGE_BASED' || item.unit === 'kWh' || item.unit === 'm³',
+            type: item.type || mapUnitToServiceType(item),
+            isSystem: Boolean(item.utilityId),
+        }));
+
+    return [...mergedServices, ...extraServices];
+};
+
 const mapUnitToServiceType = (service) => {
     if (service?.type) return service.type;
     if (service?.unit === 'kWh' || service?.unit === 'm³' || service?.byMeter) return 'USAGE_BASED';
@@ -66,42 +156,57 @@ const isValidEmail = (value) => /\S+@\S+\.\S+/.test(String(value || '').trim());
 export default function ContractCreatorPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const {id} = useParams();
     const basePath = resolveBasePath(location.pathname);
+    const isEditMode = Boolean(id);
 
-    /* ── Form state ── */
     const [state, setState] = useState(INITIAL_STATE);
     const patch = (updates) => setState((prev) => ({...prev, ...updates}));
 
-    /* ── Remote data ── */
     const [boardingHouses, setBoardingHouses] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [loadingRooms, setLoadingRooms] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [initializing, setInitializing] = useState(false);
+    const [contractDetail, setContractDetail] = useState(null);
+    const [initialServicesHydrated, setInitialServicesHydrated] = useState(false);
 
-    /* ── UI state ── */
     const [activeStep, setActiveStep] = useState(1);
     const [services, setServices] = useState([]);
     const [clauses, setClauses] = useState(DEFAULT_CLAUSES);
     const [activeAssets, setActiveAssets] = useState(DEFAULT_ASSETS_ACTIVE);
     const [extraNote, setExtraNote] = useState('- Được phép nuôi 1 mèo nhỏ có kiểm soát (theo thoả thuận).\n- Giờ giấc: Cổng đóng lúc 23h, mở lại 5h sáng.',);
     const [extraRows, setExtraRows] = useState([{id: 2, name: '', phone: '', idCard: '', relation: 'Bạn bè'},]);
-    /* ── Derived selections ── */
     const selectedRoom = useMemo(() => rooms.find((i) => String(i.id) === String(state.roomId)) || null, [rooms, state.roomId],);
 
-    /* ── Load initial data ── */
     useEffect(() => {
         (async () => {
+            setInitializing(true);
             try {
-                const bhData = await getAllBoardingHousesNoPaged();
+                const [bhData, detailData] = await Promise.all([
+                    getAllBoardingHousesNoPaged(),
+                    isEditMode ? getContractById(id) : Promise.resolve(null),
+                ]);
                 setBoardingHouses(bhData || []);
-                if (bhData?.length) patch({boardingHouseId: String(bhData[0].id)});
+                if (detailData) {
+                    setContractDetail(detailData);
+                    setInitialServicesHydrated(false);
+                    setState((prev) => ({
+                        ...prev,
+                        ...mapContractDetailToState(detailData),
+                    }));
+                } else if (bhData?.length) {
+                    patch({boardingHouseId: String(bhData[0].id)});
+                }
             } catch {
-                message.error('Không thể tải dữ liệu tạo hợp đồng');
+                message.error(isEditMode ? 'Không thể tải dữ liệu hợp đồng' : 'Không thể tải dữ liệu tạo hợp đồng');
+                navigate(basePath);
+            } finally {
+                setInitializing(false);
             }
         })();
-    }, []);
+    }, [basePath, id, isEditMode, navigate]);
 
-    /* ── Load rooms when boarding house changes ── */
     useEffect(() => {
         if (!state.boardingHouseId) {
             setRooms([]);
@@ -115,20 +220,32 @@ export default function ContractCreatorPage() {
         const fetchBoardingHouseContext = async () => {
             setLoadingRooms(true);
             try {
-                const [availableRooms, utilityData] = await Promise.all([
-                    getAllRoomAvailableByBoardingHouse(Number(state.boardingHouseId)),
+                const [roomData, utilityData] = await Promise.all([
+                    isEditMode
+                        ? getRoomsByBoardingHouse(Number(state.boardingHouseId))
+                        : getAllRoomAvailableByBoardingHouse(Number(state.boardingHouseId)),
                     getUtilityByBoardingHouse(state.boardingHouseId),
                 ]);
 
                 if (ignore) return;
 
-                const nextRooms = Array.isArray(availableRooms) ? availableRooms : [];
-                const nextServices = Array.isArray(utilityData)
-                    ? utilityData.map(mapUtilityToServiceRow)
+                const currentRoomId = String(contractDetail?.roomId || '');
+                const nextRooms = Array.isArray(roomData)
+                    ? roomData.filter((room) =>
+                        !isEditMode || room.status === 'AVAILABLE' || String(room.id) === currentRoomId)
                     : [];
+                const shouldHydrateInitialServices = isEditMode
+                    && !initialServicesHydrated
+                    && String(contractDetail?.boardingHouseId || '') === String(state.boardingHouseId);
+                const nextServices = shouldHydrateInitialServices
+                    ? mergeServiceSelections(utilityData, contractDetail?.utilities || [])
+                    : (Array.isArray(utilityData) ? utilityData.map(mapUtilityToServiceRow) : []);
 
                 setRooms(nextRooms);
                 setServices(nextServices);
+                if (shouldHydrateInitialServices) {
+                    setInitialServicesHydrated(true);
+                }
 
                 setState((prev) => nextRooms.some((i) => String(i.id) === String(prev.roomId))
                     ? prev
@@ -150,9 +267,8 @@ export default function ContractCreatorPage() {
         return () => {
             ignore = true;
         };
-    }, [state.boardingHouseId]);
+    }, [contractDetail, initialServicesHydrated, isEditMode, state.boardingHouseId]);
 
-    /* ── Auto-fill price from selected room ── */
     useEffect(() => {
         if (!selectedRoom) return;
         const today = new Date().getDate();
@@ -163,7 +279,6 @@ export default function ContractCreatorPage() {
         }));
     }, [selectedRoom]);
 
-    /* ── Validation ── */
     const validate = () => {
         const rentNum = normalizeMoney(state.rentPrice);
         if (!state.boardingHouseId) {
@@ -190,8 +305,13 @@ export default function ContractCreatorPage() {
             message.error('Email người thuê không hợp lệ.');
             return false;
         }
-        if (String(state.tenantPassword || '').trim().length < 6) {
+        if (!isEditMode && String(state.tenantPassword || '').trim().length < 6) {
             message.error('Mật khẩu người thuê phải có ít nhất 6 ký tự.');
+            return false;
+        }
+        if (isEditMode && state.tenantPassword && String(state.tenantPassword).trim().length > 0
+            && String(state.tenantPassword).trim().length < 6) {
+            message.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
             return false;
         }
         if (!state.startDate) {
@@ -221,14 +341,13 @@ export default function ContractCreatorPage() {
         return true;
     };
 
-    /* ── Submit ── */
     const handleSubmit = async () => {
         if (!validate()) return;
         const rentNum = normalizeMoney(state.rentPrice);
         const depositNum = normalizeMoney(state.deposit) || rentNum * Number(state.depositMonths || 2);
         setSubmitting(true);
         try {
-            await createContract({
+            const financialPayload = {
                 roomId: Number(state.roomId),
                 startDate: state.startDate,
                 endDate: state.isOpenEnded ? null : state.endDate,
@@ -239,36 +358,60 @@ export default function ContractCreatorPage() {
                 paymentCycleMonths: Number(state.paymentCycleMonths || 1),
                 monthlyPaymentDay: Number(state.monthlyPaymentDay),
                 note: state.note?.trim() || null,
-                tenant: {
-                    fullName: state.tenantFullName.trim(),
-                    phoneNumber: state.tenantPhoneNumber.trim(),
-                    email: state.tenantEmail.trim(),
-                    password: state.tenantPassword,
-                    identityNumber: state.tenantIdentityNumber.trim(),
-                    dateOfBirth: state.tenantDateOfBirth || null,
-                    occupation: state.tenantOccupation?.trim() || null,
-                    note: `Tạo từ màn hình hợp đồng cho phòng ${selectedRoom?.roomNumber || ''}`.trim(),
-                },
-                utilities: services
-                    .filter((service) => service.on && service.name?.trim())
-                    .map((service) => ({
-                        utilityId: service.utilityId || null,
-                        name: service.name.trim(),
-                        type: mapUnitToServiceType(service),
-                        unitPrice: Number(service.price || 0),
-                        unit: service.unit || 'Tháng',
-                        quantity: service.byMeter ? 1 : Math.max(1, Number(service.qty || 1)),
-                        usageAmount: service.byMeter ? 0 : null,
-                        note: `Tạo cùng hợp đồng cho phòng ${selectedRoom?.roomNumber || state.roomId}`,
-                    })),
-            });
-            message.success('Tạo hợp đồng thành công!');
+            };
+
+            if (isEditMode) {
+                await updateContract(id, financialPayload);
+            } else {
+                await createContract({
+                    ...financialPayload,
+                    tenant: {
+                        fullName: state.tenantFullName.trim(),
+                        phoneNumber: state.tenantPhoneNumber.trim(),
+                        email: state.tenantEmail.trim(),
+                        password: state.tenantPassword?.trim() || null,
+                        identityNumber: state.tenantIdentityNumber.trim(),
+                        dateOfBirth: state.tenantDateOfBirth || null,
+                        occupation: state.tenantOccupation?.trim() || null,
+                        note: state.note?.trim() || `Cập nhật từ màn hình hợp đồng cho phòng ${selectedRoom?.roomNumber || ''}`.trim(),
+                    },
+                    utilities: services
+                        .filter((service) => service.on && service.name?.trim())
+                        .map((service) => ({
+                            utilityId: service.utilityId || null,
+                            name: service.name.trim(),
+                            type: mapUnitToServiceType(service),
+                            unitPrice: Number(service.price || 0),
+                            unit: service.unit || 'Tháng',
+                            quantity: service.byMeter ? 1 : Math.max(1, Number(service.qty || 1)),
+                            usageAmount: service.byMeter ? 0 : null,
+                            note: `Tạo cùng hợp đồng cho phòng ${selectedRoom?.roomNumber || state.roomId}`,
+                        })),
+                });
+            }
             navigate(basePath);
         } catch (error) {
-            console.error('Create contract flow failed:', error);
+            console.error('Contract submit flow failed:', error);
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleReset = () => {
+        if (isEditMode && contractDetail) {
+            setState((prev) => ({
+                ...prev,
+                ...mapContractDetailToState(contractDetail),
+            }));
+            setInitialServicesHydrated(false);
+            return;
+        }
+
+        setState({
+            ...INITIAL_STATE,
+            boardingHouseId: boardingHouses?.[0]?.id ? String(boardingHouses[0].id) : '',
+        });
+        setServices([]);
     };
 
     const addExtraRow = () => setExtraRows((p) => [...p, {
@@ -295,6 +438,10 @@ export default function ContractCreatorPage() {
         return next;
     });
 
+    if (initializing) {
+        return <div className={styles.page}>Đang tải dữ liệu hợp đồng...</div>;
+    }
+
     return (<div className={styles.page}>
         <div className={styles.mainContent}>
 
@@ -314,6 +461,7 @@ export default function ContractCreatorPage() {
                     rooms={rooms}
                     loadingRooms={loadingRooms}
                     selectedRoom={selectedRoom}
+                    isEditMode={isEditMode}
                 />
 
                 <TenantSection
@@ -323,6 +471,7 @@ export default function ContractCreatorPage() {
                     onAddExtra={addExtraRow}
                     onRemoveExtra={removeExtraRow}
                     onPatchExtra={patchExtra}
+                    isEditMode={isEditMode}
                 />
 
                 <FinanceSection
@@ -334,6 +483,7 @@ export default function ContractCreatorPage() {
                     onAddService={addServiceRow}
                     onRemoveService={removeService}
                     formatVND={formatVND}
+                    isEditMode={isEditMode}
                 />
 
                 <AssetsSection
@@ -353,8 +503,11 @@ export default function ContractCreatorPage() {
             {/* ── Action bar cố định ── */}
             <ActionBar
                 onBack={() => navigate(basePath)}
+                onReset={handleReset}
                 onSubmit={handleSubmit}
                 submitting={submitting}
+                submitLabel={isEditMode ? 'Lưu cập nhật hợp đồng' : 'Tạo hợp đồng'}
+                submittingLabel={isEditMode ? 'Đang cập nhật...' : 'Đang tạo...'}
             />
         </div>
     </div>);

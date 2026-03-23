@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.mapper;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.List;
 
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +23,15 @@ public abstract class RoomMapper {
     protected BillRepository billRepository;
 
     // Map cơ bản cho Room → RoomResponse (danh sách phòng thông thường)
+    @Mapping(source = "boardingHouse.id", target = "boardingHouseId")
     @Mapping(source = "boardingHouse.name", target = "boardingHouseName")
+    @Mapping(source = "building.id", target = "buildingId")
     @Mapping(source = "building.name", target = "buildingName")
+    @Mapping(target = "utilityIds", expression = "java(getUtilityIds(room))")
     @Mapping(target = "tenantName", expression = "java(getTenantName(room))")
     @Mapping(target = "tenantPhone", expression = "java(getTenantPhone(room))")
+    @Mapping(target = "startDate", expression = "java(getContractStartDate(room))")
+    @Mapping(target = "endDate", expression = "java(getContractEndDate(room))")
     @Mapping(target = "remainingDays", expression = "java(getRemainingDays(room))")
     public abstract RoomResponse toResponse(Room room);
 
@@ -96,6 +102,18 @@ public abstract class RoomMapper {
         return active != null && active.getTenant() != null
                 ? active.getTenant().getUser().getPhoneNumber()
                 : null;
+    }
+
+    protected List<Integer> getUtilityIds(Room room) {
+        if (room.getRoomUtilities() == null || room.getRoomUtilities().isEmpty()) {
+            return List.of();
+        }
+
+        return room.getRoomUtilities().stream()
+                .map(RoomUtility::getUtility)
+                .filter(java.util.Objects::nonNull)
+                .map(Utility::getId)
+                .toList();
     }
 
     /**

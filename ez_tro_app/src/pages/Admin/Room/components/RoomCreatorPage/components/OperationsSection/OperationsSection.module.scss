@@ -1,0 +1,85 @@
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 16px;
+}
+
+.statusCard {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--room-border);
+  text-align: left;
+  color: var(--room-text-primary);
+  background: rgba(16, 22, 33, 0.9);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  p {
+    margin-top: 8px;
+    color: var(--room-text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.statusCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+
+  strong {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  span {
+    font-size: 10px;
+    color: var(--room-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+}
+
+.active {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.locked {
+  cursor: not-allowed;
+}
+
+.teal {
+  background: linear-gradient(180deg, rgba(54, 192, 205, 0.12), rgba(17, 24, 34, 0.92));
+}
+
+.amber {
+  background: linear-gradient(180deg, rgba(242, 190, 87, 0.14), rgba(17, 24, 34, 0.92));
+}
+
+.coral {
+  background: linear-gradient(180deg, rgba(255, 124, 109, 0.12), rgba(17, 24, 34, 0.92));
+}
+
+.teal.active {
+  border-color: rgba(54, 192, 205, 0.32);
+}
+
+.amber.active {
+  border-color: rgba(242, 190, 87, 0.34);
+}
+
+.coral.active,
+.systemCard {
+  border-color: rgba(255, 124, 109, 0.28);
+}
+
+@media (max-width: 960px) {
+  .statusGrid {
+    grid-template-columns: 1fr;
+  }
+}
