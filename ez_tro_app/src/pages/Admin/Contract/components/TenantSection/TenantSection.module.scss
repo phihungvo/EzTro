@@ -6,6 +6,56 @@
   gap: 12px;
 }
 
+.modeSwitch {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.modeButton {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.selectionCard {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.selectionHint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .tenantRow {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -100,6 +150,10 @@
 }
 
 @media (max-width: 600px) {
+  .modeSwitch {
+    flex-direction: column;
+  }
+
   .tenantRow {
     grid-template-columns: 1fr;
   }
