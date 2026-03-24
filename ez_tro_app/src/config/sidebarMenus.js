@@ -268,6 +268,14 @@ export const MENU_CONFIG = {
                     path: "/owner/bills",
                     color: "#f59e0b"
                 },
+                {
+                    key: "utilities",
+                    label: "Dịch vụ",
+                    title: "Quản lý utility và đăng ký dịch vụ cho phòng",
+                    icon: <ToolOutlined/>,
+                    path: "/owner/utilities",
+                    color: "#6366f1"
+                },
             ],
         },
         {
