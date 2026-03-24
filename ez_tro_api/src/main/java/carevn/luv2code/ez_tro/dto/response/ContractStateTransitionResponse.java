@@ -15,6 +15,7 @@ public class ContractStateTransitionResponse {
     ContractLifecycleState fromState;
     ContractLifecycleState toState;
     String reason;
+    String metadataJson;
     Integer changedBy;
     String changedByName;
     Date changedAt;

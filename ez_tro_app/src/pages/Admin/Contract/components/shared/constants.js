@@ -22,6 +22,7 @@ export const INITIAL_STATE = {
     startDate:            '',
     endDate:              '',
     isOpenEnded:          false,
+    autoRenew:            false,
     rentPrice:            '',
     deposit:              '',
     depositMonths:        '2',

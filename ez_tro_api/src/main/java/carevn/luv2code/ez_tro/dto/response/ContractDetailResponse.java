@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
+import carevn.luv2code.ez_tro.enums.ContractLifecycleState;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.PaymentMethod;
 import lombok.*;
@@ -39,6 +40,7 @@ public class ContractDetailResponse {
 
     LocalDate startDate;
     LocalDate endDate;
+    Boolean autoRenew;
 
     BigDecimal deposit;
     BigDecimal rentPrice;
@@ -62,5 +64,6 @@ public class ContractDetailResponse {
     List<DepositTransactionSummaryResponse> depositTransactions;
     DepositLedgerSummaryResponse depositSummary;
     ContractSettlementPreviewResponse settlementPreview;
+    ContractLifecycleState latestLifecycleState;
     List<ContractStateTransitionResponse> stateTransitions;
 }

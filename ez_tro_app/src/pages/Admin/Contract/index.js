@@ -53,6 +53,8 @@ import {
     reviseContractBillingRule,
     finalizeContractSettlement,
     terminateContract,
+    renewContract,
+    markContractViolated,
     transferContractRoom,
 } from '~/service/admin/contract';
 import {getAllRoomAvailableByBoardingHouse, getRoomsByBoardingHouse} from "~/service/admin/room";
@@ -175,6 +177,17 @@ function Contract() {
         const config = statusConfig[status] || {color: 'default', text: status};
         return <Tag color={config.color}>{config.text}</Tag>;
     };
+
+    const getLifecycleStateLabel = (value) => ({
+        DRAFT: 'Bản nháp',
+        PENDING: 'Sắp hiệu lực',
+        ACTIVE: 'Đang hiệu lực',
+        EXPIRING: 'Sắp hết hạn',
+        TERMINATION_PENDING: 'Chờ chấm dứt',
+        TERMINATED: 'Đã kết thúc',
+        VIOLATED: 'Đã ghi nhận vi phạm',
+        RENEWED: 'Vừa gia hạn',
+    }[value] || value || 'N/A');
 
     const handleViewFileList = (contract) => {
         setSelectedContractForViewFiles(contract);
@@ -561,6 +574,28 @@ function Contract() {
                 terminationDate: dayjs(),
             });
         }
+        if (type === 'renew') {
+            if (!selectedContractDetail.endDate) {
+                message.warning('Chỉ gia hạn được hợp đồng có ngày kết thúc.');
+                return;
+            }
+            const effectiveFrom = dayjs(selectedContractDetail.endDate).add(1, 'day');
+            operationForm.setFieldsValue({
+                effectiveFrom,
+                newEndDate: effectiveFrom.add(Number(selectedContractDetail.paymentCycleMonths || 1), 'month').subtract(1, 'day'),
+                newRentPrice: selectedContractDetail.rentPrice,
+                newDepositAmount: selectedContractDetail.deposit,
+                paymentCycleMonths: selectedContractDetail.paymentCycleMonths || 1,
+                monthlyPaymentDay: selectedContractDetail.monthlyPaymentDay,
+                autoRenew: selectedContractDetail.autoRenew ?? false,
+            });
+        }
+        if (type === 'violate') {
+            operationForm.setFieldsValue({
+                reason: '',
+                evidence: '',
+            });
+        }
         if (type === 'transfer-room') {
             operationForm.setFieldsValue({
                 transferDate: dayjs(),
@@ -649,6 +684,22 @@ function Contract() {
         });
     };
 
+    const formatDateOnly = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value.format === 'function') return value.format('YYYY-MM-DD');
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed.format('YYYY-MM-DD') : null;
+    };
+
+    const formatIsoDateTime = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value.toISOString === 'function') return value.toISOString();
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed.toISOString() : null;
+    };
+
     const handleSubmitOperation = async (values) => {
         if (!selectedContractDetail?.id) {
             return;
@@ -656,40 +707,75 @@ function Contract() {
 
         setOperationLoading(true);
         try {
-            const amendmentPayload = {
-                amendmentType: values.amendmentType,
-                effectiveFrom: values.effectiveFrom.format('YYYY-MM-DD'),
-                effectiveTo: values.effectiveTo ? values.effectiveTo.format('YYYY-MM-DD') : null,
-                price: values.price ?? null,
-                depositAmount: values.depositAmount ?? null,
-                paymentCycleMonths: values.paymentCycleMonths ?? null,
-                monthlyPaymentDay: values.monthlyPaymentDay ?? null,
-                dataJson: values.dataJson || null,
-                note: values.note || null,
-            };
-            const billingRulePayload = {
-                utilityId: values.utilityId,
-                cycle: values.cycle,
-                unitPrice: values.unitPrice,
-                calculationType: values.calculationType,
-                effectiveFrom: values.effectiveFrom.format('YYYY-MM-DD'),
-                effectiveTo: values.effectiveTo ? values.effectiveTo.format('YYYY-MM-DD') : null,
-                note: values.note || null,
-            };
-
             if (operationModalType === 'amendment') {
+                const amendmentPayload = {
+                    amendmentType: values.amendmentType,
+                    effectiveFrom: formatDateOnly(values.effectiveFrom),
+                    effectiveTo: formatDateOnly(values.effectiveTo),
+                    price: values.price ?? null,
+                    depositAmount: values.depositAmount ?? null,
+                    paymentCycleMonths: values.paymentCycleMonths ?? null,
+                    monthlyPaymentDay: values.monthlyPaymentDay ?? null,
+                    dataJson: values.dataJson || null,
+                    note: values.note || null,
+                };
+                if (!amendmentPayload.effectiveFrom) {
+                    message.error('Vui lòng chọn ngày hiệu lực');
+                    return;
+                }
                 await createContractAmendment(selectedContractDetail.id, amendmentPayload);
             }
 
             if (operationModalType === 'amendment-revise') {
+                const amendmentPayload = {
+                    amendmentType: values.amendmentType,
+                    effectiveFrom: formatDateOnly(values.effectiveFrom),
+                    effectiveTo: formatDateOnly(values.effectiveTo),
+                    price: values.price ?? null,
+                    depositAmount: values.depositAmount ?? null,
+                    paymentCycleMonths: values.paymentCycleMonths ?? null,
+                    monthlyPaymentDay: values.monthlyPaymentDay ?? null,
+                    dataJson: values.dataJson || null,
+                    note: values.note || null,
+                };
+                if (!amendmentPayload.effectiveFrom) {
+                    message.error('Vui lòng chọn ngày hiệu lực');
+                    return;
+                }
                 await reviseContractAmendment(selectedContractDetail.id, operationContext.id, amendmentPayload);
             }
 
             if (operationModalType === 'billing-rule') {
+                const billingRulePayload = {
+                    utilityId: values.utilityId,
+                    cycle: values.cycle,
+                    unitPrice: values.unitPrice,
+                    calculationType: values.calculationType,
+                    effectiveFrom: formatDateOnly(values.effectiveFrom),
+                    effectiveTo: formatDateOnly(values.effectiveTo),
+                    note: values.note || null,
+                };
+                if (!billingRulePayload.effectiveFrom) {
+                    message.error('Vui lòng chọn ngày hiệu lực');
+                    return;
+                }
                 await createContractBillingRule(selectedContractDetail.id, billingRulePayload);
             }
 
             if (operationModalType === 'billing-rule-revise') {
+                const billingRulePayload = {
+                    utilityId: values.utilityId,
+                    cycle: values.cycle,
+                    unitPrice: values.unitPrice,
+                    calculationType: values.calculationType,
+                    effectiveFrom: formatDateOnly(values.effectiveFrom),
+                    effectiveTo: formatDateOnly(values.effectiveTo),
+                    note: values.note || null,
+                };
+                if (!billingRulePayload.effectiveFrom) {
+                    message.error('Vui lòng chọn ngày hiệu lực');
+                    return;
+                }
                 await reviseContractBillingRule(selectedContractDetail.id, operationContext.id, billingRulePayload);
             }
 
@@ -701,21 +787,52 @@ function Contract() {
                     referenceType: values.referenceType || null,
                     referenceId: values.referenceId || null,
                     note: values.note || null,
-                    occurredAt: values.occurredAt ? values.occurredAt.toISOString() : null,
+                    occurredAt: formatIsoDateTime(values.occurredAt),
                 });
             }
 
             if (operationModalType === 'terminate') {
                 await terminateContract(selectedContractDetail.id, {
-                    terminationDate: values.terminationDate.format('YYYY-MM-DD'),
+                    terminationDate: formatDateOnly(values.terminationDate),
                     note: values.note || null,
                 });
             }
 
+            if (operationModalType === 'renew') {
+                const effectiveFrom = formatDateOnly(values.effectiveFrom);
+                const newEndDate = formatDateOnly(values.newEndDate);
+                if (!effectiveFrom || !newEndDate) {
+                    message.error('Vui lòng chọn ngày hiệu lực và ngày kết thúc mới');
+                    return;
+                }
+                await renewContract(selectedContractDetail.id, {
+                    effectiveFrom,
+                    newEndDate,
+                    newRentPrice: values.newRentPrice ?? null,
+                    newDepositAmount: values.newDepositAmount ?? null,
+                    paymentCycleMonths: values.paymentCycleMonths ?? null,
+                    monthlyPaymentDay: values.monthlyPaymentDay ?? null,
+                    autoRenew: values.autoRenew ?? false,
+                    note: values.note || null,
+                });
+            }
+
+            if (operationModalType === 'violate') {
+                await markContractViolated(selectedContractDetail.id, {
+                    reason: values.reason,
+                    evidence: values.evidence || null,
+                });
+            }
+
             if (operationModalType === 'transfer-room') {
+                const transferDate = formatDateOnly(values.transferDate);
+                if (!transferDate) {
+                    message.error('Vui lòng chọn ngày chuyển');
+                    return;
+                }
                 await transferContractRoom(selectedContractDetail.id, {
                     targetRoomId: values.targetRoomId,
-                    transferDate: values.transferDate.format('YYYY-MM-DD'),
+                    transferDate,
                     transferDeposit: values.transferDeposit ?? false,
                     newRentPrice: values.newRentPrice ?? null,
                     newDepositAmount: values.newDepositAmount ?? null,
@@ -876,6 +993,68 @@ function Contract() {
             );
         }
 
+        if (operationModalType === 'renew') {
+            return (
+                <>
+                    <div className={cx('operation-grid')}>
+                        <Form.Item
+                            name="effectiveFrom"
+                            label="Hiệu lực từ"
+                            rules={[{required: true, message: 'Chọn ngày hiệu lực'}]}
+                        >
+                            <DatePicker style={{width: '100%'}} format="DD/MM/YYYY" />
+                        </Form.Item>
+                        <Form.Item
+                            name="newEndDate"
+                            label="Ngày kết thúc mới"
+                            rules={[{required: true, message: 'Chọn ngày kết thúc mới'}]}
+                        >
+                            <DatePicker style={{width: '100%'}} format="DD/MM/YYYY" />
+                        </Form.Item>
+                    </div>
+                    <div className={cx('operation-grid')}>
+                        <Form.Item name="newRentPrice" label="Giá thuê mới">
+                            <InputNumber style={{width: '100%'}} min={1} />
+                        </Form.Item>
+                        <Form.Item name="newDepositAmount" label="Tiền cọc mới">
+                            <InputNumber style={{width: '100%'}} min={0} />
+                        </Form.Item>
+                    </div>
+                    <div className={cx('operation-grid')}>
+                        <Form.Item name="paymentCycleMonths" label="Chu kỳ thanh toán (tháng)">
+                            <InputNumber style={{width: '100%'}} min={1} max={12} />
+                        </Form.Item>
+                        <Form.Item name="monthlyPaymentDay" label="Ngày thu hàng tháng">
+                            <InputNumber style={{width: '100%'}} min={1} max={28} />
+                        </Form.Item>
+                    </div>
+                    <Form.Item name="autoRenew" valuePropName="checked">
+                        <Checkbox>Duy trì tự gia hạn sau đợt renew này</Checkbox>
+                    </Form.Item>
+                    <Form.Item name="note" label="Ghi chú gia hạn">
+                        <Input.TextArea rows={3} />
+                    </Form.Item>
+                </>
+            );
+        }
+
+        if (operationModalType === 'violate') {
+            return (
+                <>
+                    <Form.Item
+                        name="reason"
+                        label="Lý do vi phạm"
+                        rules={[{required: true, message: 'Nhập lý do vi phạm'}]}
+                    >
+                        <Input.TextArea rows={3} />
+                    </Form.Item>
+                    <Form.Item name="evidence" label="Bằng chứng / ghi chú">
+                        <Input.TextArea rows={4} />
+                    </Form.Item>
+                </>
+            );
+        }
+
         if (operationModalType === 'transfer-room') {
             return (
                 <>
@@ -988,6 +1167,12 @@ function Contract() {
         }
         if (operationModalType === 'terminate') {
             return 'Chấm dứt hợp đồng';
+        }
+        if (operationModalType === 'renew') {
+            return 'Gia hạn hợp đồng';
+        }
+        if (operationModalType === 'violate') {
+            return 'Đánh dấu vi phạm';
         }
         if (operationModalType === 'transfer-room') {
             return 'Chuyển phòng';
@@ -1184,6 +1369,12 @@ function Contract() {
                                     <div className={cx('detail-section-header')}>
                                         <div className={cx('detail-title')}>Thông tin chung</div>
                                         <div className={cx('header-actions')}>
+                                            <Button size="small" onClick={() => openOperationModal('renew')}>
+                                                Gia hạn
+                                            </Button>
+                                            <Button size="small" danger onClick={() => openOperationModal('violate')}>
+                                                Đánh dấu vi phạm
+                                            </Button>
                                             <Button size="small" onClick={() => openOperationModal('terminate')}>
                                                 Chấm dứt
                                             </Button>
@@ -1198,6 +1389,8 @@ function Contract() {
                                     <div className={cx('detail-item')}><strong>Trạng thái:</strong> {getStatusTag(selectedContractDetail.status)}</div>
                                     <div className={cx('detail-item')}><strong>Ngày bắt đầu:</strong> {formatDate(selectedContractDetail.startDate)}</div>
                                     <div className={cx('detail-item')}><strong>Ngày kết thúc:</strong> {selectedContractDetail.endDate ? formatDate(selectedContractDetail.endDate) : 'Vô thời hạn'}</div>
+                                    <div className={cx('detail-item')}><strong>Tự gia hạn:</strong> {selectedContractDetail.autoRenew ? 'Bật' : 'Tắt'}</div>
+                                    <div className={cx('detail-item')}><strong>Lifecycle gần nhất:</strong> {getLifecycleStateLabel(selectedContractDetail.latestLifecycleState)}</div>
                                     <div className={cx('detail-item')}><strong>Giá thuê hiện tại:</strong> {formatCurrency(selectedContractDetail.rentPrice)}</div>
                                     <div className={cx('detail-item')}><strong>Tiền cọc hiện tại:</strong> {formatCurrency(selectedContractDetail.deposit)}</div>
                                 </div>

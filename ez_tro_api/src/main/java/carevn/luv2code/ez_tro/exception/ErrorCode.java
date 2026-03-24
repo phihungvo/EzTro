@@ -136,6 +136,14 @@ public enum ErrorCode {
             1100, "Deposit balance is not enough to finalize settlement", HttpStatus.BAD_REQUEST),
     CONTRACT_TRANSFER_OPEN_BILLS_NOT_ALLOWED(
             1101, "Open bills must be settled before transferring deposit", HttpStatus.BAD_REQUEST),
+    CONTRACT_RENEWAL_DATE_INVALID(
+            1102, "Renewal effective date must be after the current contract end date", HttpStatus.BAD_REQUEST),
+    CONTRACT_ALREADY_RENEWED_FOR_PERIOD(
+            1103, "Contract has already been renewed for the requested period", HttpStatus.CONFLICT),
+    CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED(
+            1104, "Contract lifecycle operation is not allowed for the current contract state", HttpStatus.BAD_REQUEST),
+    CONTRACT_OPERATION_ALREADY_PROCESSING(
+            1105, "A contract operation with this idempotency key is still processing", HttpStatus.CONFLICT),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

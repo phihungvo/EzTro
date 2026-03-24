@@ -23,6 +23,7 @@ import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.repository.*;
+import carevn.luv2code.ez_tro.service.admin.ContractService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
 import jakarta.annotation.PostConstruct;
@@ -38,6 +39,7 @@ public class CronJobServiceImpl implements CronJobService {
     //    private final ElectricWaterRecordRepository electricWaterRecordRepository;
     private final BillRepository billRepository;
     private final ContractSnapshotService contractSnapshotService;
+    private final ContractService contractService;
 
     @Autowired
     private Scheduler scheduler;
@@ -52,7 +54,8 @@ public class CronJobServiceImpl implements CronJobService {
             //            RoomAmenityRepository roomAmenityRepository,
             //            ElectricWaterRecordRepository electricWaterRecordRepository,
             BillRepository billRepository,
-            ContractSnapshotService contractSnapshotService)
+            ContractSnapshotService contractSnapshotService,
+            ContractService contractService)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
@@ -61,6 +64,7 @@ public class CronJobServiceImpl implements CronJobService {
         //        this.electricWaterRecordRepository = electricWaterRecordRepository;
         this.billRepository = billRepository;
         this.contractSnapshotService = contractSnapshotService;
+        this.contractService = contractService;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
     }
@@ -156,6 +160,17 @@ public class CronJobServiceImpl implements CronJobService {
     public void runDailyContractStatusSync() {
         int updated = syncContractStatusesDaily();
         log.info("Daily contract status sync completed. Updated {} contract(s).", updated);
+    }
+
+    @Scheduled(cron = "${app.jobs.contract-auto-renew.cron:0 20 0 * * *}")
+    public void scheduledContractAutoRenewal() {
+        int renewed = runDailyContractAutoRenewal();
+        log.info("Daily contract auto-renew completed. Renewed {} contract(s).", renewed);
+    }
+
+    @Transactional
+    public int runDailyContractAutoRenewal() {
+        return contractService.processAutoRenewals(LocalDate.now());
     }
 
     @Override

@@ -9,3 +9,9 @@ databaseChangeLog:
       file: db/changelog/changeset-4.yaml
   - include:
       file: db/changelog/changeset-5-contract-foundation.yaml
+  - include:
+      file: db/changelog/changeset-6-contract-lifecycle.yaml
+  - include:
+      file: db/changelog/changeset-7-contract-idempotency.yaml
+  - include:
+      file: db/changelog/changeset-8-contract-operation-status.yaml

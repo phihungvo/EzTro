@@ -110,6 +110,17 @@ export default function ContractInfoSection({
                         max={120}
                     />
                 </Field>
+
+                <Field label="Tự gia hạn">
+                    <label className={styles.toggleField}>
+                        <input
+                            type="checkbox"
+                            checked={Boolean(state.autoRenew)}
+                            onChange={(e) => patch({ autoRenew: e.target.checked })}
+                        />
+                        <span>{state.autoRenew ? 'Bật tự gia hạn' : 'Tắt tự gia hạn'}</span>
+                    </label>
+                </Field>
             </div>
 
             {/* ── Info box phòng đã chọn ── */}

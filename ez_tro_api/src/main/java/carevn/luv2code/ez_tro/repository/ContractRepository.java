@@ -117,6 +117,9 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 			""")
     boolean existsEffectiveActiveContractByRoomId(@Param("roomId") Integer roomId, @Param("today") LocalDate today);
 
+    List<Contract> findByAutoRenewTrueAndEndDateLessThanEqualAndStatusIn(
+            LocalDate endDate, Collection<ContractStatus> statuses);
+
     default List<Contract> findActiveContractsForBilling(int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());

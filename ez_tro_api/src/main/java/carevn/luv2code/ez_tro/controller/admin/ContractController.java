@@ -14,9 +14,11 @@ import carevn.luv2code.ez_tro.dto.FileDTO;
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractAmendmentCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractBillingRuleCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractRenewRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRoomTransferRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractTerminateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractViolationRequest;
 import carevn.luv2code.ez_tro.dto.requests.DepositTransactionCreateRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
@@ -29,10 +31,7 @@ import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.DepositTransactionSummaryResponse;
 import carevn.luv2code.ez_tro.entity.File;
-import carevn.luv2code.ez_tro.exception.AppException;
-import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.FileMapper;
-import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.FileRepository;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
 import jakarta.validation.Valid;
@@ -44,7 +43,6 @@ import lombok.RequiredArgsConstructor;
 public class ContractController {
 
     private final ContractService contractService;
-    private final ContractRepository contractRepository;
     private final FileRepository fileRepository;
     private final FileMapper fileMapper;
 
@@ -203,6 +201,28 @@ public class ContractController {
                 .build();
     }
 
+    @PostMapping("/{contractId}/renew")
+    public ApiResponse<ContractDetailResponse> renew(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractRenewRequest request) {
+        ContractDetailResponse response = contractService.renew(contractId, request);
+        return ApiResponse.<ContractDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Renew contract successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/mark-violated")
+    public ApiResponse<ContractDetailResponse> markViolated(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractViolationRequest request) {
+        ContractDetailResponse response = contractService.markViolated(contractId, request);
+        return ApiResponse.<ContractDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Mark contract violated successfully")
+                .result(response)
+                .build();
+    }
+
     @PostMapping("/{contractId}/transfer-room")
     public ApiResponse<ContractRoomTransferResponse> transferRoom(
             @PathVariable Integer contractId, @Valid @RequestBody ContractRoomTransferRequest request) {
@@ -270,46 +290,29 @@ public class ContractController {
 
     @GetMapping("/files/{contractId}")
     public ApiResponse<Page<FileDTO>> getContractFiles(@PathVariable Integer contractId, Pageable pageable) {
-        try {
-            contractRepository.findById(contractId).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        contractService.getById(contractId);
 
-            Page<File> filesPage = fileRepository.findByContractIdAndDeletedFalse(contractId, pageable);
-            Page<FileDTO> dtoPage = filesPage.map(fileMapper::toDTO);
+        Page<File> filesPage = fileRepository.findByContractIdAndDeletedFalse(contractId, pageable);
+        Page<FileDTO> dtoPage = filesPage.map(fileMapper::toDTO);
 
-            return ApiResponse.<Page<FileDTO>>builder()
-                    .code(HttpStatus.OK.value())
-                    .message("Files retrieved successfully")
-                    .result(dtoPage)
-                    .build();
-        } catch (AppException e) {
-            return ApiResponse.<Page<FileDTO>>builder()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .result(null)
-                    .build();
-        }
+        return ApiResponse.<Page<FileDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Files retrieved successfully")
+                .result(dtoPage)
+                .build();
     }
 
     @GetMapping("/contracts/{contractId}/count")
     public ResponseEntity<ApiResponse<Long>> getContractFileCount(@PathVariable Integer contractId) {
-        try {
-            contractRepository.findById(contractId).orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        contractService.getById(contractId);
 
-            Long count = fileRepository.countByContractIdAndDeletedFalse(contractId);
+        Long count = fileRepository.countByContractIdAndDeletedFalse(contractId);
 
-            return ResponseEntity.ok(ApiResponse.<Long>builder()
-                    .code(HttpStatus.OK.value())
-                    .message("File count retrieved successfully")
-                    .result(count)
-                    .build());
-        } catch (AppException e) {
-            return ResponseEntity.status(e.getErrorCode().getCode())
-                    .body(ApiResponse.<Long>builder()
-                            .code(e.getErrorCode().getCode())
-                            .message(e.getErrorCode().getMessage())
-                            .result(null)
-                            .build());
-        }
+        return ResponseEntity.ok(ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("File count retrieved successfully")
+                .result(count)
+                .build());
     }
 
     // In ContractController.java (or relevant controller)

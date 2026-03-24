@@ -11,11 +11,15 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,14 +29,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.Gson;
+
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractAmendmentCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractBillingRuleCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractRenewRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRoomTransferRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractTenantRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractTerminateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractUtilityRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractViolationRequest;
 import carevn.luv2code.ez_tro.dto.requests.DepositTransactionCreateRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractAmendmentSummaryResponse;
@@ -52,6 +60,7 @@ import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.ContractAmendment;
 import carevn.luv2code.ez_tro.entity.ContractBillingRule;
+import carevn.luv2code.ez_tro.entity.ContractOperationLog;
 import carevn.luv2code.ez_tro.entity.ContractStateTransition;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
 import carevn.luv2code.ez_tro.entity.DepositTransaction;
@@ -71,6 +80,7 @@ import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.ContractAmendmentRepository;
 import carevn.luv2code.ez_tro.repository.ContractBillingRuleRepository;
+import carevn.luv2code.ez_tro.repository.ContractOperationLogRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.ContractStateTransitionRepository;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
@@ -84,7 +94,9 @@ import carevn.luv2code.ez_tro.repository.UtilityRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
+import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.specification.ContractSpecs;
+import carevn.luv2code.ez_tro.util.RequestAuditUtils;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -107,6 +119,7 @@ public class ContractServiceImpl implements ContractService {
     private final ContractVersionRepository contractVersionRepository;
     private final ContractAmendmentRepository contractAmendmentRepository;
     private final ContractBillingRuleRepository contractBillingRuleRepository;
+    private final ContractOperationLogRepository contractOperationLogRepository;
     private final DepositTransactionRepository depositTransactionRepository;
     private final ContractStateTransitionRepository contractStateTransitionRepository;
     private final OrganizationRepository organizationRepository;
@@ -115,6 +128,8 @@ public class ContractServiceImpl implements ContractService {
     private final PasswordEncoder passwordEncoder;
     private final ResourceLimitServiceImpl resourceLimitService;
     private final ContractSnapshotService contractSnapshotService;
+    private final NotificationService notificationService;
+    private final Gson gson = new Gson();
 
     @Override
     @Transactional
@@ -140,6 +155,7 @@ public class ContractServiceImpl implements ContractService {
         contract.setTenant(tenant);
         contract.setOrganization(room.getBoardingHouse().getOrganization());
         contract.setStatus(resolveLifecycleStatus(request.getStatus(), request.getStartDate(), request.getEndDate()));
+        contract.setAutoRenew(Boolean.TRUE.equals(request.getAutoRenew()));
 
         if (contract.getContractCode() == null) {
             String timestamp = new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date());
@@ -198,6 +214,9 @@ public class ContractServiceImpl implements ContractService {
         contract.setDepositPaymentMethod(request.getDepositPaymentMethod());
         contract.setPaymentCycleMonths(request.getPaymentCycleMonths());
         contract.setMonthlyPaymentDay(request.getMonthlyPaymentDay());
+        if (request.getAutoRenew() != null) {
+            contract.setAutoRenew(request.getAutoRenew());
+        }
         contract.setUpdatedAt(new Date());
 
         contractRepository.saveAndFlush(contract);
@@ -264,12 +283,21 @@ public class ContractServiceImpl implements ContractService {
     @Override
     public Page<ContractResponse> getAllContractPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        return contractRepository.findAll(pageRequest).map(contractMapper::toResponse);
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        Specification<Contract> spec = Specification.where(null);
+
+        if (!safe.isAdmin()) {
+            spec = spec.and(ContractSpecs.ownedByOwner(safe.get()));
+        }
+
+        return contractRepository.findAll(spec, pageRequest).map(contractMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ContractResponse> getByRoom(Integer roomId) {
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        validateRoomAccess(room);
         return contractRepository.findByRoomId(roomId).stream()
                 .map(contractMapper::toResponse)
                 .collect(Collectors.toList());
@@ -278,6 +306,9 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @Transactional(readOnly = true)
     public List<ContractResponse> getByTenant(Integer tenantId) {
+        Tenant tenant =
+                tenantRepository.findById(tenantId).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
+        validateTenantAccess(tenant);
         return contractRepository.findByTenantId(tenantId).stream()
                 .map(contractMapper::toResponse)
                 .collect(Collectors.toList());
@@ -286,6 +317,10 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @Transactional(readOnly = true)
     public List<BillResponse> getBillsByContract(Integer contractId) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
         return billRepository.findByContractId(contractId).stream()
                 .map(billMapper::toResponse)
                 .collect(Collectors.toList());
@@ -298,6 +333,7 @@ public class ContractServiceImpl implements ContractService {
         Contract contract = contractRepository
                 .findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
 
         // map and set link
         carevn.luv2code.ez_tro.entity.Bill bill = billMapper.toEntity(billRequest);
@@ -657,68 +693,71 @@ public class ContractServiceImpl implements ContractService {
                 .findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         validateContractAccess(contract);
+        return executeIdempotentDetailOperation(contract, ContractOperationType.FINALIZE_SETTLEMENT, () -> {
+            ensureLifecycleActionAllowed(contract, "finalize-settlement");
 
-        List<DepositTransaction> existingTransactions =
-                depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contractId);
-        List<carevn.luv2code.ez_tro.entity.Bill> bills = billRepository.findByContractId(contractId);
-        ContractSettlementPreviewResponse settlementPreview = toSettlementPreview(bills, existingTransactions);
+            List<DepositTransaction> existingTransactions =
+                    depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contractId);
+            List<carevn.luv2code.ez_tro.entity.Bill> bills = billRepository.findByContractId(contractId);
+            ContractSettlementPreviewResponse settlementPreview = toSettlementPreview(bills, existingTransactions);
 
-        if (settlementPreview.getEstimatedAdditionalCharge().signum() > 0) {
-            throw new AppException(ErrorCode.CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT);
-        }
-
-        User currentUser = SecurityUtils.getCurrentUser();
-        Date now = new Date();
-
-        if (settlementPreview.getUnpaidBillsTotal().signum() > 0) {
-            DepositTransaction deduction = DepositTransaction.builder()
-                    .organization(contract.getOrganization())
-                    .contract(contract)
-                    .transactionType(DepositTransactionType.DEDUCT_FOR_UNPAID_INVOICE)
-                    .amount(settlementPreview.getUnpaidBillsTotal())
-                    .currency("VND")
-                    .referenceType(DepositReferenceType.SETTLEMENT)
-                    .note("Khau tru tien coc de tat toan hoa don mo")
-                    .occurredAt(now)
-                    .createdBy(currentUser)
-                    .build();
-            depositTransactionRepository.save(deduction);
-
-            for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
-                if (bill.getStatus() != BillStatus.PAID) {
-                    bill.setStatus(BillStatus.PAID);
-                    bill.setPaymentDate(now);
-                }
+            if (settlementPreview.getEstimatedAdditionalCharge().signum() > 0) {
+                throw new AppException(ErrorCode.CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT);
             }
-            billRepository.saveAll(bills);
-        }
 
-        if (settlementPreview.getEstimatedRefundAmount().signum() > 0) {
-            DepositTransaction refund = DepositTransaction.builder()
-                    .organization(contract.getOrganization())
-                    .contract(contract)
-                    .transactionType(DepositTransactionType.REFUND)
-                    .amount(settlementPreview.getEstimatedRefundAmount())
-                    .currency("VND")
-                    .referenceType(DepositReferenceType.SETTLEMENT)
-                    .note("Hoan coc khi dong hop dong")
-                    .occurredAt(now)
-                    .createdBy(currentUser)
-                    .build();
-            depositTransactionRepository.save(refund);
-        }
+            User currentUser = SecurityUtils.getCurrentUser();
+            Date now = new Date();
 
-        ContractStatus previousStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.CANCELLED);
-        if (contract.getEndDate() == null || contract.getEndDate().isAfter(LocalDate.now())) {
-            contract.setEndDate(LocalDate.now());
-        }
-        contract.setUpdatedAt(now);
-        contractRepository.saveAndFlush(contract);
-        recordStateTransition(contract, previousStatus, contract.getStatus(), "FINAL_SETTLEMENT");
-        syncRoomOccupancyStatus(contract.getRoom());
+            if (settlementPreview.getUnpaidBillsTotal().signum() > 0) {
+                DepositTransaction deduction = DepositTransaction.builder()
+                        .organization(contract.getOrganization())
+                        .contract(contract)
+                        .transactionType(DepositTransactionType.DEDUCT_FOR_UNPAID_INVOICE)
+                        .amount(settlementPreview.getUnpaidBillsTotal())
+                        .currency("VND")
+                        .referenceType(DepositReferenceType.SETTLEMENT)
+                        .note("Khau tru tien coc de tat toan hoa don mo")
+                        .occurredAt(now)
+                        .createdBy(currentUser)
+                        .build();
+                depositTransactionRepository.save(deduction);
 
-        return toDetailResponse(contract);
+                for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
+                    if (bill.getStatus() != BillStatus.PAID) {
+                        bill.setStatus(BillStatus.PAID);
+                        bill.setPaymentDate(now);
+                    }
+                }
+                billRepository.saveAll(bills);
+            }
+
+            if (settlementPreview.getEstimatedRefundAmount().signum() > 0) {
+                DepositTransaction refund = DepositTransaction.builder()
+                        .organization(contract.getOrganization())
+                        .contract(contract)
+                        .transactionType(DepositTransactionType.REFUND)
+                        .amount(settlementPreview.getEstimatedRefundAmount())
+                        .currency("VND")
+                        .referenceType(DepositReferenceType.SETTLEMENT)
+                        .note("Hoan coc khi dong hop dong")
+                        .occurredAt(now)
+                        .createdBy(currentUser)
+                        .build();
+                depositTransactionRepository.save(refund);
+            }
+
+            ContractStatus previousStatus = contract.getStatus();
+            contract.setStatus(ContractStatus.CANCELLED);
+            if (contract.getEndDate() == null || contract.getEndDate().isAfter(LocalDate.now())) {
+                contract.setEndDate(LocalDate.now());
+            }
+            contract.setUpdatedAt(now);
+            contractRepository.saveAndFlush(contract);
+            recordStateTransition(contract, previousStatus, contract.getStatus(), "FINAL_SETTLEMENT");
+            syncRoomOccupancyStatus(contract.getRoom());
+
+            return toDetailResponse(contract);
+        });
     }
 
     @Override
@@ -728,21 +767,127 @@ public class ContractServiceImpl implements ContractService {
                 .findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         validateContractAccess(contract);
-        validateEffectiveDates(request.getTerminationDate(), request.getTerminationDate());
+        return executeIdempotentDetailOperation(contract, ContractOperationType.TERMINATE, () -> {
+            ensureLifecycleActionAllowed(contract, "terminate");
+            validateEffectiveDates(request.getTerminationDate(), request.getTerminationDate());
 
-        createTerminationProrationBill(contract, request.getTerminationDate());
+            createTerminationProrationBill(contract, request.getTerminationDate());
 
-        ContractStatus previousStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.CANCELLED);
-        contract.setEndDate(request.getTerminationDate());
-        if (request.getNote() != null && !request.getNote().isBlank()) {
-            contract.setNote(appendNote(contract.getNote(), "Cham dut: " + request.getNote()));
+            ContractStatus previousStatus = contract.getStatus();
+            contract.setStatus(ContractStatus.CANCELLED);
+            contract.setEndDate(request.getTerminationDate());
+            if (request.getNote() != null && !request.getNote().isBlank()) {
+                contract.setNote(appendNote(contract.getNote(), "Cham dut: " + request.getNote()));
+            }
+            contract.setUpdatedAt(new Date());
+            contractRepository.saveAndFlush(contract);
+            recordStateTransition(contract, previousStatus, contract.getStatus(), "CONTRACT_TERMINATED");
+            notifyTenantLifecycleEvent(
+                    contract,
+                    "Hợp đồng đã được chấm dứt",
+                    "Hợp đồng " + contract.getContractCode() + " đã được chấm dứt vào ngày "
+                            + request.getTerminationDate(),
+                    "CONTRACT_TERMINATED",
+                    Map.of(
+                            "contractId", contract.getId(),
+                            "contractCode", contract.getContractCode(),
+                            "terminationDate", request.getTerminationDate().toString()));
+            syncRoomOccupancyStatus(contract.getRoom());
+            return toDetailResponse(contract);
+        });
+    }
+
+    @Override
+    @Transactional
+    public ContractDetailResponse renew(Integer contractId, ContractRenewRequest request) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
+        return executeIdempotentDetailOperation(
+                contract, ContractOperationType.RENEW, () -> renewContract(contract, request, false));
+    }
+
+    @Override
+    @Transactional
+    public ContractDetailResponse markViolated(Integer contractId, ContractViolationRequest request) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
+        return executeIdempotentDetailOperation(contract, ContractOperationType.MARK_VIOLATED, () -> {
+            if (contract.getStatus() == ContractStatus.CANCELLED || contract.getStatus() == ContractStatus.EXPIRED) {
+                throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+            }
+
+            ContractLifecycleState fromState = resolveLatestLifecycleState(contract);
+            if (fromState == ContractLifecycleState.VIOLATED) {
+                throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+            }
+
+            String violationNote =
+                    request.getEvidence() == null || request.getEvidence().isBlank()
+                            ? "Vi phạm: " + request.getReason()
+                            : "Vi phạm: " + request.getReason() + " | Bằng chứng: " + request.getEvidence();
+
+            contract.setNote(appendNote(contract.getNote(), violationNote));
+            contract.setUpdatedAt(new Date());
+            contractRepository.saveAndFlush(contract);
+
+            recordLifecycleTransition(
+                    contract,
+                    fromState,
+                    ContractLifecycleState.VIOLATED,
+                    "CONTRACT_MARKED_VIOLATED",
+                    buildMetadataJson(Map.of(
+                            "reason",
+                            request.getReason(),
+                            "evidence",
+                            request.getEvidence() == null ? "" : request.getEvidence())));
+
+            notifyTenantLifecycleEvent(
+                    contract,
+                    "Hợp đồng bị đánh dấu vi phạm",
+                    "Hợp đồng " + contract.getContractCode() + " đã được đánh dấu vi phạm. Lý do: "
+                            + request.getReason(),
+                    "CONTRACT_VIOLATED",
+                    Map.of(
+                            "contractId", contract.getId(),
+                            "contractCode", contract.getContractCode(),
+                            "reason", request.getReason()));
+
+            log.info("Contract {} marked violated by user {}", contract.getId(), SecurityUtils.getCurrentUserId());
+            return toDetailResponse(contract);
+        });
+    }
+
+    @Override
+    @Transactional
+    public int processAutoRenewals(LocalDate today) {
+        LocalDate operationDate = today == null ? LocalDate.now() : today;
+        List<Contract> eligibleContracts = contractRepository.findByAutoRenewTrueAndEndDateLessThanEqualAndStatusIn(
+                operationDate, Set.of(ContractStatus.ACTIVE, ContractStatus.EXPIRED));
+        int renewedCount = 0;
+
+        for (Contract contract : eligibleContracts) {
+            try {
+                ContractRenewRequest request = buildAutoRenewRequest(contract);
+                if (request == null) {
+                    continue;
+                }
+                renewContract(contract, request, true);
+                renewedCount++;
+            } catch (AppException ex) {
+                log.warn(
+                        "Skip auto renew for contract {}: {}",
+                        contract.getId(),
+                        ex.getErrorCode().getMessage());
+            } catch (Exception ex) {
+                log.error("Unexpected auto renew error for contract {}", contract.getId(), ex);
+            }
         }
-        contract.setUpdatedAt(new Date());
-        contractRepository.saveAndFlush(contract);
-        recordStateTransition(contract, previousStatus, contract.getStatus(), "CONTRACT_TERMINATED");
-        syncRoomOccupancyStatus(contract.getRoom());
-        return toDetailResponse(contract);
+
+        return renewedCount;
     }
 
     @Override
@@ -752,126 +897,292 @@ public class ContractServiceImpl implements ContractService {
                 .findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         validateContractAccess(sourceContract);
-        validateEffectiveDates(request.getTransferDate(), request.getTransferDate());
+        return executeIdempotentTransferOperation(sourceContract, () -> {
+            ensureLifecycleActionAllowed(sourceContract, "transfer-room");
+            validateEffectiveDates(request.getTransferDate(), request.getTransferDate());
 
-        Room targetRoom = roomRepository
-                .findById(request.getTargetRoomId())
-                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-        validateRoomAccess(targetRoom);
+            Room targetRoom = roomRepository
+                    .findById(request.getTargetRoomId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+            validateRoomAccess(targetRoom);
 
-        if (sourceContract.getRoom().getId().equals(targetRoom.getId())) {
-            throw new AppException(ErrorCode.ROOM_STATUS_INVALID);
+            if (sourceContract.getRoom().getId().equals(targetRoom.getId())) {
+                throw new AppException(ErrorCode.ROOM_STATUS_INVALID);
+            }
+            if (contractRepository.existsByRoomIdAndStatusIn(
+                    targetRoom.getId(), Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
+                throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
+            }
+
+            ContractVersion effectiveVersion =
+                    contractSnapshotService.resolveEffectiveVersionEntity(sourceContract, request.getTransferDate());
+            BigDecimal sourceDepositBalance = toDepositLedgerSummary(
+                            depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()))
+                    .getCurrentBalance();
+            LocalDate originalEndDate = sourceContract.getEndDate();
+            ContractSettlementPreviewResponse sourcePreview = toSettlementPreview(
+                    billRepository.findByContractId(sourceContract.getId()),
+                    depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()));
+
+            boolean transferDeposit = Boolean.TRUE.equals(request.getTransferDeposit());
+            if (transferDeposit && sourcePreview.getUnpaidBillsTotal().signum() > 0) {
+                throw new AppException(ErrorCode.CONTRACT_TRANSFER_OPEN_BILLS_NOT_ALLOWED);
+            }
+
+            BigDecimal nextRentPrice = request.getNewRentPrice() != null
+                    ? request.getNewRentPrice()
+                    : effectiveVersion == null ? sourceContract.getRentPrice() : effectiveVersion.getPrice();
+            BigDecimal nextDepositAmount = request.getNewDepositAmount() != null
+                    ? request.getNewDepositAmount()
+                    : effectiveVersion == null ? sourceContract.getDeposit() : effectiveVersion.getDepositAmount();
+
+            ContractStatus previousStatus = sourceContract.getStatus();
+            sourceContract.setStatus(ContractStatus.CANCELLED);
+            sourceContract.setEndDate(request.getTransferDate().minusDays(1));
+            sourceContract.setNote(
+                    appendNote(sourceContract.getNote(), "Chuyen phong sang " + targetRoom.getRoomNumber()));
+            sourceContract.setUpdatedAt(new Date());
+            contractRepository.saveAndFlush(sourceContract);
+            recordStateTransition(sourceContract, previousStatus, sourceContract.getStatus(), "ROOM_TRANSFER_OUT");
+
+            Contract targetContract = Contract.builder()
+                    .contractCode(CONTRACT_CODE_PREFIX + new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date()))
+                    .room(targetRoom)
+                    .tenant(sourceContract.getTenant())
+                    .organization(targetRoom.getBoardingHouse().getOrganization())
+                    .startDate(request.getTransferDate())
+                    .endDate(originalEndDate)
+                    .deposit(nextDepositAmount)
+                    .depositReceivedAt(sourceContract.getDepositReceivedAt())
+                    .depositPaymentMethod(sourceContract.getDepositPaymentMethod())
+                    .paymentCycleMonths(
+                            effectiveVersion == null
+                                    ? sourceContract.getPaymentCycleMonths()
+                                    : effectiveVersion.getPaymentCycleMonths())
+                    .monthlyPaymentDay(
+                            effectiveVersion == null
+                                    ? sourceContract.getMonthlyPaymentDay()
+                                    : effectiveVersion.getMonthlyPaymentDay())
+                    .rentPrice(nextRentPrice)
+                    .status(resolveLifecycleStatus(ContractStatus.ACTIVE, request.getTransferDate(), originalEndDate))
+                    .note(
+                            request.getNote() == null || request.getNote().isBlank()
+                                    ? "Chuyen phong tu hop dong " + sourceContract.getContractCode()
+                                    : request.getNote())
+                    .build();
+            contractRepository.saveAndFlush(targetContract);
+
+            createTransferredVersion(targetContract, effectiveVersion, request, nextRentPrice, nextDepositAmount);
+            seedBillingRulesFromRoomUtilities(targetContract);
+            recordStateTransition(targetContract, null, targetContract.getStatus(), "ROOM_TRANSFER_IN");
+            createTransferProrationBills(sourceContract, targetContract, request.getTransferDate());
+
+            BigDecimal transferredDepositAmount = BigDecimal.ZERO;
+            if (transferDeposit && sourceDepositBalance.signum() > 0) {
+                DepositTransaction transferOut = DepositTransaction.builder()
+                        .organization(sourceContract.getOrganization())
+                        .contract(sourceContract)
+                        .transactionType(DepositTransactionType.TRANSFER_OUT)
+                        .amount(sourceDepositBalance)
+                        .currency("VND")
+                        .referenceType(DepositReferenceType.CONTRACT_TRANSFER)
+                        .referenceId(String.valueOf(targetContract.getId()))
+                        .note("Chuyen coc sang hop dong moi")
+                        .occurredAt(new Date())
+                        .createdBy(SecurityUtils.getCurrentUser())
+                        .build();
+                depositTransactionRepository.save(transferOut);
+
+                DepositTransaction transferIn = DepositTransaction.builder()
+                        .organization(targetContract.getOrganization())
+                        .contract(targetContract)
+                        .transactionType(DepositTransactionType.TRANSFER_IN)
+                        .amount(sourceDepositBalance)
+                        .currency("VND")
+                        .referenceType(DepositReferenceType.CONTRACT_TRANSFER)
+                        .referenceId(String.valueOf(sourceContract.getId()))
+                        .note("Nhan chuyen coc tu hop dong cu")
+                        .occurredAt(new Date())
+                        .createdBy(SecurityUtils.getCurrentUser())
+                        .build();
+                depositTransactionRepository.save(transferIn);
+                transferredDepositAmount = sourceDepositBalance;
+            }
+
+            syncRoomOccupancyStatus(sourceContract.getRoom());
+            syncRoomOccupancyStatus(targetRoom);
+
+            return ContractRoomTransferResponse.builder()
+                    .sourceContractId(sourceContract.getId())
+                    .sourceContractCode(sourceContract.getContractCode())
+                    .targetContractId(targetContract.getId())
+                    .targetContractCode(targetContract.getContractCode())
+                    .targetRoomId(targetRoom.getId())
+                    .targetRoomNumber(targetRoom.getRoomNumber())
+                    .transferredDepositAmount(transferredDepositAmount)
+                    .build();
+        });
+    }
+
+    private ContractDetailResponse renewContract(
+            Contract contract, ContractRenewRequest request, boolean autoGenerated) {
+        if (contract.getEndDate() == null) {
+            throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
         }
-        if (contractRepository.existsByRoomIdAndStatusIn(
-                targetRoom.getId(), Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING))) {
-            throw new AppException(ErrorCode.CONTRACT_ROOM_ALREADY_ACTIVE);
+
+        LocalDate effectiveFrom = request.getEffectiveFrom();
+        LocalDate currentEndDate = contract.getEndDate();
+        if (!effectiveFrom.isAfter(currentEndDate)) {
+            throw new AppException(ErrorCode.CONTRACT_RENEWAL_DATE_INVALID);
+        }
+        if (request.getNewEndDate() == null || request.getNewEndDate().isBefore(effectiveFrom)) {
+            throw new AppException(ErrorCode.CONTRACT_EFFECTIVE_DATE_INVALID);
         }
 
-        ContractVersion effectiveVersion =
-                contractSnapshotService.resolveEffectiveVersionEntity(sourceContract, request.getTransferDate());
-        BigDecimal sourceDepositBalance = toDepositLedgerSummary(
-                        depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()))
-                .getCurrentBalance();
-        LocalDate originalEndDate = sourceContract.getEndDate();
-        ContractSettlementPreviewResponse sourcePreview = toSettlementPreview(
-                billRepository.findByContractId(sourceContract.getId()),
-                depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()));
-
-        boolean transferDeposit = Boolean.TRUE.equals(request.getTransferDeposit());
-        if (transferDeposit && sourcePreview.getUnpaidBillsTotal().signum() > 0) {
-            throw new AppException(ErrorCode.CONTRACT_TRANSFER_OPEN_BILLS_NOT_ALLOWED);
+        ContractVersion latestVersion = contractVersionRepository
+                .findTopByContractIdOrderByVersionNumberDesc(contract.getId())
+                .orElse(null);
+        if (latestVersion != null
+                && latestVersion.getEffectiveFrom() != null
+                && !latestVersion.getEffectiveFrom().isBefore(effectiveFrom)) {
+            throw new AppException(ErrorCode.CONTRACT_ALREADY_RENEWED_FOR_PERIOD);
         }
+
+        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), currentEndDate);
+        ContractVersion effectiveVersion = snapshot.getCurrentVersion() == null
+                ? latestVersion
+                : contractVersionRepository
+                        .findById(snapshot.getCurrentVersion().getId())
+                        .orElse(latestVersion);
 
         BigDecimal nextRentPrice = request.getNewRentPrice() != null
                 ? request.getNewRentPrice()
-                : effectiveVersion == null ? sourceContract.getRentPrice() : effectiveVersion.getPrice();
+                : effectiveVersion == null ? contract.getRentPrice() : effectiveVersion.getPrice();
         BigDecimal nextDepositAmount = request.getNewDepositAmount() != null
                 ? request.getNewDepositAmount()
-                : effectiveVersion == null ? sourceContract.getDeposit() : effectiveVersion.getDepositAmount();
+                : effectiveVersion == null ? contract.getDeposit() : effectiveVersion.getDepositAmount();
+        Integer nextPaymentCycleMonths = request.getPaymentCycleMonths() != null
+                ? request.getPaymentCycleMonths()
+                : effectiveVersion == null
+                        ? contract.getPaymentCycleMonths()
+                        : effectiveVersion.getPaymentCycleMonths();
+        Integer nextMonthlyPaymentDay = request.getMonthlyPaymentDay() != null
+                ? request.getMonthlyPaymentDay()
+                : effectiveVersion == null ? contract.getMonthlyPaymentDay() : effectiveVersion.getMonthlyPaymentDay();
 
-        ContractStatus previousStatus = sourceContract.getStatus();
-        sourceContract.setStatus(ContractStatus.CANCELLED);
-        sourceContract.setEndDate(request.getTransferDate().minusDays(1));
-        sourceContract.setNote(appendNote(sourceContract.getNote(), "Chuyen phong sang " + targetRoom.getRoomNumber()));
-        sourceContract.setUpdatedAt(new Date());
-        contractRepository.saveAndFlush(sourceContract);
-        recordStateTransition(sourceContract, previousStatus, sourceContract.getStatus(), "ROOM_TRANSFER_OUT");
-
-        Contract targetContract = Contract.builder()
-                .contractCode(CONTRACT_CODE_PREFIX + new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date()))
-                .room(targetRoom)
-                .tenant(sourceContract.getTenant())
-                .organization(targetRoom.getBoardingHouse().getOrganization())
-                .startDate(request.getTransferDate())
-                .endDate(originalEndDate)
-                .deposit(nextDepositAmount)
-                .depositReceivedAt(sourceContract.getDepositReceivedAt())
-                .depositPaymentMethod(sourceContract.getDepositPaymentMethod())
-                .paymentCycleMonths(
-                        effectiveVersion == null
-                                ? sourceContract.getPaymentCycleMonths()
-                                : effectiveVersion.getPaymentCycleMonths())
-                .monthlyPaymentDay(
-                        effectiveVersion == null
-                                ? sourceContract.getMonthlyPaymentDay()
-                                : effectiveVersion.getMonthlyPaymentDay())
-                .rentPrice(nextRentPrice)
-                .status(resolveLifecycleStatus(ContractStatus.ACTIVE, request.getTransferDate(), originalEndDate))
-                .note(
-                        request.getNote() == null || request.getNote().isBlank()
-                                ? "Chuyen phong tu hop dong " + sourceContract.getContractCode()
-                                : request.getNote())
-                .build();
-        contractRepository.saveAndFlush(targetContract);
-
-        createTransferredVersion(targetContract, effectiveVersion, request, nextRentPrice, nextDepositAmount);
-        seedBillingRulesFromRoomUtilities(targetContract);
-        recordStateTransition(targetContract, null, targetContract.getStatus(), "ROOM_TRANSFER_IN");
-        createTransferProrationBills(sourceContract, targetContract, request.getTransferDate());
-
-        BigDecimal transferredDepositAmount = BigDecimal.ZERO;
-        if (transferDeposit && sourceDepositBalance.signum() > 0) {
-            DepositTransaction transferOut = DepositTransaction.builder()
-                    .organization(sourceContract.getOrganization())
-                    .contract(sourceContract)
-                    .transactionType(DepositTransactionType.TRANSFER_OUT)
-                    .amount(sourceDepositBalance)
-                    .currency("VND")
-                    .referenceType(DepositReferenceType.CONTRACT_TRANSFER)
-                    .referenceId(String.valueOf(targetContract.getId()))
-                    .note("Chuyen coc sang hop dong moi")
-                    .occurredAt(new Date())
-                    .createdBy(SecurityUtils.getCurrentUser())
-                    .build();
-            depositTransactionRepository.save(transferOut);
-
-            DepositTransaction transferIn = DepositTransaction.builder()
-                    .organization(targetContract.getOrganization())
-                    .contract(targetContract)
-                    .transactionType(DepositTransactionType.TRANSFER_IN)
-                    .amount(sourceDepositBalance)
-                    .currency("VND")
-                    .referenceType(DepositReferenceType.CONTRACT_TRANSFER)
-                    .referenceId(String.valueOf(sourceContract.getId()))
-                    .note("Nhan chuyen coc tu hop dong cu")
-                    .occurredAt(new Date())
-                    .createdBy(SecurityUtils.getCurrentUser())
-                    .build();
-            depositTransactionRepository.save(transferIn);
-            transferredDepositAmount = sourceDepositBalance;
+        if (latestVersion != null) {
+            LocalDate previousEffectiveTo = effectiveFrom.minusDays(1);
+            if (latestVersion.getEffectiveTo() == null
+                    || latestVersion.getEffectiveTo().isAfter(previousEffectiveTo)) {
+                latestVersion.setEffectiveTo(previousEffectiveTo);
+                contractVersionRepository.save(latestVersion);
+            }
         }
 
-        syncRoomOccupancyStatus(sourceContract.getRoom());
-        syncRoomOccupancyStatus(targetRoom);
+        ContractVersion nextVersion = ContractVersion.builder()
+                .organization(contract.getOrganization())
+                .contract(contract)
+                .versionNumber(latestVersion == null ? 1 : latestVersion.getVersionNumber() + 1)
+                .price(nextRentPrice)
+                .depositAmount(nextDepositAmount)
+                .billingCycle(resolveBillingCycle(nextPaymentCycleMonths))
+                .paymentCycleMonths(nextPaymentCycleMonths)
+                .monthlyPaymentDay(nextMonthlyPaymentDay)
+                .effectiveFrom(effectiveFrom)
+                .effectiveTo(request.getNewEndDate())
+                .note(autoGenerated ? "Auto-generated version from renewal job" : "Version created from manual renewal")
+                .createdBy(SecurityUtils.getCurrentUser())
+                .build();
+        contractVersionRepository.save(nextVersion);
 
-        return ContractRoomTransferResponse.builder()
-                .sourceContractId(sourceContract.getId())
-                .sourceContractCode(sourceContract.getContractCode())
-                .targetContractId(targetContract.getId())
-                .targetContractCode(targetContract.getContractCode())
-                .targetRoomId(targetRoom.getId())
-                .targetRoomNumber(targetRoom.getRoomNumber())
-                .transferredDepositAmount(transferredDepositAmount)
+        ContractStatus previousStatus = contract.getStatus();
+        contract.setEndDate(request.getNewEndDate());
+        if (request.getAutoRenew() != null) {
+            contract.setAutoRenew(request.getAutoRenew());
+        }
+        if (!effectiveFrom.isAfter(LocalDate.now())) {
+            contract.setRentPrice(nextRentPrice);
+            contract.setDeposit(nextDepositAmount);
+            contract.setPaymentCycleMonths(nextPaymentCycleMonths);
+            contract.setMonthlyPaymentDay(nextMonthlyPaymentDay);
+        }
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            contract.setNote(
+                    appendNote(contract.getNote(), (autoGenerated ? "Auto renew: " : "Renew: ") + request.getNote()));
+        }
+        contract.setStatus(resolveLifecycleStatus(previousStatus, contract.getStartDate(), contract.getEndDate()));
+        contract.setUpdatedAt(new Date());
+        contractRepository.saveAndFlush(contract);
+
+        ContractLifecycleState fromState = mapLifecycleState(previousStatus);
+        recordLifecycleTransition(
+                contract,
+                fromState,
+                ContractLifecycleState.RENEWED,
+                autoGenerated ? "CONTRACT_AUTO_RENEWED" : "CONTRACT_RENEWED",
+                buildMetadataJson(buildRenewalMetadata(
+                        effectiveFrom,
+                        request.getNewEndDate(),
+                        nextRentPrice,
+                        nextDepositAmount,
+                        nextPaymentCycleMonths,
+                        nextMonthlyPaymentDay,
+                        autoGenerated)));
+
+        notifyTenantLifecycleEvent(
+                contract,
+                autoGenerated ? "Hợp đồng đã tự gia hạn" : "Hợp đồng đã được gia hạn",
+                "Hợp đồng " + contract.getContractCode() + " đã được gia hạn đến ngày " + request.getNewEndDate(),
+                autoGenerated ? "CONTRACT_AUTO_RENEWED" : "CONTRACT_RENEWED",
+                Map.of(
+                        "contractId", contract.getId(),
+                        "contractCode", contract.getContractCode(),
+                        "effectiveFrom", effectiveFrom.toString(),
+                        "newEndDate", request.getNewEndDate().toString()));
+
+        syncRoomOccupancyStatus(contract.getRoom());
+        log.info(
+                "Contract {} renewed. autoGenerated={}, effectiveFrom={}, newEndDate={}",
+                contract.getId(),
+                autoGenerated,
+                effectiveFrom,
+                request.getNewEndDate());
+        return toDetailResponse(contract);
+    }
+
+    private ContractRenewRequest buildAutoRenewRequest(Contract contract) {
+        if (contract.getEndDate() == null) {
+            return null;
+        }
+
+        ContractVersion latestVersion = contractVersionRepository
+                .findTopByContractIdOrderByVersionNumberDesc(contract.getId())
+                .orElse(null);
+
+        LocalDate currentTermStart = latestVersion != null && latestVersion.getEffectiveFrom() != null
+                ? latestVersion.getEffectiveFrom()
+                : contract.getStartDate();
+        LocalDate currentTermEnd = latestVersion != null && latestVersion.getEffectiveTo() != null
+                ? latestVersion.getEffectiveTo()
+                : contract.getEndDate();
+
+        if (currentTermStart == null || currentTermEnd == null || currentTermEnd.isBefore(currentTermStart)) {
+            throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+        }
+
+        long termDays = java.time.temporal.ChronoUnit.DAYS.between(currentTermStart, currentTermEnd) + 1L;
+        if (termDays < 1) {
+            termDays = 1;
+        }
+
+        LocalDate effectiveFrom = contract.getEndDate().plusDays(1);
+        LocalDate newEndDate = effectiveFrom.plusDays(termDays - 1);
+
+        return ContractRenewRequest.builder()
+                .effectiveFrom(effectiveFrom)
+                .newEndDate(newEndDate)
+                .autoRenew(true)
+                .note("Auto renewal generated from daily scheduler")
                 .build();
     }
 
@@ -1273,13 +1584,24 @@ public class ContractServiceImpl implements ContractService {
 
     private void recordStateTransition(
             Contract contract, ContractStatus fromStatus, ContractStatus toStatus, String reason) {
+        recordLifecycleTransition(contract, mapLifecycleState(fromStatus), mapLifecycleState(toStatus), reason, null);
+    }
+
+    private void recordLifecycleTransition(
+            Contract contract,
+            ContractLifecycleState fromState,
+            ContractLifecycleState toState,
+            String reason,
+            String metadataJson) {
+        User currentUser = SecurityUtils.getCurrentUser();
         ContractStateTransition transition = ContractStateTransition.builder()
                 .organization(contract.getOrganization())
                 .contract(contract)
-                .fromState(mapLifecycleState(fromStatus))
-                .toState(mapLifecycleState(toStatus))
+                .fromState(fromState)
+                .toState(toState)
                 .reason(reason)
-                .changedBy(SecurityUtils.getCurrentUser())
+                .metadataJson(buildAuditMetadataJson(reason, metadataJson, currentUser))
+                .changedBy(currentUser)
                 .changedAt(new Date())
                 .build();
         contractStateTransitionRepository.save(transition);
@@ -1496,6 +1818,214 @@ public class ContractServiceImpl implements ContractService {
         validateRoomAccess(contract.getRoom());
     }
 
+    private void ensureLifecycleActionAllowed(Contract contract, String action) {
+        ContractStatus status = contract.getStatus();
+
+        switch (action) {
+            case "finalize-settlement" -> {
+                if (status == ContractStatus.CANCELLED || status == ContractStatus.PENDING) {
+                    throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+                }
+            }
+            case "terminate", "transfer-room" -> {
+                if (status == ContractStatus.CANCELLED || status == ContractStatus.EXPIRED) {
+                    throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+                }
+            }
+            default -> {
+                if (status == ContractStatus.CANCELLED) {
+                    throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+                }
+            }
+        }
+    }
+
+    private ContractLifecycleState resolveLatestLifecycleState(Contract contract) {
+        return contractStateTransitionRepository.findByContractIdOrderByChangedAtDesc(contract.getId()).stream()
+                .findFirst()
+                .map(ContractStateTransition::getToState)
+                .orElse(mapLifecycleState(contract.getStatus()));
+    }
+
+    private ContractDetailResponse executeIdempotentDetailOperation(
+            Contract contract, ContractOperationType operationType, Supplier<ContractDetailResponse> action) {
+        IdempotentOperationGuard guard = beginIdempotentOperation(contract, operationType);
+        if (guard.replayExistingResult()) {
+            Contract refreshedContract =
+                    contractRepository.findById(contract.getId()).orElse(contract);
+            return toDetailResponse(refreshedContract);
+        }
+
+        try {
+            ContractDetailResponse response = action.get();
+            completeOperationLog(guard.operationLog(), null);
+            return response;
+        } catch (RuntimeException ex) {
+            throw ex;
+        }
+    }
+
+    private ContractRoomTransferResponse executeIdempotentTransferOperation(
+            Contract contract, Supplier<ContractRoomTransferResponse> action) {
+        IdempotentOperationGuard guard = beginIdempotentOperation(contract, ContractOperationType.TRANSFER_ROOM);
+        if (guard.replayExistingResult()) {
+            String resultJson =
+                    guard.operationLog() == null ? null : guard.operationLog().getResultJson();
+            if (resultJson != null && !resultJson.isBlank()) {
+                return gson.fromJson(resultJson, ContractRoomTransferResponse.class);
+            }
+            throw new AppException(ErrorCode.CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED);
+        }
+
+        try {
+            ContractRoomTransferResponse response = action.get();
+            completeOperationLog(guard.operationLog(), gson.toJson(response));
+            return response;
+        } catch (RuntimeException ex) {
+            throw ex;
+        }
+    }
+
+    private IdempotentOperationGuard beginIdempotentOperation(Contract contract, ContractOperationType operationType) {
+        String idempotencyKey = RequestAuditUtils.getCurrentIdempotencyKey();
+        if (idempotencyKey == null) {
+            return IdempotentOperationGuard.noop();
+        }
+
+        ContractOperationLog existingOperationLog = findOperationLog(contract.getId(), operationType, idempotencyKey);
+        if (existingOperationLog != null) {
+            return buildGuardFromExistingLog(existingOperationLog);
+        }
+
+        ContractOperationLog operationLog = ContractOperationLog.builder()
+                .organization(contract.getOrganization())
+                .contract(contract)
+                .operationType(operationType)
+                .idempotencyKey(idempotencyKey)
+                .status(ContractOperationStatus.PROCESSING)
+                .requestId(RequestAuditUtils.getCurrentRequestId())
+                .actor(SecurityUtils.getCurrentUser())
+                .metadataJson(buildOperationLogMetadataJson(
+                        operationType, ContractOperationStatus.PROCESSING, SecurityUtils.getCurrentUser()))
+                .build();
+        try {
+            return new IdempotentOperationGuard(contractOperationLogRepository.saveAndFlush(operationLog), false);
+        } catch (DataIntegrityViolationException ex) {
+            ContractOperationLog persistedOperationLog =
+                    findOperationLog(contract.getId(), operationType, idempotencyKey);
+            if (persistedOperationLog != null) {
+                return buildGuardFromExistingLog(persistedOperationLog);
+            }
+            throw ex;
+        }
+    }
+
+    private IdempotentOperationGuard buildGuardFromExistingLog(ContractOperationLog operationLog) {
+        if (operationLog.getStatus() == ContractOperationStatus.COMPLETED) {
+            return new IdempotentOperationGuard(operationLog, true);
+        }
+        throw new AppException(ErrorCode.CONTRACT_OPERATION_ALREADY_PROCESSING);
+    }
+
+    private ContractOperationLog findOperationLog(
+            Integer contractId, ContractOperationType operationType, String idempotencyKey) {
+        return contractOperationLogRepository
+                .findByContractIdAndOperationTypeAndIdempotencyKey(contractId, operationType, idempotencyKey)
+                .orElse(null);
+    }
+
+    private void completeOperationLog(ContractOperationLog operationLog, String resultJson) {
+        if (operationLog == null) {
+            return;
+        }
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        operationLog.setStatus(ContractOperationStatus.COMPLETED);
+        operationLog.setCompletedAt(new Date());
+        operationLog.setActor(currentUser);
+        operationLog.setRequestId(RequestAuditUtils.getCurrentRequestId());
+        operationLog.setResultJson(resultJson);
+        operationLog.setMetadataJson(buildOperationLogMetadataJson(
+                operationLog.getOperationType(), ContractOperationStatus.COMPLETED, currentUser));
+        contractOperationLogRepository.save(operationLog);
+    }
+
+    private String buildMetadataJson(Map<String, Object> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return null;
+        }
+        return gson.toJson(metadata);
+    }
+
+    private String buildAuditMetadataJson(String reason, String metadataJson, User currentUser) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("reasonCode", reason);
+        metadata.put("requestId", RequestAuditUtils.getCurrentRequestId());
+        metadata.put("actorId", currentUser == null ? null : currentUser.getId());
+        metadata.put("actorName", currentUser == null ? null : currentUser.getFullName());
+
+        if (metadataJson != null && !metadataJson.isBlank()) {
+            try {
+                metadata.put("details", gson.fromJson(metadataJson, Object.class));
+            } catch (Exception ex) {
+                metadata.put("detailsRaw", metadataJson);
+            }
+        }
+
+        return buildMetadataJson(metadata);
+    }
+
+    private Map<String, Object> buildRenewalMetadata(
+            LocalDate effectiveFrom,
+            LocalDate newEndDate,
+            BigDecimal nextRentPrice,
+            BigDecimal nextDepositAmount,
+            Integer nextPaymentCycleMonths,
+            Integer nextMonthlyPaymentDay,
+            boolean autoGenerated) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("effectiveFrom", effectiveFrom == null ? null : effectiveFrom.toString());
+        metadata.put("newEndDate", newEndDate == null ? null : newEndDate.toString());
+        metadata.put("rentPrice", nextRentPrice);
+        metadata.put("depositAmount", nextDepositAmount);
+        metadata.put("paymentCycleMonths", nextPaymentCycleMonths);
+        metadata.put("monthlyPaymentDay", nextMonthlyPaymentDay);
+        metadata.put("autoGenerated", autoGenerated);
+        return metadata;
+    }
+
+    private String buildOperationLogMetadataJson(
+            ContractOperationType operationType, ContractOperationStatus status, User currentUser) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("operationType", operationType.name());
+        metadata.put("status", status.name());
+        metadata.put("requestId", RequestAuditUtils.getCurrentRequestId());
+        metadata.put("actorId", currentUser == null ? null : currentUser.getId());
+        metadata.put("actorName", currentUser == null ? null : currentUser.getFullName());
+        return buildMetadataJson(metadata);
+    }
+
+    private record IdempotentOperationGuard(ContractOperationLog operationLog, boolean replayExistingResult) {
+        private static IdempotentOperationGuard noop() {
+            return new IdempotentOperationGuard(null, false);
+        }
+    }
+
+    private void notifyTenantLifecycleEvent(
+            Contract contract, String title, String message, String type, Map<String, Object> data) {
+        if (contract.getTenant() == null
+                || contract.getTenant().getUser() == null
+                || contract.getTenant().getUser().getId() == null) {
+            return;
+        }
+
+        try {
+            notificationService.sendToUser(contract.getTenant().getUser().getId(), title, message, type, data);
+        } catch (Exception ex) {
+            log.warn("Failed to send lifecycle notification for contract {}: {}", contract.getId(), ex.getMessage());
+        }
+    }
+
     private void validateTenantAccess(Tenant tenant) {
         User currentUser = SecurityUtils.getCurrentUser();
         if (currentUser == null) {
@@ -1514,6 +2044,8 @@ public class ContractServiceImpl implements ContractService {
         List<DepositTransaction> depositTransactions =
                 depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contract.getId());
         List<carevn.luv2code.ez_tro.entity.Bill> bills = billRepository.findByContractId(contract.getId());
+        List<ContractStateTransition> stateTransitions =
+                contractStateTransitionRepository.findByContractIdOrderByChangedAtDesc(contract.getId());
         List<ContractUtilityDetailResponse> utilities = contract.getRoom().getRoomUtilities() == null
                 ? List.of()
                 : contract.getRoom().getRoomUtilities().stream()
@@ -1557,6 +2089,7 @@ public class ContractServiceImpl implements ContractService {
                 .tenantNote(tenant == null ? null : tenant.getNote())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
+                .autoRenew(Boolean.TRUE.equals(contract.getAutoRenew()))
                 .deposit(contract.getDeposit())
                 .rentPrice(contract.getRentPrice())
                 .status(contract.getStatus())
@@ -1592,12 +2125,13 @@ public class ContractServiceImpl implements ContractService {
                         .toList())
                 .depositSummary(toDepositLedgerSummary(depositTransactions))
                 .settlementPreview(toSettlementPreview(bills, depositTransactions))
-                .stateTransitions(
-                        contractStateTransitionRepository
-                                .findByContractIdOrderByChangedAtDesc(contract.getId())
-                                .stream()
-                                .map(this::toStateTransitionSummary)
-                                .toList())
+                .latestLifecycleState(
+                        stateTransitions.isEmpty()
+                                ? mapLifecycleState(contract.getStatus())
+                                : stateTransitions.get(0).getToState())
+                .stateTransitions(stateTransitions.stream()
+                        .map(this::toStateTransitionSummary)
+                        .toList())
                 .build();
     }
 
@@ -1627,6 +2161,7 @@ public class ContractServiceImpl implements ContractService {
                 .fromState(transition.getFromState())
                 .toState(transition.getToState())
                 .reason(transition.getReason())
+                .metadataJson(transition.getMetadataJson())
                 .changedBy(
                         transition.getChangedBy() == null
                                 ? null
