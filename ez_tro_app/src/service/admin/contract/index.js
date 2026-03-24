@@ -92,6 +92,160 @@ export const getContractById = async (contractId) => {
     }
 };
 
+export const getContractCurrentVersion = async (contractId, asOfDate) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.CONTRACT.CURRENT_VERSION(contractId), {
+            params: asOfDate ? { asOfDate } : undefined,
+        });
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when fetching current contract version: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi lấy version hợp đồng');
+        throw error;
+    }
+};
+
+export const getContractSnapshot = async (contractId, asOfDate) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.CONTRACT.SNAPSHOT(contractId), {
+            params: asOfDate ? { asOfDate } : undefined,
+        });
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when fetching contract snapshot: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi lấy snapshot hợp đồng');
+        throw error;
+    }
+};
+
+export const backfillContractFoundation = async () => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.FOUNDATION_BACKFILL);
+        message.success('Đã chạy backfill contract foundation');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when backfilling contract foundation: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi chạy backfill contract foundation');
+        throw error;
+    }
+};
+
+export const createContractAmendment = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.AMENDMENTS(contractId), payload);
+        message.success('Đã tạo phụ lục hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when creating contract amendment: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo phụ lục hợp đồng');
+        throw error;
+    }
+};
+
+export const reviseContractAmendment = async (contractId, amendmentId, payload) => {
+    try {
+        const response = await apiClient.post(
+            API_ENDPOINTS.CONTRACT.REVISE_AMENDMENT(contractId, amendmentId),
+            payload
+        );
+        message.success('Đã revise phụ lục hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when revising contract amendment: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi revise phụ lục hợp đồng');
+        throw error;
+    }
+};
+
+export const createContractBillingRule = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.BILLING_RULES(contractId), payload);
+        message.success('Đã tạo billing rule');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when creating contract billing rule: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo billing rule');
+        throw error;
+    }
+};
+
+export const reviseContractBillingRule = async (contractId, billingRuleId, payload) => {
+    try {
+        const response = await apiClient.post(
+            API_ENDPOINTS.CONTRACT.REVISE_BILLING_RULE(contractId, billingRuleId),
+            payload
+        );
+        message.success('Đã revise billing rule');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when revising contract billing rule: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi revise billing rule');
+        throw error;
+    }
+};
+
+export const deactivateContractBillingRule = async (contractId, billingRuleId) => {
+    try {
+        const response = await apiClient.patch(
+            API_ENDPOINTS.CONTRACT.DEACTIVATE_BILLING_RULE(contractId, billingRuleId)
+        );
+        message.success('Đã ngừng áp dụng billing rule');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when deactivating contract billing rule: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi ngừng áp dụng billing rule');
+        throw error;
+    }
+};
+
+export const createDepositTransaction = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.DEPOSIT_TRANSACTIONS(contractId), payload);
+        message.success('Đã ghi nhận giao dịch tiền cọc');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when creating deposit transaction: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi ghi nhận giao dịch tiền cọc');
+        throw error;
+    }
+};
+
+export const finalizeContractSettlement = async (contractId) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.FINALIZE_SETTLEMENT(contractId));
+        message.success('Đã chốt tất toán hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when finalizing contract settlement: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi chốt tất toán hợp đồng');
+        throw error;
+    }
+};
+
+export const terminateContract = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.TERMINATE(contractId), payload);
+        message.success('Đã chấm dứt hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when terminating contract: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi chấm dứt hợp đồng');
+        throw error;
+    }
+};
+
+export const transferContractRoom = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.TRANSFER_ROOM(contractId), payload);
+        message.success('Đã chuyển phòng thành công');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when transferring contract room: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi chuyển phòng');
+        throw error;
+    }
+};
+
 export const getAllContracts = async ({page, pageSize}) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.CONTRACT.GET_ALL, {

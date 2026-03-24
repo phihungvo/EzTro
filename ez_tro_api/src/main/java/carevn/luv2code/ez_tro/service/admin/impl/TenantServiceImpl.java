@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.TenantUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
@@ -35,6 +36,7 @@ import carevn.luv2code.ez_tro.repository.RoleRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
 import carevn.luv2code.ez_tro.specification.TenantSpecs;
 import jakarta.persistence.criteria.*;
@@ -54,6 +56,7 @@ public class TenantServiceImpl implements TenantService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final BuildingRepository buildingRepository;
     private final RoleRepository roleRepository;
+    private final ContractSnapshotService contractSnapshotService;
 
     @Override
     public TenantResponse create(TenantCreateRequest request) {
@@ -185,14 +188,23 @@ public class TenantServiceImpl implements TenantService {
                     .build();
         }
 
+        ContractSnapshotResponse snapshot =
+                contractSnapshotService.getSnapshot(currentContract.getId(), LocalDate.now());
+
         // Build response with exact mappings
         return CurrentRentalInfoResponse.builder()
                 .contractCode(currentContract.getContractCode())
                 .contractStatus("Đang Hiệu Lực") // Hardcoded based on active status
                 .startDate(currentContract.getStartDate())
                 .endDate(currentContract.getEndDate())
-                .rentPrice(currentContract.getRentPrice())
-                .deposit(currentContract.getDeposit())
+                .rentPrice(
+                        snapshot.getCurrentVersion() != null
+                                ? snapshot.getCurrentVersion().getPrice()
+                                : currentContract.getRentPrice())
+                .deposit(
+                        snapshot.getCurrentVersion() != null
+                                ? snapshot.getCurrentVersion().getDepositAmount()
+                                : currentContract.getDeposit())
                 .moveInDate(currentContract.getStartDate()) // Assume same as startDate
                 .isContractRepresentative(true) // Assume "Có" - adjust if field exists in Contract
                 .roomName(currentContract.getRoom().getRoomNumber())

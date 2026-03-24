@@ -1,20 +1,33 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.FileDTO;
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractAmendmentCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractBillingRuleCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractRoomTransferRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractTerminateRequest;
+import carevn.luv2code.ez_tro.dto.requests.DepositTransactionCreateRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractAmendmentSummaryResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractBillingRuleSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractRoomTransferResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
+import carevn.luv2code.ez_tro.dto.response.DepositTransactionSummaryResponse;
 import carevn.luv2code.ez_tro.entity.File;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
@@ -70,6 +83,133 @@ public class ContractController {
         return ApiResponse.<ContractDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Get contract successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/{id}/current-version")
+    public ApiResponse<ContractVersionSummaryResponse> getCurrentVersion(
+            @PathVariable Integer id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate) {
+        ContractVersionSummaryResponse response = contractService.getCurrentVersion(id, asOfDate);
+        return ApiResponse.<ContractVersionSummaryResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get current contract version successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/{id}/snapshot")
+    public ApiResponse<ContractSnapshotResponse> getSnapshot(
+            @PathVariable Integer id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate) {
+        ContractSnapshotResponse response = contractService.getSnapshot(id, asOfDate);
+        return ApiResponse.<ContractSnapshotResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get contract snapshot successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/amendments")
+    public ApiResponse<ContractAmendmentSummaryResponse> createAmendment(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractAmendmentCreateRequest request) {
+        ContractAmendmentSummaryResponse response = contractService.createAmendment(contractId, request);
+        return ApiResponse.<ContractAmendmentSummaryResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Create contract amendment successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/amendments/{amendmentId}/revise")
+    public ApiResponse<ContractAmendmentSummaryResponse> reviseAmendment(
+            @PathVariable Integer contractId,
+            @PathVariable Integer amendmentId,
+            @Valid @RequestBody ContractAmendmentCreateRequest request) {
+        ContractAmendmentSummaryResponse response = contractService.reviseAmendment(contractId, amendmentId, request);
+        return ApiResponse.<ContractAmendmentSummaryResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Revise contract amendment successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/billing-rules")
+    public ApiResponse<ContractBillingRuleSummaryResponse> createBillingRule(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractBillingRuleCreateRequest request) {
+        ContractBillingRuleSummaryResponse response = contractService.createBillingRule(contractId, request);
+        return ApiResponse.<ContractBillingRuleSummaryResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Create contract billing rule successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/billing-rules/{billingRuleId}/revise")
+    public ApiResponse<ContractBillingRuleSummaryResponse> reviseBillingRule(
+            @PathVariable Integer contractId,
+            @PathVariable Integer billingRuleId,
+            @Valid @RequestBody ContractBillingRuleCreateRequest request) {
+        ContractBillingRuleSummaryResponse response =
+                contractService.reviseBillingRule(contractId, billingRuleId, request);
+        return ApiResponse.<ContractBillingRuleSummaryResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Revise contract billing rule successfully")
+                .result(response)
+                .build();
+    }
+
+    @PatchMapping("/{contractId}/billing-rules/{billingRuleId}/deactivate")
+    public ApiResponse<ContractBillingRuleSummaryResponse> deactivateBillingRule(
+            @PathVariable Integer contractId, @PathVariable Integer billingRuleId) {
+        ContractBillingRuleSummaryResponse response = contractService.deactivateBillingRule(contractId, billingRuleId);
+        return ApiResponse.<ContractBillingRuleSummaryResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Deactivate contract billing rule successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/deposit-transactions")
+    public ApiResponse<DepositTransactionSummaryResponse> createDepositTransaction(
+            @PathVariable Integer contractId, @Valid @RequestBody DepositTransactionCreateRequest request) {
+        DepositTransactionSummaryResponse response = contractService.createDepositTransaction(contractId, request);
+        return ApiResponse.<DepositTransactionSummaryResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Create deposit transaction successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/settlement/finalize")
+    public ApiResponse<ContractDetailResponse> finalizeSettlement(@PathVariable Integer contractId) {
+        ContractDetailResponse response = contractService.finalizeSettlement(contractId);
+        return ApiResponse.<ContractDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Finalize contract settlement successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/terminate")
+    public ApiResponse<ContractDetailResponse> terminate(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractTerminateRequest request) {
+        ContractDetailResponse response = contractService.terminate(contractId, request);
+        return ApiResponse.<ContractDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Terminate contract successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{contractId}/transfer-room")
+    public ApiResponse<ContractRoomTransferResponse> transferRoom(
+            @PathVariable Integer contractId, @Valid @RequestBody ContractRoomTransferRequest request) {
+        ContractRoomTransferResponse response = contractService.transferRoom(contractId, request);
+        return ApiResponse.<ContractRoomTransferResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Transfer room successfully")
                 .result(response)
                 .build();
     }
@@ -195,6 +335,16 @@ public class ContractController {
                 .code(HttpStatus.OK.value())
                 .message("Create build by contract Id successfully")
                 .result(resp)
+                .build();
+    }
+
+    @PostMapping("/foundation/backfill")
+    public ApiResponse<Integer> backfillContractFoundation() {
+        int processed = contractService.backfillContractFoundation();
+        return ApiResponse.<Integer>builder()
+                .code(HttpStatus.OK.value())
+                .message("Contract foundation backfill completed")
+                .result(processed)
                 .build();
     }
 }

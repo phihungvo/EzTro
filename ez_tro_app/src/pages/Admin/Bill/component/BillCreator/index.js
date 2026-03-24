@@ -19,6 +19,7 @@ import { getCreatorBillContext } from "~/service/admin/room";
 import { createBill } from "~/service/admin/bill";
 import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
+import { getContractSnapshot } from "~/service/admin/contract";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -109,6 +110,9 @@ const INITIAL = {
     currentOccupants: 0,
     floorNumber: 1,
     boardingHouseId: null,
+    contractVersion: null,
+    contractSnapshot: null,
+    organizationName: "",
 };
 
 export default function InvoiceCreator() {
@@ -153,14 +157,17 @@ export default function InvoiceCreator() {
     useEffect(() => {
         const fetchContext = async () => {
             if (!state.roomId || !state.boardingHouseId || !state.month || !state.year) return;
-            const [resp, boardingHouseUtilities] = await Promise.all([
-                getCreatorBillContext(state.roomId, state.month, state.year),
-                getUtilityByBoardingHouse(state.boardingHouseId),
-            ]);
+            const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
             if (!resp || resp.code !== 200 || !resp.result) return;
 
             const ctx = resp.result;
-            const rentPrice = Number(ctx.rentPrice || 0);
+            const [boardingHouseUtilities, contractSnapshot] = await Promise.all([
+                getUtilityByBoardingHouse(state.boardingHouseId),
+                ctx.contractId ? getContractSnapshot(ctx.contractId, `${state.year}-${pad2(state.month)}-01`) : null,
+            ]);
+
+            const currentVersion = contractSnapshot?.currentVersion || null;
+            const rentPrice = Number(currentVersion?.price ?? ctx.rentPrice ?? 0);
             const meterReadings = Array.isArray(ctx.meterReadings) ? ctx.meterReadings : [];
             const fixedServices = Array.isArray(ctx.fixedChargeUtilities) ? ctx.fixedChargeUtilities : [];
             const usageBasedUtilities = Array.isArray(ctx.usageBasedUtilities) ? ctx.usageBasedUtilities : [];
@@ -172,6 +179,9 @@ export default function InvoiceCreator() {
                 ...prev,
                 contractId: ctx.contractId || null,
                 roomPrice: rentPrice,
+                contractVersion: currentVersion,
+                contractSnapshot: contractSnapshot || null,
+                organizationName: contractSnapshot?.organizationName || "",
                 meterReadings: usageBasedUtilities.map((item) => {
                     const meterItem = roomMeterById.get(item.id);
                     const utilityDef = allUtilities.find((utility) => utility.id === item.id);

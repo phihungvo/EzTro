@@ -7,25 +7,5 @@ databaseChangeLog:
       file: db/changelog/changeset-3.yaml
   - include:
       file: db/changelog/changeset-4.yaml
-  - changeSet:
-      id: 1
-      author: phihung
-      changes:
-        - createTable:
-            tableName: example_table
-            columns:
-              - column:
-                  name: id
-                  type: UUID
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: name
-                  type: VARCHAR(255)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: created_at
-                  type: TIMESTAMP
-                  defaultValueComputed: CURRENT_TIMESTAMP
+  - include:
+      file: db/changelog/changeset-5-contract-foundation.yaml

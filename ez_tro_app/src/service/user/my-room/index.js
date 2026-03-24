@@ -13,3 +13,14 @@ export const getMyRoomInfo = async () => {
         return null;
     }
 };
+
+export const getMyCurrentContract = async () => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.MY_ROOM.GET_CURRENT_CONTRACT);
+        return response.data.result;
+    } catch (error) {
+        console.log('Error when fetching my contract info ! Error: ', error);
+        message.error('Error get my contract info: ');
+        return null;
+    }
+};

@@ -38,6 +38,11 @@ public class BoardingHouse {
     @ToString.Exclude
     User owner; // Chủ nhà trọ
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @ToString.Exclude
+    Organization organization;
+
     @Column(columnDefinition = "TEXT")
     String description;
 
