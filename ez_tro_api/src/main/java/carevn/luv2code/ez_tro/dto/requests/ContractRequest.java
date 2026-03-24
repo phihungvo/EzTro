@@ -33,6 +33,8 @@ public class ContractRequest {
 
     LocalDate endDate;
 
+    Boolean autoRenew;
+
     BigDecimal deposit;
 
     @DecimalMin(value = "0.01", message = "Rent price must be greater than 0")

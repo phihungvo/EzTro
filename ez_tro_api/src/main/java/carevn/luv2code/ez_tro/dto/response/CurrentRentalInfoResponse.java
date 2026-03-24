@@ -17,6 +17,7 @@ public class CurrentRentalInfoResponse {
     Boolean isLiving;
     LocalDate startDate;
     LocalDate endDate;
+    Boolean autoRenew;
     BigDecimal rentPrice;
     BigDecimal deposit;
     LocalDate moveInDate;

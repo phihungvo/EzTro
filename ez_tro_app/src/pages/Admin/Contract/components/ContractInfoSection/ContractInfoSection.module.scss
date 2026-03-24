@@ -19,3 +19,15 @@
   border-radius: 50%;
   background: currentColor;
 }
+
+.toggleField {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  color: var(--text-primary);
+
+  input {
+    margin: 0;
+  }
+}

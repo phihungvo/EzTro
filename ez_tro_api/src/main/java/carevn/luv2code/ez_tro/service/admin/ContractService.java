@@ -7,9 +7,11 @@ import org.springframework.data.domain.Page;
 
 import carevn.luv2code.ez_tro.dto.requests.ContractAmendmentCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractBillingRuleCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractRenewRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractRoomTransferRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractTerminateRequest;
+import carevn.luv2code.ez_tro.dto.requests.ContractViolationRequest;
 import carevn.luv2code.ez_tro.dto.requests.DepositTransactionCreateRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractAmendmentSummaryResponse;
@@ -82,5 +84,11 @@ public interface ContractService {
 
     ContractDetailResponse terminate(Integer contractId, ContractTerminateRequest request);
 
+    ContractDetailResponse renew(Integer contractId, ContractRenewRequest request);
+
+    ContractDetailResponse markViolated(Integer contractId, ContractViolationRequest request);
+
     ContractRoomTransferResponse transferRoom(Integer contractId, ContractRoomTransferRequest request);
+
+    int processAutoRenewals(LocalDate today);
 }

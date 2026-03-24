@@ -63,6 +63,10 @@ const Contract = () => {
                 description: `${contractData.startDate ? new Date(contractData.startDate).toLocaleDateString("vi-VN") : "N/A"} đến ${contractData.endDate ? new Date(contractData.endDate).toLocaleDateString("vi-VN") : "vô thời hạn"}`
             },
             {
+                title: "Tự Gia Hạn:",
+                description: contractData.autoRenew ? "Đang bật" : "Không bật"
+            },
+            {
                 title: "Tiền Thuê:",
                 description: `${formatCurrency(contractData.rentPrice)}/tháng`
             },

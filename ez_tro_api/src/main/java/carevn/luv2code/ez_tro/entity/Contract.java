@@ -88,6 +88,9 @@ public class Contract {
     @Column(name = "end_date")
     LocalDate endDate;
 
+    @Column(name = "auto_renew", nullable = false)
+    Boolean autoRenew = false;
+
     @Column(precision = 12, scale = 2)
     BigDecimal deposit;
 

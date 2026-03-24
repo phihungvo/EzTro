@@ -116,6 +116,8 @@ const API_ENDPOINTS = {
         DEPOSIT_TRANSACTIONS: (contractId) => `${BASE_URL}/contracts/${contractId}/deposit-transactions`,
         FINALIZE_SETTLEMENT: (contractId) => `${BASE_URL}/contracts/${contractId}/settlement/finalize`,
         TERMINATE: (contractId) => `${BASE_URL}/contracts/${contractId}/terminate`,
+        RENEW: (contractId) => `${BASE_URL}/contracts/${contractId}/renew`,
+        MARK_VIOLATED: (contractId) => `${BASE_URL}/contracts/${contractId}/mark-violated`,
         TRANSFER_ROOM: (contractId) => `${BASE_URL}/contracts/${contractId}/transfer-room`,
         FOUNDATION_BACKFILL: `${BASE_URL}/contracts/foundation/backfill`,
         GET_FILES: (contractId) => `${BASE_URL}/contracts/files/${contractId}`,

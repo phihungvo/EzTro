@@ -35,6 +35,8 @@ public class ContractResponse {
 
     Date endDate;
 
+    Boolean autoRenew;
+
     BigDecimal deposit;
 
     BigDecimal rentPrice;

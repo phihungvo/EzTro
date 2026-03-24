@@ -40,11 +40,10 @@ export const getPresignedUrl = async (fileId, action = 'view') => {
         const response = await apiClient.get(`${API_ENDPOINTS.FILE.PRESIGNED_URL(fileId)}`, {
             params: {action},
         });
-        message.success('Xóa file thành công');
         return response.data.result;
     } catch (error) {
         console.error('Error generating presigned URL:', error);
-        message.error('Lỗi khi tạo liên kết file');
+        message.error(error.response?.data?.message || 'Lỗi khi tạo liên kết file');
         throw error;
     }
 };
@@ -230,6 +229,30 @@ export const terminateContract = async (contractId, payload) => {
     } catch (error) {
         console.error('Error when terminating contract: ', error);
         message.error(error.response?.data?.message || 'Lỗi khi chấm dứt hợp đồng');
+        throw error;
+    }
+};
+
+export const renewContract = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.RENEW(contractId), payload);
+        message.success('Đã gia hạn hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when renewing contract: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi gia hạn hợp đồng');
+        throw error;
+    }
+};
+
+export const markContractViolated = async (contractId, payload) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.CONTRACT.MARK_VIOLATED(contractId), payload);
+        message.success('Đã đánh dấu vi phạm hợp đồng');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when marking contract violated: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi đánh dấu vi phạm hợp đồng');
         throw error;
     }
 };

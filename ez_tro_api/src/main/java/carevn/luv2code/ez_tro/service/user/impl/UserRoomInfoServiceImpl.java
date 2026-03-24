@@ -62,6 +62,7 @@ public class UserRoomInfoServiceImpl implements UserRoomInfoService {
                 .isLiving(true)
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
+                .autoRenew(Boolean.TRUE.equals(contract.getAutoRenew()))
                 .rentPrice(
                         snapshot.getCurrentVersion() != null
                                 ? snapshot.getCurrentVersion().getPrice()

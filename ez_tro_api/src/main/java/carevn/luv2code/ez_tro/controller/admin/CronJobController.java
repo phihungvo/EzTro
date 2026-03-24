@@ -83,4 +83,21 @@ public class CronJobController {
                     .build();
         }
     }
+
+    @PostMapping("/contracts/auto-renew/manual")
+    public ApiResponse<String> manualRunAutoRenew() {
+        try {
+            int renewed = ((CronJobServiceImpl) cronJobService).runDailyContractAutoRenewal();
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Manual contract auto-renew completed successfully")
+                    .result("Renewed contracts: " + renewed)
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<String>builder()
+                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message("Failed to auto-renew contracts: " + e.getMessage())
+                    .build();
+        }
+    }
 }
