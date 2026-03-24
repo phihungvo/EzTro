@@ -6,6 +6,7 @@ import {
     DEFAULT_ASSETS,
     DEFAULT_ASSETS_ACTIVE,
     DEFAULT_CLAUSES,
+    EMPTY_TENANT_FIELDS,
     INITIAL_STATE,
     STEPS,
     formatVND,
@@ -16,6 +17,7 @@ import {
 import {getAllBoardingHousesNoPaged, getUtilityByBoardingHouse} from '~/service/admin/boarding_house';
 import {getAllRoomAvailableByBoardingHouse, getRoomsByBoardingHouse} from '~/service/admin/room';
 import {createContract, getContractById, updateContract} from '~/service/admin/contract';
+import {filterTenants} from '~/service/admin/tenant';
 
 import styles from './ContractCreatorPage.module.scss';
 import StepsBar from "~/pages/Admin/Contract/components/StepsBar";
@@ -61,6 +63,17 @@ const normalizeDateInput = (value) => {
     return new Date(value).toISOString().slice(0, 10);
 };
 
+const mapTenantToState = (tenant) => ({
+    tenantId: tenant?.id ? String(tenant.id) : '',
+    tenantFullName: tenant?.fullName || '',
+    tenantPhoneNumber: tenant?.phoneNumber || '',
+    tenantEmail: tenant?.email || '',
+    tenantPassword: '',
+    tenantIdentityNumber: tenant?.identityNumber || '',
+    tenantDateOfBirth: normalizeDateInput(tenant?.dateOfBirth),
+    tenantOccupation: tenant?.occupation || '',
+});
+
 const mapContractDetailToState = (detail) => {
     const rentPrice = Number(detail?.rentPrice || 0);
     const deposit = Number(detail?.deposit || 0);
@@ -73,6 +86,8 @@ const mapContractDetailToState = (detail) => {
         boardingHouseId: detail?.boardingHouseId ? String(detail.boardingHouseId) : '',
         roomId: detail?.roomId ? String(detail.roomId) : '',
         status: detail?.status || '',
+        tenantMode: 'EXISTING',
+        tenantId: detail?.tenantId ? String(detail.tenantId) : '',
         tenantFullName: detail?.tenantFullName || '',
         tenantPhoneNumber: detail?.tenantPhoneNumber || '',
         tenantEmail: detail?.tenantEmail || '',
@@ -166,10 +181,12 @@ export default function ContractCreatorPage() {
     const [boardingHouses, setBoardingHouses] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [loadingRooms, setLoadingRooms] = useState(false);
+    const [loadingTenants, setLoadingTenants] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [initializing, setInitializing] = useState(false);
     const [contractDetail, setContractDetail] = useState(null);
     const [initialServicesHydrated, setInitialServicesHydrated] = useState(false);
+    const [availableTenants, setAvailableTenants] = useState([]);
 
     const [activeStep, setActiveStep] = useState(1);
     const [services, setServices] = useState([]);
@@ -178,6 +195,7 @@ export default function ContractCreatorPage() {
     const [extraNote, setExtraNote] = useState('- Được phép nuôi 1 mèo nhỏ có kiểm soát (theo thoả thuận).\n- Giờ giấc: Cổng đóng lúc 23h, mở lại 5h sáng.',);
     const [extraRows, setExtraRows] = useState([{id: 2, name: '', phone: '', idCard: '', relation: 'Bạn bè'},]);
     const selectedRoom = useMemo(() => rooms.find((i) => String(i.id) === String(state.roomId)) || null, [rooms, state.roomId],);
+    const hasAvailableTenants = availableTenants.length > 0;
 
     useEffect(() => {
         (async () => {
@@ -196,7 +214,9 @@ export default function ContractCreatorPage() {
                         ...mapContractDetailToState(detailData),
                     }));
                 } else if (bhData?.length) {
-                    patch({boardingHouseId: String(bhData[0].id)});
+                    patch({
+                        boardingHouseId: String(bhData[0].id),
+                    });
                 }
             } catch {
                 message.error(isEditMode ? 'Không thể tải dữ liệu hợp đồng' : 'Không thể tải dữ liệu tạo hợp đồng');
@@ -206,6 +226,65 @@ export default function ContractCreatorPage() {
             }
         })();
     }, [basePath, id, isEditMode, navigate]);
+
+    useEffect(() => {
+        if (isEditMode) return;
+
+        let ignore = false;
+
+        const fetchTenants = async () => {
+            setLoadingTenants(true);
+            try {
+                const response = await filterTenants({
+                    hasActiveContract: false,
+                    page: 0,
+                    pageSize: 1000,
+                });
+
+                if (ignore) return;
+
+                const nextTenants = Array.isArray(response?.content) ? response.content : [];
+                setAvailableTenants(nextTenants);
+                setState((prev) => {
+                    if (nextTenants.length === 0) {
+                        return prev.tenantMode === 'NEW'
+                            ? prev
+                            : {
+                                ...prev,
+                                tenantMode: 'NEW',
+                                ...EMPTY_TENANT_FIELDS,
+                            };
+                    }
+
+                    if (prev.tenantMode === 'EXISTING'
+                        && prev.tenantId
+                        && !nextTenants.some((tenant) => String(tenant.id) === String(prev.tenantId))) {
+                        return {
+                            ...prev,
+                            tenantId: '',
+                            ...EMPTY_TENANT_FIELDS,
+                        };
+                    }
+
+                    return prev;
+                });
+            } catch {
+                if (!ignore) {
+                    setAvailableTenants([]);
+                }
+            } finally {
+                if (!ignore) {
+                    setLoadingTenants(false);
+                }
+            }
+        };
+
+        fetchTenants();
+
+        return () => {
+            ignore = true;
+        };
+    }, [isEditMode]);
 
     useEffect(() => {
         if (!state.boardingHouseId) {
@@ -289,30 +368,37 @@ export default function ContractCreatorPage() {
             message.error('Bạn cần chọn phòng trống.');
             return false;
         }
-        if (!state.tenantFullName.trim()) {
-            message.error('Bạn cần nhập họ tên người thuê chính.');
-            return false;
-        }
-        if (!state.tenantPhoneNumber.trim()) {
-            message.error('Bạn cần nhập số điện thoại người thuê.');
-            return false;
-        }
-        if (!state.tenantIdentityNumber.trim()) {
-            message.error('Bạn cần nhập CCCD/CMT của người thuê.');
-            return false;
-        }
-        if (!isValidEmail(state.tenantEmail)) {
-            message.error('Email người thuê không hợp lệ.');
-            return false;
-        }
-        if (!isEditMode && String(state.tenantPassword || '').trim().length < 6) {
-            message.error('Mật khẩu người thuê phải có ít nhất 6 ký tự.');
-            return false;
-        }
-        if (isEditMode && state.tenantPassword && String(state.tenantPassword).trim().length > 0
-            && String(state.tenantPassword).trim().length < 6) {
-            message.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
-            return false;
+        if (!isEditMode && state.tenantMode === 'EXISTING') {
+            if (!state.tenantId) {
+                message.error('Bạn cần chọn người thuê có sẵn.');
+                return false;
+            }
+        } else {
+            if (!state.tenantFullName.trim()) {
+                message.error('Bạn cần nhập họ tên người thuê chính.');
+                return false;
+            }
+            if (!state.tenantPhoneNumber.trim()) {
+                message.error('Bạn cần nhập số điện thoại người thuê.');
+                return false;
+            }
+            if (!state.tenantIdentityNumber.trim()) {
+                message.error('Bạn cần nhập CCCD/CMT của người thuê.');
+                return false;
+            }
+            if (!isValidEmail(state.tenantEmail)) {
+                message.error('Email người thuê không hợp lệ.');
+                return false;
+            }
+            if (!isEditMode && String(state.tenantPassword || '').trim().length < 6) {
+                message.error('Mật khẩu người thuê phải có ít nhất 6 ký tự.');
+                return false;
+            }
+            if (isEditMode && state.tenantPassword && String(state.tenantPassword).trim().length > 0
+                && String(state.tenantPassword).trim().length < 6) {
+                message.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+                return false;
+            }
         }
         if (!state.startDate) {
             message.error('Bạn cần nhập ngày bắt đầu.');
@@ -341,6 +427,37 @@ export default function ContractCreatorPage() {
         return true;
     };
 
+    const handleTenantModeChange = (tenantMode) => {
+        if (isEditMode || tenantMode === state.tenantMode) return;
+
+        if (tenantMode === 'EXISTING') {
+            patch({
+                tenantMode,
+                ...EMPTY_TENANT_FIELDS,
+            });
+            return;
+        }
+
+        patch({
+            tenantMode,
+            ...EMPTY_TENANT_FIELDS,
+        });
+    };
+
+    const handleTenantSelect = (tenantId) => {
+        const selectedTenant = availableTenants.find((tenant) => String(tenant.id) === String(tenantId));
+
+        patch(selectedTenant
+            ? {
+                ...mapTenantToState(selectedTenant),
+                tenantMode: 'EXISTING',
+            }
+            : {
+                ...EMPTY_TENANT_FIELDS,
+                tenantMode: 'EXISTING',
+            });
+    };
+
     const handleSubmit = async () => {
         if (!validate()) return;
         const rentNum = normalizeMoney(state.rentPrice);
@@ -365,16 +482,20 @@ export default function ContractCreatorPage() {
             } else {
                 await createContract({
                     ...financialPayload,
-                    tenant: {
-                        fullName: state.tenantFullName.trim(),
-                        phoneNumber: state.tenantPhoneNumber.trim(),
-                        email: state.tenantEmail.trim(),
-                        password: state.tenantPassword?.trim() || null,
-                        identityNumber: state.tenantIdentityNumber.trim(),
-                        dateOfBirth: state.tenantDateOfBirth || null,
-                        occupation: state.tenantOccupation?.trim() || null,
-                        note: state.note?.trim() || `Cập nhật từ màn hình hợp đồng cho phòng ${selectedRoom?.roomNumber || ''}`.trim(),
-                    },
+                    ...(state.tenantMode === 'EXISTING'
+                        ? {tenantId: Number(state.tenantId)}
+                        : {
+                            tenant: {
+                                fullName: state.tenantFullName.trim(),
+                                phoneNumber: state.tenantPhoneNumber.trim(),
+                                email: state.tenantEmail.trim(),
+                                password: state.tenantPassword?.trim() || null,
+                                identityNumber: state.tenantIdentityNumber.trim(),
+                                dateOfBirth: state.tenantDateOfBirth || null,
+                                occupation: state.tenantOccupation?.trim() || null,
+                                note: state.note?.trim() || `Cập nhật từ màn hình hợp đồng cho phòng ${selectedRoom?.roomNumber || ''}`.trim(),
+                            },
+                        }),
                     utilities: services
                         .filter((service) => service.on && service.name?.trim())
                         .map((service) => ({
@@ -410,6 +531,7 @@ export default function ContractCreatorPage() {
         setState({
             ...INITIAL_STATE,
             boardingHouseId: boardingHouses?.[0]?.id ? String(boardingHouses[0].id) : '',
+            tenantMode: hasAvailableTenants ? 'EXISTING' : 'NEW',
         });
         setServices([]);
     };
@@ -467,10 +589,14 @@ export default function ContractCreatorPage() {
                 <TenantSection
                     state={state}
                     patch={patch}
+                    availableTenants={availableTenants}
+                    loadingTenants={loadingTenants}
                     extraRows={extraRows}
                     onAddExtra={addExtraRow}
                     onRemoveExtra={removeExtraRow}
                     onPatchExtra={patchExtra}
+                    onSelectTenant={handleTenantSelect}
+                    onTenantModeChange={handleTenantModeChange}
                     isEditMode={isEditMode}
                 />
 
