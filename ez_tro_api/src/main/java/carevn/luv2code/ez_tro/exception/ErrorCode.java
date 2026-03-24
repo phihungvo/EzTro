@@ -124,6 +124,9 @@ public enum ErrorCode {
             1093, "Boarding house cannot be deleted because it already has dependent data", HttpStatus.BAD_REQUEST),
     BUILDING_DELETE_NOT_ALLOWED(
             1094, "Building cannot be deleted because it already has rooms", HttpStatus.BAD_REQUEST),
+    UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE(
+            1095, "Utility does not belong to the room's boarding house", HttpStatus.CONFLICT),
+    ROOM_UTILITY_REQUEST_ID_MISMATCH(1096, "Room utility request IDs do not match the path", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

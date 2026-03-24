@@ -20,7 +20,7 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
 import {getAllUtilities, createUtility, updateUtility, deleteUtility} from '~/service/admin/utility';
-import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
 
@@ -237,13 +237,13 @@ function Utility() {
         try {
             await createUtility(formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi tạo tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -258,13 +258,13 @@ function Utility() {
         try {
             await updateUtility(selectedUtility.id, formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi cập nhật tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -278,20 +278,18 @@ function Utility() {
     const handleCallDeleteUtility = async () => {
         await deleteUtility(selectedUtility.id);
         handleGetUtilities();
-        setIsModalOpen(false);
     };
 
-    const handleFormSubmit = (formData) => {
+    const handleFormSubmit = async (formData) => {
         formData.isActive = formData.isActive === 'Yes';
 
         if (modalMode === 'create') {
-            handleCallCreateUtility(formData);
+            await handleCallCreateUtility(formData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateUtility(formData);
+            await handleCallUpdateUtility(formData);
         } else if (modalMode === 'delete') {
-            handleCallDeleteUtility();
+            await handleCallDeleteUtility();
         }
-        setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {

@@ -11,29 +11,26 @@ import {
     EditOutlined,
     DeleteOutlined,
     TableOutlined,
-    AppstoreOutlined,
-    CheckOutlined,
-    CloseOutlined
+    AppstoreOutlined
 } from '@ant-design/icons';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
 import {
-    getAllUtilities,
     createRoomUtility,
     updateRoomUtility,
     deleteRoomUtility,
     getAllRoomUtilitiesPaged
 } from '~/service/admin/room-utility';
-import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 import {getAllRoomNoPaged} from "~/service/admin/room";
-import {getAllUtilitiesNoPaged} from "~/service/admin/utility";
+import {getUtilityByBoardingHouse} from "~/service/admin/boarding_house";
 
 const cx = classNames.bind(styles);
 
 function RoomUtility() {
     const [roomUtilitySource, setRoomUtilitySource] = useState([]);
+    const [rooms, setRooms] = useState([]);
     const [utilityOptionSource, setUtilityOptionSource] = useState([]);
     const [roomSource, setRoomSource] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -47,19 +44,28 @@ function RoomUtility() {
     const [selectedRoomUtility, setSelectedRoomUtility] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
+    const selectedRoomId = Form.useWatch('roomId', form);
 
-    const getStatusTag = (status) => {
-        if (status === null || status === undefined || status === '') {
-            return <Tag color="#8fb6ff">Không xác định</Tag>;
+    const formatUtilityOptions = (utilities = []) => {
+        const currency = (value) => Number(value).toLocaleString('vi-VN') + ' đ';
+
+        return utilities.map(({ id, name, unitPrice, unit }) => ({
+            value: id,
+            label: name + (unitPrice || unit ? ` (${[unitPrice && currency(unitPrice), unit].filter(Boolean).join(' / ')})` : ''),
+        }));
+    };
+
+    const getRegistrationStatusTag = (endDate) => {
+        if (!endDate) {
+            return <Tag color="green">Đang áp dụng</Tag>;
         }
-        const statusConfig = {
-            FIXED: { color: 'blue', text: 'Cố định' },
-            PER_PERSON: { color: 'green', text: 'Theo người' },
-            PER_VEHICLE: { color: 'orange', text: 'Theo phương tiện' },
-            USAGE_BASED: { color: 'purple', text: 'Theo tiêu thụ' },
-        };
-        const config = statusConfig[status] || { color: 'default', text: status };
-        return <Tag color={config.color}>{config.text}</Tag>;
+
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        return end >= new Date()
+            ? <Tag color="green">Đang áp dụng</Tag>
+            : <Tag color="default">Đã kết thúc</Tag>;
     };
 
     const columns = [
@@ -112,11 +118,11 @@ function RoomUtility() {
         },
         {
             title: 'Trạng thái',
-            dataIndex: 'isActive',
-            key: 'isActive',
+            dataIndex: 'endDate',
+            key: 'status',
             width: 150,
             align: 'center',
-            render: (status) => getStatusTag(status),
+            render: (endDate) => getRegistrationStatusTag(endDate),
         },
         {
             title: 'Thao tác',
@@ -149,6 +155,7 @@ function RoomUtility() {
             name: 'roomId',
             type: 'select',
             options: roomSource,
+            disabled: modalMode === 'edit' || modalMode === 'view',
             rules: [{ required: true, message: 'Vui lòng chọn phòng!' }],
             placeholder: 'Chọn phòng',
         },
@@ -157,6 +164,7 @@ function RoomUtility() {
             name: 'utilityId',
             type: 'select',
             options: utilityOptionSource,
+            disabled: modalMode === 'edit' || modalMode === 'view' || !selectedRoomId,
             rules: [{ required: true, message: 'Vui lòng chọn dịch vụ!' }],
             placeholder: 'Chọn dịch vụ (Điện, Nước, Internet...)',
         },
@@ -192,33 +200,67 @@ function RoomUtility() {
         },
     ];
 
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        handleGetAllUtilitiesAndRooms();
+        handleGetAllRooms();
         handleGetRoomUtilities();
     }, []);
 
-    const handleGetAllUtilitiesAndRooms = async () => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (!isModalOpen || modalMode !== 'create') {
+            return;
+        }
+
+        if (!selectedRoomId) {
+            setUtilityOptionSource([]);
+            form.setFieldValue('utilityId', undefined);
+            return;
+        }
+
+        loadUtilityOptionsForRoom(selectedRoomId);
+    }, [selectedRoomId, isModalOpen, modalMode, rooms]);
+
+    const handleGetAllRooms = async () => {
         try {
-            const response = await getAllUtilitiesNoPaged();
-            const currency = v => Number(v).toLocaleString('vi-VN') + ' đ';
-
-            const mappedUtilities = response.map(({ id, name, unitPrice, unit }) => ({
-                value: id,
-                label: name + (unitPrice || unit ? ` (${[unitPrice && currency(unitPrice), unit].filter(Boolean).join(' / ')})` : '')
-            }));
-
-            setUtilityOptionSource(mappedUtilities);
-
             const rooms = await getAllRoomNoPaged();
+            setRooms(rooms);
+
             const mappedRooms = rooms.map(room => ({
                 value: room.id,
-                label: `${room.boardingHouseName} - ${room.roomNumber}`
+                label: `${room.boardingHouseName} - ${room.roomNumber}`,
             }));
             setRoomSource(mappedRooms);
         } catch (error) {
             setUtilityOptionSource([]);
             setRoomSource([]);
+        }
+    };
+
+    const loadUtilityOptionsForRoom = async (roomId, { preserveSelection = false } = {}) => {
+        const room = rooms.find((item) => item.id === Number(roomId));
+
+        if (!room?.boardingHouseId) {
+            setUtilityOptionSource([]);
+            if (!preserveSelection) {
+                form.setFieldValue('utilityId', undefined);
+            }
+            return;
+        }
+
+        try {
+            const utilities = await getUtilityByBoardingHouse(room.boardingHouseId);
+            setUtilityOptionSource(formatUtilityOptions(utilities));
+
+            if (!preserveSelection) {
+                form.setFieldValue('utilityId', undefined);
+            }
+        } catch (error) {
+            setUtilityOptionSource([]);
+            if (!preserveSelection) {
+                form.setFieldValue('utilityId', undefined);
+            }
+            message.error(error.response?.data?.message || 'Lỗi lấy danh sách dịch vụ theo nhà trọ');
         }
     };
 
@@ -247,6 +289,7 @@ function RoomUtility() {
     const handleAddRoomUtility = () => {
         setModalMode('create');
         setSelectedRoomUtility(null);
+        setUtilityOptionSource([]);
         form.resetFields();
         setIsModalOpen(true);
     };
@@ -255,17 +298,18 @@ function RoomUtility() {
         try {
             await createRoomUtility(formData);
             handleGetRoomUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi tạo tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
-    const handleEditRoomUtility = (record) => {
+    const handleEditRoomUtility = async (record) => {
+        await loadUtilityOptionsForRoom(record.roomId, {preserveSelection: true});
         setSelectedRoomUtility(record);
         setModalMode('edit');
         form.setFieldsValue(record);
@@ -274,15 +318,19 @@ function RoomUtility() {
 
     const handleCallUpdateRoomUtility = async (formData) => {
         try {
-            // await updateRoomUtility(selectedRoomUtility.id, formData);
+            await updateRoomUtility(
+                selectedRoomUtility.roomId,
+                selectedRoomUtility.utilityId,
+                formData,
+            );
             handleGetRoomUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi cập nhật tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -294,20 +342,21 @@ function RoomUtility() {
     };
 
     const handleCallDeleteRoomUtility = async () => {
-        // await deleteRoomUtility(selectedRoomUtility.id);
+        await deleteRoomUtility(
+            selectedRoomUtility.roomId,
+            selectedRoomUtility.utilityId,
+        );
         handleGetRoomUtilities();
-        setIsModalOpen(false);
     };
 
-    const handleFormSubmit = (formData) => {
+    const handleFormSubmit = async (formData) => {
         if (modalMode === 'create') {
-            handleCallCreateRoomUtility(formData);
+            await handleCallCreateRoomUtility(formData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateRoomUtility(formData);
+            await handleCallUpdateRoomUtility(formData);
         } else if (modalMode === 'delete') {
-            handleCallDeleteRoomUtility();
+            await handleCallDeleteRoomUtility();
         }
-        setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
@@ -325,13 +374,6 @@ function RoomUtility() {
             default:
                 return 'Chi tiết đăng ký';
         }
-    };
-
-    const handleViewRoomUtility = (record) => {
-        setSelectedRoomUtility(record);
-        setModalMode('view');
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
     };
 
     return (
