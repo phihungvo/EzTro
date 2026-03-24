@@ -24,6 +24,8 @@ public class ContractDetailResponse {
 
     Integer boardingHouseId;
     String boardingHouseName;
+    Integer organizationId;
+    String organizationName;
 
     Integer tenantId;
     Integer userId;
@@ -54,4 +56,11 @@ public class ContractDetailResponse {
     Date updatedAt;
 
     List<ContractUtilityDetailResponse> utilities;
+    List<ContractVersionSummaryResponse> versions;
+    List<ContractAmendmentSummaryResponse> amendments;
+    List<ContractBillingRuleSummaryResponse> billingRules;
+    List<DepositTransactionSummaryResponse> depositTransactions;
+    DepositLedgerSummaryResponse depositSummary;
+    ContractSettlementPreviewResponse settlementPreview;
+    List<ContractStateTransitionResponse> stateTransitions;
 }

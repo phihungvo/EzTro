@@ -127,6 +127,15 @@ public enum ErrorCode {
     UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE(
             1095, "Utility does not belong to the room's boarding house", HttpStatus.CONFLICT),
     ROOM_UTILITY_REQUEST_ID_MISMATCH(1096, "Room utility request IDs do not match the path", HttpStatus.BAD_REQUEST),
+    CONTRACT_EFFECTIVE_DATE_INVALID(
+            1097, "Effective to date must be greater than or equal to effective from date", HttpStatus.BAD_REQUEST),
+    CONTRACT_BILLING_RULE_NOT_FOUND(1098, "Contract billing rule not found", HttpStatus.NOT_FOUND),
+    DEPOSIT_TRANSACTION_AMOUNT_INVALID(
+            1099, "Deposit transaction amount must be greater than 0", HttpStatus.BAD_REQUEST),
+    CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT(
+            1100, "Deposit balance is not enough to finalize settlement", HttpStatus.BAD_REQUEST),
+    CONTRACT_TRANSFER_OPEN_BILLS_NOT_ALLOWED(
+            1101, "Open bills must be settled before transferring deposit", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

@@ -41,6 +41,11 @@ public class Contract {
     @ToString.Exclude
     Tenant tenant;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @ToString.Exclude
+    Organization organization;
+
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     List<Bill> bills;
@@ -48,6 +53,26 @@ public class Contract {
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     List<File> files;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<ContractVersion> versions;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<ContractAmendment> amendments;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<ContractBillingRule> billingRules;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<DepositTransaction> depositTransactions;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<ContractStateTransition> stateTransitions;
 
     //    @Temporal(TemporalType.DATE)
     //    @Column(name = "start_date", nullable = false)

@@ -34,6 +34,7 @@ import carevn.luv2code.ez_tro.mapper.RoomMapper;
 import carevn.luv2code.ez_tro.mapper.TenantMapper;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import carevn.luv2code.ez_tro.specification.RoomSpecs;
 import jakarta.persistence.criteria.*;
@@ -56,6 +57,7 @@ public class RoomServiceImpl implements RoomService {
     private final BillMapper billMapper;
     private final MeterReadingRepository meterReadingRepository;
     private final PropertyAssetRepository propertyAssetRepository;
+    private final ContractSnapshotService contractSnapshotService;
 
     //    @Override
     //    @Transactional
@@ -400,8 +402,11 @@ public class RoomServiceImpl implements RoomService {
 
             if (activeContract != null) {
                 dto.setCurrentContract(contractMapper.toResponse(activeContract));
-                //                dto.setTenant(tenantMapper.toBasicResponse(activeContract.getTenant()));
-                dto.setRentPrice(activeContract.getRentPrice());
+                ContractSnapshotResponse snapshot =
+                        contractSnapshotService.getSnapshot(activeContract.getId(), LocalDate.of(year, month, 1));
+                if (snapshot.getCurrentVersion() != null) {
+                    dto.setRentPrice(snapshot.getCurrentVersion().getPrice());
+                }
                 //                dto.setMonthsLeft(calculateMonthsLeft(activeContract));
                 //                dto.setServices(activeContract.getServices().stream()
                 //                        .map(Service::getKey)
@@ -472,8 +477,12 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT));
 
         dto.setCurrentContract(contractMapper.toResponse(activeContract));
-        //        dto.setTenant(tenantMapper.toBasicResponse(activeContract.getTenant()));
-        //        dto.setRentPrice(activeContract.getRentPrice());
+        ContractSnapshotResponse detailSnapshot =
+                contractSnapshotService.getSnapshot(activeContract.getId(), LocalDate.of(year, month, 1));
+        if (detailSnapshot.getCurrentVersion() != null
+                && detailSnapshot.getCurrentVersion().getPrice() != null) {
+            dto.setRentPrice(detailSnapshot.getCurrentVersion().getPrice().longValue());
+        }
         //        dto.setMonthsLeft(calculateMonthsLeft(activeContract));
         //        dto.setServices(activeContract.getServices().stream()
         //                .map(Service::getKey)
@@ -536,6 +545,9 @@ public class RoomServiceImpl implements RoomService {
         if (activeContract == null) {
             throw new AppException(ErrorCode.YOU_DO_NOT_HAVE_ACTIVE_CONTRACT);
         }
+
+        ContractSnapshotResponse snapshot =
+                contractSnapshotService.getSnapshot(activeContract.getId(), LocalDate.of(year, month, 1));
 
         LocalDate periodStart = LocalDate.of(year, month, 1);
         LocalDate periodEnd = periodStart.withDayOfMonth(periodStart.lengthOfMonth());
@@ -637,7 +649,10 @@ public class RoomServiceImpl implements RoomService {
                 .roomId(room.getId())
                 .roomNumber(room.getRoomNumber())
                 .contractId(activeContract.getId())
-                .rentPrice(activeContract.getRentPrice())
+                .rentPrice(
+                        snapshot.getCurrentVersion() != null
+                                ? snapshot.getCurrentVersion().getPrice()
+                                : activeContract.getRentPrice())
                 .usageBasedUtilities(usageBasedItems)
                 .fixedChargeUtilities(fixedChargeItems)
                 .meterReadings(meterItems)

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
@@ -29,6 +30,7 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillService;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.specification.BillSpecs;
 import jakarta.persistence.criteria.Join;
@@ -46,6 +48,7 @@ public class BillServiceImpl implements BillService {
     private final BillMapper billMapper;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ContractSnapshotService contractSnapshotService;
 
     @Override
     public BillResponse create(BillRequest request) {
@@ -75,7 +78,11 @@ public class BillServiceImpl implements BillService {
             throw new AppException(ErrorCode.BILL_ALREADY_EXISTS);
         }
 
-        BigDecimal rentPrice = contract.getRentPrice();
+        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), dueDate);
+        BigDecimal rentPrice = snapshot.getCurrentVersion() != null
+                        && snapshot.getCurrentVersion().getPrice() != null
+                ? snapshot.getCurrentVersion().getPrice()
+                : contract.getRentPrice();
         BigDecimal baseServiceAmount =
                 request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;
         BigDecimal extraAmount = request.getExtraAmount() != null ? request.getExtraAmount() : BigDecimal.ZERO;

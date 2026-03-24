@@ -103,6 +103,21 @@ const API_ENDPOINTS = {
         GET_ACTIVE: `${BASE_URL}/contracts/active`,
         FILTER: `${BASE_URL}/contracts/filter`,
         DETAIL: (contractId) => `${BASE_URL}/contracts/${contractId}`,
+        CURRENT_VERSION: (contractId) => `${BASE_URL}/contracts/${contractId}/current-version`,
+        SNAPSHOT: (contractId) => `${BASE_URL}/contracts/${contractId}/snapshot`,
+        AMENDMENTS: (contractId) => `${BASE_URL}/contracts/${contractId}/amendments`,
+        REVISE_AMENDMENT: (contractId, amendmentId) =>
+            `${BASE_URL}/contracts/${contractId}/amendments/${amendmentId}/revise`,
+        BILLING_RULES: (contractId) => `${BASE_URL}/contracts/${contractId}/billing-rules`,
+        REVISE_BILLING_RULE: (contractId, billingRuleId) =>
+            `${BASE_URL}/contracts/${contractId}/billing-rules/${billingRuleId}/revise`,
+        DEACTIVATE_BILLING_RULE: (contractId, billingRuleId) =>
+            `${BASE_URL}/contracts/${contractId}/billing-rules/${billingRuleId}/deactivate`,
+        DEPOSIT_TRANSACTIONS: (contractId) => `${BASE_URL}/contracts/${contractId}/deposit-transactions`,
+        FINALIZE_SETTLEMENT: (contractId) => `${BASE_URL}/contracts/${contractId}/settlement/finalize`,
+        TERMINATE: (contractId) => `${BASE_URL}/contracts/${contractId}/terminate`,
+        TRANSFER_ROOM: (contractId) => `${BASE_URL}/contracts/${contractId}/transfer-room`,
+        FOUNDATION_BACKFILL: `${BASE_URL}/contracts/foundation/backfill`,
         GET_FILES: (contractId) => `${BASE_URL}/contracts/files/${contractId}`,
         CREATE: `${BASE_URL}/contracts`,
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
@@ -172,6 +187,7 @@ const API_ENDPOINTS = {
     },
     MY_ROOM: {
         GET_ROOM_INFO: `${BASE_URL}/user/room/current`,
+        GET_CURRENT_CONTRACT: `${BASE_URL}/user/room/current-contract`,
     },
     MY_BILL: {
         GET_ALL: `${BASE_URL}/user/bills/paged`,

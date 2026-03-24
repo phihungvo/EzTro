@@ -17,11 +17,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.entity.*;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.repository.*;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class CronJobServiceImpl implements CronJobService {
     //    private final RoomAmenityRepository roomAmenityRepository;
     //    private final ElectricWaterRecordRepository electricWaterRecordRepository;
     private final BillRepository billRepository;
+    private final ContractSnapshotService contractSnapshotService;
 
     @Autowired
     private Scheduler scheduler;
@@ -48,7 +51,8 @@ public class CronJobServiceImpl implements CronJobService {
             //            AmenityRepository amenityRepository,
             //            RoomAmenityRepository roomAmenityRepository,
             //            ElectricWaterRecordRepository electricWaterRecordRepository,
-            BillRepository billRepository)
+            BillRepository billRepository,
+            ContractSnapshotService contractSnapshotService)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
@@ -56,6 +60,7 @@ public class CronJobServiceImpl implements CronJobService {
         //        this.roomAmenityRepository = roomAmenityRepository;
         //        this.electricWaterRecordRepository = electricWaterRecordRepository;
         this.billRepository = billRepository;
+        this.contractSnapshotService = contractSnapshotService;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
     }
@@ -218,7 +223,11 @@ public class CronJobServiceImpl implements CronJobService {
                 if (tenant == null || !tenant.getUser().isEnabled()) continue;
 
                 // 3. Tính amount
-                BigDecimal rent = contract.getRentPrice();
+                ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), dueDateLocal);
+                BigDecimal rent = snapshot.getCurrentVersion() != null
+                                && snapshot.getCurrentVersion().getPrice() != null
+                        ? snapshot.getCurrentVersion().getPrice()
+                        : contract.getRentPrice();
                 BigDecimal services = calculateServiceAmount(room, currentMonth, currentYear);
 
                 BigDecimal totalAmount = rent.add(services);

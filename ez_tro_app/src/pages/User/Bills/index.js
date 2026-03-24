@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from "react";
-import { message } from "antd";
+import { Empty, message } from "antd";
 import styles from "./Bills.module.scss";
 import PaymentMethods from "~/components/Layout/UserLayout/components/PaymentMethods";
 import UserTable from "src/components/Layout/UserLayout/components/UserTable";
@@ -27,34 +27,7 @@ const Bills = () => {
 
     useEffect(() => {
         fetchMyBills();
-    }, []);
-
-    const [bills] = useState([
-        {
-            billId: "HD0001",
-            type: "Tiền Thuê",
-            amount: 3000000,
-            createdDate: "01/12/2024",
-            dueDate: "05/12/2024",
-            status: "unpaid"
-        },
-        {
-            billId: "HD0002",
-            type: "Tiền Thuê",
-            amount: 3000000,
-            createdDate: "01/11/2024",
-            dueDate: "05/11/2024",
-            status: "paid"
-        },
-        {
-            billId: "HD0003",
-            type: "Dịch Vụ",
-            amount: 150000,
-            createdDate: "01/11/2024",
-            dueDate: "05/11/2024",
-            status: "paid"
-        }
-    ]);
+    }, [fetchMyBills]);
 
     const paymentMethods = [
         {
@@ -96,11 +69,15 @@ const Bills = () => {
             </div>
 
             {/* Bills Table */}
-            <UserTable
-                bills={myBills}
-                onPayment={handlePayment}
-                onViewDetail={handleViewDetail}
-            />
+            {Array.isArray(myBills) && myBills.length > 0 ? (
+                <UserTable
+                    bills={myBills}
+                    onPayment={handlePayment}
+                    onViewDetail={handleViewDetail}
+                />
+            ) : (
+                <Empty description="Bạn chưa có hóa đơn nào" />
+            )}
 
             {/* Payment Methods */}
             <PaymentMethods
