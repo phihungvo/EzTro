@@ -14,6 +14,11 @@ import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.user.UserRoomInfoService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service cung cấp thông tin phòng/hợp đồng hiện tại của user (người thuê).
+ *
+ * <p>Service dựa trên hợp đồng ACTIVE đang hiệu lực tại thời điểm gọi.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserRoomInfoServiceImpl implements UserRoomInfoService {
@@ -21,6 +26,12 @@ public class UserRoomInfoServiceImpl implements UserRoomInfoService {
     private final ContractRepository contractRepository;
     private final ContractSnapshotService contractSnapshotService;
 
+    /**
+     * Lấy thông tin phòng hiện tại của user.
+     *
+     * @param userId id user
+     * @return thông tin phòng hiện tại (hoặc status "Chưa Có Phòng")
+     */
     @Override
     public TenantRoomInfoResponse getCurrentRoomInfo(Integer userId) {
         var contractOpt = contractRepository.findActiveContractByUserId(userId, ContractStatus.ACTIVE, LocalDate.now());
@@ -42,6 +53,12 @@ public class UserRoomInfoServiceImpl implements UserRoomInfoService {
                 .build();
     }
 
+    /**
+     * Lấy thông tin hợp đồng hiện tại của user.
+     *
+     * @param userId id user
+     * @return current rental info (hoặc "Chưa thuê")
+     */
     @Override
     public CurrentRentalInfoResponse getCurrentContractInfo(Integer userId) {
         var contractOpt = contractRepository.findActiveContractByUserId(userId, ContractStatus.ACTIVE, LocalDate.now());

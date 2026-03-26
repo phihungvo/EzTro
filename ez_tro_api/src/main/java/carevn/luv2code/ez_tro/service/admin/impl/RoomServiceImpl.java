@@ -40,6 +40,17 @@ import carevn.luv2code.ez_tro.specification.RoomSpecs;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ Phòng (Room) phía admin/owner.
+ *
+ * <p>Service này bao gồm:
+ * <ul>
+ *   <li>CRUD phòng + validate quyền owner/admin.</li>
+ *   <li>Filter/phân trang phòng.</li>
+ *   <li>Context phục vụ billing (rented rooms, creator bill context, period summary...).</li>
+ *   <li>Đồng bộ trạng thái phòng theo hợp đồng hiệu lực.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {

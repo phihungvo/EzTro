@@ -19,6 +19,10 @@ public interface ContractVersionRepository extends JpaRepository<ContractVersion
             Integer contractId, LocalDate asOfDate, LocalDate sameDate);
 
     Optional<ContractVersion>
+            findFirstByContractIdAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqualOrderByVersionNumberDesc(
+                    Integer contractId, LocalDate asOfDate, LocalDate sameDate);
+
+    Optional<ContractVersion>
             findFirstByContractIdAndEffectiveFromLessThanEqualAndEffectiveToIsNullOrderByVersionNumberDesc(
                     Integer contractId, LocalDate asOfDate);
 }

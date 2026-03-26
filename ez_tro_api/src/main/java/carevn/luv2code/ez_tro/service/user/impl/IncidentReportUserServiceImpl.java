@@ -21,6 +21,11 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.service.user.IncidentReportUserService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý báo cáo sự cố (Incident Report) phía người thuê.
+ *
+ * <p>Luồng tạo report gắn theo tenant hiện tại và hợp đồng active.
+ */
 @Service
 @RequiredArgsConstructor
 public class IncidentReportUserServiceImpl implements IncidentReportUserService {
@@ -31,6 +36,13 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
     private final IncidentReportMapper incidentReportMapper;
     private final ContractRepository contractRepository;
 
+    /**
+     * Tạo mới incident report cho user hiện tại.
+     *
+     * @param userId id user
+     * @param request payload tạo report
+     * @return report DTO sau khi tạo
+     */
     @Override
     @Transactional
     public IncidentReportResponse create(Integer userId, IncidentReportRequest request) {
@@ -55,6 +67,12 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
         return incidentReportMapper.toResponse(report);
     }
 
+    /**
+     * Lấy danh sách incident reports của user hiện tại.
+     *
+     * @param userId id user
+     * @return danh sách report DTO
+     */
     @Override
     public List<IncidentReportResponse> getAllByUserId(Integer userId) {
 
@@ -66,6 +84,16 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
         return response.stream().map(incidentReportMapper::toResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Cập nhật incident report theo id.
+     *
+     * <p>Lưu ý: một số validate ownership/trạng thái đang được comment out (TODO).
+     *
+     * @param userId id user
+     * @param reportId id report
+     * @param request payload cập nhật
+     * @return report DTO sau cập nhật
+     */
     @Override
     @Transactional
     public IncidentReportResponse update(Integer userId, Integer reportId, IncidentReportRequest request) {
@@ -97,6 +125,11 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
         return incidentReportMapper.toResponse(report);
     }
 
+    /**
+     * Xóa incident report theo id.
+     *
+     * @param reportId id report
+     */
     @Override
     @Transactional
     public void delete(Integer reportId) {

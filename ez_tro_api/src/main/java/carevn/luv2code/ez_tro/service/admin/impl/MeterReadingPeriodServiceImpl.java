@@ -17,6 +17,12 @@ import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.service.admin.MeterReadingPeriodService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý kỳ ghi chỉ số (meter reading period).
+ *
+ * <p>Kỳ ghi chỉ số thường đi theo trạng thái:
+ * DRAFT -> CONFIRMED -> LOCKED.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -25,12 +31,23 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
     private final MeterReadingPeriodRepository periodRepo;
     private final AuthorizationService authService;
 
+    /**
+     * Lấy danh sách tất cả kỳ ghi chỉ số.
+     *
+     * @return danh sách period entity
+     */
     @Override
     public List<MeterReadingPeriod> findAll() {
         return periodRepo.findAll();
     }
 
     // Tạo kỳ ghi chỉ số mới
+    /**
+     * Tạo mới kỳ ghi chỉ số.
+     *
+     * @param request payload tạo kỳ
+     * @return DTO kỳ sau khi tạo
+     */
     @Override
     public MeterPeriodResponse create(MeterPeriodRequest request) {
         if (periodRepo
@@ -51,6 +68,12 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
     }
 
     // Xác nhận kỳ ghi chỉ số
+    /**
+     * Xác nhận kỳ ghi chỉ số (DRAFT -> CONFIRMED).
+     *
+     * @param periodId id kỳ
+     * @return DTO kỳ sau khi confirm
+     */
     @Override
     public MeterPeriodResponse confirm(Integer periodId) {
         MeterReadingPeriod period = getPeriodOrThrow(periodId);
@@ -63,6 +86,12 @@ public class MeterReadingPeriodServiceImpl implements MeterReadingPeriodService 
     }
 
     // Khóa kỳ ghi chỉ số
+    /**
+     * Khóa kỳ ghi chỉ số (CONFIRMED -> LOCKED).
+     *
+     * @param periodId id kỳ
+     * @return DTO kỳ sau khi lock
+     */
     @Override
     public MeterPeriodResponse lock(Integer periodId) {
         MeterReadingPeriod period = getPeriodOrThrow(periodId);

@@ -11,6 +11,9 @@ import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
 
+/**
+ * Service contract quản lý Tenant phía admin/owner.
+ */
 public interface TenantService {
     TenantResponse create(TenantCreateRequest request);
 

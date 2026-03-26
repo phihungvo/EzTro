@@ -31,6 +31,12 @@ import carevn.luv2code.ez_tro.service.admin.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+/**
+ * Service quản lý User (tài khoản) phía admin.
+ *
+ * <p>Service hỗ trợ tạo/cập nhật user, gán roles và truy vấn danh sách.
+ * Khi tạo user có role OWNER, service sẽ ensure subscription mặc định thông qua {@link SystemConfigService}.
+ */
 @Service
 @Transactional
 public class UserServiceImpl implements UserService {
@@ -82,6 +88,12 @@ public class UserServiceImpl implements UserService {
     //        userRepository.save(user);
     //    }
 
+    /**
+     * Tạo mới user.
+     *
+     * @param request payload tạo user
+     * @return user DTO sau khi tạo
+     */
     @CacheEvict(value = "userPermissions", key = "#request.userName")
     public UserDTO createUser(CreateUserRequest request) {
         if (userRepository.existsByUserName(request.getUserName())) {
@@ -126,6 +138,12 @@ public class UserServiceImpl implements UserService {
         return dto;
     }
 
+    /**
+     * Gán roles cho user (thay thế toàn bộ set roles).
+     *
+     * @param request payload gán role
+     * @return user DTO sau khi gán
+     */
     @CacheEvict(value = "userPermissions", key = "#request.userId")
     public UserDTO assignRoles(AssignRoleRequest request) {
         User user =
@@ -144,6 +162,13 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDTO(updatedUser);
     }
 
+    /**
+     * Cập nhật user theo id (bao gồm roles nếu có).
+     *
+     * @param id id user
+     * @param request payload cập nhật
+     * @return user DTO sau khi cập nhật
+     */
     @CacheEvict(value = "userPermissions", allEntries = true)
     public UserDTO updateUser(Integer id, UserUpdateRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
@@ -188,12 +213,22 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll(pageable).map(this::convertToDTO);
     }
 
+    /**
+     * Lấy danh sách owners (basic info).
+     *
+     * @return danh sách owner basic info DTO
+     */
     @Override
     public List<UserInfoDTO> getAllOwners() {
         List<User> owners = userRepository.findAllOwners();
         return owners.stream().map(userMapper::toBasicInfoDTO).toList();
     }
 
+    /**
+     * Lấy danh sách basic info của tất cả user.
+     *
+     * @return danh sách user basic info DTO
+     */
     @Override
     public List<UserInfoDTO> getAllBasicUserInfo() {
         List<User> users = userRepository.findAll();

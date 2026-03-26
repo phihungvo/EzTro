@@ -10,6 +10,9 @@ import carevn.luv2code.ez_tro.dto.requests.CreateUserRequest;
 import carevn.luv2code.ez_tro.dto.requests.UserUpdateRequest;
 import carevn.luv2code.ez_tro.dto.response.UserInfoDTO;
 
+/**
+ * Service contract quản lý User (tài khoản) phía admin.
+ */
 public interface UserService {
 
     //    User findByUsername(String username);

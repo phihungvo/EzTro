@@ -11,6 +11,9 @@ import carevn.luv2code.ez_tro.enums.PropertyAssetCategory;
 import carevn.luv2code.ez_tro.enums.PropertyAssetCondition;
 import carevn.luv2code.ez_tro.enums.PropertyAssetStatus;
 
+/**
+ * Service contract quản lý tài sản (PropertyAsset) thuộc khu nhà/phòng.
+ */
 public interface PropertyAssetService {
     PropertyAssetResponse create(PropertyAssetRequest request);
 

@@ -10,6 +10,9 @@ import carevn.luv2code.ez_tro.dto.requests.RoomRequest;
 import carevn.luv2code.ez_tro.dto.response.*;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 
+/**
+ * Service contract quản lý phòng (Room) và các context liên quan phục vụ billing.
+ */
 public interface RoomService {
     RoomResponse create(RoomRequest request);
 

@@ -19,6 +19,11 @@ import carevn.luv2code.ez_tro.service.admin.PropertyAssetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý tài sản (Property Asset) thuộc khu nhà trọ/phòng.
+ *
+ * <p>Controller hỗ trợ CRUD tài sản, truy vấn theo phòng và filter phân trang.
+ */
 @RestController
 @RequestMapping("/api/property-assets")
 @RequiredArgsConstructor
@@ -26,6 +31,12 @@ public class PropertyAssetController {
 
     private final PropertyAssetService propertyAssetService;
 
+    /**
+     * Tạo mới tài sản.
+     *
+     * @param request payload tạo tài sản
+     * @return response chứa tài sản vừa tạo
+     */
     @PostMapping
     public ApiResponse<PropertyAssetResponse> create(@Valid @RequestBody PropertyAssetRequest request) {
         return ApiResponse.<PropertyAssetResponse>builder()
@@ -35,6 +46,13 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Cập nhật tài sản theo id.
+     *
+     * @param id id tài sản
+     * @param request payload cập nhật
+     * @return response chứa tài sản sau khi cập nhật
+     */
     @PutMapping("/{id}")
     public ApiResponse<PropertyAssetResponse> update(
             @PathVariable Integer id, @Valid @RequestBody PropertyAssetRequest request) {
@@ -45,6 +63,12 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Xóa tài sản theo id.
+     *
+     * @param id id tài sản
+     * @return response không có payload
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Integer id) {
         propertyAssetService.delete(id);
@@ -54,6 +78,12 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Lấy chi tiết tài sản theo id.
+     *
+     * @param id id tài sản
+     * @return response chứa tài sản
+     */
     @GetMapping("/{id}")
     public ApiResponse<PropertyAssetResponse> getById(@PathVariable Integer id) {
         return ApiResponse.<PropertyAssetResponse>builder()
@@ -63,6 +93,11 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tài sản theo role hiện tại (admin/owner).
+     *
+     * @return response chứa danh sách tài sản
+     */
     @GetMapping
     public ApiResponse<List<PropertyAssetResponse>> getAll() {
         return ApiResponse.<List<PropertyAssetResponse>>builder()
@@ -72,6 +107,12 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tài sản theo phòng.
+     *
+     * @param roomId id phòng
+     * @return response chứa danh sách tài sản
+     */
     @GetMapping("/room/{roomId}")
     public ApiResponse<List<PropertyAssetResponse>> getByRoomId(@PathVariable Integer roomId) {
         return ApiResponse.<List<PropertyAssetResponse>>builder()
@@ -81,6 +122,20 @@ public class PropertyAssetController {
                 .build();
     }
 
+    /**
+     * Lọc tài sản theo nhiều tiêu chí và trả về phân trang.
+     *
+     * @param search từ khóa tìm kiếm
+     * @param category danh mục tài sản
+     * @param status trạng thái tài sản
+     * @param condition tình trạng tài sản
+     * @param boardingHouseId id khu nhà trọ
+     * @param roomId id phòng
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @param sort sort dạng "field,direction"
+     * @return response chứa kết quả phân trang
+     */
     @GetMapping("/filter")
     public ApiResponse<Page<PropertyAssetResponse>> filter(
             @RequestParam(required = false) String search,

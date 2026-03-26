@@ -17,6 +17,11 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.service.user.BillOwnerService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service lấy hóa đơn (Bill) phía người thuê.
+ *
+ * <p>Service map từ {@code userId -> tenantId} rồi truy vấn hóa đơn theo tenant.
+ */
 @Service("ownerBillService")
 @RequiredArgsConstructor
 public class BillOwnerServiceImpl implements BillOwnerService {
@@ -34,6 +39,12 @@ public class BillOwnerServiceImpl implements BillOwnerService {
     private final BillMapper billMapper;
     private final TenantRepository tenantRepository;
 
+    /**
+     * Lấy danh sách hóa đơn theo userId (thông qua tenant).
+     *
+     * @param userId id user
+     * @return danh sách bill DTO
+     */
     @Override
     public List<BillResponse> getBillsByUserId(Integer userId) {
         Tenant tenant = tenantRepository
@@ -46,6 +57,13 @@ public class BillOwnerServiceImpl implements BillOwnerService {
         return bills.stream().map(billMapper::toResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Lấy hóa đơn phân trang theo userId.
+     *
+     * @param userId id user
+     * @param pageable phân trang
+     * @return page bill DTO
+     */
     @Override
     public Page<BillResponse> getBillsByCurrentUser(Integer userId, Pageable pageable) {
         Page<Bill> bills = billRepository.findByTenant_User_Id(userId, pageable);

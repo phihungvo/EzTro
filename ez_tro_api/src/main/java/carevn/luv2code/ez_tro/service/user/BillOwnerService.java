@@ -7,6 +7,9 @@ import org.springframework.data.domain.Pageable;
 
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 
+/**
+ * Service contract truy vấn hóa đơn phía người thuê.
+ */
 public interface BillOwnerService {
     List<BillResponse> getBillsByUserId(Integer userId);
 

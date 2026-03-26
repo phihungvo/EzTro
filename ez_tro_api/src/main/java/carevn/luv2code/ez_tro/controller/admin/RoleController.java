@@ -16,24 +16,53 @@ import carevn.luv2code.ez_tro.service.admin.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý Role và gán Permission cho Role.
+ *
+ * <p>Controller cung cấp:
+ * <ul>
+ *   <li>Tạo role, cập nhật role.</li>
+ *   <li>Gán permissions cho role.</li>
+ *   <li>Lấy danh sách role (có/không phân trang).</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/roles")
 @RequiredArgsConstructor
 public class RoleController {
     private final RoleService roleService;
 
+    /**
+     * Tạo mới role.
+     *
+     * @param request payload tạo role
+     * @return role vừa tạo
+     */
     @PostMapping
     public ResponseEntity<RoleDTO> createRole(@Valid @RequestBody CreateRoleRequest request) {
         RoleDTO createdRole = roleService.createRole(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
 
+    /**
+     * Gán danh sách permission cho role.
+     *
+     * @param request payload gán permission
+     * @return role sau khi gán
+     */
     @PostMapping("/assign-permissions")
     public ResponseEntity<RoleDTO> assignPermissions(@Valid @RequestBody AssignPermissionRequest request) {
         RoleDTO role = roleService.assignPermissions(request);
         return ResponseEntity.ok(role);
     }
 
+    /**
+     * Cập nhật role theo id.
+     *
+     * @param id id role
+     * @param request payload cập nhật
+     * @return response chứa role sau cập nhật
+     */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<RoleDTO>> updateRole(
             @PathVariable Integer id, @RequestBody UpdateRoleRequest request) {
@@ -45,6 +74,13 @@ public class RoleController {
                 .build());
     }
 
+    /**
+     * Lấy danh sách role phân trang.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return danh sách role phân trang
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<RoleDTO>>> getAllRoles(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
@@ -54,6 +90,11 @@ public class RoleController {
                 .build());
     }
 
+    /**
+     * Lấy danh sách role không phân trang.
+     *
+     * @return danh sách role
+     */
     @GetMapping("/noPaging")
     public ResponseEntity<ApiResponse<List<RoleDTO>>> getAllRolesNoPaging() {
         return ResponseEntity.ok(ApiResponse.<List<RoleDTO>>builder()

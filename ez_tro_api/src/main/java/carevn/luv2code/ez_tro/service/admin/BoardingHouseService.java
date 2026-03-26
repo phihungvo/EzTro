@@ -8,6 +8,9 @@ import org.springframework.data.domain.Pageable;
 import carevn.luv2code.ez_tro.dto.requests.BoardingHouseRequest;
 import carevn.luv2code.ez_tro.dto.response.BoardingHouseResponse;
 
+/**
+ * Service contract cho nghiệp vụ Khu nhà trọ (BoardingHouse) phía admin/owner.
+ */
 public interface BoardingHouseService {
     BoardingHouseResponse create(BoardingHouseRequest request);
 

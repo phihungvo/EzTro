@@ -2,6 +2,9 @@ package carevn.luv2code.ez_tro.service.admin;
 
 import java.util.List;
 
+/**
+ * Service contract quản lý cron/quartz jobs và các batch job định kỳ.
+ */
 public interface CronJobService {
     void scheduleJob(String jobId, String cronExpression, Runnable task);
 

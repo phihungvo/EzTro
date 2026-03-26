@@ -8,6 +8,9 @@ import carevn.luv2code.ez_tro.dto.response.SystemConfigResponse;
 import carevn.luv2code.ez_tro.entity.SubscriptionPlan;
 import carevn.luv2code.ez_tro.entity.User;
 
+/**
+ * Service contract quản lý SystemConfig và helper cho subscription plan mặc định.
+ */
 public interface SystemConfigService {
 
     String DEFAULT_PLAN_ID = "default_plan_id";

@@ -7,6 +7,9 @@ import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
 
+/**
+ * Service contract dựng snapshot hợp đồng và resolve version theo timeline.
+ */
 public interface ContractSnapshotService {
     ContractVersion resolveEffectiveVersionEntity(Contract contract, LocalDate asOfDate);
 

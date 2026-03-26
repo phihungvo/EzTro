@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.Contract;
+import carevn.luv2code.ez_tro.enums.BillStatus;
 
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecificationExecutor<Bill> {
@@ -27,6 +28,12 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     Page<Bill> findByTenant_User_Id(Integer userId, Pageable pageable);
 
     Optional<Bill> findTopByContractOrderByCreatedAtDesc(Contract contract);
+
+    boolean existsByGenerationKey(String generationKey);
+
+    Optional<Bill> findByGenerationKey(String generationKey);
+
+    List<Bill> findByStatusNotAndDueDateBefore(BillStatus status, LocalDate dueDate);
 
     // Kiểm tra tồn tại bill trong tháng/năm chỉ định
     //    @Query("SELECT COUNT(b) > 0 FROM Bill b " + "WHERE b.room.id = :roomId "
