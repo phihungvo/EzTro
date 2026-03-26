@@ -23,6 +23,11 @@ import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.service.admin.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý subscription của owner (UserSubscription).
+ *
+ * <p>Hỗ trợ gán plan cho owner, override giới hạn và xem giới hạn hiện tại kèm current usage.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserSubscriptionServiceImpl implements UserSubscriptionService {
@@ -40,6 +45,14 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
 
     // ========== ASSIGN SUBSCRIPTION ==========
 
+    /**
+     * Gán subscription plan cho owner.
+     *
+     * <p>Luồng hiện tại sẽ hủy (CANCELLED) gói ACTIVE cũ nếu có.
+     *
+     * @param request payload gán subscription
+     * @return subscription DTO sau khi gán
+     */
     @Transactional
     @Override
     public UserSubscriptionDTO assignSubscription(AssignSubscriptionRequest request) {
@@ -76,6 +89,13 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
 
     // ========== OVERRIDE LIMITS ==========
 
+    /**
+     * Override giới hạn cho subscription.
+     *
+     * @param subscriptionId id subscription
+     * @param request payload override limits
+     * @return subscription DTO sau khi override
+     */
     @Transactional
     @Override
     public UserSubscriptionDTO overrideLimits(Long subscriptionId, OverrideLimitsRequest request) {
@@ -95,6 +115,12 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
 
     // ========== GET CURRENT LIMITS (dùng record chung) ==========
 
+    /**
+     * Lấy giới hạn hiện tại của owner kèm current usage theo subscription ACTIVE.
+     *
+     * @param ownerId id owner
+     * @return limits response
+     */
     @Transactional(readOnly = true)
     @Override
     public OwnerLimitsResponse getCurrentLimits(Integer ownerId) {

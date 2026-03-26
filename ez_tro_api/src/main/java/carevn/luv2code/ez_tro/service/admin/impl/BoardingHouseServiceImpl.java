@@ -24,6 +24,17 @@ import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import carevn.luv2code.ez_tro.specification.BoardingHouseSpecs;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ Khu nhà trọ (BoardingHouse) phía admin/owner.
+ *
+ * <p>Chịu trách nhiệm CRUD khu nhà trọ và kiểm soát quyền truy cập:
+ * <ul>
+ *   <li>Owner chỉ thao tác trên dữ liệu của mình.</li>
+ *   <li>Admin có thể thao tác/ủy quyền owner thông qua ownerId trong request.</li>
+ * </ul>
+ *
+ * <p>Ngoài ra, khi tạo khu nhà trọ sẽ đảm bảo owner có subscription mặc định và kiểm tra quota tạo mới.
+ */
 @Service
 @RequiredArgsConstructor
 public class BoardingHouseServiceImpl implements BoardingHouseService {
@@ -34,6 +45,12 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
     private final ResourceLimitServiceImpl resourceLimitService;
     private final SystemConfigService systemConfigService;
 
+    /**
+     * Tạo mới khu nhà trọ.
+     *
+     * @param request payload tạo khu nhà trọ
+     * @return DTO khu nhà trọ sau khi tạo
+     */
     @Override
     public BoardingHouseResponse create(BoardingHouseRequest request) {
         User currentUser = SecurityUtils.getCurrentUser();
@@ -52,6 +69,13 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         return boardingHouseMapper.toResponse(house);
     }
 
+    /**
+     * Cập nhật khu nhà trọ theo id.
+     *
+     * @param id id khu nhà trọ
+     * @param request payload cập nhật
+     * @return DTO khu nhà trọ sau khi cập nhật
+     */
     @Override
     public BoardingHouseResponse update(Integer id, BoardingHouseRequest request) {
         BoardingHouse house = boardingHouseRepository
@@ -73,6 +97,13 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         return boardingHouseMapper.toResponse(house);
     }
 
+    /**
+     * Xóa khu nhà trọ theo id.
+     *
+     * <p>Chặn xóa nếu khu nhà trọ còn dữ liệu phụ thuộc (buildings/utilities/rooms).
+     *
+     * @param id id khu nhà trọ
+     */
     @Override
     public void delete(Integer id) {
         BoardingHouse house = boardingHouseRepository
@@ -87,6 +118,12 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         boardingHouseRepository.delete(house);
     }
 
+    /**
+     * Lấy khu nhà trọ theo id.
+     *
+     * @param id id khu nhà trọ
+     * @return DTO khu nhà trọ
+     */
     @Override
     public BoardingHouseResponse getById(Integer id) {
         BoardingHouse house = boardingHouseRepository
@@ -96,6 +133,11 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         return boardingHouseMapper.toResponse(house);
     }
 
+    /**
+     * Lấy danh sách tất cả khu nhà trọ (không phân quyền).
+     *
+     * @return danh sách DTO khu nhà trọ
+     */
     @Override
     public List<BoardingHouseResponse> getAll() {
         return boardingHouseRepository.findAll().stream()
@@ -103,11 +145,22 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách khu nhà trọ theo role hiện tại (admin/owner).
+     *
+     * @return danh sách DTO khu nhà trọ
+     */
     @Override
     public List<BoardingHouseResponse> getAllByRole() {
         return getAllPagedByRole(Pageable.unpaged()).getContent();
     }
 
+    /**
+     * Lấy danh sách khu nhà trọ phân trang theo role hiện tại.
+     *
+     * @param pageable tham số phân trang/sort
+     * @return page DTO khu nhà trọ
+     */
     @Override
     public Page<BoardingHouseResponse> getAllPagedByRole(Pageable pageable) {
         User user = SecurityUtils.getCurrentUser();
@@ -122,11 +175,23 @@ public class BoardingHouseServiceImpl implements BoardingHouseService {
         return boardingHouseRepository.findAll(spec, pageable).map(boardingHouseMapper::toResponse);
     }
 
+    /**
+     * Alias: lấy danh sách khu nhà trọ cho owner hiện tại.
+     *
+     * @return danh sách DTO khu nhà trọ
+     */
     @Override
     public List<BoardingHouseResponse> getAllForOwner() {
         return getAllPagedByRole(Pageable.unpaged()).getContent();
     }
 
+    /**
+     * Lấy danh sách khu nhà trọ phân trang theo page/size.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page DTO khu nhà trọ
+     */
     @Override
     public Page<BoardingHouseResponse> getAllBoardingHousesPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);

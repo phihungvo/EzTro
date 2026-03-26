@@ -5,6 +5,9 @@ import java.util.List;
 import carevn.luv2code.ez_tro.dto.requests.IncidentReportRequest;
 import carevn.luv2code.ez_tro.dto.response.IncidentReportResponse;
 
+/**
+ * Service contract quản lý báo cáo sự cố phía người thuê.
+ */
 public interface IncidentReportUserService {
     IncidentReportResponse create(Integer userId, IncidentReportRequest request);
 

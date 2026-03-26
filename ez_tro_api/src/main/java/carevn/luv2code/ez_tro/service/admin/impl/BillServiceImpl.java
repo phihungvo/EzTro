@@ -38,6 +38,16 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ Hóa đơn (Bill) phía admin/owner.
+ *
+ * <p>Trách nhiệm chính:
+ * <ul>
+ *   <li>Tạo hóa đơn cho hợp đồng theo kỳ (dựa trên snapshot hợp đồng tại dueDate).</li>
+ *   <li>Tính toán tổng tiền từ tiền thuê + phí dịch vụ + phát sinh - giảm giá.</li>
+ *   <li>Hỗ trợ truy vấn/lọc hóa đơn theo quyền (admin thấy tất cả, owner chỉ thấy của mình).</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class BillServiceImpl implements BillService {
@@ -50,6 +60,19 @@ public class BillServiceImpl implements BillService {
     private final NotificationService notificationService;
     private final ContractSnapshotService contractSnapshotService;
 
+    /**
+     * Tạo hóa đơn mới cho hợp đồng.
+     *
+     * <p>Rule chính:
+     * <ul>
+     *   <li>Chỉ owner của khu nhà hoặc admin mới được tạo.</li>
+     *   <li>Chặn tạo trùng bill cho cùng phòng trong cùng tháng/năm của dueDate.</li>
+     *   <li>Giá thuê ưu tiên lấy từ {@link ContractSnapshotService#getSnapshot(Integer, LocalDate)} tại dueDate.</li>
+     * </ul>
+     *
+     * @param request payload tạo bill
+     * @return bill DTO sau khi tạo
+     */
     @Override
     public BillResponse create(BillRequest request) {
         Contract contract = contractRepository
@@ -151,6 +174,15 @@ public class BillServiceImpl implements BillService {
         return sections.isEmpty() ? null : String.join("\n\n", sections);
     }
 
+    /**
+     * Cập nhật bill theo id.
+     *
+     * <p>Lưu ý: hiện tại method này đang là placeholder (chưa cập nhật các field business như amount/status...).
+     *
+     * @param id id bill
+     * @param request payload cập nhật
+     * @return bill DTO sau khi cập nhật
+     */
     @Override
     public BillResponse update(Integer id, BillRequest request) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
@@ -163,18 +195,34 @@ public class BillServiceImpl implements BillService {
         return billMapper.toResponse(bill);
     }
 
+    /**
+     * Xóa bill theo id.
+     *
+     * @param id id bill
+     */
     @Override
     public void delete(Integer id) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
         billRepository.delete(bill);
     }
 
+    /**
+     * Lấy bill theo id.
+     *
+     * @param id id bill
+     * @return bill DTO
+     */
     @Override
     public BillResponse getById(Integer id) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
         return billMapper.toResponse(bill);
     }
 
+    /**
+     * Lấy tất cả bill (không phân trang).
+     *
+     * @return danh sách bill DTO
+     */
     @Override
     public List<BillResponse> getAll() {
         return billRepository.findAll().stream().map(billMapper::toResponse).toList();

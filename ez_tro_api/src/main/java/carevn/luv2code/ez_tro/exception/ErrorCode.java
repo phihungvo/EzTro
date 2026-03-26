@@ -144,6 +144,19 @@ public enum ErrorCode {
             1104, "Contract lifecycle operation is not allowed for the current contract state", HttpStatus.BAD_REQUEST),
     CONTRACT_OPERATION_ALREADY_PROCESSING(
             1105, "A contract operation with this idempotency key is still processing", HttpStatus.CONFLICT),
+    CONTRACT_EFFECTIVE_OUT_OF_RANGE(1110, "Effective dates must be within contract lifecycle", HttpStatus.BAD_REQUEST),
+    CONTRACT_AMENDMENT_DATA_INVALID(1111, "Contract amendment data is invalid", HttpStatus.BAD_REQUEST),
+    CONTRACT_AMENDMENT_CONFLICT(1112, "Contract amendment conflicts with existing amendments", HttpStatus.CONFLICT),
+    CONTRACT_BILLING_RULE_CONFLICT(1113, "Contract billing rule conflicts with existing rules", HttpStatus.CONFLICT),
+    DEPOSIT_TRANSACTION_REFERENCE_REQUIRED(
+            1114, "Deposit transaction requires a reason/reference", HttpStatus.BAD_REQUEST),
+    DEPOSIT_TRANSACTION_INSUFFICIENT_BALANCE(
+            1115, "Deposit balance is not enough for this transaction", HttpStatus.BAD_REQUEST),
+
+    PAYMENT_NOT_FOUND(1106, "Payment not found", HttpStatus.NOT_FOUND),
+    PAYMENT_ALREADY_EXISTS(1107, "Payment already exists", HttpStatus.CONFLICT),
+    PAYMENT_INVALID_STATE(1108, "Payment state is invalid for this operation", HttpStatus.BAD_REQUEST),
+    PAYMENT_ALLOCATION_INVALID(1109, "Payment allocation is invalid", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

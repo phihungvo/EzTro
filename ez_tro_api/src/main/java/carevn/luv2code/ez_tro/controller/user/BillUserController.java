@@ -13,6 +13,11 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.user.BillOwnerService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller hóa đơn (Bill) phía người thuê.
+ *
+ * <p>Các endpoint ở đây mặc định lấy {@code userId} từ {@link SecurityUtils} và chỉ trả về dữ liệu của chính user đó.
+ */
 @RestController
 @RequestMapping("/api/user/bills")
 @RequiredArgsConstructor
@@ -20,6 +25,11 @@ public class BillUserController {
 
     private final BillOwnerService billService;
 
+    /**
+     * Lấy danh sách hóa đơn của user hiện tại (không phân trang).
+     *
+     * @return response chứa danh sách hóa đơn
+     */
     @GetMapping
     public ApiResponse<List<BillResponse>> getMyBills() {
         Integer userId = SecurityUtils.getCurrentUserId();
@@ -31,6 +41,13 @@ public class BillUserController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách hóa đơn của user hiện tại (phân trang).
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa page hóa đơn
+     */
     @GetMapping("/paged")
     public ApiResponse<Page<BillResponse>> getUserBills(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {

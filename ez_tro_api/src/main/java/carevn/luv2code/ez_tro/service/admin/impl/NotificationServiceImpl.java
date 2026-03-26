@@ -30,6 +30,16 @@ import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.specification.NotificationSpecs;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ thông báo (Notification).
+ *
+ * <p>Hỗ trợ:
+ * <ul>
+ *   <li>Gửi thông báo cá nhân hoặc broadcast.</li>
+ *   <li>Gửi real-time qua WebSocket (STOMP) bằng {@link SimpMessagingTemplate}.</li>
+ *   <li>Truy vấn danh sách thông báo theo quyền (admin/owner/tenant) và thao tác unread/read.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -42,6 +52,15 @@ public class NotificationServiceImpl implements NotificationService {
     private final BillRepository billRepository;
     private final Gson gson = new Gson();
 
+    /**
+     * Gửi thông báo cá nhân cho một user.
+     *
+     * @param userId id người nhận
+     * @param title tiêu đề
+     * @param message nội dung
+     * @param type type/key sự kiện
+     * @param data payload kèm theo (sẽ được serialize JSON)
+     */
     @Override
     public void sendToUser(Integer userId, String title, String message, String type, Object data) {
         User recipient = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -62,6 +81,14 @@ public class NotificationServiceImpl implements NotificationService {
                 userId.toString(), "/queue/notifications", notificationMapper.toResponse(noti));
     }
 
+    /**
+     * Gửi thông báo broadcast tới toàn hệ thống.
+     *
+     * @param title tiêu đề
+     * @param message nội dung
+     * @param type type/key sự kiện
+     * @param data payload kèm theo (sẽ được serialize JSON)
+     */
     @Override
     public void sendToAll(String title, String message, String type, Object data) {
         Notification noti = Notification.builder()
@@ -80,6 +107,15 @@ public class NotificationServiceImpl implements NotificationService {
         messagingTemplate.convertAndSend("/topic/notifications", notificationMapper.toResponse(noti));
     }
 
+    /**
+     * Gửi thông báo tới tất cả tenant đang active thuộc một owner.
+     *
+     * @param ownerId id owner
+     * @param title tiêu đề
+     * @param message nội dung
+     * @param type type/key sự kiện
+     * @param data payload kèm theo
+     */
     @Override
     public void sendToAllTenantsOfOwner(Integer ownerId, String title, String message, String type, Object data) {
         List<User> tenants = userRepository.findActiveTenantsByOwnerId(ownerId);
@@ -91,6 +127,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     // Gọi khi tạo hóa đơn hoặc gần đến hạn
+    /**
+     * Gửi nhắc thanh toán hóa đơn theo billId.
+     *
+     * @param billId id bill
+     */
     @Override
     public void sendBillReminder(Integer billId) {
         Bill bill = billRepository.findById(billId).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
@@ -155,6 +196,11 @@ public class NotificationServiceImpl implements NotificationService {
         return page.map(notificationMapper::toResponse);
     }
 
+    /**
+     * Đếm số notification chưa đọc theo user hiện tại (lọc theo quyền hiển thị).
+     *
+     * @return unread count
+     */
     @Override
     public long countUnread() {
         User user = SecurityUtils.getCurrentUser();
@@ -169,6 +215,11 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepo.count(spec);
     }
 
+    /**
+     * Đánh dấu một notification là đã đọc.
+     *
+     * @param notificationId id notification
+     */
     @Override
     public void markAsRead(Integer notificationId) {
         Notification noti = notificationRepo
@@ -188,6 +239,9 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepo.save(noti);
     }
 
+    /**
+     * Đánh dấu tất cả notification có thể nhìn thấy của user hiện tại là đã đọc.
+     */
     @Override
     public void markAllAsRead() {
         User currentUser = SecurityUtils.getCurrentUserOrThrow();

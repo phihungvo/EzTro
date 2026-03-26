@@ -23,6 +23,11 @@ import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.DepositTransactionSummaryResponse;
 
+/**
+ * Service contract cho nghiệp vụ Hợp đồng (Contract) phía admin/owner.
+ *
+ * <p>Chi tiết rule/versioning/settlement nằm ở implementation.
+ */
 public interface ContractService {
     ContractResponse create(ContractRequest request);
 

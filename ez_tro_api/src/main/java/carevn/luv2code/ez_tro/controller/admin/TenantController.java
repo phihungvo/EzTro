@@ -18,6 +18,11 @@ import carevn.luv2code.ez_tro.service.admin.TenantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý người thuê (Tenant) phía admin/owner.
+ *
+ * <p>Controller cung cấp CRUD tenant, lấy chi tiết (bao gồm hợp đồng), và filter/phân trang.
+ */
 @RestController
 @RequestMapping("/api/tenants")
 @RequiredArgsConstructor
@@ -25,6 +30,12 @@ public class TenantController {
 
     private final TenantService tenantService;
 
+    /**
+     * Tạo mới tenant.
+     *
+     * @param request payload tạo tenant
+     * @return response chứa tenant vừa tạo
+     */
     @PostMapping
     public ApiResponse<TenantResponse> create(@Valid @RequestBody TenantCreateRequest request) {
         TenantResponse response = tenantService.create(request);
@@ -35,6 +46,13 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Cập nhật tenant theo id.
+     *
+     * @param id id tenant
+     * @param request payload cập nhật tenant
+     * @return response chứa tenant sau cập nhật
+     */
     @PutMapping("/{id}")
     public ApiResponse<TenantResponse> update(
             @PathVariable Integer id, @Valid @RequestBody TenantUpdateRequest request) {
@@ -46,6 +64,12 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Xóa tenant theo id.
+     *
+     * @param id id tenant
+     * @return response không có payload
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Integer id) {
         tenantService.delete(id);
@@ -55,6 +79,12 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Lấy chi tiết tenant (kèm contracts nếu có).
+     *
+     * @param id id tenant
+     * @return response chứa tenant detail
+     */
     @GetMapping("/{id}")
     public ApiResponse<TenantDetailResponse> getTenantDetail(@PathVariable Integer id) {
         TenantDetailResponse response = tenantService.getTenantDetail(id);
@@ -65,6 +95,12 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Lấy thông tin thuê hiện tại của tenant (hợp đồng/phòng hiện tại nếu có).
+     *
+     * @param id id tenant
+     * @return response chứa thông tin thuê hiện tại
+     */
     @GetMapping("/{id}/current-rental")
     public ApiResponse<CurrentRentalInfoResponse> getCurrentRentalInfo(@PathVariable Integer id) {
         CurrentRentalInfoResponse response = tenantService.getCurrentRentalInfo(id);
@@ -75,6 +111,11 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tenant.
+     *
+     * @return response chứa danh sách tenant
+     */
     @GetMapping
     public ApiResponse<List<TenantResponse>> getAll() {
         List<TenantResponse> responses = tenantService.getAll();
@@ -85,12 +126,31 @@ public class TenantController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tenant phân trang.
+     *
+     * @param pageable tham số phân trang/sort
+     * @return danh sách tenant phân trang
+     */
     @GetMapping("/paged")
     public ResponseEntity<Page<TenantResponse>> getAllTenantsPaged(Pageable pageable) {
         Page<TenantResponse> tenants = tenantService.getAllTenantsPaged(pageable);
         return ResponseEntity.ok(tenants);
     }
 
+    /**
+     * Lọc tenant theo nhiều tiêu chí (từ khóa, giới tính, nghề nghiệp, ngày sinh, có hợp đồng active...).
+     *
+     * @param search từ khóa tìm kiếm
+     * @param startDate ngày bắt đầu (yyyy-MM-dd) - tùy nghiệp vụ
+     * @param endDate ngày kết thúc (yyyy-MM-dd) - tùy nghiệp vụ
+     * @param gender giới tính
+     * @param occupation nghề nghiệp
+     * @param hasActiveContract lọc tenant có hợp đồng active hay không
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return danh sách tenant phân trang
+     */
     @GetMapping("/filter")
     public ResponseEntity<Page<TenantResponse>> filterTenants(
             @RequestParam(required = false) String search,

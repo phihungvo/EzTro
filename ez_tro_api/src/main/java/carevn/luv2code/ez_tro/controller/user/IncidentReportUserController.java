@@ -12,6 +12,11 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.user.IncidentReportUserService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller báo cáo sự cố (Incident Report) phía người thuê.
+ *
+ * <p>User chỉ thao tác trên dữ liệu của chính mình (lấy {@code userId} từ {@link SecurityUtils}).
+ */
 @RestController
 @RequestMapping("/api/user/incident-reports")
 @RequiredArgsConstructor
@@ -19,6 +24,11 @@ public class IncidentReportUserController {
 
     private final IncidentReportUserService incidentReportService;
 
+    /**
+     * Lấy danh sách báo cáo sự cố của user hiện tại.
+     *
+     * @return response chứa danh sách report
+     */
     @GetMapping
     public ApiResponse<List<IncidentReportResponse>> getMyBills() {
         Integer userId = SecurityUtils.getCurrentUserId();
@@ -30,6 +40,12 @@ public class IncidentReportUserController {
                 .build();
     }
 
+    /**
+     * Tạo mới báo cáo sự cố cho user hiện tại (gắn theo hợp đồng active nếu có).
+     *
+     * @param request payload tạo report
+     * @return response chứa report vừa tạo
+     */
     @PostMapping
     public ApiResponse<IncidentReportResponse> create(@RequestBody IncidentReportRequest request) {
         Integer userId = SecurityUtils.getCurrentUserId();
@@ -40,6 +56,13 @@ public class IncidentReportUserController {
                 .build();
     }
 
+    /**
+     * Cập nhật báo cáo sự cố theo id.
+     *
+     * @param id id report
+     * @param request payload cập nhật report
+     * @return response chứa report sau cập nhật
+     */
     @PutMapping("/{id}")
     public ApiResponse<IncidentReportResponse> update(
             @PathVariable("id") Integer id, @RequestBody IncidentReportRequest request) {
@@ -54,6 +77,12 @@ public class IncidentReportUserController {
                 .build();
     }
 
+    /**
+     * Xóa báo cáo sự cố theo id.
+     *
+     * @param id id report
+     * @return response không có payload
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") Integer id) {
         incidentReportService.delete(id);

@@ -15,6 +15,11 @@ import carevn.luv2code.ez_tro.repository.SubscriptionPlanRepository;
 import carevn.luv2code.ez_tro.service.admin.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý SubscriptionPlan.
+ *
+ * <p>Plan có thể bị "delete" bằng cách set {@code isActive=false} (soft delete).
+ */
 @Service
 @RequiredArgsConstructor
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
@@ -22,6 +27,12 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     private final SubscriptionPlanRepository planRepository;
     private final SubscriptionPlanMapper planMapper;
 
+    /**
+     * Tạo mới subscription plan.
+     *
+     * @param request payload tạo plan
+     * @return plan DTO sau khi tạo
+     */
     @Override
     @Transactional
     public SubscriptionPlanDTO create(SubscriptionPlanCreateRequest request) {
@@ -35,6 +46,11 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         return planMapper.toDTO(plan);
     }
 
+    /**
+     * Lấy danh sách subscription plan đang active.
+     *
+     * @return danh sách plan DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<SubscriptionPlanDTO> getAllActive() {
@@ -44,6 +60,12 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
                 .toList();
     }
 
+    /**
+     * Lấy subscription plan theo id.
+     *
+     * @param id id plan
+     * @return plan DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public SubscriptionPlanDTO getById(Integer id) {
@@ -52,6 +74,13 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         return planMapper.toDTO(plan);
     }
 
+    /**
+     * Cập nhật subscription plan.
+     *
+     * @param id id plan
+     * @param request payload cập nhật
+     * @return plan DTO sau cập nhật
+     */
     @Override
     @Transactional
     public SubscriptionPlanDTO update(Integer id, SubscriptionPlanCreateRequest request) {
@@ -63,6 +92,11 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         return planMapper.toDTO(plan);
     }
 
+    /**
+     * Vô hiệu hóa (soft delete) subscription plan.
+     *
+     * @param id id plan
+     */
     @Override
     @Transactional
     public void delete(Integer id) {

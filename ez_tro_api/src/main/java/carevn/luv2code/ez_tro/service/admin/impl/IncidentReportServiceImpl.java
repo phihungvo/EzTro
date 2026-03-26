@@ -19,6 +19,11 @@ import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.IncidentReportService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ báo cáo sự cố (Incident Report) phía admin/owner.
+ *
+ * <p>Tạo report gắn theo phòng và tự resolve tenant hiện tại (nếu phòng đang có hợp đồng ACTIVE).
+ */
 @Service
 @RequiredArgsConstructor
 public class IncidentReportServiceImpl implements IncidentReportService {
@@ -29,6 +34,12 @@ public class IncidentReportServiceImpl implements IncidentReportService {
     private final IncidentReportMapper incidentReportMapper;
     private final ContractRepository contractRepository;
 
+    /**
+     * Tạo mới báo cáo sự cố.
+     *
+     * @param request payload báo cáo (roomId, title, description...)
+     * @return report DTO sau khi tạo
+     */
     @Override
     @Transactional
     public IncidentReportResponse create(IncidentReportRequest request) {
@@ -53,12 +64,25 @@ public class IncidentReportServiceImpl implements IncidentReportService {
         return incidentReportMapper.toResponse(report);
     }
 
+    /**
+     * Lấy danh sách report phân trang.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page report DTO
+     */
     @Override
     public Page<IncidentReportResponse> getAllPaged(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         return incidentReportRepository.findAll(pageRequest).map(incidentReportMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách report theo phòng.
+     *
+     * @param roomId id phòng
+     * @return danh sách report DTO
+     */
     @Override
     public List<IncidentReportResponse> getByRoom(Integer roomId) {
         return incidentReportRepository.findAllByRoomId(roomId).stream()
@@ -66,6 +90,12 @@ public class IncidentReportServiceImpl implements IncidentReportService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách report theo tenant.
+     *
+     * @param tenantId id tenant
+     * @return danh sách report DTO
+     */
     @Override
     public List<IncidentReportResponse> getByTenant(Integer tenantId) {
         return incidentReportRepository.findAllByTenantId(tenantId).stream()

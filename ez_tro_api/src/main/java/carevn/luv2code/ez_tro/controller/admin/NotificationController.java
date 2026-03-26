@@ -12,6 +12,16 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý thông báo (notifications) cho người dùng.
+ *
+ * <p>Endpoint hỗ trợ:
+ * <ul>
+ *   <li>Lấy danh sách thông báo của user hiện tại (phân trang).</li>
+ *   <li>Đếm unread, đánh dấu đã đọc, đánh dấu tất cả đã đọc.</li>
+ *   <li>Gửi broadcast hoặc gửi tới tenant thuộc owner.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -19,6 +29,13 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
+    /**
+     * Lấy danh sách thông báo của user hiện tại.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa danh sách thông báo phân trang
+     */
     @GetMapping("/me")
     public ApiResponse<Page<NotificationResponse>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
@@ -30,6 +47,11 @@ public class NotificationController {
                 .build();
     }
 
+    /**
+     * Đếm số thông báo chưa đọc của user hiện tại.
+     *
+     * @return response chứa unread count
+     */
     @GetMapping("/unread-count")
     public ApiResponse<Long> countUnread() {
         return ApiResponse.<Long>builder()
@@ -38,12 +60,24 @@ public class NotificationController {
                 .build();
     }
 
+    /**
+     * Đánh dấu một thông báo đã đọc.
+     *
+     * @param id id notification
+     * @return response không có payload
+     */
     @PostMapping("/read/{id}")
     public ApiResponse<Void> markAsRead(@PathVariable Integer id) {
         notificationService.markAsRead(id);
         return ApiResponse.<Void>builder().code(200).message("Đã đọc").build();
     }
 
+    /**
+     * Gửi broadcast notification tới tất cả user.
+     *
+     * @param req payload thông báo
+     * @return response không có payload
+     */
     @PostMapping("/broadcast")
     public ApiResponse<Void> sendBroadcast(@RequestBody SendNotificationRequest req) {
         notificationService.sendToAll(req.getTitle(), req.getMessage(), req.getType(), req.getData());
@@ -53,6 +87,12 @@ public class NotificationController {
                 .build();
     }
 
+    /**
+     * Gửi thông báo tới tất cả tenant thuộc owner hiện tại.
+     *
+     * @param req payload thông báo
+     * @return response không có payload
+     */
     @PostMapping("/tenants")
     public ApiResponse<Void> sendToMyTenants(@RequestBody SendNotificationRequest req) {
         notificationService.sendToAllTenantsOfOwner(
@@ -63,6 +103,11 @@ public class NotificationController {
                 .build();
     }
 
+    /**
+     * Đánh dấu tất cả thông báo của user hiện tại là đã đọc.
+     *
+     * @return response không có payload
+     */
     @PostMapping("/read-all")
     public ApiResponse<Void> markAllAsRead() {
         notificationService.markAllAsRead();

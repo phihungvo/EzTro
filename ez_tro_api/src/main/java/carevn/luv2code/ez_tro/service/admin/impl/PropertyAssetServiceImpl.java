@@ -28,6 +28,14 @@ import carevn.luv2code.ez_tro.service.admin.PropertyAssetService;
 import carevn.luv2code.ez_tro.specification.PropertyAssetSpecs;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý tài sản (PropertyAsset) thuộc khu nhà trọ/phòng.
+ *
+ * <p>Service hỗ trợ CRUD + filter và ghi lịch sử thay đổi tài sản (PropertyAssetHistory):
+ * tạo mới, cập nhật, bàn giao/di chuyển, thanh lý...
+ *
+ * <p>Quyền truy cập: admin hoặc owner của khu nhà trọ liên quan.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -40,6 +48,20 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
     private final RoomRepository roomRepository;
     private final PropertyAssetMapper propertyAssetMapper;
 
+    /**
+     * Tạo mới tài sản.
+     *
+     * <p>Luồng:
+     * <ul>
+     *   <li>Validate uniqueness (assetCode/serialNumber).</li>
+     *   <li>Resolve boarding house/building/room và kiểm tra quyền.</li>
+     *   <li>Tính các field dẫn xuất (status/condition/warranty/maintenance/value...).</li>
+     *   <li>Ghi history khởi tạo.</li>
+     * </ul>
+     *
+     * @param request payload tạo tài sản
+     * @return DTO tài sản sau khi tạo
+     */
     @Override
     public PropertyAssetResponse create(PropertyAssetRequest request) {
         validateCreateUniqueness(request);
@@ -69,6 +91,13 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
         return propertyAssetMapper.toResponse(getEntityOrThrow(asset.getId()));
     }
 
+    /**
+     * Cập nhật tài sản theo id và ghi history thay đổi.
+     *
+     * @param id id tài sản
+     * @param request payload cập nhật
+     * @return DTO tài sản sau khi cập nhật
+     */
     @Override
     public PropertyAssetResponse update(Integer id, PropertyAssetRequest request) {
         PropertyAsset asset = getEntityOrThrow(id);
@@ -99,6 +128,11 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
         return propertyAssetMapper.toResponse(getEntityOrThrow(asset.getId()));
     }
 
+    /**
+     * Soft delete tài sản: đánh dấu isDeleted và set status DISPOSED, đồng thời ghi history.
+     *
+     * @param id id tài sản
+     */
     @Override
     public void delete(Integer id) {
         PropertyAsset asset = getEntityOrThrow(id);
@@ -111,12 +145,23 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
         recordHistory(asset, PropertyAssetAction.DISPOSAL, "Đánh dấu tài sản đã thanh lý/ngừng sử dụng");
     }
 
+    /**
+     * Lấy tài sản theo id.
+     *
+     * @param id id tài sản
+     * @return DTO tài sản
+     */
     @Override
     @Transactional(readOnly = true)
     public PropertyAssetResponse getById(Integer id) {
         return propertyAssetMapper.toResponse(getEntityOrThrow(id));
     }
 
+    /**
+     * Lấy danh sách tài sản theo role hiện tại (admin: tất cả, owner: của mình).
+     *
+     * @return danh sách DTO tài sản
+     */
     @Override
     @Transactional(readOnly = true)
     public List<PropertyAssetResponse> getAllByRole() {
@@ -135,6 +180,12 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách tài sản theo phòng.
+     *
+     * @param roomId id phòng
+     * @return danh sách DTO tài sản
+     */
     @Override
     @Transactional(readOnly = true)
     public List<PropertyAssetResponse> getByRoomId(Integer roomId) {
@@ -146,6 +197,18 @@ public class PropertyAssetServiceImpl implements PropertyAssetService {
                 .toList();
     }
 
+    /**
+     * Lọc tài sản theo nhiều tiêu chí và phân trang.
+     *
+     * @param search từ khóa
+     * @param category danh mục
+     * @param status trạng thái
+     * @param condition tình trạng
+     * @param boardingHouseId id khu nhà trọ
+     * @param roomId id phòng
+     * @param pageable phân trang/sort
+     * @return page tài sản DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<PropertyAssetResponse> filter(

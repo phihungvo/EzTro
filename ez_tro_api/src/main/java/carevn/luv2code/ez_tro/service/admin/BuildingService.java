@@ -8,6 +8,9 @@ import org.springframework.data.domain.Pageable;
 import carevn.luv2code.ez_tro.dto.requests.BuildingRequest;
 import carevn.luv2code.ez_tro.dto.response.BuildingResponse;
 
+/**
+ * Service contract cho nghiệp vụ Tòa nhà (Building) phía admin/owner.
+ */
 public interface BuildingService {
     BuildingResponse create(BuildingRequest request);
 

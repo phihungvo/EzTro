@@ -23,6 +23,18 @@ import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service dựng snapshot của hợp đồng tại một thời điểm.
+ *
+ * <p>Snapshot bao gồm:
+ * <ul>
+ *   <li>Root contract (trạng thái, phòng, tenant...).</li>
+ *   <li>Version điều khoản đang hiệu lực tại {@code asOfDate}.</li>
+ *   <li>Danh sách amendments và billing rules còn hiệu lực.</li>
+ * </ul>
+ *
+ * <p>Service này được các luồng billing/contract sử dụng để đảm bảo tính đúng theo timeline (effectiveFrom/effectiveTo).
+ */
 @Service
 @RequiredArgsConstructor
 public class ContractSnapshotServiceImpl implements ContractSnapshotService {
@@ -32,13 +44,27 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
     private final ContractAmendmentRepository contractAmendmentRepository;
     private final ContractBillingRuleRepository contractBillingRuleRepository;
 
+    /**
+     * Resolve entity {@link ContractVersion} đang hiệu lực tại {@code asOfDate}.
+     *
+     * <p>Thứ tự ưu tiên:
+     * <ul>
+     *   <li>Version có effectiveFrom <= date <= effectiveTo (nếu effectiveTo không null).</li>
+     *   <li>Nếu không có, lấy version có effectiveTo null và effectiveFrom <= date.</li>
+     *   <li>Nếu vẫn không có, fallback version mới nhất theo versionNumber.</li>
+     * </ul>
+     *
+     * @param contract hợp đồng
+     * @param asOfDate ngày muốn tra version (null -> today)
+     * @return version entity đang hiệu lực (có thể null)
+     */
     @Override
     @Transactional(readOnly = true)
     public ContractVersion resolveEffectiveVersionEntity(Contract contract, LocalDate asOfDate) {
         LocalDate effectiveDate = asOfDate == null ? LocalDate.now() : asOfDate;
 
         return contractVersionRepository
-                .findFirstByContractIdAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqual(
+                .findFirstByContractIdAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqualOrderByVersionNumberDesc(
                         contract.getId(), effectiveDate, effectiveDate)
                 .or(() ->
                         contractVersionRepository
@@ -49,6 +75,13 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
                         .orElse(null));
     }
 
+    /**
+     * Lấy version summary đang hiệu lực của hợp đồng tại một thời điểm.
+     *
+     * @param contractId id hợp đồng
+     * @param asOfDate ngày muốn tra version (null -> today)
+     * @return version summary (có thể null)
+     */
     @Override
     @Transactional(readOnly = true)
     public ContractVersionSummaryResponse getCurrentVersion(Integer contractId, LocalDate asOfDate) {
@@ -60,6 +93,13 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
         return toVersionSummary(version);
     }
 
+    /**
+     * Dựng snapshot hợp đồng tại {@code asOfDate}.
+     *
+     * @param contractId id hợp đồng
+     * @param asOfDate ngày muốn dựng snapshot (null -> today)
+     * @return snapshot response
+     */
     @Override
     @Transactional(readOnly = true)
     public ContractSnapshotResponse getSnapshot(Integer contractId, LocalDate asOfDate) {

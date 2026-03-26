@@ -25,6 +25,11 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.RoomUtilityService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý đăng ký tiện ích theo phòng (RoomUtility).
+ *
+ * <p>Service đảm bảo quyền truy cập (admin/owner) và validate utility thuộc đúng boarding house của phòng.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -35,6 +40,12 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
     private final UtilityRepository utilityRepository;
     private final RoomUtilityMapper roomUtilityMapper;
 
+    /**
+     * Tạo mới đăng ký utility cho phòng.
+     *
+     * @param request payload tạo room-utility
+     * @return DTO room-utility sau khi tạo
+     */
     @Override
     public RoomUtilityResponse create(RoomUtilityRequest request) {
         Room room = roomRepository
@@ -63,6 +74,14 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         return roomUtilityMapper.toResponse(roomUtility);
     }
 
+    /**
+     * Cập nhật đăng ký utility theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id utility
+     * @param request payload cập nhật
+     * @return DTO room-utility sau cập nhật
+     */
     @Override
     public RoomUtilityResponse update(Integer roomId, Integer utilityId, RoomUtilityRequest request) {
         validateRequestIdentity(roomId, utilityId, request);
@@ -79,6 +98,12 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         return roomUtilityMapper.toResponse(roomUtility);
     }
 
+    /**
+     * Xóa đăng ký utility theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id utility
+     */
     @Override
     public void delete(Integer roomId, Integer utilityId) {
         RoomUtilityId id = new RoomUtilityId(roomId, utilityId);
@@ -89,6 +114,13 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         roomUtilityRepository.delete(roomUtility);
     }
 
+    /**
+     * Lấy room-utility theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id utility
+     * @return DTO room-utility
+     */
     @Override
     @Transactional(readOnly = true)
     public RoomUtilityResponse getById(Integer roomId, Integer utilityId) {
@@ -100,6 +132,12 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         return roomUtilityMapper.toResponse(roomUtility);
     }
 
+    /**
+     * Lấy danh sách room-utilities theo phòng.
+     *
+     * @param roomId id phòng
+     * @return danh sách DTO room-utilities
+     */
     @Override
     @Transactional(readOnly = true)
     public List<RoomUtilityResponse> getByRoomId(Integer roomId) {
@@ -110,6 +148,12 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách room-utilities active theo phòng.
+     *
+     * @param roomId id phòng
+     * @return danh sách DTO room-utilities active
+     */
     @Override
     @Transactional(readOnly = true)
     public List<RoomUtilityResponse> getActiveByRoomId(Integer roomId) {
@@ -120,6 +164,12 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách room-utilities theo utility.
+     *
+     * @param utilityId id utility
+     * @return danh sách DTO room-utilities
+     */
     @Override
     @Transactional(readOnly = true)
     public List<RoomUtilityResponse> getByUtilityId(Integer utilityId) {
@@ -131,6 +181,14 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách room-utilities theo phòng (phân trang).
+     *
+     * @param roomId id phòng
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page DTO room-utilities
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<RoomUtilityResponse> getByRoomIdPaged(Integer roomId, int page, int size) {
@@ -140,6 +198,13 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
         return roomUtilityRepository.findByRoomIdPaged(roomId, pageable).map(roomUtilityMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách room-utilities phân trang theo role hiện tại.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page DTO room-utilities
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<RoomUtilityResponse> getAllPaged(int page, int size) {

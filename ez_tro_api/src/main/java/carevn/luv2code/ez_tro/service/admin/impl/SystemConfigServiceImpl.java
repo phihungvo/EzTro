@@ -25,6 +25,15 @@ import carevn.luv2code.ez_tro.repository.UserSubscriptionRepository;
 import carevn.luv2code.ez_tro.service.admin.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý cấu hình hệ thống (SystemConfig) và một số helper nghiệp vụ liên quan.
+ *
+ * <p>Ngoài CRUD system config, service này còn cung cấp:
+ * <ul>
+ *   <li>Đọc/ghi default subscription plan dùng cho owner mới.</li>
+ *   <li>Tự động seed {@link UserSubscription} mặc định cho owner nếu chưa có gói active.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
@@ -36,6 +45,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Value("${app.system-config.default-plan-id:}")
     private String defaultPlanIdFromEnv;
 
+    /**
+     * Tạo mới system config.
+     *
+     * @param request payload tạo config
+     * @return config DTO sau khi tạo
+     */
     @Override
     @Transactional
     @CacheEvict(value = "systemConfigs", allEntries = true)
@@ -52,6 +67,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return toResponse(systemConfigRepository.save(config));
     }
 
+    /**
+     * Lấy danh sách system configs (sort theo key).
+     *
+     * @return danh sách config DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<SystemConfigResponse> getAll() {
@@ -60,12 +80,24 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .toList();
     }
 
+    /**
+     * Lấy config theo id.
+     *
+     * @param id id config
+     * @return config DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public SystemConfigResponse getById(Integer id) {
         return toResponse(findConfigById(id));
     }
 
+    /**
+     * Lấy config theo key (có cache).
+     *
+     * @param key key config
+     * @return config DTO
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "systemConfigs", key = "#key")
@@ -73,6 +105,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return toResponse(findConfigByKey(key));
     }
 
+    /**
+     * Cập nhật config theo id.
+     *
+     * @param id id config
+     * @param request payload cập nhật
+     * @return config DTO sau cập nhật
+     */
     @Override
     @Transactional
     @CacheEvict(value = "systemConfigs", allEntries = true)
@@ -90,6 +129,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return toResponse(systemConfigRepository.save(config));
     }
 
+    /**
+     * Xóa config theo id.
+     *
+     * @param id id config
+     */
     @Override
     @Transactional
     @CacheEvict(value = "systemConfigs", allEntries = true)
@@ -97,6 +141,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         systemConfigRepository.delete(findConfigById(id));
     }
 
+    /**
+     * Lấy value theo key, nếu không có trong DB thì fallback từ env (một số key đặc biệt).
+     *
+     * @param key key config
+     * @return value
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "systemConfigs", key = "#key")
@@ -104,6 +154,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return systemConfigRepository.findByKey(key).map(SystemConfig::getValue).orElseGet(() -> fallbackValueFor(key));
     }
 
+    /**
+     * Resolve subscription plan mặc định cho owner mới.
+     *
+     * @return subscription plan (phải active)
+     */
     @Override
     @Transactional(readOnly = true)
     public SubscriptionPlan getDefaultPlan() {
@@ -118,6 +173,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return resolveActivePlan(planId);
     }
 
+    /**
+     * Lấy config default plan kèm metadata của plan hiện tại (phục vụ UI quản trị).
+     *
+     * @return DTO cấu hình default plan
+     */
     @Override
     @Transactional(readOnly = true)
     public DefaultPlanConfigResponse getDefaultPlanConfig() {
@@ -136,6 +196,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .build();
     }
 
+    /**
+     * Set subscription plan mặc định cho owner mới.
+     *
+     * @param planId id plan
+     */
     @Override
     @Transactional
     @CacheEvict(value = "systemConfigs", key = "'" + DEFAULT_PLAN_ID + "'")
@@ -151,6 +216,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         systemConfigRepository.save(config);
     }
 
+    /**
+     * Đảm bảo owner có subscription mặc định (chỉ chạy khi user là OWNER và chưa có gói active).
+     *
+     * @param user user owner
+     */
     @Override
     @Transactional
     public void ensureDefaultSubscriptionForOwner(User user) {

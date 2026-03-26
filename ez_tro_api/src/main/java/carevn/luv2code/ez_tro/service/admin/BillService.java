@@ -7,6 +7,9 @@ import org.springframework.data.domain.Page;
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 
+/**
+ * Service contract cho nghiệp vụ Hóa đơn (Bill) phía admin/owner.
+ */
 public interface BillService {
     BillResponse create(BillRequest request);
 

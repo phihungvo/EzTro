@@ -23,6 +23,12 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.UtilityService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý tiện ích/dịch vụ (Utility) của khu nhà trọ.
+ *
+ * <p>Utility có thể dùng cho meter reading và billing rule. Quyền truy cập dựa theo owner của boarding house,
+ * admin có thể xem tất cả.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -32,6 +38,12 @@ public class UtilityServiceImpl implements UtilityService {
     private final BoardingHouseRepository boardingHouseRepository;
     private final UtilityMapper utilityMapper;
 
+    /**
+     * Tạo mới utility.
+     *
+     * @param request payload tạo utility
+     * @return utility DTO sau khi tạo
+     */
     @Override
     public UtilityResponse create(UtilityRequest request) {
         Utility utility = utilityMapper.toEntity(request);
@@ -46,6 +58,13 @@ public class UtilityServiceImpl implements UtilityService {
         return utilityMapper.toResponse(utility);
     }
 
+    /**
+     * Cập nhật utility theo id.
+     *
+     * @param id id utility
+     * @param request payload cập nhật utility
+     * @return utility DTO sau cập nhật
+     */
     @Override
     public UtilityResponse update(Integer id, UtilityRequest request) {
         Utility utility =
@@ -66,6 +85,11 @@ public class UtilityServiceImpl implements UtilityService {
         return utilityMapper.toResponse(utility);
     }
 
+    /**
+     * Xóa utility theo id.
+     *
+     * @param id id utility
+     */
     @Override
     public void delete(Integer id) {
         Utility utility =
@@ -74,6 +98,12 @@ public class UtilityServiceImpl implements UtilityService {
         utilityRepository.delete(utility);
     }
 
+    /**
+     * Lấy utility theo id.
+     *
+     * @param id id utility
+     * @return utility DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public UtilityResponse getById(Integer id) {
@@ -83,6 +113,11 @@ public class UtilityServiceImpl implements UtilityService {
         return utilityMapper.toResponse(utility);
     }
 
+    /**
+     * Lấy danh sách utilities theo role hiện tại.
+     *
+     * @return danh sách utility DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<UtilityResponse> getAll() {
@@ -94,6 +129,13 @@ public class UtilityServiceImpl implements UtilityService {
         return utilities.stream().map(utilityMapper::toResponse).toList();
     }
 
+    /**
+     * Lấy danh sách utilities phân trang theo role hiện tại.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page utility DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<UtilityResponse> getAllPaged(int page, int size) {
@@ -105,6 +147,12 @@ public class UtilityServiceImpl implements UtilityService {
         return utilities.map(utilityMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách utilities theo khu nhà trọ.
+     *
+     * @param boardingHouseId id khu nhà trọ
+     * @return danh sách utility DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<UtilityResponse> getByBoardingHouse(Integer boardingHouseId) {
@@ -115,6 +163,14 @@ public class UtilityServiceImpl implements UtilityService {
                 .toList();
     }
 
+    /**
+     * Lấy utilities active theo khu nhà trọ (phân trang).
+     *
+     * @param boardingHouseId id khu nhà trọ
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page utility DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<UtilityResponse> getActiveByBoardingHouse(Integer boardingHouseId, int page, int size) {
@@ -126,6 +182,12 @@ public class UtilityServiceImpl implements UtilityService {
                 .map(utilityMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách utilities của khu nhà trọ (alias).
+     *
+     * @param boardingHouseId id khu nhà trọ
+     * @return danh sách utility DTO
+     */
     @Override
     public List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId) {
         BoardingHouse house = getBoardingHouseOrThrow(boardingHouseId);

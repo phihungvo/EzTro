@@ -5,6 +5,9 @@ import carevn.luv2code.ez_tro.dto.requests.AssignSubscriptionRequest;
 import carevn.luv2code.ez_tro.dto.requests.OverrideLimitsRequest;
 import carevn.luv2code.ez_tro.dto.response.OwnerLimitsResponse;
 
+/**
+ * Service contract quản lý UserSubscription (subscription của owner).
+ */
 public interface UserSubscriptionService {
 
     UserSubscriptionDTO assignSubscription(AssignSubscriptionRequest request);

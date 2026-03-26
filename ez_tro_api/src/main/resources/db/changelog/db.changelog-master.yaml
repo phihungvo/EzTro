@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/changeset-7-contract-idempotency.yaml
   - include:
       file: db/changelog/changeset-8-contract-operation-status.yaml
+  - include:
+      file: db/changelog/changeset-9-payment-core.yaml

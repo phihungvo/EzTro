@@ -10,6 +10,9 @@ import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.user.UserDashboardService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service tổng hợp dữ liệu dashboard phía người thuê.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

@@ -43,6 +43,17 @@ import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service xử lý nghiệp vụ người thuê (Tenant) phía admin/owner.
+ *
+ * <p>Trách nhiệm chính:
+ * <ul>
+ *   <li>Tạo tenant kèm tài khoản {@link User} (role USER) và gắn owner hiện tại.</li>
+ *   <li>Cập nhật/xóa tenant.</li>
+ *   <li>Lấy detail tenant và thông tin thuê hiện tại (dựa trên contract ACTIVE + effective date).</li>
+ *   <li>Filter/phân trang theo quyền (admin/owner).</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -58,6 +69,12 @@ public class TenantServiceImpl implements TenantService {
     private final RoleRepository roleRepository;
     private final ContractSnapshotService contractSnapshotService;
 
+    /**
+     * Tạo mới tenant và user account tương ứng.
+     *
+     * @param request payload tạo tenant
+     * @return tenant DTO sau khi tạo
+     */
     @Override
     public TenantResponse create(TenantCreateRequest request) {
         Integer ownerId = SecurityUtils.getCurrentUserId();
@@ -101,6 +118,13 @@ public class TenantServiceImpl implements TenantService {
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Cập nhật tenant theo id (bao gồm cập nhật thông tin user nếu có).
+     *
+     * @param id id tenant
+     * @param request payload cập nhật
+     * @return tenant DTO sau khi cập nhật
+     */
     @Override
     public TenantResponse update(Integer id, TenantUpdateRequest request) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
@@ -140,18 +164,35 @@ public class TenantServiceImpl implements TenantService {
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Xóa tenant theo id.
+     *
+     * @param id id tenant
+     */
     @Override
     public void delete(Integer id) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
         tenantRepository.delete(tenant);
     }
 
+    /**
+     * Lấy tenant theo id.
+     *
+     * @param id id tenant
+     * @return tenant DTO
+     */
     @Override
     public TenantResponse getById(Integer id) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Lấy detail tenant (kèm contracts) và gán trạng thái thuê hiện tại.
+     *
+     * @param id id tenant
+     * @return tenant detail DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public TenantDetailResponse getTenantDetail(Integer id) {
@@ -161,6 +202,12 @@ public class TenantServiceImpl implements TenantService {
         return response;
     }
 
+    /**
+     * Lấy thông tin thuê hiện tại của tenant (contract ACTIVE đang hiệu lực tại today).
+     *
+     * @param id id tenant
+     * @return current rental info
+     */
     @Override
     @Transactional(readOnly = true)
     public CurrentRentalInfoResponse getCurrentRentalInfo(Integer id) {
@@ -216,6 +263,12 @@ public class TenantServiceImpl implements TenantService {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tenant phân trang theo quyền hiện tại.
+     *
+     * @param pageable phân trang/sort
+     * @return page tenant DTO
+     */
     @Override
     public Page<TenantResponse> getAllTenantsPaged(Pageable pageable) {
         SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
@@ -229,11 +282,29 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.findAll(spec, pageable).map(tenantMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách tenant (không phân trang) theo quyền hiện tại.
+     *
+     * @return danh sách tenant DTO
+     */
     @Override
     public List<TenantResponse> getAll() {
         return getAllTenantsPaged(Pageable.unpaged()).getContent();
     }
 
+    /**
+     * Lọc tenant theo nhiều tiêu chí (search/date range/gender/occupation/active contract...) và phân trang.
+     *
+     * @param search từ khóa
+     * @param startDate ngày bắt đầu (yyyy-MM-dd)
+     * @param endDate ngày kết thúc (yyyy-MM-dd)
+     * @param gender giới tính
+     * @param occupation nghề nghiệp
+     * @param hasActiveContract lọc tenant có hợp đồng active
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page tenant DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<TenantResponse> filterTenants(
