@@ -1,7 +1,16 @@
 import styles from "./SummaryPanel.module.scss";
 import { fmt } from "../data.js";
 
-export default function SummaryPanel({ state, computed, roomData, onPublish, onPreview, onShare }) {
+export default function SummaryPanel({
+    state,
+    computed,
+    roomData,
+    preview,
+    previewLoading,
+    onPublish,
+    onPreview,
+    onShare,
+}) {
     const { room, month, year, dueDate } = state;
     const { subtotal, discount, total } = computed;
 
@@ -22,6 +31,15 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
         : "—";
 
     const fixedServiceLines = (state.fixedServices || []).filter((item) => Number(item.totalAmount || 0) > 0);
+
+    const previewRent = preview ? Number(preview.rentAmount || 0) : 0;
+    const previewService = preview ? Number(preview.serviceAmount || 0) : 0;
+    const previewDiscount = preview ? Number(preview.discountAmount || 0) : 0;
+    const previewTotal = preview ? Number(preview.totalAmount || 0) : 0;
+
+    const displaySubtotal = preview ? previewRent + previewService : subtotal;
+    const displayDiscount = preview ? previewDiscount : discount;
+    const displayTotal = preview ? previewTotal : total;
 
     return (
         <aside className={styles.panel}>
@@ -108,13 +126,22 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
 
                         <div className={styles.line_}>
                             <span className={styles.lineSubLabel}>Tạm tính</span>
-                            <span className={styles.lineVal}>{fmt(subtotal)}</span>
+                            <span className={styles.lineVal}>{fmt(displaySubtotal)}</span>
                         </div>
 
-                        {discount > 0 && (
+                        {displayDiscount > 0 && (
                             <div className={styles.line_}>
                                 <span className={`${styles.lineSubLabel} ${styles.discountName}`}>🏷 Giảm giá</span>
-                                <span className={`${styles.lineVal} ${styles.discountVal}`}>−{fmt(discount)}</span>
+                                <span className={`${styles.lineVal} ${styles.discountVal}`}>−{fmt(displayDiscount)}</span>
+                            </div>
+                        )}
+
+                        {preview?.hasMissingMeterReadings && (
+                            <div className={styles.line_}>
+                                <span className={styles.lineSubLabel} style={{ color: "#d48806" }}>
+                                    Chưa có đủ chỉ số điện/nước trong kỳ này.
+                                </span>
+                                <span className={styles.lineVal}></span>
                             </div>
                         )}
                     </div>
@@ -122,7 +149,14 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
                     {/* Total */}
                     <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Tổng cộng</span>
-                        <span className={styles.totalAmount}>{fmt(total)} ₫</span>
+                        <span className={styles.totalAmount}>{fmt(displayTotal)} ₫</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8c8c8c", marginTop: 8 }}>
+                        {previewLoading
+                            ? "Đang tải preview từ server..."
+                            : preview
+                                ? "Preview đã đồng bộ với dữ liệu server."
+                                : "Chưa xem trước (preview chưa được khởi tạo)."}
                     </div>
 
                     {/* Due date */}
@@ -141,13 +175,13 @@ export default function SummaryPanel({ state, computed, roomData, onPublish, onP
 
                 {/* Actions */}
                 <div className={styles.actions}>
-                    <button className={styles.btnPrimary} onClick={onPublish}>
-                        <span className={styles.btnShine} />
-                        ✅ Phát hành hoá đơn
-                    </button>
-                    <button className={styles.btnOutline} onClick={onPreview}>
-                        👁 Xem trước hoá đơn
-                    </button>
+                <button className={styles.btnPrimary} onClick={onPublish}>
+                    <span className={styles.btnShine} />
+                    ✅ Phát hành hoá đơn
+                </button>
+                <button className={styles.btnOutline} onClick={onPreview} disabled={previewLoading}>
+                    {previewLoading ? "Đang nạp preview..." : "👁 Xem trước hoá đơn"}
+                </button>
                     <button className={styles.btnOutline} onClick={onShare}>
                         🔗 Chia sẻ link thanh toán
                     </button>

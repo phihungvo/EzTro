@@ -145,6 +145,10 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/bills`,
         FILTER: `${BASE_URL}/bills/filter`,
     },
+    BILLING: {
+        PREVIEW: `${BASE_URL}/billing/preview`,
+        FINALIZE: `${BASE_URL}/billing/finalize`,
+    },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/utilities`,

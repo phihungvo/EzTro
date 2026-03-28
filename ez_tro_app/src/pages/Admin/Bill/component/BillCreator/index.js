@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { message } from "antd";
+import { Alert, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import Toast from "~/components/Layout/AdminLayout/components/Toast";
 import RoomSelector from "../RoomSelector";
@@ -16,10 +16,10 @@ import PreviewModalCard from "../PreviewModal";
 import ServicesSection from "~/pages/Admin/Bill/component/ServicesSection";
 import styles from "./BillCreator.module.scss";
 import { getCreatorBillContext } from "~/service/admin/room";
-import { createBill } from "~/service/admin/bill";
 import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
 import { getContractSnapshot } from "~/service/admin/contract";
+import { previewInvoice, finalizeInvoice } from "~/service/admin/billing";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -117,6 +117,10 @@ const INITIAL = {
 
 export default function InvoiceCreator() {
     const [state, setState] = useState(INITIAL);
+    const [preview, setPreview] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState(null);
+    const [context, setContext] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [toast, setToast] = useState(null);
     const [publishing, setPublishing] = useState(false);
@@ -152,19 +156,24 @@ export default function InvoiceCreator() {
             floorNumber: roomData?.floorNumber || 1,
             boardingHouseId: roomData?.boardingHouseId || null,
         }));
+        setContext(null);
+        setPreview(null);
+        setPreviewError(null);
+        setShowPreview(false);
     }, []);
 
     useEffect(() => {
         const fetchContext = async () => {
             if (!state.roomId || !state.boardingHouseId || !state.month || !state.year) return;
-            const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
-            if (!resp || resp.code !== 200 || !resp.result) return;
+        const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
+        if (!resp || resp.code !== 200 || !resp.result) return;
 
-            const ctx = resp.result;
-            const [boardingHouseUtilities, contractSnapshot] = await Promise.all([
-                getUtilityByBoardingHouse(state.boardingHouseId),
-                ctx.contractId ? getContractSnapshot(ctx.contractId, `${state.year}-${pad2(state.month)}-01`) : null,
-            ]);
+        const ctx = resp.result;
+        setContext(ctx);
+        const [boardingHouseUtilities, contractSnapshot] = await Promise.all([
+            getUtilityByBoardingHouse(state.boardingHouseId),
+            ctx.contractId ? getContractSnapshot(ctx.contractId, `${state.year}-${pad2(state.month)}-01`) : null,
+        ]);
 
             const currentVersion = contractSnapshot?.currentVersion || null;
             const rentPrice = Number(currentVersion?.price ?? ctx.rentPrice ?? 0);
@@ -289,6 +298,71 @@ export default function InvoiceCreator() {
     const total = Math.max(0, subtotal - discount);
     const computed = { meterTotal, fixedServicesTotal, extrasTotal, subtotal, discount, total };
 
+    const buildInvoicePayload = useCallback(() => {
+        if (!state.contractId) {
+            return null;
+        }
+        const monthStr = pad2(state.month);
+        const periodStart = `${state.year}-${monthStr}-01`;
+        const lastDay = new Date(state.year, state.month, 0).getDate();
+        const periodEnd = `${state.year}-${monthStr}-${pad2(lastDay)}`;
+
+        return {
+            contractId: state.contractId,
+            asOfDate: state.issueDate,
+            billingPeriodStart: periodStart,
+            billingPeriodEnd: periodEnd,
+            dueDate: state.dueDate,
+            invoiceType: "MANUAL",
+            extraAmount: extrasTotal,
+            discountAmount: discount,
+            discountReason: state.discountReason,
+            publicNote: state.notePublic,
+            internalNote: state.noteInternal,
+        };
+    }, [
+        state.contractId,
+        state.issueDate,
+        state.month,
+        state.year,
+        state.dueDate,
+        state.discountReason,
+        state.notePublic,
+        state.noteInternal,
+        extrasTotal,
+        discount,
+    ]);
+
+    const persistMeterReadings = useCallback(async () => {
+        const readings = state.meterReadings || [];
+        if (!state.roomId || readings.length === 0) {
+            return;
+        }
+        await Promise.all(
+            readings.map((item) =>
+                upsertMeterReading({
+                    roomId: state.roomId,
+                    utilityId: item.utilityId,
+                    periodMonth: state.month,
+                    periodYear: state.year,
+                    currentIndex: Number(item.currentIndex),
+                    unitPrice: Number(item.unitPrice || 0),
+                    note: `Tao hoa don ${state.month}/${state.year}`,
+                })
+            )
+        );
+    }, [state.roomId, state.month, state.year, state.meterReadings]);
+
+    const runPreview = useCallback(async () => {
+        const payload = buildInvoicePayload();
+        if (!payload) {
+            throw new Error("Không có dữ liệu hoá đơn để xem trước.");
+        }
+        const response = await previewInvoice(payload);
+        setPreview(response);
+        return { payload, response };
+    }, [buildInvoicePayload]);
+
     const validateBeforePublish = () => {
         if (!state.roomId || !state.contractId) {
             message.error("Bạn cần chọn phòng có hợp đồng đang hiệu lực.");
@@ -318,39 +392,39 @@ export default function InvoiceCreator() {
         return true;
     };
 
-    const handlePublish = async () => {
+    const handlePreview = useCallback(async () => {
+        if (!validateBeforePublish()) return;
+
+        setPreviewLoading(true);
+        setPreviewError(null);
+        try {
+            await persistMeterReadings();
+            const { response } = await runPreview();
+            if (!response) {
+                setPreviewError("Không thể xem trước hoá đơn");
+                return;
+            }
+            setShowPreview(true);
+        } catch (error) {
+            console.error("Preview invoice failed", error);
+            setPreviewError(error?.response?.data?.message || "Không thể xem trước hoá đơn");
+        } finally {
+            setPreviewLoading(false);
+        }
+    }, [validateBeforePublish, persistMeterReadings, runPreview]);
+
+    const handlePublish = useCallback(async () => {
         if (!validateBeforePublish()) return;
 
         setPublishing(true);
         try {
-            await Promise.all(
-                (state.meterReadings || []).map((item) =>
-                    upsertMeterReading({
-                        roomId: state.roomId,
-                        utilityId: item.utilityId,
-                        periodMonth: state.month,
-                        periodYear: state.year,
-                        currentIndex: Number(item.currentIndex),
-                        unitPrice: Number(item.unitPrice || 0),
-                        note: `Tao hoa don ${state.month}/${state.year}`,
-                    })
-                )
-            );
-
-            await createBill({
-                contractId: state.contractId,
-                billTitle: `Hóa đơn tháng ${pad2(state.month)}/${state.year} - Phòng ${state.room}`,
-                dueDate: state.dueDate,
-                serviceAmount: meterTotal + fixedServicesTotal,
-                extraAmount: extrasTotal,
-                discountAmount: discount,
-                discountReason: state.discountReason,
-                publicNote: state.notePublic,
-                internalNote: state.noteInternal,
-                paymentInstructions: state.paymentInstructions,
-                note: buildBillDetailNote(state, computed),
-            });
-
+            await persistMeterReadings();
+            const { payload } = await runPreview();
+            if (!payload) {
+                message.error("Không tìm thấy dữ liệu hoá đơn.");
+                return;
+            }
+            await finalizeInvoice(payload);
             showToast("✅ Hoá đơn đã được tạo thành công", "success");
             navigate("/owner/bills");
         } catch (error) {
@@ -358,7 +432,7 @@ export default function InvoiceCreator() {
         } finally {
             setPublishing(false);
         }
-    };
+    }, [validateBeforePublish, persistMeterReadings, runPreview, showToast, navigate]);
 
     const roomData = {
         tenant: state.tenantName,
@@ -380,6 +454,15 @@ export default function InvoiceCreator() {
                         onMonthChange={(m) => setPeriod(m, state.year)}
                         onYearChange={(y) => setPeriod(state.month, y)}
                     />
+                    {context?.hasBillThisMonth && (
+                        <Alert
+                            message="Phòng đã có hoá đơn trong kỳ này"
+                            description="Vui lòng kiểm tra lại trước khi tạo hoá đơn mới để tránh trùng lặp."
+                            type="warning"
+                            showIcon
+                            style={{ margin: "16px 0" }}
+                        />
+                    )}
                     <RentSectionCard
                         state={state}
                         onRoomPriceChange={(val) => patch({ roomPrice: val })}
@@ -462,20 +545,21 @@ export default function InvoiceCreator() {
                             Huỷ bỏ
                         </button>
                         <button
-                            onClick={() => setShowPreview(true)}
+                            onClick={handlePreview}
+                            disabled={previewLoading}
                             style={{
                                 flex: 1,
                                 padding: "12px 18px",
                                 background: "none",
                                 border: "1px solid var(--border-cyan)",
                                 borderRadius: 3,
-                                color: "var(--cyan-mid)",
+                                color: previewLoading ? "var(--text-muted)" : "var(--cyan-mid)",
                                 fontSize: 13,
-                                cursor: "pointer",
+                                cursor: previewLoading ? "not-allowed" : "pointer",
                                 fontFamily: "var(--font-body)",
                             }}
                         >
-                            👁 Xem trước
+                            {previewLoading ? "Đang tải preview..." : "👁 Xem trước"}
                         </button>
                         <button
                             onClick={handlePublish}
@@ -506,8 +590,10 @@ export default function InvoiceCreator() {
                     state={state}
                     computed={computed}
                     roomData={roomData}
+                    preview={preview}
+                    previewLoading={previewLoading}
                     onPublish={handlePublish}
-                    onPreview={() => setShowPreview(true)}
+                    onPreview={handlePreview}
                     onShare={() => showToast("📋 Tính năng chia sẻ sẽ dùng sau khi hóa đơn được tạo", "info")}
                 />
             </div>
@@ -516,8 +602,14 @@ export default function InvoiceCreator() {
                 <PreviewModalCard
                     state={state}
                     computed={computed}
+                    preview={preview}
+                    loading={previewLoading}
+                    error={previewError}
                     roomData={roomData}
-                    onClose={() => setShowPreview(false)}
+                    onClose={() => {
+                        setShowPreview(false);
+                        setPreviewError(null);
+                    }}
                     onPublish={handlePublish}
                     onPrint={() => showToast("🖨 In hoá đơn (mock)", "info")}
                 />

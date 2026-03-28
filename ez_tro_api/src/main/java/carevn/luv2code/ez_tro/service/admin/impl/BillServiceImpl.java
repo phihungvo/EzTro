@@ -1,12 +1,8 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
+import java.time.YearMonth;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,21 +13,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
+import carevn.luv2code.ez_tro.dto.requests.InvoiceFinalizeRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
-import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
-import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.entity.Bill;
+import carevn.luv2code.ez_tro.entity.Tenant;
+import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.InvoiceType;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
 import carevn.luv2code.ez_tro.repository.BillRepository;
-import carevn.luv2code.ez_tro.repository.ContractRepository;
-import carevn.luv2code.ez_tro.repository.TenantRepository;
-import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillService;
-import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
-import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
 import carevn.luv2code.ez_tro.specification.BillSpecs;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -53,125 +48,44 @@ import lombok.RequiredArgsConstructor;
 public class BillServiceImpl implements BillService {
 
     private final BillRepository billRepository;
-    private final ContractRepository contractRepository;
-    private final TenantRepository tenantRepository;
     private final BillMapper billMapper;
-    private final UserRepository userRepository;
-    private final NotificationService notificationService;
-    private final ContractSnapshotService contractSnapshotService;
+    private final BillingOrchestratorService billingOrchestratorService;
 
     /**
-     * Tạo hóa đơn mới cho hợp đồng.
+     * Tạo hóa đơn mới cho hợp đồng theo orchestrator (preview → finalize).
      *
-     * <p>Rule chính:
-     * <ul>
-     *   <li>Chỉ owner của khu nhà hoặc admin mới được tạo.</li>
-     *   <li>Chặn tạo trùng bill cho cùng phòng trong cùng tháng/năm của dueDate.</li>
-     *   <li>Giá thuê ưu tiên lấy từ {@link ContractSnapshotService#getSnapshot(Integer, LocalDate)} tại dueDate.</li>
-     * </ul>
+     * <p>Payload chỉ cần {@code contractId} và {@code dueDate} (cùng với các ghi chú/extra/discount),
+     * sau đó billing orchestrator sẽ dùng snapshot để build invoice lines và tránh duplicate bằng generation key.
      *
      * @param request payload tạo bill
      * @return bill DTO sau khi tạo
      */
     @Override
     public BillResponse create(BillRequest request) {
-        Contract contract = contractRepository
-                .findById(request.getContractId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-
-        Room room = contract.getRoom();
-        Tenant tenant = contract.getTenant();
-
-        // Quyền: chỉ owner của boarding house hoặc admin mới được tạo hóa đơn
-        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
-        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
-        }
-
-        // Validate due date
         LocalDate dueDate = request.getDueDate();
         if (dueDate == null) {
             throw new AppException(ErrorCode.CONTRACT_MONTHLY_PAYMENT_DAY_INVALID);
         }
 
-        // Chặn tạo trùng hóa đơn cho cùng phòng trong cùng tháng/năm
-        boolean existsForPeriod =
-                billRepository.existsByRoomIdAndMonthAndYear(room.getId(), dueDate.getMonthValue(), dueDate.getYear());
-        if (existsForPeriod) {
-            throw new AppException(ErrorCode.BILL_ALREADY_EXISTS);
-        }
+        YearMonth period = YearMonth.from(dueDate);
+        LocalDate periodStart = period.atDay(1);
+        LocalDate periodEnd = period.atEndOfMonth();
 
-        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), dueDate);
-        BigDecimal rentPrice = snapshot.getCurrentVersion() != null
-                        && snapshot.getCurrentVersion().getPrice() != null
-                ? snapshot.getCurrentVersion().getPrice()
-                : contract.getRentPrice();
-        BigDecimal baseServiceAmount =
-                request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;
-        BigDecimal extraAmount = request.getExtraAmount() != null ? request.getExtraAmount() : BigDecimal.ZERO;
-        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
-        BigDecimal grossServiceAmount = baseServiceAmount.add(extraAmount);
-        BigDecimal totalAmount = rentPrice.add(grossServiceAmount).subtract(discountAmount);
+        InvoiceFinalizeRequest finalizeRequest = InvoiceFinalizeRequest.builder()
+                .contractId(request.getContractId())
+                .asOfDate(dueDate)
+                .billingPeriodStart(periodStart)
+                .billingPeriodEnd(periodEnd)
+                .dueDate(dueDate)
+                .invoiceType(InvoiceType.MANUAL)
+                .extraAmount(request.getExtraAmount())
+                .discountAmount(request.getDiscountAmount())
+                .discountReason(request.getDiscountReason())
+                .publicNote(request.getPublicNote())
+                .internalNote(request.getInternalNote())
+                .build();
 
-        Bill bill = billMapper.toEntity(request);
-        bill.setContract(contract);
-        bill.setRoom(room);
-        bill.setTenant(tenant);
-        bill.setServiceAmount(grossServiceAmount);
-        bill.setAmount(totalAmount);
-        bill.setNote(buildBillNote(request));
-        bill.setStatus(BillStatus.UNPAID);
-        bill.setCreatedAt(new Date());
-
-        if (bill.getBillCode() == null || bill.getBillCode().isBlank()) {
-            String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-            bill.setBillCode("BILL-" + timestamp);
-        }
-
-        billRepository.save(bill);
-
-        notificationService.sendToUser(
-                tenant.getUser().getId(),
-                "Hóa đơn mới",
-                "Phòng " + room.getRoomNumber() + " - " + totalAmount + "đ - Hạn: " + bill.getDueDate(),
-                "BILL_CREATED",
-                Map.of("billId", bill.getId(), "roomNumber", room.getRoomNumber()));
-
-        return billMapper.toResponse(bill);
-    }
-
-    private String buildBillNote(BillRequest request) {
-        List<String> sections = new ArrayList<>();
-
-        if (request.getExtraAmount() != null && request.getExtraAmount().compareTo(BigDecimal.ZERO) > 0) {
-            sections.add("Phí phát sinh / bổ sung: " + request.getExtraAmount());
-        }
-        if (request.getDiscountAmount() != null && request.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-            StringBuilder discountSection = new StringBuilder("Giảm giá / ưu đãi: " + request.getDiscountAmount());
-            if (request.getDiscountReason() != null
-                    && !request.getDiscountReason().isBlank()) {
-                discountSection
-                        .append(" | Ly do: ")
-                        .append(request.getDiscountReason().trim());
-            }
-            sections.add(discountSection.toString());
-        }
-        if (request.getPublicNote() != null && !request.getPublicNote().isBlank()) {
-            sections.add("Ghi chú hóa đơn: " + request.getPublicNote().trim());
-        }
-        if (request.getPaymentInstructions() != null
-                && !request.getPaymentInstructions().isBlank()) {
-            sections.add(
-                    "Hướng dẫn thanh toán: " + request.getPaymentInstructions().trim());
-        }
-        if (request.getInternalNote() != null && !request.getInternalNote().isBlank()) {
-            sections.add("Ghi chú nội bộ: " + request.getInternalNote().trim());
-        }
-        if (request.getNote() != null && !request.getNote().isBlank()) {
-            sections.add(request.getNote().trim());
-        }
-
-        return sections.isEmpty() ? null : String.join("\n\n", sections);
+        return billingOrchestratorService.finalizeInvoice(finalizeRequest);
     }
 
     /**

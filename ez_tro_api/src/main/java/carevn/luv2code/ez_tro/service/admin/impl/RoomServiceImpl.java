@@ -656,6 +656,10 @@ public class RoomServiceImpl implements RoomService {
                 })
                 .toList();
 
+        boolean hasBillThisMonth = billRepository.existsByRoomIdAndMonthAndYear(roomId, month, year);
+        List<ContractBillingRuleSummaryResponse> billingRules =
+                snapshot.getActiveBillingRules() != null ? snapshot.getActiveBillingRules() : List.of();
+
         return CreatorBillContextResponse.builder()
                 .roomId(room.getId())
                 .roomNumber(room.getRoomNumber())
@@ -667,6 +671,9 @@ public class RoomServiceImpl implements RoomService {
                 .usageBasedUtilities(usageBasedItems)
                 .fixedChargeUtilities(fixedChargeItems)
                 .meterReadings(meterItems)
+                .hasBillThisMonth(hasBillThisMonth)
+                .contractSnapshot(snapshot)
+                .billingRules(billingRules)
                 .build();
     }
 
