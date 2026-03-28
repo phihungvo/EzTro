@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import classNames from 'classnames/bind';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {
@@ -58,6 +58,19 @@ function Room() {
     const [areaRange, setAreaRange] = useState([null, null]);
     const [priceRange, setPriceRange] = useState([null, null]);
     const [hasActiveContractFilter, setHasActiveContractFilter] = useState(null);
+    const filterFingerprint = useMemo(() => (
+        [
+            debouncedSearch || '',
+            statusFilter || '',
+            boardingHouseFilter || '',
+            areaRange?.[0] ?? '',
+            areaRange?.[1] ?? '',
+            priceRange?.[0] ?? '',
+            priceRange?.[1] ?? '',
+            hasActiveContractFilter ?? '',
+        ].join('|')
+    ), [debouncedSearch, statusFilter, boardingHouseFilter, areaRange, priceRange, hasActiveContractFilter]);
+    const lastFilterFingerprintRef = useRef(filterFingerprint);
 
     const {data: quota} = useOwnerQuota();
     const invalidateQuota = useInvalidateQuota();
@@ -138,12 +151,17 @@ function Room() {
     ]);
 
     useEffect(() => {
-        if (currentPage !== 1) {
-            resetPagination();
-            return;
+        const filtersChanged = lastFilterFingerprintRef.current !== filterFingerprint;
+        if (filtersChanged) {
+            lastFilterFingerprintRef.current = filterFingerprint;
+            if (currentPage !== 1) {
+                resetPagination();
+                return;
+            }
         }
+
         fetchRooms();
-    }, [currentPage, fetchRooms, resetPagination]);
+    }, [filterFingerprint, currentPage, currentPageSize, fetchRooms, resetPagination]);
 
     const handleResetFilters = () => {
         setSearchTerm('');

@@ -1,5 +1,5 @@
 // src/pages/Admin/Bill/Bill.jsx
-import React, {useState, useEffect} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import classNames from 'classnames/bind';
 import dayjs from 'dayjs';
 import styles from './Bill.module.scss';
@@ -50,6 +50,20 @@ function Bill() {
     const [monthFilter, setMonthFilter] = useState(null);
     const [yearFilter, setYearFilter] = useState(null);
     const [contractFilter, setContractFilter] = useState(null);
+    const filterFingerprint = useMemo(() => {
+        const start = dateRange?.[0]?.format?.('YYYY-MM-DD') || '';
+        const end = dateRange?.[1]?.format?.('YYYY-MM-DD') || '';
+        return [
+            debouncedSearch || '',
+            start,
+            end,
+            statusFilter || 'ALL',
+            monthFilter ?? '',
+            yearFilter ?? '',
+            contractFilter ?? '',
+        ].join('|');
+    }, [debouncedSearch, dateRange, statusFilter, monthFilter, yearFilter, contractFilter]);
+    const lastFilterFingerprintRef = useRef(filterFingerprint);
 
     const getStatusTag = (status) => {
         const map = {
@@ -141,7 +155,7 @@ function Bill() {
     }, []);
 
     // Filter bills
-    const fetchBills = async () => {
+    const fetchBills = useCallback(async () => {
         setLoading(true);
         try {
             const params = {
@@ -159,8 +173,8 @@ function Bill() {
             }
 
             const res = await filterBills(params);
-            setBills(res.content || []);
-            setPaginationTotal(res.totalElements || 0);
+            setBills(res?.content || []);
+            setPaginationTotal(res?.totalElements || 0);
         } catch (e) {
             message.error('Lỗi tải hóa đơn');
             setBills([]);
@@ -168,25 +182,30 @@ function Bill() {
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        if (pagination.current !== 1) {
-            resetPagination();
-            return;
-        }
-        fetchBills();
     }, [
+        pagination.current,
+        pagination.pageSize,
         debouncedSearch,
-        dateRange,
         statusFilter,
         monthFilter,
         yearFilter,
         contractFilter,
-        pagination.current,
-        pagination.pageSize,
-        resetPagination,
+        dateRange,
+        setPaginationTotal,
     ]);
+
+    useEffect(() => {
+        const filtersChanged = lastFilterFingerprintRef.current !== filterFingerprint;
+        if (filtersChanged) {
+            lastFilterFingerprintRef.current = filterFingerprint;
+            if (pagination.current !== 1) {
+                resetPagination();
+                return;
+            }
+        }
+
+        fetchBills();
+    }, [filterFingerprint, pagination.current, pagination.pageSize, fetchBills, resetPagination]);
 
     const handleAdd = () => {
        navigate(`/owner/bills/create-bill`)

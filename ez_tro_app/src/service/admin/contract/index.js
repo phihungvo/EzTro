@@ -215,8 +215,8 @@ export const finalizeContractSettlement = async (contractId) => {
         message.success('Đã chốt tất toán hợp đồng');
         return response.data.result;
     } catch (error) {
-        console.error('Error when finalizing contract settlement: ', error);
-        message.error(error.response?.data?.message || 'Lỗi khi chốt tất toán hợp đồng');
+        // console.error('Error when finalizing contract settlement: ', error);
+        // message.error(error.response?.data?.message || 'Lỗi khi chốt tất toán hợp đồng');
         throw error;
     }
 };

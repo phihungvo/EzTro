@@ -50,6 +50,7 @@ import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
+import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
@@ -335,6 +336,7 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/rooms/:id/edit" element={<RoomCreatorPage/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
                         <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
+                        <Route path="/contracts/:id" element={<ContractDetailPage/>}/>
                         <Route path="/contracts/:id/edit" element={<ContractCreatorPage/>}/>
                         <Route path="/assets" element={<Asset/>}/>
                         <Route path="/assets/create" element={<PropertyAssetCreatorPage/>}/>

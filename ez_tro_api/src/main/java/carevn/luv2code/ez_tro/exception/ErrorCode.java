@@ -78,18 +78,13 @@ public enum ErrorCode {
     YOU_DONT_HAVE_ANY_ROOM_RENTED(1058, "Bạn chưa thuê phòng nào", HttpStatus.BAD_REQUEST),
     CANNOT_EDIT_RESOLVED_INCIDENT(
             1059, "Không thể chỉnh sửa sự cố đã được xử lý hoặc bị từ chối", HttpStatus.BAD_REQUEST),
-    BUILDING_CREATE_FORBIDDEN(
-            1060, "Bạn không được phép tạo tòa nhà trong nhà trọ này", HttpStatus.FORBIDDEN),
+    BUILDING_CREATE_FORBIDDEN(1060, "Bạn không được phép tạo tòa nhà trong nhà trọ này", HttpStatus.FORBIDDEN),
     ELECTRIC_WATER_RECORD_EXISTS(
-            1061,
-            "Bản ghi điện nước của phòng này trong tháng và năm đã tồn tại",
-            HttpStatus.CONFLICT),
+            1061, "Bản ghi điện nước của phòng này trong tháng và năm đã tồn tại", HttpStatus.CONFLICT),
     METER_READING_ALREADY_EXISTS_FOR_PERIOD(
             1062, "Chỉ số công tơ cho phòng, tiện ích, tháng và năm này đã tồn tại", HttpStatus.CONFLICT),
     INVALID_METER_READING_VALUE(
-            1063,
-            "Chỉ số công tơ hiện tại phải lớn hơn hoặc bằng chỉ số trước đó",
-            HttpStatus.BAD_REQUEST),
+            1063, "Chỉ số công tơ hiện tại phải lớn hơn hoặc bằng chỉ số trước đó", HttpStatus.BAD_REQUEST),
     PERIOD_ALREADY_EXISTS(1064, "Kỳ ghi chỉ số cho tháng và năm này đã tồn tại", HttpStatus.CONFLICT),
     PERIOD_ALREADY_CONFIRMED(1065, "Chỉ các kỳ ở trạng thái DRAFT mới có thể được xác nhận", HttpStatus.BAD_REQUEST),
     PERIOD_MUST_BE_CONFIRMED_BEFORE_LOCK(1066, "Chỉ các kỳ đã được CONFIRMED mới có thể khóa", HttpStatus.BAD_REQUEST),
@@ -111,49 +106,44 @@ public enum ErrorCode {
     PROPERTY_ASSET_NOT_FOUND(1082, "Không tìm thấy tài sản", HttpStatus.NOT_FOUND),
     PROPERTY_ASSET_CODE_ALREADY_EXISTS(1083, "Mã tài sản đã tồn tại", HttpStatus.CONFLICT),
     PROPERTY_ASSET_SERIAL_ALREADY_EXISTS(1084, "Số serial tài sản đã tồn tại", HttpStatus.CONFLICT),
-    INVALID_BUILDING_FOR_BOARDING_HOUSE(
-            1085, "Tòa nhà không thuộc nhà trọ được chỉ định", HttpStatus.CONFLICT),
+    INVALID_BUILDING_FOR_BOARDING_HOUSE(1085, "Tòa nhà không thuộc nhà trọ được chỉ định", HttpStatus.CONFLICT),
     CONTRACT_TENANT_PASSWORD_REQUIRED(1086, "Yêu cầu mật khẩu của người thuê", HttpStatus.BAD_REQUEST),
     CONTRACT_ROOM_CHANGE_NOT_ALLOWED(1087, "Không được phép thay đổi phòng trong hợp đồng", HttpStatus.BAD_REQUEST),
-    CONTRACT_TENANT_CHANGE_NOT_ALLOWED(1088, "Không được phép thay đổi người thuê trong hợp đồng", HttpStatus.BAD_REQUEST),
-    CONTRACT_UTILITIES_UPDATE_NOT_ALLOWED(1089, "Không được phép cập nhật tiện ích trong hợp đồng", HttpStatus.BAD_REQUEST),
+    CONTRACT_TENANT_CHANGE_NOT_ALLOWED(
+            1088, "Không được phép thay đổi người thuê trong hợp đồng", HttpStatus.BAD_REQUEST),
+    CONTRACT_UTILITIES_UPDATE_NOT_ALLOWED(
+            1089, "Không được phép cập nhật tiện ích trong hợp đồng", HttpStatus.BAD_REQUEST),
     ROOM_FLOOR_INVALID(1090, "Tầng của phòng không khớp với cấu hình tòa nhà", HttpStatus.BAD_REQUEST),
-    ROOM_DELETE_NOT_ALLOWED(
-            1091, "Không thể xóa phòng vì đã có dữ liệu vận hành", HttpStatus.BAD_REQUEST),
-    BOARDING_HOUSE_DELETE_NOT_ALLOWED(
-            1093, "Không thể xóa nhà trọ vì đã có dữ liệu liên quan", HttpStatus.BAD_REQUEST),
-    BUILDING_DELETE_NOT_ALLOWED(
-            1094, "Không thể xóa tòa nhà vì đã có phòng", HttpStatus.BAD_REQUEST),
-    UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE(
-            1095, "Tiện ích không thuộc nhà trọ của phòng", HttpStatus.CONFLICT),
-    ROOM_UTILITY_REQUEST_ID_MISMATCH(1096, "ID yêu cầu tiện ích phòng không khớp với đường dẫn", HttpStatus.BAD_REQUEST),
-    CONTRACT_EFFECTIVE_DATE_INVALID(
-            1097, "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu", HttpStatus.BAD_REQUEST),
+    ROOM_DELETE_NOT_ALLOWED(1091, "Không thể xóa phòng vì đã có dữ liệu vận hành", HttpStatus.BAD_REQUEST),
+    BOARDING_HOUSE_DELETE_NOT_ALLOWED(1093, "Không thể xóa nhà trọ vì đã có dữ liệu liên quan", HttpStatus.BAD_REQUEST),
+    BUILDING_DELETE_NOT_ALLOWED(1094, "Không thể xóa tòa nhà vì đã có phòng", HttpStatus.BAD_REQUEST),
+    UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE(1095, "Tiện ích không thuộc nhà trọ của phòng", HttpStatus.CONFLICT),
+    ROOM_UTILITY_REQUEST_ID_MISMATCH(
+            1096, "ID yêu cầu tiện ích phòng không khớp với đường dẫn", HttpStatus.BAD_REQUEST),
+    CONTRACT_EFFECTIVE_DATE_INVALID(1097, "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu", HttpStatus.BAD_REQUEST),
     CONTRACT_BILLING_RULE_NOT_FOUND(1098, "Không tìm thấy quy tắc tính phí hợp đồng", HttpStatus.NOT_FOUND),
-    DEPOSIT_TRANSACTION_AMOUNT_INVALID(
-            1099, "Số tiền giao dịch đặt cọc phải lớn hơn 0", HttpStatus.BAD_REQUEST),
+    DEPOSIT_TRANSACTION_AMOUNT_INVALID(1099, "Số tiền giao dịch đặt cọc phải lớn hơn 0", HttpStatus.BAD_REQUEST),
     CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT(
             1100, "Số dư tiền đặt cọc không đủ để tất toán hợp đồng", HttpStatus.BAD_REQUEST),
     CONTRACT_TRANSFER_OPEN_BILLS_NOT_ALLOWED(
             1101, "Các hóa đơn chưa thanh toán phải được xử lý trước khi chuyển tiền đặt cọc", HttpStatus.BAD_REQUEST),
     CONTRACT_RENEWAL_DATE_INVALID(
             1102, "Ngày hiệu lực gia hạn phải sau ngày kết thúc hợp đồng hiện tại", HttpStatus.BAD_REQUEST),
-    CONTRACT_ALREADY_RENEWED_FOR_PERIOD(
-            1103, "Hợp đồng đã được gia hạn cho khoảng thời gian này", HttpStatus.CONFLICT),
+    CONTRACT_ALREADY_RENEWED_FOR_PERIOD(1103, "Hợp đồng đã được gia hạn cho khoảng thời gian này", HttpStatus.CONFLICT),
     CONTRACT_LIFECYCLE_OPERATION_NOT_ALLOWED(
-            1104, "Không được phép thực hiện thao tác vòng đời hợp đồng với trạng thái hiện tại", HttpStatus.BAD_REQUEST),
+            1104,
+            "Không được phép thực hiện thao tác vòng đời hợp đồng với trạng thái hiện tại",
+            HttpStatus.BAD_REQUEST),
     CONTRACT_OPERATION_ALREADY_PROCESSING(
             1105, "Một thao tác hợp đồng với idempotency key này đang được xử lý", HttpStatus.CONFLICT),
     CONTRACT_EFFECTIVE_OUT_OF_RANGE(
             1110, "Thời gian hiệu lực phải nằm trong vòng đời hợp đồng", HttpStatus.BAD_REQUEST),
-    CONTRACT_AMENDMENT_DATA_INVALID(
-            1111, "Dữ liệu điều chỉnh hợp đồng không hợp lệ", HttpStatus.BAD_REQUEST),
+    CONTRACT_AMENDMENT_DATA_INVALID(1111, "Dữ liệu điều chỉnh hợp đồng không hợp lệ", HttpStatus.BAD_REQUEST),
     CONTRACT_AMENDMENT_CONFLICT(
             1112, "Điều chỉnh hợp đồng bị xung đột với các điều chỉnh hiện có", HttpStatus.CONFLICT),
     CONTRACT_BILLING_RULE_CONFLICT(
             1113, "Quy tắc tính phí hợp đồng bị xung đột với các quy tắc hiện có", HttpStatus.CONFLICT),
-    DEPOSIT_TRANSACTION_REFERENCE_REQUIRED(
-            1114, "Giao dịch đặt cọc yêu cầu lý do/tham chiếu", HttpStatus.BAD_REQUEST),
+    DEPOSIT_TRANSACTION_REFERENCE_REQUIRED(1114, "Giao dịch đặt cọc yêu cầu lý do/tham chiếu", HttpStatus.BAD_REQUEST),
     DEPOSIT_TRANSACTION_INSUFFICIENT_BALANCE(
             1115, "Số dư tiền đặt cọc không đủ cho giao dịch này", HttpStatus.BAD_REQUEST),
 
