@@ -1,8 +1,9 @@
 import React from "react";
-import { Table, Tag, Button, Space } from "antd";
+import { Empty, Table, Tag, Button, Space } from "antd";
 import styles from "./UserTable.module.scss";
 
 const UserTable = ({ bills = [], onPayment, onViewDetail }) => {
+    const normalizedBills = Array.isArray(bills) ? bills : [];
     const columns = [
         {
             title: "Mã hóa đơn",
@@ -91,8 +92,16 @@ const UserTable = ({ bills = [], onPayment, onViewDetail }) => {
         <div className={styles.dataTable}>
             <Table
                 columns={columns}
-                dataSource={bills}
+                dataSource={normalizedBills}
                 rowKey="id"
+                locale={{
+                    emptyText: (
+                        <Empty
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description="Không có dữ liệu"
+                        />
+                    ),
+                }}
                 pagination={{
                     pageSize: 5,
                     showTotal: (total) => `Tổng ${total} hóa đơn`,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
     Card,
     Table,
+    Empty,
     Button,
     Tag,
     Space,
@@ -522,9 +523,17 @@ function AdminPaymentManagement() {
             <Card className={cx('table-card')}>
                 <Table
                     columns={columns}
-                    dataSource={filteredTransactions}
+                    dataSource={Array.isArray(filteredTransactions) ? filteredTransactions : []}
                     rowKey="id"
                     scroll={{ x: 1200 }}
+                    locale={{
+                        emptyText: (
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description="Không có dữ liệu"
+                            />
+                        ),
+                    }}
                     pagination={{
                         pageSize: 10,
                         showTotal: (total) => `Tổng ${total} giao dịch`,

@@ -1,7 +1,7 @@
 // src/components/OperatingCostTracker/OperatingCostTracker.jsx
 import React, {useState, useEffect} from 'react';
 import {
-    Button, Space, Card, Table, Select, DatePicker, Modal, Form, Input, InputNumber, message,
+    Button, Space, Card, Table, Empty, Select, DatePicker, Modal, Form, Input, InputNumber, message,
     Tag, Badge, Tooltip, Row, Col, Divider, Progress
 } from 'antd';
 import {
@@ -704,9 +704,17 @@ const OperatingCostTracker = () => {
             <Card className={styles.tableCard}>
                 <Table
                     columns={columns}
-                    dataSource={costs}
+                    dataSource={Array.isArray(costs) ? costs : []}
                     loading={loading}
                     rowKey="id"
+                    locale={{
+                        emptyText: (
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description="Không có dữ liệu"
+                            />
+                        ),
+                    }}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,
