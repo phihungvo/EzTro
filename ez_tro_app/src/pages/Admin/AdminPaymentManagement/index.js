@@ -1,730 +1,1019 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Card,
-    Table,
-    Empty,
     Button,
-    Tag,
-    Space,
-    Input,
-    Select,
     DatePicker,
-    Modal,
-    Form,
-    InputNumber,
-    message,
-    Statistic,
-    Row,
-    Col,
-    Badge,
-    Tooltip,
     Descriptions,
-    Timeline,
-    Image,
-    Upload
-} from 'antd';
+    Empty,
+    Form,
+    Input,
+    InputNumber,
+    Modal,
+    Select,
+    Space,
+    Spin,
+    Table,
+    Tooltip,
+    message,
+} from "antd";
 import {
-    SearchOutlined,
-    FilterOutlined,
-    DollarOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
-    ClockCircleOutlined,
-    DownloadOutlined,
-    EyeOutlined,
-    FileTextOutlined,
-    CreditCardOutlined,
+    AuditOutlined,
     BankOutlined,
-    ShoppingOutlined,
-    UploadOutlined,
-    ExclamationCircleOutlined,
-    RiseOutlined,
-    FallOutlined
-} from '@ant-design/icons';
-import classNames from 'classnames/bind';
-import styles from './AdminPaymentManagement.module.scss';
-import dayjs from 'dayjs';
+    ArrowRightOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    CreditCardOutlined,
+    DollarOutlined,
+    FileTextOutlined,
+    FilterOutlined,
+    HistoryOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    RollbackOutlined,
+    SearchOutlined,
+    ThunderboltOutlined,
+    WalletOutlined,
+    WarningOutlined,
+} from "@ant-design/icons";
+import classNames from "classnames/bind";
+import dayjs from "dayjs";
+
+import styles from "./AdminPaymentManagement.module.scss";
+import { getAllActiveContracts } from "~/service/admin/contract";
+import {
+    getContractReconciliation,
+    getCreditLedgerReport,
+    getDebtAgingReport,
+} from "~/service/admin/reconciliation";
+import { getBillingAuditLogs } from "~/service/admin/billing-audit";
+import {
+    allocatePayment,
+    confirmPayment,
+    getPaymentById,
+    listPayments,
+    receivePayment,
+    reversePayment,
+} from "~/service/admin/payment";
+import { getBillingUiErrorMessage } from "~/utils/apiError";
 
 const cx = classNames.bind(styles);
-const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
-// Mock Data
-const mockTransactions = [
-    {
-        id: 1,
-        transactionCode: 'TXN-2025-0001',
-        userId: 101,
-        userName: 'Nguyễn Văn A',
-        userEmail: 'nguyenvana@email.com',
-        userPhone: '0901234567',
-        planName: 'Standard',
-        amount: 350000,
-        duration: 6,
-        paymentMethod: 'MOMO',
-        status: 'PENDING',
-        createdAt: '2025-01-22 10:30:00',
-        paidAt: null,
-        invoiceCode: 'INV-2025-0001',
-        note: 'Chờ xác nhận chuyển khoản',
-        screenshot: null
-    },
-    {
-        id: 2,
-        transactionCode: 'TXN-2025-0002',
-        userId: 102,
-        userName: 'Trần Thị B',
-        userEmail: 'tranthib@email.com',
-        userPhone: '0902345678',
-        planName: 'Pro',
-        amount: 799000,
-        duration: 1,
-        paymentMethod: 'VNPAY',
-        status: 'SUCCESS',
-        createdAt: '2025-01-22 09:15:00',
-        paidAt: '2025-01-22 09:16:23',
-        invoiceCode: 'INV-2025-0002',
-        note: 'Thanh toán qua VNPAY thành công',
-        screenshot: null
-    },
-    {
-        id: 3,
-        transactionCode: 'TXN-2025-0003',
-        userId: 103,
-        userName: 'Lê Văn C',
-        userEmail: 'levanc@email.com',
-        userPhone: '0903456789',
-        planName: 'Basic',
-        amount: 150000,
-        duration: 12,
-        paymentMethod: 'BANK_TRANSFER',
-        status: 'PENDING',
-        createdAt: '2025-01-21 15:45:00',
-        paidAt: null,
-        invoiceCode: 'INV-2025-0003',
-        note: 'Khách đã chuyển khoản, chờ xác nhận',
-        screenshot: 'https://via.placeholder.com/400x600'
-    },
-    {
-        id: 4,
-        transactionCode: 'TXN-2025-0004',
-        userId: 104,
-        userName: 'Phạm Thị D',
-        userEmail: 'phamthid@email.com',
-        userPhone: '0904567890',
-        planName: 'Standard',
-        amount: 350000,
-        duration: 1,
-        paymentMethod: 'ZALOPAY',
-        status: 'FAILED',
-        createdAt: '2025-01-20 14:20:00',
-        paidAt: null,
-        invoiceCode: 'INV-2025-0004',
-        note: 'Giao dịch thất bại - Số dư không đủ',
-        screenshot: null
-    },
-    {
-        id: 5,
-        transactionCode: 'TXN-2025-0005',
-        userId: 105,
-        userName: 'Hoàng Văn E',
-        userEmail: 'hoangvane@email.com',
-        userPhone: '0905678901',
-        planName: 'Pro',
-        amount: 4794000,
-        duration: 12,
-        paymentMethod: 'BANK_TRANSFER',
-        status: 'SUCCESS',
-        createdAt: '2025-01-19 11:00:00',
-        paidAt: '2025-01-19 16:30:00',
-        invoiceCode: 'INV-2025-0005',
-        note: 'Thanh toán 12 tháng - Đã giảm 50%',
-        screenshot: 'https://via.placeholder.com/400x600'
-    }
-];
+// ─────────────────────────────────────────────────────────
+// Helpers & constants
+// ─────────────────────────────────────────────────────────
+const formatCurrency = (value) =>
+    `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
 
-const mockStatistics = {
-    totalRevenue: 5643000,
-    todayRevenue: 1299000,
-    pendingAmount: 500000,
-    successCount: 125,
-    pendingCount: 8,
-    failedCount: 3,
-    revenueGrowth: 15.8,
-    transactionGrowth: -2.3
+const toContractOption = (contract) => ({
+    label: `${contract.boardingHouseName || "Khu trọ"} · P.${contract.roomNumber || "?"} · ${contract.tenantFullName || "Không rõ"}`,
+    value: contract.id,
+});
+
+const formatEnumLabel = (value) =>
+    String(value || "")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const PAYMENT_STATUS_META = {
+    PENDING:             { color: "#f0a443", bg: "rgba(240,164,67,0.12)",   text: "Chờ xác nhận" },
+    CONFIRMED:           { color: "#4b8eff", bg: "rgba(75,142,255,0.12)",   text: "Đã xác nhận" },
+    PARTIALLY_ALLOCATED: { color: "#a78bfa", bg: "rgba(167,139,250,0.12)", text: "Phân bổ một phần" },
+    FULLY_ALLOCATED:     { color: "#22c97a", bg: "rgba(34,201,122,0.12)",  text: "Đã phân bổ hết" },
+    OVERPAID:            { color: "#22d3ee", bg: "rgba(34,211,238,0.1)",    text: "Dư / Credit" },
+    REVERSED:            { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)",   text: "Đã đảo ngược" },
+    FAILED:              { color: "#f25c5c", bg: "rgba(242,92,92,0.1)",    text: "Thất bại" },
 };
 
-function AdminPaymentManagement() {
-    const [transactions, setTransactions] = useState(mockTransactions);
-    const [selectedTransaction, setSelectedTransaction] = useState(null);
-    const [detailModalVisible, setDetailModalVisible] = useState(false);
-    const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-    const [rejectModalVisible, setRejectModalVisible] = useState(false);
+const INVOICE_STATUS_META = {
+    PAID:           { color: "#22c97a", bg: "rgba(34,201,122,0.12)",  text: "Đã thanh toán" },
+    UNPAID:         { color: "#f0a443", bg: "rgba(240,164,67,0.12)",  text: "Chưa thanh toán" },
+    OVERDUE:        { color: "#f25c5c", bg: "rgba(242,92,92,0.1)",   text: "Quá hạn" },
+    PARTIALLY_PAID: { color: "#a78bfa", bg: "rgba(167,139,250,0.12)",text: "Thanh toán một phần" },
+    CANCELLED:      { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)", text: "Đã hủy" },
+};
 
-    const [filters, setFilters] = useState({
-        status: 'ALL',
-        paymentMethod: 'ALL',
-        searchText: '',
-        dateRange: null
-    });
+const KPI_CONFIG = [
+    { key: "invoiceTotal",     label: "Tổng hóa đơn",   icon: <FileTextOutlined />,    cls: "kpiBlue" },
+    { key: "paymentTotal",     label: "Đã thu về",       icon: <CheckCircleOutlined />, cls: "kpiGreen" },
+    { key: "outstandingTotal", label: "Công nợ còn lại", icon: <WarningOutlined />,     cls: "kpiAmber" },
+    { key: "creditBalance",    label: "Credit tồn",      icon: <WalletOutlined />,      cls: "kpiViolet" },
+];
 
-    const [form] = Form.useForm();
-
-    const getStatusColor = (status) => {
-        const colors = {
-            SUCCESS: 'green',
-            PENDING: 'orange',
-            FAILED: 'red',
-            REFUNDED: 'purple'
-        };
-        return colors[status] || 'default';
-    };
-
-    const getStatusText = (status) => {
-        const texts = {
-            SUCCESS: 'Thành công',
-            PENDING: 'Chờ xác nhận',
-            FAILED: 'Thất bại',
-            REFUNDED: 'Đã hoàn tiền'
-        };
-        return texts[status] || status;
-    };
-
-    const getPaymentMethodIcon = (method) => {
-        const icons = {
-            MOMO: '💰',
-            ZALOPAY: '💳',
-            VNPAY: '🏦',
-            BANK_TRANSFER: '🏛️'
-        };
-        return icons[method] || '💵';
-    };
-
-    const getPaymentMethodText = (method) => {
-        const texts = {
-            MOMO: 'MoMo',
-            ZALOPAY: 'ZaloPay',
-            VNPAY: 'VNPAY',
-            BANK_TRANSFER: 'Chuyển khoản'
-        };
-        return texts[method] || method;
-    };
-
-    const handleViewDetail = (record) => {
-        setSelectedTransaction(record);
-        setDetailModalVisible(true);
-    };
-
-    const handleConfirmPayment = (record) => {
-        setSelectedTransaction(record);
-        setConfirmModalVisible(true);
-    };
-
-    const handleRejectPayment = (record) => {
-        setSelectedTransaction(record);
-        setRejectModalVisible(true);
-    };
-
-    const confirmTransaction = (values) => {
-        const updatedTransactions = transactions.map(t =>
-            t.id === selectedTransaction.id
-                ? {
-                    ...t,
-                    status: 'SUCCESS',
-                    paidAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                    note: values.note || t.note
-                }
-                : t
-        );
-        setTransactions(updatedTransactions);
-        message.success('Đã xác nhận thanh toán thành công');
-        setConfirmModalVisible(false);
-        form.resetFields();
-    };
-
-    const rejectTransaction = (values) => {
-        const updatedTransactions = transactions.map(t =>
-            t.id === selectedTransaction.id
-                ? {
-                    ...t,
-                    status: 'FAILED',
-                    note: values.reason
-                }
-                : t
-        );
-        setTransactions(updatedTransactions);
-        message.warning('Đã từ chối giao dịch');
-        setRejectModalVisible(false);
-        form.resetFields();
-    };
-
-    const filteredTransactions = transactions.filter(t => {
-        const matchStatus = filters.status === 'ALL' || t.status === filters.status;
-        const matchMethod = filters.paymentMethod === 'ALL' || t.paymentMethod === filters.paymentMethod;
-        const matchSearch = !filters.searchText ||
-            t.transactionCode.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-            t.userName.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-            t.userEmail.toLowerCase().includes(filters.searchText.toLowerCase());
-
-        return matchStatus && matchMethod && matchSearch;
-    });
-
-    const columns = [
-        {
-            title: 'Mã GD',
-            dataIndex: 'transactionCode',
-            key: 'transactionCode',
-            fixed: 'left',
-            width: 140,
-            render: (text) => (
-                <span className={cx('transaction-code')}>{text}</span>
-            )
-        },
-        {
-            title: 'Khách hàng',
-            key: 'customer',
-            width: 200,
-            render: (_, record) => (
-                <div className={cx('customer-info')}>
-                    <div className={cx('customer-name')}>{record.userName}</div>
-                    <div className={cx('customer-contact')}>{record.userPhone}</div>
-                </div>
-            )
-        },
-        {
-            title: 'Gói dịch vụ',
-            dataIndex: 'planName',
-            key: 'planName',
-            width: 120,
-            render: (text, record) => (
-                <div>
-                    <Tag color="blue">{text}</Tag>
-                    <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
-                        {record.duration} tháng
-                    </div>
-                </div>
-            )
-        },
-        {
-            title: 'Số tiền',
-            dataIndex: 'amount',
-            key: 'amount',
-            width: 130,
-            render: (amount) => (
-                <span className={cx('amount')}>
-          {amount.toLocaleString('vi-VN')} đ
+// ─────────────────────────────────────────────────────────
+// StatusTag
+// ─────────────────────────────────────────────────────────
+const StatusTag = ({ status, meta }) => {
+    const m = meta[status] || { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)", text: status };
+    return (
+        <span
+            className={cx("statusTag")}
+            style={{ color: m.color, background: m.bg, borderColor: `${m.color}44` }}
+        >
+            {m.text}
         </span>
-            )
+    );
+};
+
+// ─────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────
+function AdminPaymentManagement() {
+    const [contractOptions, setContractOptions]       = useState([]);
+    const [contractMap, setContractMap]               = useState({});
+    const [selectedContractId, setSelectedContractId] = useState(null);
+    const [reconciliation, setReconciliation]         = useState(null);
+    const [agingReport, setAgingReport]               = useState(null);
+    const [creditLedger, setCreditLedger]             = useState(null);
+    const [billingAuditLogs, setBillingAuditLogs]     = useState([]);
+    const [payments, setPayments]                     = useState([]);
+    const [selectedPaymentId, setSelectedPaymentId]   = useState(null);
+    const [selectedPayment, setSelectedPayment]       = useState(null);
+    const [loadingContracts, setLoadingContracts]     = useState(false);
+    const [loadingWorkspace, setLoadingWorkspace]     = useState(false);
+    const [submitting, setSubmitting]                 = useState(false);
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL");
+    const [paymentSearch, setPaymentSearch]           = useState("");
+
+    const [receiveForm] = Form.useForm();
+    const [reverseForm] = Form.useForm();
+
+    const selectedContract = selectedContractId ? contractMap[selectedContractId] : null;
+
+    // ── Derived ──
+    const outstandingInvoices = useMemo(
+        () =>
+            (reconciliation?.invoices || []).filter(
+                (i) => Number(i.outstandingAmount || 0) > 0 && i.billStatus !== "CANCELLED"
+            ),
+        [reconciliation]
+    );
+
+    const selectedPaymentUnallocated = Number(selectedPayment?.unallocatedAmount || 0);
+
+    const filteredPayments = useMemo(() => {
+        const s = paymentSearch.trim().toLowerCase();
+        return payments.filter((p) => {
+            const matchStatus = paymentStatusFilter === "ALL" || p.status === paymentStatusFilter;
+            const matchSearch =
+                !s ||
+                String(p.id).includes(s) ||
+                String(p.externalReference || "").toLowerCase().includes(s);
+            return matchStatus && matchSearch;
+        });
+    }, [payments, paymentSearch, paymentStatusFilter]);
+
+    const paymentSummary = useMemo(() => ({
+        pendingCount:     payments.filter((p) => p.status === "PENDING").length,
+        actionableCount:  payments.filter((p) => !["REVERSED", "FAILED"].includes(p.status) && Number(p.unallocatedAmount || 0) > 0).length,
+        totalUnallocated: payments.reduce((s, p) => s + Number(p.unallocatedAmount || 0), 0),
+    }), [payments]);
+
+    const agingInvoices = useMemo(() =>
+            [...(agingReport?.invoices || [])]
+                .filter((i) => Number(i.outstandingAmount || 0) > 0)
+                .sort((a, b) => Number(b.ageDays || 0) - Number(a.ageDays || 0)),
+        [agingReport]
+    );
+
+    const creditEntries = useMemo(() =>
+            [...(creditLedger?.entries || [])]
+                .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
+                .slice(0, 6),
+        [creditLedger]
+    );
+
+    const manualAllocationDraft = useMemo(
+        () => outstandingInvoices.reduce((s, i) => s + Number(i.manualAmount || 0), 0),
+        [outstandingInvoices]
+    );
+
+    const canAllocate =
+        !!selectedPayment &&
+        !["REVERSED", "FAILED"].includes(selectedPayment.status) &&
+        Number(selectedPayment.unallocatedAmount || 0) > 0;
+
+    const canReverse =
+        !!selectedPayment && !["REVERSED", "FAILED"].includes(selectedPayment.status);
+
+    // ── Workspace refresh ──
+    const refreshWorkspace = useCallback(
+        async (contractId, preferredPaymentId = null) => {
+            if (!contractId) {
+                setReconciliation(null); setAgingReport(null); setCreditLedger(null);
+                setBillingAuditLogs([]); setPayments([]);
+                setSelectedPaymentId(null); setSelectedPayment(null);
+                return;
+            }
+            setLoadingWorkspace(true);
+            try {
+                const [report, aging, credit, logs, paymentPage] = await Promise.all([
+                    getContractReconciliation(contractId),
+                    getDebtAgingReport(contractId),
+                    getCreditLedgerReport(contractId),
+                    getBillingAuditLogs({ contractId }),
+                    listPayments({ contractId, page: 0, size: 100 }),
+                ]);
+                const fetched = paymentPage?.content || [];
+                setReconciliation(report); setAgingReport(aging); setCreditLedger(credit);
+                setBillingAuditLogs(logs || []); setPayments(fetched);
+                setPaymentSearch(""); setPaymentStatusFilter("ALL");
+                setSelectedPaymentId(preferredPaymentId || selectedPaymentId || fetched[0]?.id || null);
+                setSelectedPayment(null);
+            } finally {
+                setLoadingWorkspace(false);
+            }
         },
-        {
-            title: 'Phương thức',
-            dataIndex: 'paymentMethod',
-            key: 'paymentMethod',
-            width: 150,
-            render: (method) => (
-                <Space>
-                    <span>{getPaymentMethodIcon(method)}</span>
-                    <span>{getPaymentMethodText(method)}</span>
-                </Space>
-            )
-        },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            width: 130,
-            render: (status) => (
-                <Tag
-                    color={getStatusColor(status)}
-                    icon={
-                        status === 'SUCCESS' ? <CheckCircleOutlined /> :
-                            status === 'PENDING' ? <ClockCircleOutlined /> :
-                                <CloseCircleOutlined />
-                    }
-                >
-                    {getStatusText(status)}
-                </Tag>
-            )
-        },
-        {
-            title: 'Thời gian',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            width: 160,
-            render: (text) => (
-                <div style={{ fontSize: 13 }}>
-                    {text}
-                </div>
-            )
-        },
-        {
-            title: 'Thao tác',
-            key: 'action',
-            fixed: 'right',
-            width: 200,
-            render: (_, record) => (
-                <Space size="small">
-                    <Tooltip title="Xem chi tiết">
-                        <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleViewDetail(record)}
-                        />
-                    </Tooltip>
-                    {record.status === 'PENDING' && (
-                        <>
-                            <Tooltip title="Xác nhận">
-                                <Button
-                                    type="text"
-                                    icon={<CheckCircleOutlined />}
-                                    style={{ color: '#52c41a' }}
-                                    onClick={() => handleConfirmPayment(record)}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Từ chối">
-                                <Button
-                                    type="text"
-                                    icon={<CloseCircleOutlined />}
-                                    danger
-                                    onClick={() => handleRejectPayment(record)}
-                                />
-                            </Tooltip>
-                        </>
-                    )}
-                    <Tooltip title="Tải hóa đơn">
-                        <Button
-                            type="text"
-                            icon={<DownloadOutlined />}
-                        />
-                    </Tooltip>
-                </Space>
-            )
+        [selectedPaymentId]
+    );
+
+    useEffect(() => {
+        (async () => {
+            setLoadingContracts(true);
+            try {
+                const contracts = await getAllActiveContracts();
+                setContractOptions((contracts || []).map(toContractOption));
+                setContractMap(Object.fromEntries((contracts || []).map((c) => [c.id, c])));
+                if (contracts?.length) setSelectedContractId((cur) => cur || contracts[0].id);
+            } finally {
+                setLoadingContracts(false);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        refreshWorkspace(selectedContractId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedContractId]);
+
+    useEffect(() => {
+        if (!selectedPaymentId) { setSelectedPayment(null); return; }
+        let cancelled = false;
+        getPaymentById(selectedPaymentId)
+            .then((p) => { if (!cancelled) setSelectedPayment(p); })
+            .catch(() => { if (!cancelled) setSelectedPayment(null); });
+        return () => { cancelled = true; };
+    }, [selectedPaymentId, payments]);
+
+    // ── Handlers ──
+    const handleReceive = async (values) => {
+        if (!selectedContractId) { message.warning("Hãy chọn hợp đồng trước."); return; }
+        setSubmitting(true);
+        try {
+            const p = await receivePayment({
+                contractId: selectedContractId,
+                amount: values.amount,
+                externalReference: values.externalReference,
+                currency: values.currency || "VND",
+                receivedAt: values.receivedAt?.toISOString(),
+                note: values.note,
+            });
+            message.success("Đã ghi nhận thanh toán thành công");
+            receiveForm.resetFields();
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể ghi nhận thanh toán"));
+        } finally {
+            setSubmitting(false);
         }
+    };
+
+    const handleConfirm = async (paymentId) => {
+        setSubmitting(true);
+        try {
+            const p = await confirmPayment(paymentId);
+            message.success("Xác nhận thanh toán thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể xác nhận"));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleAutoAllocate = async (paymentId) => {
+        setSubmitting(true);
+        try {
+            const p = await allocatePayment(paymentId, null);
+            message.success("Phân bổ tự động thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể phân bổ tự động"));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleManualAllocate = async () => {
+        if (!selectedPayment) { message.warning("Hãy chọn một khoản thanh toán."); return; }
+        const allocations = outstandingInvoices
+            .map((i) => ({ billId: i.billId, amount: Number(i.manualAmount || 0), outstandingAmount: Number(i.outstandingAmount || 0) }))
+            .filter((i) => i.amount > 0);
+        if (!allocations.length) { message.warning("Nhập ít nhất một số tiền > 0 để phân bổ thủ công."); return; }
+        if (allocations.find((i) => i.amount > i.outstandingAmount)) { message.error("Có khoản phân bổ vượt outstanding của bill."); return; }
+        if (allocations.reduce((s, i) => s + i.amount, 0) > selectedPaymentUnallocated) { message.error("Tổng vượt số tiền chưa phân bổ."); return; }
+        setSubmitting(true);
+        try {
+            const p = await allocatePayment(selectedPayment.id, {
+                allocations: allocations.map(({ billId, amount }) => ({ billId, amount })),
+                note: "Manual allocation from finance workspace",
+            });
+            message.success("Phân bổ thủ công thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể phân bổ thủ công"));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const openReverseModal = () => {
+        if (!selectedPayment) { message.warning("Hãy chọn một khoản thanh toán."); return; }
+        Modal.confirm({
+            title: `Đảo ngược thanh toán #${selectedPayment.id}`,
+            icon: <RollbackOutlined />,
+            content: (
+                <Form form={reverseForm} layout="vertical">
+                    <Form.Item name="note" label="Lý do đảo ngược">
+                        <TextArea rows={3} placeholder="VD: Thu nhầm, hoàn cọc, thử lại giao dịch..." />
+                    </Form.Item>
+                </Form>
+            ),
+            okText: "Đảo ngược",
+            okButtonProps: { danger: true },
+            cancelText: "Đóng",
+            onOk: async () => {
+                try {
+                    const values = await reverseForm.validateFields();
+                    const p = await reversePayment(selectedPayment.id, values);
+                    message.success("Đã đảo ngược thanh toán");
+                    reverseForm.resetFields();
+                    await refreshWorkspace(selectedContractId, p.id);
+                } catch (e) {
+                    if (e?.errorFields) return Promise.reject(e);
+                    message.error(getBillingUiErrorMessage(e, "Không thể đảo ngược"));
+                }
+            },
+        });
+    };
+
+    // ── Table columns ──
+    const paymentColumns = [
+        {
+            title: "Thanh toán",
+            key: "id",
+            render: (_, r) => (
+                <>
+                    <div className={cx("payId")}>#{r.id}</div>
+                    <div className={cx("payRef")}>{r.externalReference || "—"}</div>
+                </>
+            ),
+        },
+        {
+            title: "Số tiền",
+            dataIndex: "amount",
+            render: (v) => <span className={cx("amtPrimary")}>{formatCurrency(v)}</span>,
+        },
+        {
+            title: "Đã phân bổ",
+            dataIndex: "allocatedAmount",
+            render: (v) => <span className={cx("amtSub")}>{formatCurrency(v)}</span>,
+        },
+        {
+            title: "Chưa phân bổ",
+            dataIndex: "unallocatedAmount",
+            render: (v) => (
+                <span className={cx(Number(v) > 0 ? "amtWarn" : "amtSub")}>{formatCurrency(v)}</span>
+            ),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "status",
+            render: (s) => <StatusTag status={s} meta={PAYMENT_STATUS_META} />,
+        },
+        {
+            title: "Thao tác",
+            key: "actions",
+            fixed: "right",
+            width: 220,
+            render: (_, r) => {
+                const canA = !["REVERSED", "FAILED"].includes(r.status) && Number(r.unallocatedAmount || 0) > 0;
+                return (
+                    <Space size={6}>
+                        <Tooltip title="Chọn thanh toán này để xem và phân bổ">
+                            <Button
+                                size="small"
+                                className={cx("btnGhost", "btnSm")}
+                                icon={<ArrowRightOutlined />}
+                                onClick={() => setSelectedPaymentId(r.id)}
+                            >
+                                {r.id === selectedPaymentId ? "Đang chọn" : "Chọn"}
+                            </Button>
+                        </Tooltip>
+                        {r.status === "PENDING" && (
+                            <Tooltip title="Xác nhận khoản thanh toán">
+                                <Button
+                                    size="small"
+                                    className={cx("btnPrimary", "btnSm")}
+                                    onClick={() => handleConfirm(r.id)}
+                                >
+                                    Xác nhận
+                                </Button>
+                            </Tooltip>
+                        )}
+                        <Tooltip title="Tự động phân bổ theo thứ tự ưu tiên">
+                            <Button
+                                size="small"
+                                className={cx(canA ? "btnAccent" : "btnGhost", "btnSm")}
+                                disabled={!canA}
+                                icon={<ThunderboltOutlined />}
+                                onClick={() => handleAutoAllocate(r.id)}
+                            >
+                                Tự động
+                            </Button>
+                        </Tooltip>
+                    </Space>
+                );
+            },
+        },
     ];
 
-    return (
-        <div className={cx('payment-wrapper')}>
-            {/* Statistics */}
-            <Row gutter={[16, 16]} className={cx('statistics-row')}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className={cx('stat-card', 'primary')}>
-                        <Statistic
-                            title="Tổng doanh thu tháng"
-                            value={mockStatistics.totalRevenue}
-                            precision={0}
-                            valueStyle={{ color: '#722ed1', fontSize: 28 }}
-                            prefix={<DollarOutlined />}
-                            suffix="đ"
-                        />
-                        <div className={cx('stat-growth', 'up')}>
-                            <RiseOutlined /> {mockStatistics.revenueGrowth}% so với tháng trước
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className={cx('stat-card', 'success')}>
-                        <Statistic
-                            title="Doanh thu hôm nay"
-                            value={mockStatistics.todayRevenue}
-                            precision={0}
-                            valueStyle={{ color: '#52c41a', fontSize: 28 }}
-                            prefix={<ShoppingOutlined />}
-                            suffix="đ"
-                        />
-                        <div className={cx('stat-detail')}>
-                            {mockStatistics.successCount} giao dịch thành công
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className={cx('stat-card', 'warning')}>
-                        <Statistic
-                            title="Chờ xác nhận"
-                            value={mockStatistics.pendingAmount}
-                            precision={0}
-                            valueStyle={{ color: '#fa8c16', fontSize: 28 }}
-                            prefix={<ClockCircleOutlined />}
-                            suffix="đ"
-                        />
-                        <div className={cx('stat-detail')}>
-                            {mockStatistics.pendingCount} giao dịch đang chờ
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className={cx('stat-card', 'danger')}>
-                        <Statistic
-                            title="Thất bại"
-                            value={mockStatistics.failedCount}
-                            valueStyle={{ color: '#ff4d4f', fontSize: 28 }}
-                            prefix={<CloseCircleOutlined />}
-                            suffix="GD"
-                        />
-                        <div className={cx('stat-growth', 'down')}>
-                            <FallOutlined /> {Math.abs(mockStatistics.transactionGrowth)}% so với tháng trước
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Filters */}
-            <Card className={cx('filter-card')}>
-                <Space size="middle" wrap className={cx('filter-space')}>
-                    <Input
-                        placeholder="Tìm mã GD, tên KH, email..."
-                        prefix={<SearchOutlined />}
-                        style={{ width: 280 }}
-                        value={filters.searchText}
-                        onChange={(e) => setFilters({ ...filters, searchText: e.target.value })}
-                        allowClear
-                    />
-
-                    <Select
-                        placeholder="Trạng thái"
-                        style={{ width: 150 }}
-                        value={filters.status}
-                        onChange={(value) => setFilters({ ...filters, status: value })}
-                    >
-                        <Select.Option value="ALL">Tất cả</Select.Option>
-                        <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
-                        <Select.Option value="SUCCESS">Thành công</Select.Option>
-                        <Select.Option value="FAILED">Thất bại</Select.Option>
-                    </Select>
-
-                    <Select
-                        placeholder="Phương thức"
-                        style={{ width: 160 }}
-                        value={filters.paymentMethod}
-                        onChange={(value) => setFilters({ ...filters, paymentMethod: value })}
-                    >
-                        <Select.Option value="ALL">Tất cả</Select.Option>
-                        <Select.Option value="MOMO">MoMo</Select.Option>
-                        <Select.Option value="ZALOPAY">ZaloPay</Select.Option>
-                        <Select.Option value="VNPAY">VNPAY</Select.Option>
-                        <Select.Option value="BANK_TRANSFER">Chuyển khoản</Select.Option>
-                    </Select>
-
-                    <RangePicker
-                        style={{ width: 260 }}
-                        placeholder={['Từ ngày', 'Đến ngày']}
-                    />
-
-                    <Button icon={<FilterOutlined />}>
-                        Lọc nâng cao
-                    </Button>
-
-                    <Button type="primary" icon={<DownloadOutlined />}>
-                        Xuất báo cáo
-                    </Button>
-                </Space>
-            </Card>
-
-            {/* Table */}
-            <Card className={cx('table-card')}>
-                <Table
-                    columns={columns}
-                    dataSource={Array.isArray(filteredTransactions) ? filteredTransactions : []}
-                    rowKey="id"
-                    scroll={{ x: 1200 }}
-                    locale={{
-                        emptyText: (
-                            <Empty
-                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                description="Không có dữ liệu"
-                            />
-                        ),
-                    }}
-                    pagination={{
-                        pageSize: 10,
-                        showTotal: (total) => `Tổng ${total} giao dịch`,
-                        showSizeChanger: true
-                    }}
+    const invoiceColumns = [
+        {
+            title: "Hóa đơn",
+            key: "billId",
+            render: (_, r) => (
+                <>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-1, #f0f4ff)" }}>
+                        {r.generationKey || `#${r.billId}`}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-3, #4e5f7c)", marginTop: 2 }}>
+                        {r.billingPeriodStart} → {r.billingPeriodEnd}
+                    </div>
+                </>
+            ),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "billStatus",
+            render: (s) => <StatusTag status={s} meta={INVOICE_STATUS_META} />,
+        },
+        {
+            title: "Còn nợ",
+            dataIndex: "outstandingAmount",
+            render: (v) => <span className={cx("amtWarn")} style={{ fontWeight: 800 }}>{formatCurrency(v)}</span>,
+        },
+        {
+            title: "Phân bổ thủ công",
+            key: "manual",
+            render: (_, r) => (
+                <InputNumber
+                    min={0}
+                    max={Number(r.outstandingAmount || 0)}
+                    precision={0}
+                    value={r.manualAmount}
+                    disabled={!canAllocate}
+                    style={{ width: 130 }}
+                    onChange={(v) =>
+                        setReconciliation((cur) => ({
+                            ...cur,
+                            invoices: (cur?.invoices || []).map((i) =>
+                                i.billId === r.billId ? { ...i, manualAmount: v || 0 } : i
+                            ),
+                        }))
+                    }
                 />
-            </Card>
+            ),
+        },
+    ];
 
-            {/* Detail Modal */}
-            <Modal
-                title={<><FileTextOutlined /> Chi tiết giao dịch</>}
-                open={detailModalVisible}
-                onCancel={() => setDetailModalVisible(false)}
-                footer={null}
-                width={700}
-            >
-                {selectedTransaction && (
-                    <div className={cx('detail-content')}>
-                        <Descriptions column={2} bordered>
-                            <Descriptions.Item label="Mã giao dịch" span={2}>
-                                <span className={cx('transaction-code')}>{selectedTransaction.transactionCode}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Mã hóa đơn" span={2}>
-                                {selectedTransaction.invoiceCode}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Khách hàng" span={2}>
-                                <div>
-                                    <div style={{ fontWeight: 600 }}>{selectedTransaction.userName}</div>
-                                    <div style={{ fontSize: 13, color: '#8c8c8c' }}>
-                                        {selectedTransaction.userEmail} • {selectedTransaction.userPhone}
+    // ─────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────
+    return (
+        <div className={cx("wrapper")}>
+
+            {/* ════ Top navigation bar ════ */}
+            <header className={cx("topBar")}>
+                <div className={cx("topBarLeft")}>
+                    <div className={cx("brandIcon")}>
+                        <WalletOutlined />
+                    </div>
+                    <span className={cx("brandName")}>FinanceOps</span>
+                    <span className={cx("brandSep")} />
+                    <span className={cx("pageTitle")}>Quản lý Thanh toán</span>
+                </div>
+
+                <div className={cx("topBarRight")}>
+                    <Select
+                        showSearch
+                        className={cx("contractSelector")}
+                        style={{ minWidth: 320 }}
+                        placeholder="Chọn hợp đồng..."
+                        options={contractOptions}
+                        value={selectedContractId}
+                        loading={loadingContracts}
+                        onChange={setSelectedContractId}
+                        optionFilterProp="label"
+                        suffixIcon={<FilterOutlined />}
+                    />
+                    <Tooltip title="Làm mới toàn bộ dữ liệu workspace">
+                        <Button
+                            className={cx("btnGhost")}
+                            icon={<ReloadOutlined />}
+                            onClick={() => refreshWorkspace(selectedContractId, selectedPaymentId)}
+                        >
+                            Làm mới
+                        </Button>
+                    </Tooltip>
+                </div>
+            </header>
+
+            {/* ════ No contract ════ */}
+            {!selectedContractId ? (
+                <div className={cx("fullEmpty")}>
+                    <BankOutlined />
+                    <p>Chưa có hợp đồng active để thao tác</p>
+                </div>
+            ) : (
+                <Spin spinning={loadingWorkspace || submitting} tip="Đang tải...">
+                    <main className={cx("content")}>
+
+                        {/* ════ KPI strip ════ */}
+                        <div className={cx("kpiStrip")}>
+                            {KPI_CONFIG.map(({ key, label, icon, cls }) => {
+                                const value =
+                                    key === "creditBalance"
+                                        ? creditLedger?.currentBalance
+                                        : reconciliation?.[key];
+                                return (
+                                    <div key={key} className={cx("kpiCard", cls)}>
+                                        <div className={cx("kpiIconWrap")}>{icon}</div>
+                                        <div className={cx("kpiInfo")}>
+                                            <div className={cx("kpiLabel")}>{label}</div>
+                                            <div className={cx("kpiValue")}>{formatCurrency(value)}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* ════ Row 1: Receive form + Payment list ════ */}
+                        <div className={cx("mainGrid")}>
+
+                            {/* Receive form */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <PlusOutlined />
+                                        Ghi nhận thanh toán
                                     </div>
                                 </div>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Gói dịch vụ">
-                                <Tag color="blue">{selectedTransaction.planName}</Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Thời hạn">
-                                {selectedTransaction.duration} tháng
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Số tiền">
-                <span className={cx('amount-large')}>
-                  {selectedTransaction.amount.toLocaleString('vi-VN')} đ
-                </span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Phương thức">
-                                {getPaymentMethodIcon(selectedTransaction.paymentMethod)}{' '}
-                                {getPaymentMethodText(selectedTransaction.paymentMethod)}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Trạng thái" span={2}>
-                                <Tag
-                                    color={getStatusColor(selectedTransaction.status)}
-                                    icon={
-                                        selectedTransaction.status === 'SUCCESS' ? <CheckCircleOutlined /> :
-                                            selectedTransaction.status === 'PENDING' ? <ClockCircleOutlined /> :
-                                                <CloseCircleOutlined />
-                                    }
-                                >
-                                    {getStatusText(selectedTransaction.status)}
-                                </Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Thời gian tạo">
-                                {selectedTransaction.createdAt}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Thời gian thanh toán">
-                                {selectedTransaction.paidAt || '—'}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ghi chú" span={2}>
-                                {selectedTransaction.note || '—'}
-                            </Descriptions.Item>
-                        </Descriptions>
+                                <div className={cx("cardBody")}>
+                                    {/* Contract strip */}
+                                    <div className={cx("contractStrip")}>
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Khu trọ</span>
+                                            <span className={cx("contractStripValue")}>
+                                                {selectedContract?.boardingHouseName || "—"}
+                                            </span>
+                                        </div>
+                                        <span className={cx("contractStripDivider")} />
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Phòng</span>
+                                            <span className={cx("contractStripValue", "contractStripValue--accent")}>
+                                                P.{selectedContract?.roomNumber || "?"}
+                                            </span>
+                                        </div>
+                                        <span className={cx("contractStripDivider")} />
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Người thuê</span>
+                                            <span className={cx("contractStripValue")}>
+                                                {selectedContract?.tenantFullName || "—"}
+                                            </span>
+                                        </div>
+                                    </div>
 
-                        {selectedTransaction.screenshot && (
-                            <div style={{ marginTop: 24 }}>
-                                <h4>Ảnh chứng từ chuyển khoản:</h4>
-                                <Image
-                                    width={200}
-                                    src={selectedTransaction.screenshot}
-                                    placeholder={<div>Loading...</div>}
-                                />
+                                    <Form layout="vertical" form={receiveForm} onFinish={handleReceive}>
+                                        <Form.Item
+                                            label="Số tiền (₫)"
+                                            name="amount"
+                                            rules={[{ required: true, message: "Nhập số tiền" }]}
+                                        >
+                                            <InputNumber
+                                                style={{ width: "100%" }}
+                                                min={1}
+                                                precision={0}
+                                                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                                            />
+                                        </Form.Item>
+                                        <Form.Item
+                                            label="Mã tham chiếu"
+                                            name="externalReference"
+                                            rules={[{ required: true, message: "Nhập mã tham chiếu" }]}
+                                        >
+                                            <Input placeholder="VD: CK-20260329-001" />
+                                        </Form.Item>
+                                        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
+                                            <Form.Item label="Tiền tệ" name="currency" initialValue="VND">
+                                                <Input />
+                                            </Form.Item>
+                                            <Form.Item label="Ngày nhận tiền" name="receivedAt">
+                                                <DatePicker
+                                                    showTime
+                                                    style={{ width: "100%" }}
+                                                    format="DD/MM/YYYY HH:mm"
+                                                    disabledDate={(d) => d && d > dayjs().endOf("day")}
+                                                />
+                                            </Form.Item>
+                                        </div>
+                                        <Form.Item label="Ghi chú" name="note">
+                                            <TextArea rows={2} />
+                                        </Form.Item>
+                                        <Button className={cx("btnReceive")} htmlType="submit">
+                                            <WalletOutlined /> Ghi nhận thanh toán
+                                        </Button>
+                                    </Form>
+
+                                    {/* Aging buckets */}
+                                    {(agingReport?.buckets || []).filter((b) => Number(b.outstandingAmount || 0) > 0).length > 0 && (
+                                        <div className={cx("miniPanel")}>
+                                            <div className={cx("miniPanelHead", "miniPanelHead--amber")}>
+                                                <ClockCircleOutlined /> Phân tầng tuổi nợ
+                                            </div>
+                                            {(agingReport.buckets || [])
+                                                .filter((b) => Number(b.outstandingAmount || 0) > 0)
+                                                .map((b) => (
+                                                    <div key={b.bucketCode} className={cx("agingRow")}>
+                                                        <span className={cx("agingLabel")}>{b.label}</span>
+                                                        <div>
+                                                            <div className={cx("agingAmount")}>{formatCurrency(b.outstandingAmount)}</div>
+                                                            <div className={cx("agingCount")}>{b.invoiceCount} hóa đơn</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
+
+                                    {/* Overdue invoices */}
+                                    {agingInvoices.slice(0, 4).length > 0 && (
+                                        <div className={cx("miniPanel", "miniPanel--red")}>
+                                            <div className={cx("miniPanelHead", "miniPanelHead--red")}>
+                                                <WarningOutlined /> Hóa đơn quá hạn
+                                            </div>
+                                            {agingInvoices.slice(0, 4).map((inv) => (
+                                                <div key={inv.billId} className={cx("overdueRow")}>
+                                                    <div>
+                                                        <div className={cx("overdueCode")}>{inv.billCode || `#${inv.billId}`}</div>
+                                                        <div className={cx("overdueDays")}>Quá hạn {inv.ageDays || 0} ngày</div>
+                                                    </div>
+                                                    <span className={cx("overdueAmount")}>{formatCurrency(inv.outstandingAmount)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        )}
 
-                        {selectedTransaction.status === 'PENDING' && (
-                            <Space style={{ marginTop: 24, width: '100%' }} size="middle">
-                                <Button
-                                    type="primary"
-                                    icon={<CheckCircleOutlined />}
-                                    onClick={() => {
-                                        setDetailModalVisible(false);
-                                        handleConfirmPayment(selectedTransaction);
-                                    }}
-                                    block
-                                >
-                                    Xác nhận thanh toán
-                                </Button>
-                                <Button
-                                    danger
-                                    icon={<CloseCircleOutlined />}
-                                    onClick={() => {
-                                        setDetailModalVisible(false);
-                                        handleRejectPayment(selectedTransaction);
-                                    }}
-                                    block
-                                >
-                                    Từ chối
-                                </Button>
-                            </Space>
-                        )}
-                    </div>
-                )}
-            </Modal>
+                            {/* Payment list */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <CreditCardOutlined />
+                                        Danh sách thanh toán
+                                    </div>
+                                    <span className={cx("cardBadge")}>
+                                        {filteredPayments.length} / {payments.length}
+                                    </span>
+                                </div>
 
-            {/* Confirm Modal */}
-            <Modal
-                title={<><CheckCircleOutlined style={{ color: '#52c41a' }} /> Xác nhận thanh toán</>}
-                open={confirmModalVisible}
-                onCancel={() => {
-                    setConfirmModalVisible(false);
-                    form.resetFields();
-                }}
-                onOk={() => form.submit()}
-                okText="Xác nhận"
-                cancelText="Hủy"
-            >
-                {selectedTransaction && (
-                    <Form form={form} layout="vertical" onFinish={confirmTransaction}>
-                        <div className={cx('confirm-info')}>
-                            <p>
-                                <strong>Mã GD:</strong> {selectedTransaction.transactionCode}
-                            </p>
-                            <p>
-                                <strong>Khách hàng:</strong> {selectedTransaction.userName}
-                            </p>
-                            <p>
-                                <strong>Số tiền:</strong>{' '}
-                                <span className={cx('amount-large')}>
-                  {selectedTransaction.amount.toLocaleString('vi-VN')} đ
-                </span>
-                            </p>
+                                <div className={cx("cardBodyZero")}>
+                                    {/* Toolbar */}
+                                    <div className={cx("paymentToolbar")}>
+                                        <Input
+                                            allowClear
+                                            prefix={<SearchOutlined style={{ color: "#4e5f7c" }} />}
+                                            placeholder="Tìm theo mã thanh toán hoặc tham chiếu..."
+                                            value={paymentSearch}
+                                            onChange={(e) => setPaymentSearch(e.target.value)}
+                                        />
+                                        <Select
+                                            value={paymentStatusFilter}
+                                            onChange={setPaymentStatusFilter}
+                                            style={{ width: 190 }}
+                                            options={[
+                                                { value: "ALL", label: "Tất cả trạng thái" },
+                                                ...Object.entries(PAYMENT_STATUS_META).map(([v, m]) => ({
+                                                    value: v,
+                                                    label: m.text,
+                                                })),
+                                            ]}
+                                        />
+                                    </div>
+
+                                    {/* Summary strip */}
+                                    <div className={cx("summaryStrip")}>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Chờ xác nhận</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--amber")}>
+                                                {paymentSummary.pendingCount}
+                                            </span>
+                                        </div>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Có thể phân bổ</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--blue")}>
+                                                {paymentSummary.actionableCount}
+                                            </span>
+                                        </div>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Chưa phân bổ</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--violet")}>
+                                                {formatCurrency(paymentSummary.totalUnallocated)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className={cx("tableWrap")}>
+                                        <Table
+                                            rowKey="id"
+                                            size="small"
+                                            columns={paymentColumns}
+                                            dataSource={filteredPayments}
+                                            scroll={{ x: 700 }}
+                                            pagination={{ size: "small", pageSize: 8 }}
+                                            locale={{
+                                                emptyText: (
+                                                    <Empty description={
+                                                        <span style={{ color: "#4e5f7c", fontSize: 13 }}>
+                                                            Chưa có khoản thanh toán nào
+                                                        </span>
+                                                    } />
+                                                ),
+                                            }}
+                                            rowClassName={(r) => r.id === selectedPaymentId ? cx("selectedRow") : ""}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <Form.Item
-                            name="note"
-                            label="Ghi chú xác nhận"
-                        >
-                            <TextArea
-                                rows={3}
-                                placeholder="Nhập ghi chú (không bắt buộc)"
-                            />
-                        </Form.Item>
-                    </Form>
-                )}
-            </Modal>
+                        {/* ════ Row 2: Allocation + Detail ════ */}
+                        <div className={cx("allocationGrid")}>
 
-            {/* Reject Modal */}
-            <Modal
-                title={<><CloseCircleOutlined style={{ color: '#ff4d4f' }} /> Từ chối giao dịch</>}
-                open={rejectModalVisible}
-                onCancel={() => {
-                    setRejectModalVisible(false);
-                    form.resetFields();
-                }}
-                onOk={() => form.submit()}
-                okText="Xác nhận từ chối"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-            >
-                {selectedTransaction && (
-                    <Form form={form} layout="vertical" onFinish={rejectTransaction}>
-                        <div className={cx('confirm-info')}>
-                            <p>
-                                <strong>Mã GD:</strong> {selectedTransaction.transactionCode}
-                            </p>
-                            <p>
-                                <strong>Khách hàng:</strong> {selectedTransaction.userName}
-                            </p>
+                            {/* Allocation workspace */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <DollarOutlined />
+                                        Phân bổ thanh toán
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!selectedPayment ? (
+                                        <div className={cx("emptyState")}>
+                                            <ArrowRightOutlined />
+                                            <span>Chọn một khoản thanh toán từ danh sách bên trên để phân bổ</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className={cx(
+                                                "paymentBanner",
+                                                selectedPayment.status === "PENDING"
+                                                    ? "paymentBanner--pending"
+                                                    : "paymentBanner--normal"
+                                            )}>
+                                                <span className={cx("paymentBannerIcon")}>
+                                                    {selectedPayment.status === "PENDING"
+                                                        ? <ClockCircleOutlined />
+                                                        : <CheckCircleOutlined />}
+                                                </span>
+                                                <div className={cx("paymentBannerBody")}>
+                                                    <div className={cx("paymentBannerTitle")}>
+                                                        Thanh toán #{selectedPayment.id}
+                                                        <StatusTag status={selectedPayment.status} meta={PAYMENT_STATUS_META} />
+                                                    </div>
+                                                    <div className={cx("paymentBannerDesc")}>
+                                                        {selectedPayment.status === "PENDING"
+                                                            ? "Khoản này đang chờ xác nhận. "
+                                                            : ""}
+                                                        Chưa phân bổ:{" "}
+                                                        <strong className={cx("amtWarn")}>
+                                                            {formatCurrency(selectedPayment.unallocatedAmount)}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className={cx("allocationMeta")}>
+                                                <span>
+                                                    Tổng phân bổ thủ công:{" "}
+                                                    <strong className={cx("allocationMetaValue")}>
+                                                        {formatCurrency(manualAllocationDraft)}
+                                                    </strong>
+                                                </span>
+                                                <span>
+                                                    Còn lại:{" "}
+                                                    <strong
+                                                        className={cx(
+                                                            Math.max(selectedPaymentUnallocated - manualAllocationDraft, 0) > 0
+                                                                ? "allocationMetaValue--warn"
+                                                                : "allocationMetaValue--ok"
+                                                        )}
+                                                    >
+                                                        {formatCurrency(Math.max(selectedPaymentUnallocated - manualAllocationDraft, 0))}
+                                                    </strong>
+                                                </span>
+                                            </div>
+
+                                            <div className={cx("tableWrap")}>
+                                                <Table
+                                                    rowKey="billId"
+                                                    size="small"
+                                                    columns={invoiceColumns}
+                                                    dataSource={outstandingInvoices}
+                                                    scroll={{ x: 500 }}
+                                                    pagination={false}
+                                                    locale={{
+                                                        emptyText: (
+                                                            <Empty description={
+                                                                <span style={{ color: "#4e5f7c", fontSize: 13 }}>
+                                                                    Không có hóa đơn nào cần phân bổ
+                                                                </span>
+                                                            } />
+                                                        ),
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className={cx("actionBar")}>
+                                                <Tooltip title="Phân bổ thủ công theo số tiền đã nhập">
+                                                    <Button
+                                                        className={cx("btnPrimary")}
+                                                        disabled={!canAllocate}
+                                                        onClick={handleManualAllocate}
+                                                        icon={<CheckCircleOutlined />}
+                                                    >
+                                                        Phân bổ thủ công
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip title="Tự động phân bổ theo thứ tự ưu tiên hệ thống">
+                                                    <Button
+                                                        className={cx(canAllocate ? "btnAccent" : "btnGhost")}
+                                                        disabled={!canAllocate}
+                                                        onClick={() => handleAutoAllocate(selectedPayment.id)}
+                                                        icon={<ThunderboltOutlined />}
+                                                    >
+                                                        Phân bổ tự động
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip title="Đảo ngược và hoàn lại toàn bộ khoản thanh toán">
+                                                    <Button
+                                                        className={cx(canReverse ? "btnDanger" : "btnGhost")}
+                                                        disabled={!canReverse}
+                                                        onClick={openReverseModal}
+                                                        icon={<RollbackOutlined />}
+                                                    >
+                                                        Đảo ngược
+                                                    </Button>
+                                                </Tooltip>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Payment detail */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <AuditOutlined />
+                                        Chi tiết thanh toán
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!selectedPayment ? (
+                                        <div className={cx("emptyState")}>
+                                            <AuditOutlined />
+                                            <span>Chọn khoản thanh toán để xem chi tiết</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Descriptions column={1} size="small" bordered>
+                                                {[
+                                                    ["Mã thanh toán",  <span className={cx("detailMonoId")}>#{selectedPayment.id}</span>],
+                                                    ["Mã tham chiếu",  selectedPayment.externalReference || "—"],
+                                                    ["Nguồn",          formatEnumLabel(selectedPayment.source || "NORMAL")],
+                                                    ["Trạng thái",     <StatusTag status={selectedPayment.status} meta={PAYMENT_STATUS_META} />],
+                                                    ["Số tiền",        <span className={cx("detailAmtLg")}>{formatCurrency(selectedPayment.amount)}</span>],
+                                                    ["Đã phân bổ",     <span className={cx("detailAlloc")}>{formatCurrency(selectedPayment.allocatedAmount)}</span>],
+                                                    ["Chưa phân bổ",   <span className={cx("detailUnalloc")}>{formatCurrency(selectedPayment.unallocatedAmount)}</span>],
+                                                    ["Ngày nhận",      selectedPayment.receivedAt  ? dayjs(selectedPayment.receivedAt).format("DD/MM/YYYY HH:mm")  : "—"],
+                                                    ["Ngày xác nhận",  selectedPayment.confirmedAt ? dayjs(selectedPayment.confirmedAt).format("DD/MM/YYYY HH:mm") : "—"],
+                                                ].map(([label, value], i) => (
+                                                    <Descriptions.Item
+                                                        key={i}
+                                                        label={label}
+                                                    >
+                                                        {value}
+                                                    </Descriptions.Item>
+                                                ))}
+                                            </Descriptions>
+
+                                            <div className={cx("allocHistory")}>
+                                                <div className={cx("allocHistoryTitle")}>Lịch sử phân bổ</div>
+                                                {!(selectedPayment.allocations || []).length ? (
+                                                    <div className={cx("allocEmpty")}>Chưa có lịch sử phân bổ</div>
+                                                ) : (
+                                                    (selectedPayment.allocations || []).map((a) => (
+                                                        <div key={a.id} className={cx("allocHistoryItem")}>
+                                                            <div>
+                                                                <span className={cx("allocBillId")}>Bill #{a.billId}</span>
+                                                                <span className={cx("allocTypeMeta")}>{formatEnumLabel(a.allocationType)}</span>
+                                                            </div>
+                                                            <span className={cx("allocAmt")}>{formatCurrency(a.amount)}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        <Form.Item
-                            name="reason"
-                            label="Lý do từ chối"
-                            rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối' }]}
-                        >
-                            <TextArea
-                                rows={4}
-                                placeholder="Ví dụ: Thông tin chuyển khoản không khớp, ảnh chứng từ không rõ ràng..."
-                            />
-                        </Form.Item>
-                    </Form>
-                )}
-            </Modal>
+                        {/* ════ Row 3: Credit ledger + Audit log ════ */}
+                        <div className={cx("bottomGrid")}>
+
+                            {/* Credit ledger */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <WalletOutlined style={{ color: "#a78bfa" }} />
+                                        Credit Ledger
+                                    </div>
+                                    <span className={cx("creditBal")}>
+                                        Số dư: <strong>{formatCurrency(creditLedger?.currentBalance)}</strong>
+                                    </span>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!creditEntries.length ? (
+                                        <div className={cx("emptyState")} style={{ padding: "36px 0" }}>
+                                            <WalletOutlined />
+                                            <span>Chưa có giao dịch tín dụng</span>
+                                        </div>
+                                    ) : (
+                                        creditEntries.map((e) => (
+                                            <div key={e.id} className={cx("creditRow")}>
+                                                <div>
+                                                    <div className={cx("creditType")}>{formatEnumLabel(e.entryType)}</div>
+                                                    {e.billId    && <div className={cx("creditBill")}>Bill #{e.billId}</div>}
+                                                    {e.createdAt && <div className={cx("creditDate")}>{dayjs(e.createdAt).format("DD/MM/YYYY HH:mm")}</div>}
+                                                </div>
+                                                <span className={cx(Number(e.amount || 0) >= 0 ? "creditPos" : "creditNeg")}>
+                                                    {formatCurrency(e.amount)}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Audit log */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <HistoryOutlined />
+                                        Nhật ký thao tác
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!(billingAuditLogs || []).slice(0, 8).length ? (
+                                        <div className={cx("emptyState")} style={{ padding: "36px 0" }}>
+                                            <HistoryOutlined />
+                                            <span>Chưa có nhật ký thao tác</span>
+                                        </div>
+                                    ) : (
+                                        (billingAuditLogs || []).slice(0, 8).map((log) => (
+                                            <div key={log.id} className={cx("auditItem")}>
+                                                <div className={cx("auditOp")}>{formatEnumLabel(log.operationType)}</div>
+                                                <div className={cx("auditMeta")}>
+                                                    <span>{formatEnumLabel(log.targetType)} #{log.targetId}</span>
+                                                    <span className={cx("auditSep")}>·</span>
+                                                    <span>{log.actorName || "Hệ thống"}</span>
+                                                    <span className={cx("auditSep")}>·</span>
+                                                    <span>{log.createdAt ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm") : "—"}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+                </Spin>
+            )}
         </div>
     );
 }

@@ -34,27 +34,36 @@ export const createBill = async (formData) => {
         throw error;
     }
 };
-//
-// export const updateContract = async (contractId, formData) => {
-//     try {
-//         const response = await apiClient.put(
-//             API_ENDPOINTS.CONTRACT.UPDATE(contractId),
-//             formData,
-//         );
-//         message.success('Contract updated successfully');
-//         return response.data;
-//     } catch (error) {
-//         console.error('Error when updating contract: ', error);
-//     }
-// };
-//
-// export const deleteContract = async (contractId) => {
-//     try {
-//         const response = await apiClient.delete(
-//             API_ENDPOINTS.CONTRACT.DELETE(contractId));
-//         message.success('Contract deleting successfully');
-//         return response.data;
-//     } catch (error) {
-//         console.error('Error when deleting contract: ', error);
-//     }
-// };
+
+export const updateBill = async (billId, formData) => {
+    try {
+        const response = await apiClient.put(API_ENDPOINTS.BILL.UPDATE(billId), formData);
+        return response.data;
+    } catch (error) {
+        console.error('Error when updating bill: ', error);
+        message.error(error.response?.data?.message || 'Lỗi cập nhật hoá đơn');
+        throw error;
+    }
+};
+
+export const deleteBill = async (billId) => {
+    try {
+        const response = await apiClient.delete(API_ENDPOINTS.BILL.DELETE(billId));
+        return response.data;
+    } catch (error) {
+        console.error('Error when deleting bill: ', error);
+        message.error(error.response?.data?.message || 'Lỗi xóa hoá đơn');
+        throw error;
+    }
+};
+
+export const cancelBill = async (billId) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.BILL.CANCEL(billId));
+        return response.data;
+    } catch (error) {
+        console.error('Error when cancelling bill: ', error);
+        message.error(error.response?.data?.message || 'Lỗi hủy hoá đơn');
+        throw error;
+    }
+};

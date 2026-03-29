@@ -17,6 +17,8 @@ public interface BillService {
 
     void delete(Integer id);
 
+    BillResponse cancel(Integer id);
+
     BillResponse getById(Integer id);
 
     List<BillResponse> getAll();

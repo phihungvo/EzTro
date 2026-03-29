@@ -37,6 +37,7 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.RoomService;
 import carevn.luv2code.ez_tro.specification.RoomSpecs;
+import carevn.luv2code.ez_tro.util.DepositLedgerHelper;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 
@@ -69,6 +70,7 @@ public class RoomServiceImpl implements RoomService {
     private final MeterReadingRepository meterReadingRepository;
     private final PropertyAssetRepository propertyAssetRepository;
     private final ContractSnapshotService contractSnapshotService;
+    private final DepositTransactionRepository depositTransactionRepository;
 
     //    @Override
     //    @Transactional
@@ -656,6 +658,16 @@ public class RoomServiceImpl implements RoomService {
                 })
                 .toList();
 
+        List<DepositTransaction> depositTransactions =
+                depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(activeContract.getId());
+        DepositLedgerSummaryResponse depositSummary = DepositLedgerHelper.summarize(depositTransactions);
+        List<DepositTransactionSummaryResponse> depositTransactionResponses =
+                DepositLedgerHelper.toSummaryResponses(depositTransactions);
+
+        boolean hasBillThisMonth = billRepository.existsByRoomIdAndMonthAndYear(roomId, month, year);
+        List<ContractBillingRuleSummaryResponse> billingRules =
+                snapshot.getActiveBillingRules() != null ? snapshot.getActiveBillingRules() : List.of();
+
         return CreatorBillContextResponse.builder()
                 .roomId(room.getId())
                 .roomNumber(room.getRoomNumber())
@@ -667,6 +679,11 @@ public class RoomServiceImpl implements RoomService {
                 .usageBasedUtilities(usageBasedItems)
                 .fixedChargeUtilities(fixedChargeItems)
                 .meterReadings(meterItems)
+                .hasBillThisMonth(hasBillThisMonth)
+                .contractSnapshot(snapshot)
+                .billingRules(billingRules)
+                .depositSummary(depositSummary)
+                .depositTransactions(depositTransactionResponses)
                 .build();
     }
 

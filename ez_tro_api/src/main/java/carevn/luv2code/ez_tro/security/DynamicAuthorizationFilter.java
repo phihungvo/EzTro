@@ -54,7 +54,7 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String requestPath = request.getRequestURI();
+        String requestPath = normalizePath(request.getRequestURI());
         String requestMethod = request.getMethod();
 
         // Always allow preflight requests
@@ -133,18 +133,33 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
             return false;
         }
 
-        String permissionPattern = permission.getApiEndpoint();
-        String resourcePattern = permission.getResourcePattern();
+        return matchesPath(permission.getApiEndpoint(), requestPath)
+                || matchesPath(permission.getResourcePattern(), requestPath);
+    }
 
-        if (pathMatcher.match(permissionPattern, requestPath)) {
+    private boolean matchesPath(String rawPattern, String requestPath) {
+        if (rawPattern == null || rawPattern.isBlank()) {
+            return false;
+        }
+
+        String pattern = normalizePath(rawPattern);
+
+        if (pathMatcher.match(pattern, requestPath)) {
             return true;
         }
 
-        if (resourcePattern != null && !resourcePattern.isEmpty()) {
-            return pathMatcher.match(resourcePattern, requestPath);
-        }
+        // Cho phép permission theo resource gốc như /api/payments cover luôn subpath /api/payments/{id}.
+        return requestPath.equals(pattern) || requestPath.startsWith(pattern + "/");
+    }
 
-        return false;
+    private String normalizePath(String path) {
+        if (path == null || path.isBlank()) {
+            return "/";
+        }
+        if (path.length() > 1 && path.endsWith("/")) {
+            return path.substring(0, path.length() - 1);
+        }
+        return path;
     }
 
     /**

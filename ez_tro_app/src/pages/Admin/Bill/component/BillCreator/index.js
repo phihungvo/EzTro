@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { message } from "antd";
+import { Alert, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import Toast from "~/components/Layout/AdminLayout/components/Toast";
 import RoomSelector from "../RoomSelector";
@@ -16,10 +16,18 @@ import PreviewModalCard from "../PreviewModal";
 import ServicesSection from "~/pages/Admin/Bill/component/ServicesSection";
 import styles from "./BillCreator.module.scss";
 import { getCreatorBillContext } from "~/service/admin/room";
-import { createBill } from "~/service/admin/bill";
 import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
 import { getContractSnapshot } from "~/service/admin/contract";
+import { previewInvoice } from "~/service/admin/billing";
+import {
+    getContractReconciliation,
+    getCreditLedgerReport,
+    getDebtAgingReport,
+} from "~/service/admin/reconciliation";
+import { getBillingAuditLogs } from "~/service/admin/billing-audit";
+import { createBill } from "~/service/admin/bill";
+import { getBillingUiErrorMessage } from "~/utils/apiError";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -45,35 +53,6 @@ const calculateFixedServiceTotal = (service) => {
     const quantity = Math.max(1, Number(service.quantity || 1));
     const unitPrice = Math.max(0, Number(service.unitPrice || 0));
     return quantity * unitPrice;
-};
-
-const buildBillDetailNote = (state, computed) => {
-    const meterLines = (state.meterReadings || [])
-        .filter((item) => item.currentIndex !== "" && item.currentIndex != null)
-        .map((item) => {
-            const prev = Number(item.previousIndex || 0);
-            const curr = Number(item.currentIndex || 0);
-            return `- ${item.utilityName}: ${prev} -> ${curr}, don gia ${item.unitPrice}`;
-        });
-
-    const fixedLines = (state.fixedServices || [])
-        .filter((item) => item.checked && Number(item.totalAmount || 0) > 0)
-        .map((item) => `- ${item.name}: ${item.quantity} x ${item.unitPrice} = ${item.totalAmount}`);
-
-    const extraLines = (state.extras || [])
-        .filter((item) => parseFloat(item.amount) > 0)
-        .map((item) => `- ${item.name || "Phí phát sinh"}: ${item.amount}`);
-
-    return [
-        `Ky thanh toan ${state.month}/${state.year}`,
-        `Tien phong: ${state.roomPrice}`,
-        meterLines.length ? `Dich vu tinh theo chi so:\n${meterLines.join("\n")}` : null,
-        fixedLines.length ? `Dich vu & phi co dinh:\n${fixedLines.join("\n")}` : null,
-        extraLines.length ? `Phi phat sinh / bo sung:\n${extraLines.join("\n")}` : null,
-        computed.discount > 0 ? `Giam gia / uu dai: ${computed.discount}` : null,
-    ]
-        .filter(Boolean)
-        .join("\n\n");
 };
 
 const INITIAL = {
@@ -113,13 +92,24 @@ const INITIAL = {
     contractVersion: null,
     contractSnapshot: null,
     organizationName: "",
+    allowDuplicateBilling: false,
 };
 
 export default function InvoiceCreator() {
     const [state, setState] = useState(INITIAL);
+    const [preview, setPreview] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState(null);
+    const [context, setContext] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [toast, setToast] = useState(null);
     const [publishing, setPublishing] = useState(false);
+    const [reconciliation, setReconciliation] = useState(null);
+    const [reconciliationLoading, setReconciliationLoading] = useState(false);
+    const [agingReport, setAgingReport] = useState(null);
+    const [creditLedger, setCreditLedger] = useState(null);
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [insightLoading, setInsightLoading] = useState(false);
     const navigate = useNavigate();
 
     const patch = useCallback((updates) => setState((prev) => ({ ...prev, ...updates })), []);
@@ -151,27 +141,33 @@ export default function InvoiceCreator() {
             currentOccupants: roomData?.currentOccupants || 0,
             floorNumber: roomData?.floorNumber || 1,
             boardingHouseId: roomData?.boardingHouseId || null,
+            allowDuplicateBilling: false,
         }));
+        setContext(null);
+        setPreview(null);
+        setPreviewError(null);
+        setShowPreview(false);
     }, []);
 
     useEffect(() => {
         const fetchContext = async () => {
             if (!state.roomId || !state.boardingHouseId || !state.month || !state.year) return;
-            const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
-            if (!resp || resp.code !== 200 || !resp.result) return;
+        const resp = await getCreatorBillContext(state.roomId, state.month, state.year);
+        if (!resp || resp.code !== 200 || !resp.result) return;
 
-            const ctx = resp.result;
-            const [boardingHouseUtilities, contractSnapshot] = await Promise.all([
-                getUtilityByBoardingHouse(state.boardingHouseId),
-                ctx.contractId ? getContractSnapshot(ctx.contractId, `${state.year}-${pad2(state.month)}-01`) : null,
-            ]);
+        const ctx = resp.result;
+        setContext(ctx);
+        const [boardingHouseUtilities, contractSnapshot] = await Promise.all([
+            getUtilityByBoardingHouse(state.boardingHouseId),
+            ctx.contractId ? getContractSnapshot(ctx.contractId, `${state.year}-${pad2(state.month)}-01`) : null,
+        ]);
 
             const currentVersion = contractSnapshot?.currentVersion || null;
             const rentPrice = Number(currentVersion?.price ?? ctx.rentPrice ?? 0);
             const meterReadings = Array.isArray(ctx.meterReadings) ? ctx.meterReadings : [];
             const fixedServices = Array.isArray(ctx.fixedChargeUtilities) ? ctx.fixedChargeUtilities : [];
             const usageBasedUtilities = Array.isArray(ctx.usageBasedUtilities) ? ctx.usageBasedUtilities : [];
-            const roomMeterById = new Map(meterReadings.map((item) => [item.utilityId, item]));
+                const roomMeterById = new Map(meterReadings.map((item) => [item.utilityId, item]));
             const roomFixedById = new Map(fixedServices.map((item) => [item.id, item]));
             const allUtilities = Array.isArray(boardingHouseUtilities) ? boardingHouseUtilities : [];
 
@@ -217,6 +213,58 @@ export default function InvoiceCreator() {
 
         fetchContext();
     }, [state.roomId, state.boardingHouseId, state.month, state.year]);
+
+    useEffect(() => {
+        if (!context?.hasBillThisMonth && state.allowDuplicateBilling) {
+            patch({ allowDuplicateBilling: false });
+        }
+    }, [context?.hasBillThisMonth, patch, state.allowDuplicateBilling]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            if (!state.contractId) {
+                setReconciliation(null);
+                setAgingReport(null);
+                setCreditLedger(null);
+                setAuditLogs([]);
+                return;
+            }
+            setReconciliationLoading(true);
+            setInsightLoading(true);
+            try {
+                const [report, aging, ledger, logs] = await Promise.all([
+                    getContractReconciliation(state.contractId),
+                    getDebtAgingReport(state.contractId),
+                    getCreditLedgerReport(state.contractId),
+                    getBillingAuditLogs({ contractId: state.contractId }),
+                ]);
+                if (!cancelled) {
+                    setReconciliation(report);
+                    setAgingReport(aging);
+                    setCreditLedger(ledger);
+                    setAuditLogs(logs || []);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setReconciliation(null);
+                    setAgingReport(null);
+                    setCreditLedger(null);
+                    setAuditLogs([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setReconciliationLoading(false);
+                    setInsightLoading(false);
+                }
+            }
+        };
+
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [state.contractId]);
 
     const onMeterCurrentChange = useCallback((utilityId, value) => {
         setState((prev) => ({
@@ -289,9 +337,117 @@ export default function InvoiceCreator() {
     const total = Math.max(0, subtotal - discount);
     const computed = { meterTotal, fixedServicesTotal, extrasTotal, subtotal, discount, total };
 
-    const validateBeforePublish = () => {
+    const buildPreviewPayload = useCallback(() => {
+        if (!state.contractId) {
+            return null;
+        }
+        const monthStr = pad2(state.month);
+        const periodStart = `${state.year}-${monthStr}-01`;
+        const lastDay = new Date(state.year, state.month, 0).getDate();
+        const periodEnd = `${state.year}-${monthStr}-${pad2(lastDay)}`;
+
+        return {
+            contractId: state.contractId,
+            asOfDate: state.issueDate,
+            billingPeriodStart: periodStart,
+            billingPeriodEnd: periodEnd,
+            dueDate: state.dueDate,
+            invoiceType: "MANUAL",
+            extraAmount: extrasTotal,
+            discountAmount: discount,
+            discountReason: state.discountReason,
+            publicNote: state.notePublic,
+            internalNote: state.noteInternal,
+        };
+    }, [
+        state.contractId,
+        state.issueDate,
+        state.month,
+        state.year,
+        state.dueDate,
+        state.discountReason,
+        state.notePublic,
+        state.noteInternal,
+        extrasTotal,
+        discount,
+    ]);
+
+    const buildBillRequestPayload = useCallback(() => {
+        if (!state.contractId) {
+            return null;
+        }
+        const baseTitle = state.room
+            ? `Hoá đơn Phòng ${state.room} ${state.month}/${state.year}`
+            : `Hoá đơn tháng ${state.month}/${state.year}`;
+        const serviceAmount = Number(meterTotal + fixedServicesTotal);
+
+        return {
+            contractId: state.contractId,
+            billTitle: baseTitle,
+            serviceAmount,
+            extraAmount: extrasTotal,
+            discountAmount: discount,
+            discountReason: state.discountReason,
+            publicNote: state.notePublic,
+            internalNote: state.noteInternal,
+            paymentInstructions: state.paymentInstructions,
+            note: state.noteInternal,
+            dueDate: state.dueDate,
+        };
+    }, [
+        state.contractId,
+        state.room,
+        state.month,
+        state.year,
+        state.discountReason,
+        state.notePublic,
+        state.noteInternal,
+        state.paymentInstructions,
+        state.dueDate,
+        meterTotal,
+        fixedServicesTotal,
+        extrasTotal,
+        discount,
+    ]);
+
+    const persistMeterReadings = useCallback(async () => {
+        const readings = state.meterReadings || [];
+        if (!state.roomId || readings.length === 0) {
+            return;
+        }
+        await Promise.all(
+            readings.map((item) =>
+                upsertMeterReading({
+                    roomId: state.roomId,
+                    utilityId: item.utilityId,
+                    periodMonth: state.month,
+                    periodYear: state.year,
+                    currentIndex: Number(item.currentIndex),
+                    unitPrice: Number(item.unitPrice || 0),
+                    note: `Tao hoa don ${state.month}/${state.year}`,
+                })
+            )
+        );
+    }, [state.roomId, state.month, state.year, state.meterReadings]);
+
+    const runPreview = useCallback(async () => {
+        const payload = buildPreviewPayload();
+        if (!payload) {
+            throw new Error("Không có dữ liệu hoá đơn để xem trước.");
+        }
+        const response = await previewInvoice(payload);
+        setPreview(response);
+        return { payload, response };
+    }, [buildPreviewPayload]);
+
+    const validateBeforePublish = useCallback(() => {
         if (!state.roomId || !state.contractId) {
             message.error("Bạn cần chọn phòng có hợp đồng đang hiệu lực.");
+            return false;
+        }
+
+        if (context?.hasBillThisMonth && !state.allowDuplicateBilling) {
+            message.warning("Phòng này đã có hóa đơn trong kỳ, xác nhận để tiếp tục.");
             return false;
         }
 
@@ -315,50 +471,118 @@ export default function InvoiceCreator() {
             return false;
         }
 
-        return true;
-    };
+        const dueDateObj = new Date(state.dueDate);
+        const startOfPeriod = new Date(state.year, state.month - 1, 1);
+        if (dueDateObj < startOfPeriod) {
+            message.error("Hạn thanh toán phải nằm trong hoặc sau ngày bắt đầu kỳ.");
+            return false;
+        }
+        if (context?.contractSnapshot?.contractStartDate) {
+            const contractStart = new Date(context.contractSnapshot.contractStartDate);
+            if (dueDateObj < contractStart) {
+                message.error("Hạn thanh toán không thể trước khi hợp đồng có hiệu lực.");
+                return false;
+            }
+        }
+        if (context?.contractSnapshot?.contractEndDate) {
+            const contractEnd = new Date(context.contractSnapshot.contractEndDate);
+            if (dueDateObj > contractEnd) {
+                message.error("Hạn thanh toán không thể sau ngày kết thúc hợp đồng.");
+                return false;
+            }
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dueDateObj < today) {
+            message.error("Hạn thanh toán không thể nằm trước ngày hiện tại.");
+            return false;
+        }
 
-    const handlePublish = async () => {
+
+        return true;
+    }, [
+        state.roomId,
+        state.contractId,
+        state.dueDate,
+        state.meterReadings,
+        state.allowDuplicateBilling,
+        state.year,
+        state.month,
+        meterTotal,
+        fixedServicesTotal,
+        extrasTotal,
+        discount,
+        context?.hasBillThisMonth,
+        context?.contractSnapshot?.contractStartDate,
+        context?.contractSnapshot?.contractEndDate,
+    ]);
+
+    const handleBillingError = useCallback((error, fallback) => {
+        const friendlyMessage = getBillingUiErrorMessage(error, fallback);
+        setPreviewError(friendlyMessage);
+    }, []);
+
+    const handlePreview = useCallback(async () => {
+        if (!validateBeforePublish()) return;
+
+        setPreviewLoading(true);
+        setPreviewError(null);
+        try {
+            await persistMeterReadings();
+            const { response } = await runPreview();
+            if (!response) {
+                setPreviewError("Không thể xem trước hoá đơn");
+                return;
+            }
+            setShowPreview(true);
+        } catch (error) {
+            console.error("Preview invoice failed", error);
+            handleBillingError(error, "Không thể xem trước hoá đơn");
+        } finally {
+            setPreviewLoading(false);
+        }
+    }, [validateBeforePublish, persistMeterReadings, runPreview, handleBillingError]);
+
+    const handlePublish = useCallback(async () => {
         if (!validateBeforePublish()) return;
 
         setPublishing(true);
         try {
-            await Promise.all(
-                (state.meterReadings || []).map((item) =>
-                    upsertMeterReading({
-                        roomId: state.roomId,
-                        utilityId: item.utilityId,
-                        periodMonth: state.month,
-                        periodYear: state.year,
-                        currentIndex: Number(item.currentIndex),
-                        unitPrice: Number(item.unitPrice || 0),
-                        note: `Tao hoa don ${state.month}/${state.year}`,
-                    })
-                )
-            );
-
-            await createBill({
-                contractId: state.contractId,
-                billTitle: `Hóa đơn tháng ${pad2(state.month)}/${state.year} - Phòng ${state.room}`,
-                dueDate: state.dueDate,
-                serviceAmount: meterTotal + fixedServicesTotal,
-                extraAmount: extrasTotal,
-                discountAmount: discount,
-                discountReason: state.discountReason,
-                publicNote: state.notePublic,
-                internalNote: state.noteInternal,
-                paymentInstructions: state.paymentInstructions,
-                note: buildBillDetailNote(state, computed),
-            });
-
+            await persistMeterReadings();
+            const { payload, response } = await runPreview();
+            if (!payload) {
+                message.error("Không tìm thấy dữ liệu hoá đơn.");
+                return;
+            }
+            if (response?.hasMissingMeterReadings) {
+                setShowPreview(true);
+                setPreviewError("Thiếu chỉ số công tơ trong kỳ này. Vui lòng bổ sung trước khi phát hành.");
+                message.warning("Thiếu chỉ số công tơ trong kỳ. Hoá đơn chưa thể phát hành.");
+                return;
+            }
+            const billPayload = buildBillRequestPayload();
+            if (!billPayload) {
+                message.error("Không đủ dữ liệu để tạo hoá đơn.");
+                return;
+            }
+            await createBill(billPayload);
             showToast("✅ Hoá đơn đã được tạo thành công", "success");
             navigate("/owner/bills");
         } catch (error) {
             console.error("Publish bill failed", error);
+            handleBillingError(error, "Không thể phát hành hoá đơn");
         } finally {
             setPublishing(false);
         }
-    };
+    }, [
+        validateBeforePublish,
+        persistMeterReadings,
+        runPreview,
+        buildBillRequestPayload,
+        showToast,
+        navigate,
+        handleBillingError,
+    ]);
 
     const roomData = {
         tenant: state.tenantName,
@@ -380,6 +604,30 @@ export default function InvoiceCreator() {
                         onMonthChange={(m) => setPeriod(m, state.year)}
                         onYearChange={(y) => setPeriod(state.month, y)}
                     />
+                    {context?.hasBillThisMonth && (
+                    <Alert
+                        message="Phòng đã có hoá đơn trong kỳ này"
+                        description={
+                            <div>
+                                <p>
+                                    Hệ thống đã ghi nhận một hóa đơn cho kỳ {state.month}/{state.year}. Nếu bạn vẫn muốn tạo
+                                    thêm (ví dụ để điều chỉnh thiếu sót), hãy xác nhận bằng cách nhấn nút dưới đây.
+                                </p>
+                                <button
+                                    type="button"
+                                    className={styles.duplicateAction}
+                                    onClick={() => patch({ allowDuplicateBilling: true })}
+                                    disabled={state.allowDuplicateBilling}
+                                >
+                                    {state.allowDuplicateBilling ? "Đã cho phép tạo bổ sung" : "Tôi hiểu và tiếp tục"}
+                                </button>
+                            </div>
+                        }
+                        type="warning"
+                        showIcon
+                        style={{ margin: "16px 0" }}
+                    />
+                    )}
                     <RentSectionCard
                         state={state}
                         onRoomPriceChange={(val) => patch({ roomPrice: val })}
@@ -462,20 +710,21 @@ export default function InvoiceCreator() {
                             Huỷ bỏ
                         </button>
                         <button
-                            onClick={() => setShowPreview(true)}
+                            onClick={handlePreview}
+                            disabled={previewLoading}
                             style={{
                                 flex: 1,
                                 padding: "12px 18px",
                                 background: "none",
                                 border: "1px solid var(--border-cyan)",
                                 borderRadius: 3,
-                                color: "var(--cyan-mid)",
+                                color: previewLoading ? "var(--text-muted)" : "var(--cyan-mid)",
                                 fontSize: 13,
-                                cursor: "pointer",
+                                cursor: previewLoading ? "not-allowed" : "pointer",
                                 fontFamily: "var(--font-body)",
                             }}
                         >
-                            👁 Xem trước
+                            {previewLoading ? "Đang tải preview..." : "👁 Xem trước"}
                         </button>
                         <button
                             onClick={handlePublish}
@@ -506,8 +755,19 @@ export default function InvoiceCreator() {
                     state={state}
                     computed={computed}
                     roomData={roomData}
+                    preview={preview}
+                    previewLoading={previewLoading}
+                    depositSummary={context?.depositSummary}
+                    depositTransactions={context?.depositTransactions}
+                    reconciliation={reconciliation}
+                    reconciliationLoading={reconciliationLoading}
+                    agingReport={agingReport}
+                    creditLedger={creditLedger}
+                    auditLogs={auditLogs}
+                    insightLoading={insightLoading}
+                    previewError={previewError}
                     onPublish={handlePublish}
-                    onPreview={() => setShowPreview(true)}
+                    onPreview={handlePreview}
                     onShare={() => showToast("📋 Tính năng chia sẻ sẽ dùng sau khi hóa đơn được tạo", "info")}
                 />
             </div>
@@ -516,8 +776,14 @@ export default function InvoiceCreator() {
                 <PreviewModalCard
                     state={state}
                     computed={computed}
+                    preview={preview}
+                    loading={previewLoading}
+                    error={previewError}
                     roomData={roomData}
-                    onClose={() => setShowPreview(false)}
+                    onClose={() => {
+                        setShowPreview(false);
+                        setPreviewError(null);
+                    }}
                     onPublish={handlePublish}
                     onPrint={() => showToast("🖨 In hoá đơn (mock)", "info")}
                 />

@@ -53,7 +53,6 @@ import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractStateTransitionResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractUtilityDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
-import carevn.luv2code.ez_tro.dto.response.DepositLedgerSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.DepositTransactionSummaryResponse;
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.BoardingHouse;
@@ -65,6 +64,8 @@ import carevn.luv2code.ez_tro.entity.ContractStateTransition;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
 import carevn.luv2code.ez_tro.entity.DepositTransaction;
 import carevn.luv2code.ez_tro.entity.Organization;
+import carevn.luv2code.ez_tro.entity.Payment;
+import carevn.luv2code.ez_tro.entity.PaymentAllocation;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.RoomUtility;
 import carevn.luv2code.ez_tro.entity.RoomUtilityId;
@@ -86,6 +87,8 @@ import carevn.luv2code.ez_tro.repository.ContractStateTransitionRepository;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.repository.DepositTransactionRepository;
 import carevn.luv2code.ez_tro.repository.OrganizationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
@@ -95,8 +98,11 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
+import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
 import carevn.luv2code.ez_tro.specification.ContractSpecs;
 import carevn.luv2code.ez_tro.util.BillingKeyUtils;
+import carevn.luv2code.ez_tro.util.DepositLedgerHelper;
 import carevn.luv2code.ez_tro.util.RequestAuditUtils;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -134,12 +140,16 @@ public class ContractServiceImpl implements ContractService {
     private final DepositTransactionRepository depositTransactionRepository;
     private final ContractStateTransitionRepository contractStateTransitionRepository;
     private final OrganizationRepository organizationRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentAllocationRepository paymentAllocationRepository;
     private final ContractMapper contractMapper;
     private final BillMapper billMapper;
     private final PasswordEncoder passwordEncoder;
     private final ResourceLimitServiceImpl resourceLimitService;
     private final ContractSnapshotService contractSnapshotService;
     private final NotificationService notificationService;
+    private final ObservabilityMetricsService observabilityMetricsService;
+    private final InvoiceBalanceCalculator invoiceBalanceCalculator;
     private final Gson gson = new Gson();
 
     /**
@@ -193,6 +203,7 @@ public class ContractServiceImpl implements ContractService {
             syncRoomUtilities(room, request);
         }
         syncRoomOccupancyStatus(room);
+        observabilityMetricsService.incrementContractCreated(contract);
         return contractMapper.toResponse(contract);
     }
 
@@ -686,6 +697,9 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         ContractAmendment savedAmendment = contractAmendmentRepository.save(amendment);
+        observabilityMetricsService.incrementAmendmentCreated(
+                contract,
+                request.getAmendmentType() != null ? request.getAmendmentType().name() : null);
 
         if (hasVersionOverride(request)) {
             createVersionFromAmendment(contract, request);
@@ -929,9 +943,10 @@ public class ContractServiceImpl implements ContractService {
             }
 
             // Đảm bảo không bị trừ cọc âm: kiểm tra số dư hiện tại trước khi tạo giao dịch debit.
-            BigDecimal currentBalance = toDepositLedgerSummary(
-                            depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contractId))
-                    .getCurrentBalance();
+            List<DepositTransaction> validationHistory =
+                    depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contractId);
+            BigDecimal currentBalance =
+                    DepositLedgerHelper.summarize(validationHistory).getCurrentBalance();
             if (currentBalance == null) {
                 currentBalance = BigDecimal.ZERO;
             }
@@ -955,7 +970,7 @@ public class ContractServiceImpl implements ContractService {
                 .occurredAt(request.getOccurredAt())
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
-        return toDepositTransactionSummary(depositTransactionRepository.save(depositTransaction));
+        return DepositLedgerHelper.toSummaryResponse(depositTransactionRepository.save(depositTransaction));
     }
 
     /**
@@ -986,23 +1001,36 @@ public class ContractServiceImpl implements ContractService {
 
             List<DepositTransaction> existingTransactions =
                     depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contractId);
-            List<carevn.luv2code.ez_tro.entity.Bill> bills = billRepository.findByContractId(contractId);
+            List<carevn.luv2code.ez_tro.entity.Bill> bills = billRepository.findByContractId(contractId).stream()
+                    .filter(bill -> bill.getStatus() != BillStatus.CANCELLED)
+                    .toList();
             ContractSettlementPreviewResponse settlementPreview = toSettlementPreview(bills, existingTransactions);
 
+            // Tính tổng công nợ dựa trên outstanding thực tế (không dựa BillStatus).
+            Map<Integer, BigDecimal> outstandingByBillId = new LinkedHashMap<>();
+            BigDecimal outstandingTotal = BigDecimal.ZERO;
+            for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
+                BigDecimal outstanding =
+                        nullToZero(invoiceBalanceCalculator.calculate(bill).getOutstandingAmount());
+                outstandingByBillId.put(bill.getId(), outstanding);
+                outstandingTotal = outstandingTotal.add(outstanding);
+            }
+
             if (settlementPreview.getEstimatedAdditionalCharge().signum() > 0) {
+                observabilityMetricsService.incrementSettlementMismatch(contract, "insufficient_deposit");
                 throw new AppException(ErrorCode.CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT);
             }
 
             User currentUser = SecurityUtils.getCurrentUser();
             Date now = new Date();
 
-            if (settlementPreview.getUnpaidBillsTotal().signum() > 0) {
-                // Khấu trừ các hóa đơn chưa thanh toán bằng tiền cọc (1 transaction tổng để đơn giản hóa audit).
+            if (outstandingTotal.signum() > 0) {
+                // Khấu trừ phần công nợ còn lại bằng tiền cọc (1 transaction tổng để đơn giản hóa audit).
                 DepositTransaction deduction = DepositTransaction.builder()
                         .organization(contract.getOrganization())
                         .contract(contract)
                         .transactionType(DepositTransactionType.DEDUCT_FOR_UNPAID_INVOICE)
-                        .amount(settlementPreview.getUnpaidBillsTotal())
+                        .amount(outstandingTotal)
                         .currency("VND")
                         .referenceType(DepositReferenceType.SETTLEMENT)
                         .note("Khau tru tien coc de tat toan hoa don mo")
@@ -1011,11 +1039,41 @@ public class ContractServiceImpl implements ContractService {
                         .build();
                 depositTransactionRepository.save(deduction);
 
+                Payment settlementPayment = paymentRepository.save(Payment.builder()
+                        .organization(contract.getOrganization())
+                        .contract(contract)
+                        .tenant(contract.getTenant())
+                        .amount(outstandingTotal)
+                        .currency("VND")
+                        .externalReference(buildSettlementPaymentReference(contractId, now))
+                        .source(PaymentSource.DEPOSIT)
+                        .status(PaymentStatus.CONFIRMED)
+                        .receivedAt(now)
+                        .confirmedAt(now)
+                        .note("Khau tru tien coc de tat toan hoa don mo")
+                        .createdBy(currentUser)
+                        .build());
+
+                List<PaymentAllocation> settlementAllocations = new ArrayList<>();
                 for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
-                    if (bill.getStatus() != BillStatus.PAID) {
+                    BigDecimal outstanding = outstandingByBillId.getOrDefault(bill.getId(), BigDecimal.ZERO);
+                    if (outstanding.signum() > 0) {
+                        settlementAllocations.add(PaymentAllocation.builder()
+                                .payment(settlementPayment)
+                                .bill(bill)
+                                .amount(outstanding)
+                                .allocationType(PaymentAllocationType.ALLOCATE)
+                                .note("Tat toan hoa don bang tien coc")
+                                .createdBy(currentUser)
+                                .build());
                         bill.setStatus(BillStatus.PAID);
                         bill.setPaymentDate(now);
                     }
+                }
+                if (!settlementAllocations.isEmpty()) {
+                    paymentAllocationRepository.saveAll(settlementAllocations);
+                    settlementPayment.setStatus(PaymentStatus.FULLY_ALLOCATED);
+                    paymentRepository.save(settlementPayment);
                 }
                 billRepository.saveAll(bills);
             }
@@ -1260,13 +1318,13 @@ public class ContractServiceImpl implements ContractService {
             // Lấy version điều khoản đang hiệu lực tại ngày chuyển để dùng làm "mặc định" cho hợp đồng mới.
             ContractVersion effectiveVersion =
                     contractSnapshotService.resolveEffectiveVersionEntity(sourceContract, request.getTransferDate());
-            BigDecimal sourceDepositBalance = toDepositLedgerSummary(
-                            depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()))
-                    .getCurrentBalance();
+            List<DepositTransaction> sourceDepositTransactions =
+                    depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId());
+            BigDecimal sourceDepositBalance =
+                    DepositLedgerHelper.summarize(sourceDepositTransactions).getCurrentBalance();
             LocalDate originalEndDate = sourceContract.getEndDate();
             ContractSettlementPreviewResponse sourcePreview = toSettlementPreview(
-                    billRepository.findByContractId(sourceContract.getId()),
-                    depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(sourceContract.getId()));
+                    billRepository.findByContractId(sourceContract.getId()), sourceDepositTransactions);
 
             boolean transferDeposit = Boolean.TRUE.equals(request.getTransferDeposit());
             if (transferDeposit && sourcePreview.getUnpaidBillsTotal().signum() > 0) {
@@ -1443,6 +1501,8 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(
+                contract, autoGenerated ? "auto_renew" : "manual_renew");
 
         ContractStatus previousStatus = contract.getStatus();
         contract.setEndDate(request.getNewEndDate());
@@ -1682,6 +1742,7 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(contract, "amendment");
 
         // Nếu version mới đã/đang có hiệu lực, cập nhật root contract để UI cũ đọc "giá hiện tại".
         if (!effectiveFrom.isAfter(LocalDate.now())) {
@@ -1784,7 +1845,7 @@ public class ContractServiceImpl implements ContractService {
         LocalDate monthStart = dueDate.withDayOfMonth(1);
         LocalDate monthEnd = dueDate.withDayOfMonth(dueDate.lengthOfMonth());
         // Dùng generationKey để đảm bảo idempotent: cùng contract + cùng tháng + cùng loại invoice chỉ có 1 bill được
-        // tạo.
+        // tạo. Với proration, dùng InvoiceType.PRORATION để tránh ghi đè bill RENT tháng.
         String generationKey = BillingKeyUtils.buildGenerationKey(
                 contract.getOrganization() == null
                         ? null
@@ -1792,7 +1853,7 @@ public class ContractServiceImpl implements ContractService {
                 contract.getId(),
                 monthStart,
                 monthEnd,
-                InvoiceType.RENT);
+                InvoiceType.PRORATION);
 
         // Lấy snapshot tại periodStart để lấy đúng "giá thuê đang hiệu lực" (hỗ trợ contract versioning).
         ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), periodStart);
@@ -1822,7 +1883,7 @@ public class ContractServiceImpl implements ContractService {
                     .billingPeriodStart(monthStart)
                     .billingPeriodEnd(monthEnd)
                     .generationKey(generationKey)
-                    .invoiceType(InvoiceType.RENT)
+                    .invoiceType(InvoiceType.PRORATION)
                     .dueDate(dueDate)
                     .serviceAmount(BigDecimal.ZERO)
                     .status(BillStatus.UNPAID)
@@ -1836,7 +1897,7 @@ public class ContractServiceImpl implements ContractService {
             bill.setBillingPeriodStart(monthStart);
             bill.setBillingPeriodEnd(monthEnd);
             bill.setDueDate(dueDate);
-            bill.setInvoiceType(InvoiceType.RENT);
+            bill.setInvoiceType(InvoiceType.PRORATION);
             bill.setNote(buildProrationNote(notePrefix, monthlyPrice, periodStart, periodEnd, proratedAmount));
             bill.setStatus(bill.getStatus() == null ? BillStatus.UNPAID : bill.getStatus());
             bill.setUpdatedAt(new Date());
@@ -1882,6 +1943,12 @@ public class ContractServiceImpl implements ContractService {
                 + (java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd) + 1)
                 + "\nTien pro-rate: "
                 + proratedAmount;
+    }
+
+    private String buildSettlementPaymentReference(Integer contractId, Date occurredAt) {
+        String timestamp =
+                new SimpleDateFormat("yyyyMMddHHmmssSSS").format(occurredAt != null ? occurredAt : new Date());
+        return "SETTLEMENT-DEPOSIT-" + contractId + "-" + timestamp;
     }
 
     private void seedBillingRulesFromRoomUtilities(Contract contract) {
@@ -2197,6 +2264,7 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(contract, "update");
     }
 
     private boolean hasFinancialTermsChanged(Contract contract, ContractRequest request) {
@@ -2759,10 +2827,8 @@ public class ContractServiceImpl implements ContractService {
                                 .stream()
                                 .map(this::toBillingRuleSummary)
                                 .toList())
-                .depositTransactions(depositTransactions.stream()
-                        .map(this::toDepositTransactionSummary)
-                        .toList())
-                .depositSummary(toDepositLedgerSummary(depositTransactions))
+                .depositTransactions(DepositLedgerHelper.toSummaryResponses(depositTransactions))
+                .depositSummary(DepositLedgerHelper.summarize(depositTransactions))
                 .settlementPreview(toSettlementPreview(bills, depositTransactions))
                 .latestLifecycleState(
                         stateTransitions.isEmpty()
@@ -2830,16 +2896,31 @@ public class ContractServiceImpl implements ContractService {
     }
 
     private ContractBillingRuleSummaryResponse toBillingRuleSummary(ContractBillingRule billingRule) {
+        Integer utilityId = billingRule.getUtility() == null
+                ? null
+                : billingRule.getUtility().getId();
+        Integer quantity = billingRule.getContract() != null
+                        && billingRule.getContract().getRoom() != null
+                        && billingRule.getContract().getRoom().getRoomUtilities() != null
+                ? billingRule.getContract().getRoom().getRoomUtilities().stream()
+                        .filter(roomUtility -> roomUtility.getUtility() != null)
+                        .filter(roomUtility ->
+                                Objects.equals(roomUtility.getUtility().getId(), utilityId))
+                        .map(roomUtility -> {
+                            Integer configuredQuantity = roomUtility.getQuantity();
+                            return configuredQuantity == null || configuredQuantity < 1 ? 1 : configuredQuantity;
+                        })
+                        .findFirst()
+                        .orElse(1)
+                : 1;
         return ContractBillingRuleSummaryResponse.builder()
                 .id(billingRule.getId())
-                .utilityId(
-                        billingRule.getUtility() == null
-                                ? null
-                                : billingRule.getUtility().getId())
+                .utilityId(utilityId)
                 .utilityName(
                         billingRule.getUtility() == null
                                 ? null
                                 : billingRule.getUtility().getName())
+                .quantity(quantity)
                 .cycle(billingRule.getCycle())
                 .unitPrice(billingRule.getUnitPrice())
                 .calculationType(billingRule.getCalculationType())
@@ -2850,81 +2931,30 @@ public class ContractServiceImpl implements ContractService {
                 .build();
     }
 
-    private DepositTransactionSummaryResponse toDepositTransactionSummary(DepositTransaction transaction) {
-        return DepositTransactionSummaryResponse.builder()
-                .id(transaction.getId())
-                .transactionType(transaction.getTransactionType())
-                .amount(transaction.getAmount())
-                .currency(transaction.getCurrency())
-                .referenceType(transaction.getReferenceType())
-                .referenceId(transaction.getReferenceId())
-                .note(transaction.getNote())
-                .createdBy(
-                        transaction.getCreatedBy() == null
-                                ? null
-                                : transaction.getCreatedBy().getId())
-                .createdByName(
-                        transaction.getCreatedBy() == null
-                                ? null
-                                : transaction.getCreatedBy().getFullName())
-                .occurredAt(transaction.getOccurredAt())
-                .createdAt(transaction.getCreatedAt())
-                .build();
-    }
-
-    private DepositLedgerSummaryResponse toDepositLedgerSummary(List<DepositTransaction> transactions) {
-        BigDecimal totalCollected = BigDecimal.ZERO;
-        BigDecimal totalDeducted = BigDecimal.ZERO;
-        BigDecimal totalRefunded = BigDecimal.ZERO;
-        BigDecimal currentBalance = BigDecimal.ZERO;
-
-        // Quy ước cộng/trừ số dư:
-        // - Collect/Adjust In/Transfer In: tăng số dư cọc
-        // - Refund/Adjust Out/Deduct/Transfer Out: giảm số dư cọc
-        for (DepositTransaction transaction : transactions) {
-            BigDecimal amount = transaction.getAmount() == null ? BigDecimal.ZERO : transaction.getAmount();
-            switch (transaction.getTransactionType()) {
-                case COLLECT, ADJUST_IN, TRANSFER_IN -> {
-                    totalCollected = totalCollected.add(amount);
-                    currentBalance = currentBalance.add(amount);
-                }
-                case REFUND -> {
-                    totalRefunded = totalRefunded.add(amount);
-                    currentBalance = currentBalance.subtract(amount);
-                }
-                case ADJUST_OUT, DEDUCT_FOR_DAMAGE, DEDUCT_FOR_UNPAID_INVOICE, TRANSFER_OUT -> {
-                    totalDeducted = totalDeducted.add(amount);
-                    currentBalance = currentBalance.subtract(amount);
-                }
-            }
-        }
-
-        return DepositLedgerSummaryResponse.builder()
-                .totalCollected(totalCollected)
-                .totalDeducted(totalDeducted)
-                .totalRefunded(totalRefunded)
-                .currentBalance(currentBalance)
-                .build();
-    }
-
     private ContractSettlementPreviewResponse toSettlementPreview(
             List<carevn.luv2code.ez_tro.entity.Bill> bills, List<DepositTransaction> transactions) {
         BigDecimal paidBillsTotal = BigDecimal.ZERO;
         BigDecimal unpaidBillsTotal = BigDecimal.ZERO;
         int openBillCount = 0;
 
-        // Tính tổng hóa đơn đã trả/chưa trả để phục vụ settlement.
+        // Tính theo outstanding thực tế để phản ánh đúng partial/overpaid.
         for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
-            BigDecimal amount = bill.getAmount() == null ? BigDecimal.ZERO : bill.getAmount();
-            if (bill.getStatus() == BillStatus.PAID) {
-                paidBillsTotal = paidBillsTotal.add(amount);
-            } else {
-                unpaidBillsTotal = unpaidBillsTotal.add(amount);
+            if (bill.getStatus() == BillStatus.CANCELLED) {
+                continue;
+            }
+            BigDecimal invoiceTotal = bill.getAmount() == null ? BigDecimal.ZERO : bill.getAmount();
+            BigDecimal outstanding =
+                    nullToZero(invoiceBalanceCalculator.calculate(bill).getOutstandingAmount());
+            BigDecimal paidPart = invoiceTotal.subtract(outstanding).max(BigDecimal.ZERO);
+
+            paidBillsTotal = paidBillsTotal.add(paidPart);
+            unpaidBillsTotal = unpaidBillsTotal.add(outstanding);
+            if (outstanding.signum() > 0) {
                 openBillCount++;
             }
         }
 
-        BigDecimal depositBalance = toDepositLedgerSummary(transactions).getCurrentBalance();
+        BigDecimal depositBalance = DepositLedgerHelper.summarize(transactions).getCurrentBalance();
         // Refund/AdditionalCharge là 2 vế max(0) để tránh số âm.
         BigDecimal estimatedRefundAmount =
                 depositBalance.subtract(unpaidBillsTotal).max(BigDecimal.ZERO);
@@ -2939,6 +2969,10 @@ public class ContractServiceImpl implements ContractService {
                 .estimatedRefundAmount(estimatedRefundAmount)
                 .estimatedAdditionalCharge(estimatedAdditionalCharge)
                 .build();
+    }
+
+    private BigDecimal nullToZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     private Organization resolveOrCreateOrganizationForOwner(BoardingHouse boardingHouse) {

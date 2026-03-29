@@ -1,6 +1,9 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -184,7 +187,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         reading.setPeriod(period);
         reading.setPeriodMonth(request.getPeriodMonth());
         reading.setPeriodYear(request.getPeriodYear());
-        reading.setReadingDate(request.getReadingDate() != null ? request.getReadingDate() : new Date());
+        reading.setReadingDate(resolveReadingDate(request));
         reading.setPreviousIndex(previous);
         reading.setCurrentIndex(request.getCurrentIndex());
         reading.setConsumption(consumption);
@@ -192,5 +195,14 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         reading.setAmount(amount);
         reading.setNote(request.getNote());
         return reading;
+    }
+
+    private Date resolveReadingDate(MeterReadingRequest request) {
+        if (request.getReadingDate() != null) {
+            return request.getReadingDate();
+        }
+        LocalDate defaultReadingDate =
+                YearMonth.of(request.getPeriodYear(), request.getPeriodMonth()).atEndOfMonth();
+        return Date.from(defaultReadingDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 }

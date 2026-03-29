@@ -1,10 +1,10 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,21 +17,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
+import carevn.luv2code.ez_tro.dto.requests.InvoiceFinalizeRequest;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
-import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
-import carevn.luv2code.ez_tro.entity.*;
+import carevn.luv2code.ez_tro.entity.Bill;
+import carevn.luv2code.ez_tro.entity.Contract;
+import carevn.luv2code.ez_tro.entity.Payment;
+import carevn.luv2code.ez_tro.entity.PaymentAllocation;
+import carevn.luv2code.ez_tro.entity.Tenant;
+import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.BillingOperationType;
+import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.InvoiceType;
+import carevn.luv2code.ez_tro.enums.PaymentAllocationType;
+import carevn.luv2code.ez_tro.enums.PaymentStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
-import carevn.luv2code.ez_tro.repository.TenantRepository;
-import carevn.luv2code.ez_tro.repository.UserRepository;
+import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillService;
-import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
-import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
+import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
 import carevn.luv2code.ez_tro.specification.BillSpecs;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -53,145 +63,137 @@ import lombok.RequiredArgsConstructor;
 public class BillServiceImpl implements BillService {
 
     private final BillRepository billRepository;
-    private final ContractRepository contractRepository;
-    private final TenantRepository tenantRepository;
     private final BillMapper billMapper;
-    private final UserRepository userRepository;
-    private final NotificationService notificationService;
-    private final ContractSnapshotService contractSnapshotService;
+    private final BillingOrchestratorService billingOrchestratorService;
+    private final ContractRepository contractRepository;
+    private final PaymentAllocationRepository paymentAllocationRepository;
+    private final PaymentRepository paymentRepository;
+    private final BillingOperationLogService billingOperationLogService;
 
     /**
-     * Tạo hóa đơn mới cho hợp đồng.
+     * Tạo hóa đơn mới cho hợp đồng theo orchestrator (preview → finalize).
      *
-     * <p>Rule chính:
-     * <ul>
-     *   <li>Chỉ owner của khu nhà hoặc admin mới được tạo.</li>
-     *   <li>Chặn tạo trùng bill cho cùng phòng trong cùng tháng/năm của dueDate.</li>
-     *   <li>Giá thuê ưu tiên lấy từ {@link ContractSnapshotService#getSnapshot(Integer, LocalDate)} tại dueDate.</li>
-     * </ul>
+     * <p>Payload chỉ cần {@code contractId} và {@code dueDate} (cùng với các ghi chú/extra/discount),
+     * sau đó billing orchestrator sẽ dùng snapshot để build invoice lines và tránh duplicate bằng generation key.
      *
      * @param request payload tạo bill
      * @return bill DTO sau khi tạo
      */
     @Override
+    @Transactional
     public BillResponse create(BillRequest request) {
-        Contract contract = contractRepository
-                .findById(request.getContractId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-
-        Room room = contract.getRoom();
-        Tenant tenant = contract.getTenant();
-
-        // Quyền: chỉ owner của boarding house hoặc admin mới được tạo hóa đơn
-        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
-        if (!safe.isAdmin() && !room.getBoardingHouse().getOwner().getId().equals(safe.getId())) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
-        }
-
-        // Validate due date
         LocalDate dueDate = request.getDueDate();
         if (dueDate == null) {
             throw new AppException(ErrorCode.CONTRACT_MONTHLY_PAYMENT_DAY_INVALID);
         }
 
-        // Chặn tạo trùng hóa đơn cho cùng phòng trong cùng tháng/năm
-        boolean existsForPeriod =
-                billRepository.existsByRoomIdAndMonthAndYear(room.getId(), dueDate.getMonthValue(), dueDate.getYear());
-        if (existsForPeriod) {
-            throw new AppException(ErrorCode.BILL_ALREADY_EXISTS);
-        }
+        Contract contract = contractRepository
+                .findById(request.getContractId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
 
-        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), dueDate);
-        BigDecimal rentPrice = snapshot.getCurrentVersion() != null
-                        && snapshot.getCurrentVersion().getPrice() != null
-                ? snapshot.getCurrentVersion().getPrice()
-                : contract.getRentPrice();
-        BigDecimal baseServiceAmount =
-                request.getServiceAmount() != null ? request.getServiceAmount() : BigDecimal.ZERO;
-        BigDecimal extraAmount = request.getExtraAmount() != null ? request.getExtraAmount() : BigDecimal.ZERO;
-        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
-        BigDecimal grossServiceAmount = baseServiceAmount.add(extraAmount);
-        BigDecimal totalAmount = rentPrice.add(grossServiceAmount).subtract(discountAmount);
+        YearMonth period = YearMonth.from(dueDate);
+        LocalDate periodStart = period.atDay(1);
+        LocalDate periodEnd = period.atEndOfMonth();
 
-        Bill bill = billMapper.toEntity(request);
-        bill.setContract(contract);
-        bill.setRoom(room);
-        bill.setTenant(tenant);
-        bill.setServiceAmount(grossServiceAmount);
-        bill.setAmount(totalAmount);
-        bill.setNote(buildBillNote(request));
-        bill.setStatus(BillStatus.UNPAID);
-        bill.setCreatedAt(new Date());
+        validateBillRequest(contract, dueDate, periodStart, periodEnd, request);
 
-        if (bill.getBillCode() == null || bill.getBillCode().isBlank()) {
-            String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-            bill.setBillCode("BILL-" + timestamp);
-        }
+        InvoiceFinalizeRequest finalizeRequest = InvoiceFinalizeRequest.builder()
+                .contractId(request.getContractId())
+                .asOfDate(dueDate)
+                .billingPeriodStart(periodStart)
+                .billingPeriodEnd(periodEnd)
+                .dueDate(dueDate)
+                .invoiceType(InvoiceType.MANUAL)
+                .extraAmount(request.getExtraAmount())
+                .discountAmount(request.getDiscountAmount())
+                .discountReason(request.getDiscountReason())
+                .publicNote(request.getPublicNote())
+                .internalNote(request.getInternalNote())
+                .build();
 
-        billRepository.save(bill);
-
-        notificationService.sendToUser(
-                tenant.getUser().getId(),
-                "Hóa đơn mới",
-                "Phòng " + room.getRoomNumber() + " - " + totalAmount + "đ - Hạn: " + bill.getDueDate(),
-                "BILL_CREATED",
-                Map.of("billId", bill.getId(), "roomNumber", room.getRoomNumber()));
-
-        return billMapper.toResponse(bill);
+        BillResponse response = billingOrchestratorService.finalizeInvoice(finalizeRequest);
+        Bill createdBill = billRepository.findById(response.getId()).orElse(null);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_CREATE,
+                contract,
+                response.getId(),
+                null,
+                billingOperationLogService.snapshotBill(createdBill),
+                buildBillAuditMetadata("CREATE", request));
+        return response;
     }
 
-    private String buildBillNote(BillRequest request) {
-        List<String> sections = new ArrayList<>();
+    private void validateBillRequest(
+            Contract contract, LocalDate dueDate, LocalDate periodStart, LocalDate periodEnd, BillRequest request) {
 
-        if (request.getExtraAmount() != null && request.getExtraAmount().compareTo(BigDecimal.ZERO) > 0) {
-            sections.add("Phí phát sinh / bổ sung: " + request.getExtraAmount());
-        }
-        if (request.getDiscountAmount() != null && request.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-            StringBuilder discountSection = new StringBuilder("Giảm giá / ưu đãi: " + request.getDiscountAmount());
-            if (request.getDiscountReason() != null
-                    && !request.getDiscountReason().isBlank()) {
-                discountSection
-                        .append(" | Ly do: ")
-                        .append(request.getDiscountReason().trim());
-            }
-            sections.add(discountSection.toString());
-        }
-        if (request.getPublicNote() != null && !request.getPublicNote().isBlank()) {
-            sections.add("Ghi chú hóa đơn: " + request.getPublicNote().trim());
-        }
-        if (request.getPaymentInstructions() != null
-                && !request.getPaymentInstructions().isBlank()) {
-            sections.add(
-                    "Hướng dẫn thanh toán: " + request.getPaymentInstructions().trim());
-        }
-        if (request.getInternalNote() != null && !request.getInternalNote().isBlank()) {
-            sections.add("Ghi chú nội bộ: " + request.getInternalNote().trim());
-        }
-        if (request.getNote() != null && !request.getNote().isBlank()) {
-            sections.add(request.getNote().trim());
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new AppException(ErrorCode.CONTRACT_NOT_ACTIVE);
         }
 
-        return sections.isEmpty() ? null : String.join("\n\n", sections);
+        if (dueDate.isBefore(periodStart)) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+
+        if (contract.getStartDate() != null && dueDate.isBefore(contract.getStartDate())) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+
+        if (contract.getEndDate() != null && dueDate.isAfter(contract.getEndDate())) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+
+        BigDecimal serviceAmount = request.getServiceAmount() == null ? BigDecimal.ZERO : request.getServiceAmount();
+        if (serviceAmount.signum() < 0) {
+            throw new AppException(ErrorCode.BILL_SERVICE_AMOUNT_INVALID);
+        }
     }
 
     /**
      * Cập nhật bill theo id.
      *
-     * <p>Lưu ý: hiện tại method này đang là placeholder (chưa cập nhật các field business như amount/status...).
+     * <p>Lưu ý: chỉ cho phép cập nhật các trường an toàn (dueDate/note/title) để tránh sai lệch công nợ.
      *
      * @param id id bill
      * @param request payload cập nhật
      * @return bill DTO sau khi cập nhật
      */
     @Override
+    @Transactional
     public BillResponse update(Integer id, BillRequest request) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
 
-        //        bill.setAmount(request.getAmount());
-        //        bill.setPaid(request.getPaid());
-        //        bill.setPaymentDate(request.getPaymentDate());
+        validateBillAccess(bill);
+        validateUpdateRequest(bill, request);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
+
+        if (bill.getStatus() == BillStatus.PAID || bill.getStatus() == BillStatus.CANCELLED) {
+            throw new AppException(ErrorCode.BILL_UPDATE_NOT_ALLOWED);
+        }
+
+        if (request.getBillTitle() != null && !request.getBillTitle().isBlank()) {
+            bill.setBillTitle(request.getBillTitle().trim());
+        }
+
+        LocalDate dueDate = request.getDueDate();
+        if (dueDate != null) {
+            bill.setDueDate(dueDate);
+            // Cập nhật lại trạng thái theo hạn mới để tránh giữ OVERDUE sai.
+            refreshStatusAfterDueDateChange(bill);
+        }
+
+        String note = resolveNoteForUpdate(request);
+        if (note != null) {
+            bill.setNote(note);
+        }
 
         billRepository.save(bill);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_UPDATE,
+                bill.getContract(),
+                bill.getId(),
+                beforeState,
+                billingOperationLogService.snapshotBill(bill),
+                buildBillAuditMetadata("UPDATE", request));
         return billMapper.toResponse(bill);
     }
 
@@ -201,9 +203,146 @@ public class BillServiceImpl implements BillService {
      * @param id id bill
      */
     @Override
+    @Transactional
     public void delete(Integer id) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
+        validateBillAccess(bill);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
+        // Không cho xóa bill đã được thanh toán hoặc đã có phân bổ để tránh sai lệch đối soát.
+        if (bill.getStatus() != BillStatus.UNPAID) {
+            throw new AppException(ErrorCode.BILL_DELETE_NOT_ALLOWED);
+        }
+        BigDecimal allocated = paymentAllocationRepository.sumAllocatedByBillId(bill.getId());
+        if (allocated != null && allocated.signum() != 0) {
+            throw new AppException(ErrorCode.BILL_DELETE_NOT_ALLOWED);
+        }
+        Contract contract = bill.getContract();
         billRepository.delete(bill);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_DELETE, contract, id, beforeState, null, Map.of("hardDelete", true));
+    }
+
+    /**
+     * Hủy hóa đơn: reverse các allocation liên quan và chuyển trạng thái bill sang CANCELLED.
+     *
+     * <p>Lưu ý: hủy bill KHÔNG xóa dữ liệu để giữ lịch sử đối soát.</p>
+     *
+     * @param id id bill
+     * @return bill DTO sau khi hủy
+     */
+    @Transactional
+    public BillResponse cancel(Integer id) {
+        Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
+        validateBillAccess(bill);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
+
+        // Nếu bill đã hủy thì trả lại luôn để tránh tạo reverse lặp.
+        if (bill.getStatus() == BillStatus.CANCELLED) {
+            return billMapper.toResponse(bill);
+        }
+
+        // Không cho hủy bill đã PAID hoàn toàn (tránh phá lịch sử thanh toán).
+        if (bill.getStatus() == BillStatus.PAID) {
+            throw new AppException(ErrorCode.BILL_CANCEL_NOT_ALLOWED);
+        }
+
+        List<PaymentAllocation> allocations = paymentAllocationRepository.findByBillId(bill.getId());
+        BigDecimal netAllocated = paymentAllocationRepository.sumAllocatedByBillId(bill.getId());
+        int reversalCount = 0;
+        if (netAllocated != null && netAllocated.signum() > 0 && allocations != null && !allocations.isEmpty()) {
+            // Reverse theo từng payment dựa trên net amount để tránh reverse lặp.
+            Map<Integer, BigDecimal> netByPaymentId = new LinkedHashMap<>();
+            Map<Integer, Payment> paymentById = new LinkedHashMap<>();
+            for (PaymentAllocation allocation : allocations) {
+                if (allocation.getPayment() == null) {
+                    continue;
+                }
+                Integer paymentId = allocation.getPayment().getId();
+                if (paymentId == null) {
+                    continue;
+                }
+                paymentById.putIfAbsent(paymentId, allocation.getPayment());
+                BigDecimal amount = allocation.getAmount() != null ? allocation.getAmount() : BigDecimal.ZERO;
+                netByPaymentId.merge(paymentId, amount, BigDecimal::add);
+            }
+
+            User currentUser = SecurityUtils.getCurrentUser();
+            List<PaymentAllocation> reversals = new ArrayList<>();
+            for (Map.Entry<Integer, BigDecimal> entry : netByPaymentId.entrySet()) {
+                BigDecimal net = entry.getValue();
+                if (net == null || net.signum() <= 0) {
+                    continue;
+                }
+                Payment payment = paymentById.get(entry.getKey());
+                if (payment == null) {
+                    continue;
+                }
+                // Tạo bản ghi reverse để giữ lịch sử (amount âm).
+                reversals.add(PaymentAllocation.builder()
+                        .payment(payment)
+                        .bill(bill)
+                        .amount(net.negate())
+                        .allocationType(PaymentAllocationType.REVERSAL)
+                        .note("Huy hoa don")
+                        .createdBy(currentUser)
+                        .build());
+            }
+            if (!reversals.isEmpty()) {
+                paymentAllocationRepository.saveAll(reversals);
+                reversalCount = reversals.size();
+                // Cập nhật lại trạng thái payment theo số tiền đã phân bổ còn lại.
+                for (Payment payment : paymentById.values()) {
+                    refreshPaymentStatus(payment);
+                }
+                paymentRepository.saveAll(paymentById.values());
+            }
+        }
+
+        bill.setStatus(BillStatus.CANCELLED);
+        bill.setPaymentDate(null);
+        billRepository.save(bill);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("reversalCount", reversalCount);
+        metadata.put("reversedNetAllocated", netAllocated);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_CANCEL,
+                bill.getContract(),
+                bill.getId(),
+                beforeState,
+                billingOperationLogService.snapshotBill(bill),
+                metadata);
+        return billMapper.toResponse(bill);
+    }
+
+    private void refreshPaymentStatus(Payment payment) {
+        if (payment == null) {
+            return;
+        }
+
+        BigDecimal allocated = paymentAllocationRepository.sumAllocatedByPaymentId(payment.getId());
+        BigDecimal total = payment.getAmount() != null ? payment.getAmount() : BigDecimal.ZERO;
+        if (allocated == null) {
+            allocated = BigDecimal.ZERO;
+        }
+
+        if (payment.getStatus() == PaymentStatus.REVERSED || payment.getStatus() == PaymentStatus.FAILED) {
+            return;
+        }
+
+        if (allocated.signum() <= 0) {
+            payment.setStatus(
+                    payment.getStatus() == PaymentStatus.PENDING ? PaymentStatus.PENDING : PaymentStatus.CONFIRMED);
+            return;
+        }
+
+        int cmp = allocated.compareTo(total);
+        if (cmp == 0) {
+            payment.setStatus(PaymentStatus.FULLY_ALLOCATED);
+        } else if (cmp > 0) {
+            payment.setStatus(PaymentStatus.OVERPAID);
+        } else {
+            payment.setStatus(PaymentStatus.PARTIALLY_ALLOCATED);
+        }
     }
 
     /**
@@ -226,6 +365,128 @@ public class BillServiceImpl implements BillService {
     @Override
     public List<BillResponse> getAll() {
         return billRepository.findAll().stream().map(billMapper::toResponse).toList();
+    }
+
+    private void validateBillAccess(Bill bill) {
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (safe.isAdmin()) {
+            return;
+        }
+
+        Integer ownerId = bill.getRoom() != null
+                        && bill.getRoom().getBoardingHouse() != null
+                        && bill.getRoom().getBoardingHouse().getOwner() != null
+                ? bill.getRoom().getBoardingHouse().getOwner().getId()
+                : null;
+
+        if (ownerId == null || safe.getId() == null || !ownerId.equals(safe.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    private void validateUpdateRequest(Bill bill, BillRequest request) {
+        if (request == null) {
+            throw new AppException(ErrorCode.BILL_UPDATE_NOT_ALLOWED);
+        }
+        if (request.getContractId() != null
+                && bill.getContract() != null
+                && bill.getContract().getId() != null
+                && !bill.getContract().getId().equals(request.getContractId())) {
+            // Không cho phép đổi hợp đồng của hóa đơn.
+            throw new AppException(ErrorCode.BILL_UPDATE_NOT_ALLOWED);
+        }
+
+        LocalDate dueDate = request.getDueDate();
+        if (dueDate == null) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+
+        if (bill.getBillingPeriodStart() != null && dueDate.isBefore(bill.getBillingPeriodStart())) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+        if (bill.getContract() != null
+                && bill.getContract().getStartDate() != null
+                && dueDate.isBefore(bill.getContract().getStartDate())) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+        if (bill.getContract() != null
+                && bill.getContract().getEndDate() != null
+                && dueDate.isAfter(bill.getContract().getEndDate())) {
+            throw new AppException(ErrorCode.BILL_DUE_DATE_INVALID);
+        }
+    }
+
+    private void refreshStatusAfterDueDateChange(Bill bill) {
+        if (bill == null || bill.getStatus() == null) {
+            return;
+        }
+        if (bill.getStatus() == BillStatus.PAID || bill.getStatus() == BillStatus.CANCELLED) {
+            return;
+        }
+
+        BigDecimal allocated = paymentAllocationRepository.sumAllocatedByBillId(bill.getId());
+        if (allocated == null) {
+            allocated = BigDecimal.ZERO;
+        }
+        BigDecimal total = bill.getAmount() != null ? bill.getAmount() : BigDecimal.ZERO;
+        BigDecimal outstanding = total.subtract(allocated);
+
+        if (outstanding.signum() <= 0) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        if (bill.getDueDate() != null && bill.getDueDate().isBefore(today)) {
+            bill.setStatus(BillStatus.OVERDUE);
+        } else {
+            bill.setStatus(allocated.signum() > 0 ? BillStatus.PARTIALLY_PAID : BillStatus.UNPAID);
+        }
+    }
+
+    private String resolveNoteForUpdate(BillRequest request) {
+        if (request == null) {
+            return null;
+        }
+        if (request.getNote() != null) {
+            return request.getNote();
+        }
+
+        String publicNote = request.getPublicNote();
+        String internalNote = request.getInternalNote();
+        if ((publicNote == null || publicNote.isBlank()) && (internalNote == null || internalNote.isBlank())) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (publicNote != null && !publicNote.isBlank()) {
+            sb.append(publicNote.trim());
+        }
+        if (internalNote != null && !internalNote.isBlank()) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append("[INTERNAL] ").append(internalNote.trim());
+        }
+        return sb.toString();
+    }
+
+    private Map<String, Object> buildBillAuditMetadata(String action, BillRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("action", action);
+        if (request == null) {
+            return metadata;
+        }
+        metadata.put(
+                "dueDate",
+                request.getDueDate() == null ? null : request.getDueDate().toString());
+        metadata.put("billTitle", request.getBillTitle());
+        metadata.put("note", request.getNote());
+        metadata.put("publicNote", request.getPublicNote());
+        metadata.put("internalNote", request.getInternalNote());
+        metadata.put("extraAmount", request.getExtraAmount());
+        metadata.put("discountAmount", request.getDiscountAmount());
+        metadata.put("discountReason", request.getDiscountReason());
+        return metadata;
     }
 
     //    @Override

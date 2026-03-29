@@ -17,3 +17,17 @@ databaseChangeLog:
       file: db/changelog/changeset-8-contract-operation-status.yaml
   - include:
       file: db/changelog/changeset-9-payment-core.yaml
+  - include:
+      file: db/changelog/changeset-10-payment-source.yaml
+  - include:
+      file: db/changelog/changeset-11-payment-idempotency.yaml
+  - include:
+      file: db/changelog/changeset-12-billing-operation-logs.yaml
+  - include:
+      file: db/changelog/changeset-13-credit-ledger.yaml
+  - include:
+      file: db/changelog/changeset-14-scheduled-job-locks.yaml
+  - include:
+      file: db/changelog/changeset-15-billing-hardening.yaml
+  - include:
+      file: db/changelog/changeset-16-bill-status-width.yaml

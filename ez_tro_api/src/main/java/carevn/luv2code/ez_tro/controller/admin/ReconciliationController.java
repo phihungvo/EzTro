@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.CreditLedgerReportResponse;
+import carevn.luv2code.ez_tro.dto.response.DebtAgingReportResponse;
 import carevn.luv2code.ez_tro.dto.response.ReconciliationReportResponse;
 import carevn.luv2code.ez_tro.service.admin.PaymentAllocationService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,26 @@ public class ReconciliationController {
         return ApiResponse.<ReconciliationReportResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Reconciliation report generated successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/aging")
+    public ApiResponse<DebtAgingReportResponse> getDebtAgingReport(@RequestParam Integer contractId) {
+        DebtAgingReportResponse response = paymentAllocationService.getDebtAgingReport(contractId);
+        return ApiResponse.<DebtAgingReportResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Debt aging report generated successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/credit-ledger")
+    public ApiResponse<CreditLedgerReportResponse> getCreditLedgerReport(@RequestParam Integer contractId) {
+        CreditLedgerReportResponse response = paymentAllocationService.getCreditLedgerReport(contractId);
+        return ApiResponse.<CreditLedgerReportResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Credit ledger report generated successfully")
                 .result(response)
                 .build();
     }

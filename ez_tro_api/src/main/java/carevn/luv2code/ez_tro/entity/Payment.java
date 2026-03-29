@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import carevn.luv2code.ez_tro.enums.PaymentSource;
 import carevn.luv2code.ez_tro.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +49,7 @@ public class Payment {
     BigDecimal amount;
 
     @Column(length = 10, nullable = false)
+    @Builder.Default
     String currency = "VND";
 
     @Column(name = "external_reference", length = 120, nullable = false)
@@ -55,6 +57,12 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
+    @Builder.Default
+    PaymentSource source = PaymentSource.NORMAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
     PaymentStatus status = PaymentStatus.PENDING;
 
     @Temporal(TemporalType.TIMESTAMP)

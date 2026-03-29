@@ -144,6 +144,28 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
         FILTER: `${BASE_URL}/bills/filter`,
+        UPDATE: (billId) => `${BASE_URL}/bills/${billId}`,
+        DELETE: (billId) => `${BASE_URL}/bills/${billId}`,
+        CANCEL: (billId) => `${BASE_URL}/bills/${billId}/cancel`,
+    },
+    BILLING: {
+        PREVIEW: `${BASE_URL}/billing/preview`,
+        FINALIZE: `${BASE_URL}/billing/finalize`,
+    },
+    BILLING_AUDIT: {
+        GET_ALL: `${BASE_URL}/billing-audit`,
+    },
+    PAYMENT: {
+        RECEIVE: `${BASE_URL}/payments`,
+        DETAIL: (paymentId) => `${BASE_URL}/payments/${paymentId}`,
+        CONFIRM: (paymentId) => `${BASE_URL}/payments/${paymentId}/confirm`,
+        ALLOCATE: (paymentId) => `${BASE_URL}/payments/${paymentId}/allocate`,
+        REVERSE: (paymentId) => `${BASE_URL}/payments/${paymentId}/reverse`,
+    },
+    RECONCILIATION: {
+        CONTRACT: (contractId) => `${BASE_URL}/reconciliation/contracts/${contractId}`,
+        AGING: `${BASE_URL}/reconciliation/aging`,
+        CREDIT_LEDGER: `${BASE_URL}/reconciliation/credit-ledger`,
     },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,

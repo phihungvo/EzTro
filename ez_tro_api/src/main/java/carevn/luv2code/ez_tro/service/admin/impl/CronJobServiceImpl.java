@@ -12,6 +12,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,11 @@ import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
+import carevn.luv2code.ez_tro.service.admin.ClusterJobLockService;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +44,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
+// Cho phép tắt toàn bộ cron/quartz ở môi trường test để giảm noise và tránh side-effect.
+@ConditionalOnProperty(name = "app.jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class CronJobServiceImpl implements CronJobService {
+    private static final String BILLING_CLUSTER_LOCK_KEY = "billing-monthly";
+
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
     //    private final AmenityRepository amenityRepository;
@@ -51,6 +58,8 @@ public class CronJobServiceImpl implements CronJobService {
     private final ContractSnapshotService contractSnapshotService;
     private final ContractService contractService;
     private final BillingOrchestratorService billingOrchestratorService;
+    private final ClusterJobLockService clusterJobLockService;
+    private final ObservabilityMetricsService observabilityMetricsService;
 
     @Autowired
     private Scheduler scheduler;
@@ -64,6 +73,9 @@ public class CronJobServiceImpl implements CronJobService {
     @Value("${app.jobs.billing.quartz.cron:0 0 1 * * ?}")
     private String billingQuartzCron;
 
+    @Value("${app.jobs.billing.cluster-lock.ttl-seconds:1800}")
+    private long billingClusterLockTtlSeconds;
+
     public CronJobServiceImpl(
             ContractRepository contractRepository,
             RoomRepository roomRepository,
@@ -73,7 +85,9 @@ public class CronJobServiceImpl implements CronJobService {
             BillRepository billRepository,
             ContractSnapshotService contractSnapshotService,
             ContractService contractService,
-            BillingOrchestratorService billingOrchestratorService)
+            BillingOrchestratorService billingOrchestratorService,
+            ClusterJobLockService clusterJobLockService,
+            ObservabilityMetricsService observabilityMetricsService)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
@@ -84,6 +98,8 @@ public class CronJobServiceImpl implements CronJobService {
         this.contractSnapshotService = contractSnapshotService;
         this.contractService = contractService;
         this.billingOrchestratorService = billingOrchestratorService;
+        this.clusterJobLockService = clusterJobLockService;
+        this.observabilityMetricsService = observabilityMetricsService;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
     }
@@ -225,6 +241,7 @@ public class CronJobServiceImpl implements CronJobService {
     @Scheduled(cron = "${app.jobs.contract-status-sync.cron:0 10 0 * * *}")
     public void runDailyContractStatusSync() {
         int updated = syncContractStatusesDaily();
+        observabilityMetricsService.recordJobExecution("contract_status_sync", "success", updated);
         log.info("Daily contract status sync completed. Updated {} contract(s).", updated);
     }
 
@@ -234,6 +251,7 @@ public class CronJobServiceImpl implements CronJobService {
     @Scheduled(cron = "${app.jobs.contract-auto-renew.cron:0 20 0 * * *}")
     public void scheduledContractAutoRenewal() {
         int renewed = runDailyContractAutoRenewal();
+        observabilityMetricsService.recordJobExecution("contract_auto_renew", "success", renewed);
         log.info("Daily contract auto-renew completed. Renewed {} contract(s).", renewed);
     }
 
@@ -295,10 +313,20 @@ public class CronJobServiceImpl implements CronJobService {
      * Batch tạo hóa đơn và áp dụng penalty cho tháng hiện tại.
      */
     public void generateMonthlyBills() {
-        LocalDate now = LocalDate.now();
-        int invoices = billingOrchestratorService.generateInvoices(now);
-        int penalties = billingOrchestratorService.applyLatePenalties(now);
-        log.info("Quartz bill generation completed. invoices={}, penalties={}", invoices, penalties);
+        boolean executed = clusterJobLockService.executeWithLock(
+                BILLING_CLUSTER_LOCK_KEY,
+                java.time.Duration.ofSeconds(Math.max(60, billingClusterLockTtlSeconds)),
+                () -> {
+                    LocalDate now = LocalDate.now();
+                    int invoices = billingOrchestratorService.generateInvoices(now);
+                    int penalties = billingOrchestratorService.applyLatePenalties(now);
+                    observabilityMetricsService.recordJobExecution("billing_monthly", "success", invoices + penalties);
+                    log.info("Quartz bill generation completed. invoices={}, penalties={}", invoices, penalties);
+                });
+        if (!executed) {
+            observabilityMetricsService.recordJobExecution("billing_monthly", "skipped_lock", 0);
+            log.info("Skip Quartz bill generation because billing cluster lock is held by another instance.");
+        }
     }
 
     /**

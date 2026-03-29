@@ -44,6 +44,9 @@ public class PermissionServiceImpl implements PermissionService {
      */
     @Override
     @Transactional
+    @CacheEvict(
+            value = {"userPermissions", "rolePermissions"},
+            allEntries = true)
     public PermissionDTO createPermission(PermissionDTO permissionDTO) {
         if (permissionRepository.existsByName(permissionDTO.getName())) {
             throw new AppException(ErrorCode.PERMISSION_ALREADY_EXISTS);
@@ -74,6 +77,9 @@ public class PermissionServiceImpl implements PermissionService {
      */
     @Override
     @Transactional
+    @CacheEvict(
+            value = {"userPermissions", "rolePermissions"},
+            allEntries = true)
     public PermissionDTO updatePermission(Integer id, PermissionDTO permissionDTO) {
         Permission permission =
                 permissionRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOT_FOUND));

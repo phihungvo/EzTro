@@ -1,5 +1,9 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
+import java.time.LocalDate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -7,6 +11,7 @@ import carevn.luv2code.ez_tro.dto.requests.PaymentAllocateRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReceiveRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReverseRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.PaymentListItemResponse;
 import carevn.luv2code.ez_tro.dto.response.PaymentResponse;
 import carevn.luv2code.ez_tro.service.admin.PaymentAllocationService;
 import jakarta.validation.Valid;
@@ -45,6 +50,25 @@ public class PaymentController {
                 .build();
     }
 
+    @GetMapping
+    public ApiResponse<Page<PaymentListItemResponse>> filter(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) Integer contractId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<PaymentListItemResponse> response = paymentAllocationService.filterPayments(
+                search, status, source, contractId, fromDate, toDate, page, size);
+        return ApiResponse.<Page<PaymentListItemResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Filter payments successfully")
+                .result(response)
+                .build();
+    }
+
     /**
      * Xác nhận một khoản thanh toán.
      *
@@ -70,7 +94,7 @@ public class PaymentController {
      */
     @PostMapping("/{id}/allocate")
     public ApiResponse<PaymentResponse> allocate(
-            @PathVariable Integer id, @RequestBody PaymentAllocateRequest request) {
+            @PathVariable Integer id, @Valid @RequestBody(required = false) PaymentAllocateRequest request) {
         PaymentResponse response = paymentAllocationService.allocatePayment(id, request);
         return ApiResponse.<PaymentResponse>builder()
                 .code(HttpStatus.OK.value())

@@ -113,6 +113,8 @@ public enum ErrorCode {
             1088, "Không được phép thay đổi người thuê trong hợp đồng", HttpStatus.BAD_REQUEST),
     CONTRACT_UTILITIES_UPDATE_NOT_ALLOWED(
             1089, "Không được phép cập nhật tiện ích trong hợp đồng", HttpStatus.BAD_REQUEST),
+    CONTRACT_NOT_ACTIVE(1127, "Hợp đồng chưa ở trạng thái ACTIVE", HttpStatus.BAD_REQUEST),
+    BILL_MISSING_METER_READING(1128, "Thiếu chỉ số công tơ cho kỳ hóa đơn", HttpStatus.BAD_REQUEST),
     ROOM_FLOOR_INVALID(1090, "Tầng của phòng không khớp với cấu hình tòa nhà", HttpStatus.BAD_REQUEST),
     ROOM_DELETE_NOT_ALLOWED(1091, "Không thể xóa phòng vì đã có dữ liệu vận hành", HttpStatus.BAD_REQUEST),
     BOARDING_HOUSE_DELETE_NOT_ALLOWED(1093, "Không thể xóa nhà trọ vì đã có dữ liệu liên quan", HttpStatus.BAD_REQUEST),
@@ -146,11 +148,24 @@ public enum ErrorCode {
     DEPOSIT_TRANSACTION_REFERENCE_REQUIRED(1114, "Giao dịch đặt cọc yêu cầu lý do/tham chiếu", HttpStatus.BAD_REQUEST),
     DEPOSIT_TRANSACTION_INSUFFICIENT_BALANCE(
             1115, "Số dư tiền đặt cọc không đủ cho giao dịch này", HttpStatus.BAD_REQUEST),
+    BILL_SERVICE_AMOUNT_INVALID(1125, "Tổng phí dịch vụ phải lớn hơn hoặc bằng 0", HttpStatus.BAD_REQUEST),
+    BILL_DUE_DATE_INVALID(1126, "Hạn thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
+    BILL_DELETE_NOT_ALLOWED(1129, "Không thể xóa hóa đơn đã có thanh toán/phân bổ", HttpStatus.BAD_REQUEST),
+    BILL_CANCEL_NOT_ALLOWED(1130, "Không thể hủy hóa đơn đã thanh toán", HttpStatus.BAD_REQUEST),
+    BILL_UPDATE_NOT_ALLOWED(1131, "Không thể cập nhật hóa đơn ở trạng thái hiện tại", HttpStatus.BAD_REQUEST),
 
     PAYMENT_NOT_FOUND(1106, "Không tìm thấy thanh toán", HttpStatus.NOT_FOUND),
     PAYMENT_ALREADY_EXISTS(1107, "Thanh toán đã tồn tại", HttpStatus.CONFLICT),
     PAYMENT_INVALID_STATE(1108, "Trạng thái thanh toán không hợp lệ cho thao tác này", HttpStatus.BAD_REQUEST),
     PAYMENT_ALLOCATION_INVALID(1109, "Phân bổ thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
+    PAYMENT_OPERATION_ALREADY_PROCESSING(
+            1132, "Một thao tác payment với idempotency key này đang được xử lý", HttpStatus.CONFLICT),
+    PAYMENT_IDEMPOTENCY_KEY_REQUIRED(
+            1133, "Yêu cầu header Idempotency-Key cho thao tác payment này", HttpStatus.BAD_REQUEST),
+    BILLING_AUDIT_FILTER_REQUIRED(
+            1134, "Yêu cầu contractId hoặc cặp targetType/targetId khi truy vấn audit log", HttpStatus.BAD_REQUEST),
+    BILL_AMOUNT_MISMATCH(1135, "Tổng tiền hóa đơn không khớp với tổng các dòng chi tiết", HttpStatus.BAD_REQUEST),
+    PAYMENT_ALLOCATION_AMOUNT_INVALID(1136, "Số tiền phân bổ phải lớn hơn 0", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

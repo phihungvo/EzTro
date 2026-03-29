@@ -21,4 +21,11 @@ public class CreatorBillContextResponse {
     private List<CreatorBillUtilityItemResponse> usageBasedUtilities;
     private List<CreatorBillUtilityItemResponse> fixedChargeUtilities;
     private List<CreatorBillMeterItemResponse> meterReadings;
+
+    private Boolean hasBillThisMonth;
+
+    private ContractSnapshotResponse contractSnapshot;
+    private List<ContractBillingRuleSummaryResponse> billingRules;
+    private DepositLedgerSummaryResponse depositSummary;
+    private List<DepositTransactionSummaryResponse> depositTransactions;
 }

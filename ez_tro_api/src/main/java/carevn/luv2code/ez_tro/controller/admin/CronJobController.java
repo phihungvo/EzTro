@@ -26,6 +26,11 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/cron-jobs")
 @RequiredArgsConstructor
+// Khi test tắt job toàn cục thì bỏ controller này để tránh lỗi thiếu CronJobService bean.
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "app.jobs.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class CronJobController {
     private final CronJobService cronJobService;
 
