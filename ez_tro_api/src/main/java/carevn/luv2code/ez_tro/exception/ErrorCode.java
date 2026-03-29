@@ -158,6 +158,14 @@ public enum ErrorCode {
     PAYMENT_ALREADY_EXISTS(1107, "Thanh toán đã tồn tại", HttpStatus.CONFLICT),
     PAYMENT_INVALID_STATE(1108, "Trạng thái thanh toán không hợp lệ cho thao tác này", HttpStatus.BAD_REQUEST),
     PAYMENT_ALLOCATION_INVALID(1109, "Phân bổ thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
+    PAYMENT_OPERATION_ALREADY_PROCESSING(
+            1132, "Một thao tác payment với idempotency key này đang được xử lý", HttpStatus.CONFLICT),
+    PAYMENT_IDEMPOTENCY_KEY_REQUIRED(
+            1133, "Yêu cầu header Idempotency-Key cho thao tác payment này", HttpStatus.BAD_REQUEST),
+    BILLING_AUDIT_FILTER_REQUIRED(
+            1134, "Yêu cầu contractId hoặc cặp targetType/targetId khi truy vấn audit log", HttpStatus.BAD_REQUEST),
+    BILL_AMOUNT_MISMATCH(1135, "Tổng tiền hóa đơn không khớp với tổng các dòng chi tiết", HttpStatus.BAD_REQUEST),
+    PAYMENT_ALLOCATION_AMOUNT_INVALID(1136, "Số tiền phân bổ phải lớn hơn 0", HttpStatus.BAD_REQUEST),
 
     INVALID_PERIOD(9990, "Invalid period", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS(9990, "Email already exists", HttpStatus.CONFLICT),

@@ -64,6 +64,8 @@ import carevn.luv2code.ez_tro.entity.ContractStateTransition;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
 import carevn.luv2code.ez_tro.entity.DepositTransaction;
 import carevn.luv2code.ez_tro.entity.Organization;
+import carevn.luv2code.ez_tro.entity.Payment;
+import carevn.luv2code.ez_tro.entity.PaymentAllocation;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.RoomUtility;
 import carevn.luv2code.ez_tro.entity.RoomUtilityId;
@@ -85,6 +87,8 @@ import carevn.luv2code.ez_tro.repository.ContractStateTransitionRepository;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.repository.DepositTransactionRepository;
 import carevn.luv2code.ez_tro.repository.OrganizationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
@@ -94,6 +98,7 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
 import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
 import carevn.luv2code.ez_tro.specification.ContractSpecs;
 import carevn.luv2code.ez_tro.util.BillingKeyUtils;
@@ -135,12 +140,15 @@ public class ContractServiceImpl implements ContractService {
     private final DepositTransactionRepository depositTransactionRepository;
     private final ContractStateTransitionRepository contractStateTransitionRepository;
     private final OrganizationRepository organizationRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentAllocationRepository paymentAllocationRepository;
     private final ContractMapper contractMapper;
     private final BillMapper billMapper;
     private final PasswordEncoder passwordEncoder;
     private final ResourceLimitServiceImpl resourceLimitService;
     private final ContractSnapshotService contractSnapshotService;
     private final NotificationService notificationService;
+    private final ObservabilityMetricsService observabilityMetricsService;
     private final InvoiceBalanceCalculator invoiceBalanceCalculator;
     private final Gson gson = new Gson();
 
@@ -195,6 +203,7 @@ public class ContractServiceImpl implements ContractService {
             syncRoomUtilities(room, request);
         }
         syncRoomOccupancyStatus(room);
+        observabilityMetricsService.incrementContractCreated(contract);
         return contractMapper.toResponse(contract);
     }
 
@@ -688,6 +697,9 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         ContractAmendment savedAmendment = contractAmendmentRepository.save(amendment);
+        observabilityMetricsService.incrementAmendmentCreated(
+                contract,
+                request.getAmendmentType() != null ? request.getAmendmentType().name() : null);
 
         if (hasVersionOverride(request)) {
             createVersionFromAmendment(contract, request);
@@ -1005,6 +1017,7 @@ public class ContractServiceImpl implements ContractService {
             }
 
             if (settlementPreview.getEstimatedAdditionalCharge().signum() > 0) {
+                observabilityMetricsService.incrementSettlementMismatch(contract, "insufficient_deposit");
                 throw new AppException(ErrorCode.CONTRACT_SETTLEMENT_INSUFFICIENT_DEPOSIT);
             }
 
@@ -1026,12 +1039,41 @@ public class ContractServiceImpl implements ContractService {
                         .build();
                 depositTransactionRepository.save(deduction);
 
+                Payment settlementPayment = paymentRepository.save(Payment.builder()
+                        .organization(contract.getOrganization())
+                        .contract(contract)
+                        .tenant(contract.getTenant())
+                        .amount(outstandingTotal)
+                        .currency("VND")
+                        .externalReference(buildSettlementPaymentReference(contractId, now))
+                        .source(PaymentSource.DEPOSIT)
+                        .status(PaymentStatus.CONFIRMED)
+                        .receivedAt(now)
+                        .confirmedAt(now)
+                        .note("Khau tru tien coc de tat toan hoa don mo")
+                        .createdBy(currentUser)
+                        .build());
+
+                List<PaymentAllocation> settlementAllocations = new ArrayList<>();
                 for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
                     BigDecimal outstanding = outstandingByBillId.getOrDefault(bill.getId(), BigDecimal.ZERO);
                     if (outstanding.signum() > 0) {
+                        settlementAllocations.add(PaymentAllocation.builder()
+                                .payment(settlementPayment)
+                                .bill(bill)
+                                .amount(outstanding)
+                                .allocationType(PaymentAllocationType.ALLOCATE)
+                                .note("Tat toan hoa don bang tien coc")
+                                .createdBy(currentUser)
+                                .build());
                         bill.setStatus(BillStatus.PAID);
                         bill.setPaymentDate(now);
                     }
+                }
+                if (!settlementAllocations.isEmpty()) {
+                    paymentAllocationRepository.saveAll(settlementAllocations);
+                    settlementPayment.setStatus(PaymentStatus.FULLY_ALLOCATED);
+                    paymentRepository.save(settlementPayment);
                 }
                 billRepository.saveAll(bills);
             }
@@ -1459,6 +1501,8 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(
+                contract, autoGenerated ? "auto_renew" : "manual_renew");
 
         ContractStatus previousStatus = contract.getStatus();
         contract.setEndDate(request.getNewEndDate());
@@ -1698,6 +1742,7 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(contract, "amendment");
 
         // Nếu version mới đã/đang có hiệu lực, cập nhật root contract để UI cũ đọc "giá hiện tại".
         if (!effectiveFrom.isAfter(LocalDate.now())) {
@@ -1898,6 +1943,12 @@ public class ContractServiceImpl implements ContractService {
                 + (java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd) + 1)
                 + "\nTien pro-rate: "
                 + proratedAmount;
+    }
+
+    private String buildSettlementPaymentReference(Integer contractId, Date occurredAt) {
+        String timestamp =
+                new SimpleDateFormat("yyyyMMddHHmmssSSS").format(occurredAt != null ? occurredAt : new Date());
+        return "SETTLEMENT-DEPOSIT-" + contractId + "-" + timestamp;
     }
 
     private void seedBillingRulesFromRoomUtilities(Contract contract) {
@@ -2213,6 +2264,7 @@ public class ContractServiceImpl implements ContractService {
                 .createdBy(SecurityUtils.getCurrentUser())
                 .build();
         contractVersionRepository.save(nextVersion);
+        observabilityMetricsService.incrementContractVersionChanged(contract, "update");
     }
 
     private boolean hasFinancialTermsChanged(Contract contract, ContractRequest request) {
@@ -2844,16 +2896,31 @@ public class ContractServiceImpl implements ContractService {
     }
 
     private ContractBillingRuleSummaryResponse toBillingRuleSummary(ContractBillingRule billingRule) {
+        Integer utilityId = billingRule.getUtility() == null
+                ? null
+                : billingRule.getUtility().getId();
+        Integer quantity = billingRule.getContract() != null
+                        && billingRule.getContract().getRoom() != null
+                        && billingRule.getContract().getRoom().getRoomUtilities() != null
+                ? billingRule.getContract().getRoom().getRoomUtilities().stream()
+                        .filter(roomUtility -> roomUtility.getUtility() != null)
+                        .filter(roomUtility ->
+                                Objects.equals(roomUtility.getUtility().getId(), utilityId))
+                        .map(roomUtility -> {
+                            Integer configuredQuantity = roomUtility.getQuantity();
+                            return configuredQuantity == null || configuredQuantity < 1 ? 1 : configuredQuantity;
+                        })
+                        .findFirst()
+                        .orElse(1)
+                : 1;
         return ContractBillingRuleSummaryResponse.builder()
                 .id(billingRule.getId())
-                .utilityId(
-                        billingRule.getUtility() == null
-                                ? null
-                                : billingRule.getUtility().getId())
+                .utilityId(utilityId)
                 .utilityName(
                         billingRule.getUtility() == null
                                 ? null
                                 : billingRule.getUtility().getName())
+                .quantity(quantity)
                 .cycle(billingRule.getCycle())
                 .unitPrice(billingRule.getUnitPrice())
                 .calculationType(billingRule.getCalculationType())

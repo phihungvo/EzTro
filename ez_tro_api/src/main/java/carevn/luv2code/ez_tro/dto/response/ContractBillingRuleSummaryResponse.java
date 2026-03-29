@@ -16,6 +16,7 @@ public class ContractBillingRuleSummaryResponse {
     Integer id;
     Integer utilityId;
     String utilityName;
+    Integer quantity;
     BillingCycle cycle;
     BigDecimal unitPrice;
     ServiceType calculationType;

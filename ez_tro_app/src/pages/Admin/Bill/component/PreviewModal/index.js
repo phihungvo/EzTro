@@ -23,6 +23,7 @@ export default function PreviewModal({
     const previewDueDate = preview?.dueDate || state.dueDate;
     const previewLines = preview?.lines || [];
     const hasMissing = preview?.hasMissingMeterReadings;
+    const publishDisabled = loading || Boolean(error) || hasMissing;
 
     const pmLabels = { cash: "Tiền mặt", bank: "Chuyển khoản Vietcombank", momo: "Momo / ZaloPay" };
     const fmtDate = (str) => (str ? new Date(str).toLocaleDateString("vi-VN") : "—");
@@ -120,7 +121,9 @@ export default function PreviewModal({
                 <div className={styles.footer}>
                     <button className={styles.btnGhost} onClick={onClose}>Đóng</button>
                     <button className={styles.btnOutline} onClick={onPrint}>🖨 In hoá đơn</button>
-                    <button className={styles.btnPrimary} onClick={onPublish}>✅ Phát hành</button>
+                    <button className={styles.btnPrimary} onClick={onPublish} disabled={publishDisabled}>
+                        {hasMissing ? "Bổ sung meter trước khi phát hành" : "✅ Phát hành"}
+                    </button>
                 </div>
             </div>
         </div>

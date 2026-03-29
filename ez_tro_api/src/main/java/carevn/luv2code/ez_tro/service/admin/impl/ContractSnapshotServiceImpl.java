@@ -14,12 +14,14 @@ import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.ContractAmendment;
 import carevn.luv2code.ez_tro.entity.ContractBillingRule;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
+import carevn.luv2code.ez_tro.entity.RoomUtility;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.ContractAmendmentRepository;
 import carevn.luv2code.ez_tro.repository.ContractBillingRuleRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
+import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +45,7 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
     private final ContractVersionRepository contractVersionRepository;
     private final ContractAmendmentRepository contractAmendmentRepository;
     private final ContractBillingRuleRepository contractBillingRuleRepository;
+    private final RoomUtilityRepository roomUtilityRepository;
 
     /**
      * Resolve entity {@link ContractVersion} đang hiệu lực tại {@code asOfDate}.
@@ -109,6 +112,7 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
 
         LocalDate effectiveDate = asOfDate == null ? LocalDate.now() : asOfDate;
         ContractVersion currentVersion = resolveEffectiveVersionEntity(contract, effectiveDate);
+        var utilityQuantityById = resolveUtilityQuantityById(contract, effectiveDate);
 
         List<ContractAmendmentSummaryResponse> activeAmendments =
                 contractAmendmentRepository
@@ -125,7 +129,7 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
                         .stream()
                         .filter(rule -> rule.getEffectiveTo() == null
                                 || !rule.getEffectiveTo().isBefore(effectiveDate))
-                        .map(this::toBillingRuleSummary)
+                        .map(rule -> toBillingRuleSummary(rule, utilityQuantityById))
                         .toList();
 
         return ContractSnapshotResponse.builder()
@@ -190,12 +194,40 @@ public class ContractSnapshotServiceImpl implements ContractSnapshotService {
                 .build();
     }
 
-    private ContractBillingRuleSummaryResponse toBillingRuleSummary(ContractBillingRule rule) {
+    private java.util.Map<Integer, Integer> resolveUtilityQuantityById(Contract contract, LocalDate effectiveDate) {
+        Integer roomId = contract.getRoom() != null ? contract.getRoom().getId() : null;
+        if (roomId == null) {
+            return java.util.Map.of();
+        }
+
+        return roomUtilityRepository.findActiveByRoomId(roomId).stream()
+                .filter(roomUtility -> roomUtility.getUtility() != null
+                        && roomUtility.getUtility().getId() != null)
+                .filter(roomUtility -> roomUtility.getStartDate() == null
+                        || !roomUtility.getStartDate().isAfter(effectiveDate))
+                .filter(roomUtility -> roomUtility.getEndDate() == null
+                        || !roomUtility.getEndDate().isBefore(effectiveDate))
+                .collect(java.util.stream.Collectors.toMap(
+                        roomUtility -> roomUtility.getUtility().getId(),
+                        roomUtility -> normalizeUtilityQuantity(roomUtility),
+                        (left, right) -> right,
+                        java.util.LinkedHashMap::new));
+    }
+
+    private int normalizeUtilityQuantity(RoomUtility roomUtility) {
+        Integer quantity = roomUtility == null ? null : roomUtility.getQuantity();
+        return quantity == null || quantity < 1 ? 1 : quantity;
+    }
+
+    private ContractBillingRuleSummaryResponse toBillingRuleSummary(
+            ContractBillingRule rule, java.util.Map<Integer, Integer> utilityQuantityById) {
+        Integer utilityId = rule.getUtility() == null ? null : rule.getUtility().getId();
         return ContractBillingRuleSummaryResponse.builder()
                 .id(rule.getId())
-                .utilityId(rule.getUtility() == null ? null : rule.getUtility().getId())
+                .utilityId(utilityId)
                 .utilityName(
                         rule.getUtility() == null ? null : rule.getUtility().getName())
+                .quantity(utilityId == null ? 1 : utilityQuantityById.getOrDefault(utilityId, 1))
                 .cycle(rule.getCycle())
                 .unitPrice(rule.getUnitPrice())
                 .calculationType(rule.getCalculationType())

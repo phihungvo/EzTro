@@ -14,7 +14,7 @@ import {
     GoldOutlined,
     CalendarOutlined,
     CrownOutlined,
-    UserOutlined,
+    UserOutlined, WalletFilled,
 } from "@ant-design/icons";
 import React from "react";
 
@@ -275,6 +275,14 @@ export const MENU_CONFIG = {
                     icon: <ToolOutlined/>,
                     path: "/owner/utilities",
                     color: "#6366f1"
+                },
+                {
+                    key: "finance_workspace",
+                    label: "Finance",
+                    title: "Quản lý tài chính tổng thể, bao gồm doanh thu, chi phí, lợi nhuận và các báo cáo tài chính chi tiết",
+                    icon: <WalletFilled/>,
+                    path: "/owner/admin-payment-management",
+                    color: "#bdf163"
                 },
             ],
         },

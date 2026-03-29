@@ -81,7 +81,7 @@ public class Bill {
     BigDecimal serviceAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     BillStatus status = BillStatus.UNPAID;
 
     @Column(length = 500)

@@ -42,9 +42,12 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
+import carevn.luv2code.ez_tro.service.admin.PaymentAllocationService;
 import carevn.luv2code.ez_tro.service.admin.billing.InvoiceLineBuildResult;
 import carevn.luv2code.ez_tro.service.admin.billing.InvoiceLineBuilder;
 import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
+import carevn.luv2code.ez_tro.util.BillingIntegrityUtils;
 import carevn.luv2code.ez_tro.util.BillingKeyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +79,8 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
     private final BillMapper billMapper;
     private final NotificationService notificationService;
     private final InvoiceBalanceCalculator invoiceBalanceCalculator;
+    private final PaymentAllocationService paymentAllocationService;
+    private final ObservabilityMetricsService observabilityMetricsService;
 
     @Value("${app.billing.penalty.grace-days:0}")
     private int penaltyGraceDays;
@@ -115,6 +120,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         PeriodResolution period = resolvePeriod(contract, snapshot, request, request.getInvoiceType());
         InvoiceLineBuildResult buildResult = invoiceLineBuilder.buildLines(
                 contract, snapshot, period.billingPeriodStart, period.billingPeriodEnd, period.invoiceType, request);
+        BillingIntegrityUtils.validateBillAmountMatchesLines(buildResult.getTotalAmount(), buildResult.getLines());
 
         return InvoicePreviewResponse.builder()
                 .contractId(contract.getId())
@@ -161,6 +167,9 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         PeriodResolution period = resolvePeriod(contract, snapshot, previewRequest, request.getInvoiceType());
         Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
+        if (bill != null) {
+            paymentAllocationService.applyCarryForwardCredits(bill.getId());
+        }
         return billMapper.toResponse(bill);
     }
 
@@ -198,9 +207,12 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                         buildPreviewRequestForGenerate(contract.getId(), effectiveDate, period);
                 Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
                 if (bill != null) {
+                    paymentAllocationService.applyCarryForwardCredits(bill.getId());
                     createdOrUpdated++;
                 }
             } catch (Exception e) {
+                observabilityMetricsService.incrementBillingFailure(
+                        contract, "generate_invoices", resolveFailureReason(e));
                 log.error("Billing orchestrator failed for contract {}: {}", contract.getId(), e.getMessage(), e);
             }
         }
@@ -287,6 +299,8 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                             Map.of("billId", bill.getId(), "penalty", penalty, "outstanding", outstanding));
                 }
             } catch (Exception e) {
+                observabilityMetricsService.incrementBillingFailure(
+                        bill.getContract(), "apply_penalty", resolveFailureReason(e));
                 log.error("Failed applying penalty for bill {}: {}", bill.getId(), e.getMessage(), e);
             }
         }
@@ -418,6 +432,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 period.billingPeriodEnd,
                 period.invoiceType,
                 previewRequest);
+        BillingIntegrityUtils.validateBillAmountMatchesLines(buildResult.getTotalAmount(), buildResult.getLines());
 
         if (buildResult.isHasMissingMeterReadings()) {
             // Không cho finalize nếu thiếu chỉ số công tơ để tránh phát hành hóa đơn sai.
@@ -469,8 +484,10 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             }
             bill.setLines(lines);
         }
+        BillingIntegrityUtils.validateBillAmountMatchesLines(bill.getAmount(), bill.getLines());
 
         Bill saved = billRepository.save(bill);
+        observabilityMetricsService.incrementInvoiceGenerated(contract, period.invoiceType, "create");
         dispatchInvoiceNotification(saved);
         return saved;
     }
@@ -503,8 +520,18 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             }
         }
         existing.setLines(lines);
+        BillingIntegrityUtils.validateBillAmountMatchesLines(existing.getAmount(), existing.getLines());
 
-        return billRepository.save(existing);
+        Bill saved = billRepository.save(existing);
+        observabilityMetricsService.incrementInvoiceGenerated(contract, period.invoiceType, "update");
+        return saved;
+    }
+
+    private String resolveFailureReason(Exception exception) {
+        if (exception instanceof AppException appException && appException.getErrorCode() != null) {
+            return appException.getErrorCode().name();
+        }
+        return exception.getClass().getSimpleName();
     }
 
     private void dispatchInvoiceNotification(Bill bill) {

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import carevn.luv2code.ez_tro.enums.PaymentSource;
 import carevn.luv2code.ez_tro.enums.PaymentStatus;
 import lombok.*;
 
@@ -15,13 +16,19 @@ import lombok.*;
 public class PaymentResponse {
     Integer id;
     Integer contractId;
+    String contractCode;
     Integer tenantId;
+    String tenantName;
+    String roomNumber;
+    String boardingHouseName;
     BigDecimal amount;
     String currency;
     String externalReference;
+    PaymentSource source;
     PaymentStatus status;
     BigDecimal allocatedAmount;
     BigDecimal unallocatedAmount;
+    String note;
     Date receivedAt;
     Date confirmedAt;
     Date createdAt;

@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -319,17 +321,21 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
             return null;
         }
 
+        BigDecimal quantity = resolveRuleQuantity(rule, calculationType);
+        BigDecimal amount = unitPrice.multiply(quantity).setScale(2, RoundingMode.HALF_UP);
+
         return BillLine.builder()
                 .lineType(BillLineType.SERVICE)
                 .lineKey(key)
                 .description(name)
-                .quantity(BigDecimal.ONE)
+                .quantity(quantity)
                 .unitPrice(unitPrice)
-                .amount(unitPrice)
+                .amount(amount)
                 .utilityId(rule.getUtilityId())
                 .metadataJson(gson.toJson(Map.of(
                         "billingRuleId", Objects.toString(ruleId, ""),
-                        "calculationType", Objects.toString(calculationType, ""))))
+                        "calculationType", Objects.toString(calculationType, ""),
+                        "configuredQuantity", quantity)))
                 .build();
     }
 
@@ -347,80 +353,70 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
             return null;
         }
 
-        List<YearMonth> months = resolveMonthsInRange(periodStart, periodEnd);
-        List<Integer> readingIds = new ArrayList<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        BigDecimal totalConsumption = BigDecimal.ZERO;
-        BigDecimal unitPrice = null;
-        boolean mixedUnitPrice = false;
-
-        for (YearMonth ym : months) {
-            int month = ym.getMonthValue();
-            int year = ym.getYear();
-            MeterReading reading = meterReadingRepository
-                    .findByRoomIdAndUtilityIdAndPeriodMonthAndPeriodYear(roomId, utilityId, month, year)
-                    .orElse(null);
-
-            if (reading == null) {
-                // Thiếu chỉ số ở bất kỳ tháng nào trong kỳ => đánh dấu missing để chặn finalize.
-                return BillLine.builder()
-                        .lineType(BillLineType.UTILITY_METERED)
-                        .lineKey(key)
-                        .description(name + " (chưa có chỉ số)")
-                        .quantity(null)
-                        .unitPrice(rule.getUnitPrice())
-                        .amount(BigDecimal.ZERO)
-                        .utilityId(utilityId)
-                        .metadataJson(gson.toJson(Map.of(
-                                "missing_meter_reading",
-                                true,
-                                "utilityId",
-                                Objects.toString(utilityId, ""),
-                                "periodStart",
-                                Objects.toString(periodStart, ""),
-                                "periodEnd",
-                                Objects.toString(periodEnd, ""),
-                                "missingMonth",
-                                month,
-                                "missingYear",
-                                year)))
-                        .build();
-            }
-
-            if (reading.getId() != null) {
-                readingIds.add(reading.getId());
-            }
-            totalAmount = totalAmount.add(nullToZero(reading.getAmount()));
-            totalConsumption = totalConsumption.add(nullToZero(reading.getConsumption()));
-            if (reading.getUnitPrice() != null) {
-                if (unitPrice == null) {
-                    unitPrice = reading.getUnitPrice();
-                } else if (unitPrice.compareTo(reading.getUnitPrice()) != 0) {
-                    mixedUnitPrice = true;
-                }
-            }
+        if (periodStart == null || periodEnd == null || periodEnd.isBefore(periodStart)) {
+            return null;
         }
 
-        BigDecimal finalUnitPrice = mixedUnitPrice ? null : unitPrice;
+        Date periodStartDate = toDate(periodStart);
+        Date periodEndDate = toDate(periodEnd);
+        MeterReading openingReading = meterReadingRepository
+                .findTopByRoomIdAndUtilityIdAndReadingDateBeforeOrderByReadingDateDescIdDesc(
+                        roomId, utilityId, periodStartDate)
+                .orElse(null);
+        MeterReading closingReading = meterReadingRepository
+                .findTopByRoomIdAndUtilityIdAndReadingDateLessThanEqualOrderByReadingDateDescIdDesc(
+                        roomId, utilityId, periodEndDate)
+                .orElse(null);
+
+        if (closingReading == null
+                || closingReading.getReadingDate() == null
+                || toLocalDate(closingReading.getReadingDate()).isBefore(periodStart)) {
+            return buildMissingMeterLine(
+                    key, name, utilityId, periodStart, periodEnd, periodEnd.getMonthValue(), periodEnd.getYear());
+        }
+
+        BigDecimal openingIndex = openingReading != null ? nullToZero(openingReading.getCurrentIndex()) : null;
+        if (openingIndex == null && closingReading.getPreviousIndex() != null) {
+            openingIndex = closingReading.getPreviousIndex();
+        }
+        if (openingIndex == null) {
+            return buildMissingMeterLine(
+                    key, name, utilityId, periodStart, periodEnd, periodStart.getMonthValue(), periodStart.getYear());
+        }
+
+        BigDecimal closingIndex = nullToZero(closingReading.getCurrentIndex());
+        BigDecimal totalConsumption = closingIndex.subtract(openingIndex);
+        if (totalConsumption.signum() < 0) {
+            return buildMissingMeterLine(
+                    key, name, utilityId, periodStart, periodEnd, periodEnd.getMonthValue(), periodEnd.getYear());
+        }
+
+        BigDecimal unitPrice = rule.getUnitPrice() != null ? rule.getUnitPrice() : closingReading.getUnitPrice();
+        if (unitPrice == null) {
+            unitPrice = closingReading.getUnitPrice();
+        }
+        BigDecimal totalAmount =
+                nullToZero(unitPrice).multiply(totalConsumption).setScale(2, RoundingMode.HALF_UP);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("timelineMode", "reading_date_range");
+        metadata.put("openingReadingId", openingReading != null ? openingReading.getId() : null);
+        metadata.put("closingReadingId", closingReading.getId());
+        metadata.put(
+                "openingReadingDate",
+                openingReading != null ? Objects.toString(toLocalDate(openingReading.getReadingDate()), "") : null);
+        metadata.put("closingReadingDate", Objects.toString(toLocalDate(closingReading.getReadingDate()), ""));
+        metadata.put("utilityId", Objects.toString(utilityId, ""));
+        metadata.put("periodStart", Objects.toString(periodStart, ""));
+        metadata.put("periodEnd", Objects.toString(periodEnd, ""));
         return BillLine.builder()
                 .lineType(BillLineType.UTILITY_METERED)
                 .lineKey(key)
                 .description(name)
                 .quantity(totalConsumption.signum() == 0 ? null : totalConsumption)
-                .unitPrice(finalUnitPrice)
+                .unitPrice(unitPrice)
                 .amount(totalAmount)
                 .utilityId(utilityId)
-                .metadataJson(gson.toJson(Map.of(
-                        "meterReadingIds",
-                        readingIds,
-                        "utilityId",
-                        Objects.toString(utilityId, ""),
-                        "periodStart",
-                        Objects.toString(periodStart, ""),
-                        "periodEnd",
-                        Objects.toString(periodEnd, ""),
-                        "unitPriceMode",
-                        mixedUnitPrice ? "mixed" : "single")))
+                .metadataJson(gson.toJson(metadata))
                 .build();
     }
 
@@ -532,6 +528,18 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         return value != null ? value : BigDecimal.ZERO;
     }
 
+    private BigDecimal resolveRuleQuantity(ContractBillingRuleSummaryResponse rule, ServiceType calculationType) {
+        Integer configuredQuantity = rule.getQuantity();
+        if (configuredQuantity == null || configuredQuantity < 1) {
+            configuredQuantity = 1;
+        }
+
+        return switch (calculationType) {
+            case PER_PERSON, PER_VEHICLE -> BigDecimal.valueOf(configuredQuantity.longValue());
+            default -> BigDecimal.ONE;
+        };
+    }
+
     private List<YearMonth> resolveMonthsInRange(LocalDate start, LocalDate end) {
         if (start == null || end == null || end.isBefore(start)) {
             return List.of();
@@ -544,6 +552,49 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
             cursor = cursor.plusMonths(1);
         }
         return months;
+    }
+
+    private BillLine buildMissingMeterLine(
+            String key,
+            String name,
+            Integer utilityId,
+            LocalDate periodStart,
+            LocalDate periodEnd,
+            int missingMonth,
+            int missingYear) {
+        return BillLine.builder()
+                .lineType(BillLineType.UTILITY_METERED)
+                .lineKey(key)
+                .description(name + " (chưa có chỉ số)")
+                .quantity(null)
+                .unitPrice(null)
+                .amount(BigDecimal.ZERO)
+                .utilityId(utilityId)
+                .metadataJson(gson.toJson(Map.of(
+                        "missing_meter_reading",
+                        true,
+                        "utilityId",
+                        Objects.toString(utilityId, ""),
+                        "periodStart",
+                        Objects.toString(periodStart, ""),
+                        "periodEnd",
+                        Objects.toString(periodEnd, ""),
+                        "missingMonth",
+                        missingMonth,
+                        "missingYear",
+                        missingYear)))
+                .build();
+    }
+
+    private Date toDate(LocalDate date) {
+        return java.sql.Date.valueOf(date);
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
     }
 
     private String extractFlag(String metadataJson) {

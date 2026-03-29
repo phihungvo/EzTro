@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
+import carevn.luv2code.ez_tro.dto.response.BillingOperationLogResponse;
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Building;
@@ -29,6 +30,8 @@ import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.BillingAuditTargetType;
+import carevn.luv2code.ez_tro.enums.BillingOperationType;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.PaymentAllocationType;
 import carevn.luv2code.ez_tro.enums.PaymentStatus;
@@ -43,6 +46,7 @@ import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.service.admin.BillService;
+import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
 import io.minio.MinioClient;
 
 @SpringBootTest
@@ -78,6 +82,9 @@ class BillCancellationIT {
 
     @Autowired
     private PaymentAllocationRepository paymentAllocationRepository;
+
+    @Autowired
+    private BillingOperationLogService billingOperationLogService;
 
     @MockBean
     private BillingDiscrepancyAlertService billingDiscrepancyAlertService;
@@ -204,6 +211,25 @@ class BillCancellationIT {
                 .findFirst()
                 .orElse(BigDecimal.ZERO);
         assertEquals(0, reversalAmount.compareTo(new BigDecimal("-400000")));
+
+        List<BillingOperationLogResponse> logs =
+                billingOperationLogService.getLogs(null, BillingAuditTargetType.BILL, bill.getId());
+        assertFalse(logs.isEmpty());
+
+        BillingOperationLogResponse cancelLog = logs.stream()
+                .filter(log -> log.getOperationType() == BillingOperationType.BILL_CANCEL)
+                .findFirst()
+                .orElseThrow();
+        assertNotNull(cancelLog.getBeforeState());
+        assertNotNull(cancelLog.getAfterState());
+
+        @SuppressWarnings("unchecked")
+        var beforeState = (java.util.Map<String, Object>) cancelLog.getBeforeState();
+        @SuppressWarnings("unchecked")
+        var afterState = (java.util.Map<String, Object>) cancelLog.getAfterState();
+
+        assertEquals("UNPAID", beforeState.get("status"));
+        assertEquals("CANCELLED", afterState.get("status"));
     }
 
     private void authenticateOwner(User owner) {

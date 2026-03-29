@@ -20,8 +20,14 @@ import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
 import { getContractSnapshot } from "~/service/admin/contract";
 import { previewInvoice } from "~/service/admin/billing";
-import { getContractReconciliation } from "~/service/admin/reconciliation";
+import {
+    getContractReconciliation,
+    getCreditLedgerReport,
+    getDebtAgingReport,
+} from "~/service/admin/reconciliation";
+import { getBillingAuditLogs } from "~/service/admin/billing-audit";
 import { createBill } from "~/service/admin/bill";
+import { getBillingUiErrorMessage } from "~/utils/apiError";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -47,35 +53,6 @@ const calculateFixedServiceTotal = (service) => {
     const quantity = Math.max(1, Number(service.quantity || 1));
     const unitPrice = Math.max(0, Number(service.unitPrice || 0));
     return quantity * unitPrice;
-};
-
-const buildBillDetailNote = (state, computed) => {
-    const meterLines = (state.meterReadings || [])
-        .filter((item) => item.currentIndex !== "" && item.currentIndex != null)
-        .map((item) => {
-            const prev = Number(item.previousIndex || 0);
-            const curr = Number(item.currentIndex || 0);
-            return `- ${item.utilityName}: ${prev} -> ${curr}, don gia ${item.unitPrice}`;
-        });
-
-    const fixedLines = (state.fixedServices || [])
-        .filter((item) => item.checked && Number(item.totalAmount || 0) > 0)
-        .map((item) => `- ${item.name}: ${item.quantity} x ${item.unitPrice} = ${item.totalAmount}`);
-
-    const extraLines = (state.extras || [])
-        .filter((item) => parseFloat(item.amount) > 0)
-        .map((item) => `- ${item.name || "Phí phát sinh"}: ${item.amount}`);
-
-    return [
-        `Ky thanh toan ${state.month}/${state.year}`,
-        `Tien phong: ${state.roomPrice}`,
-        meterLines.length ? `Dich vu tinh theo chi so:\n${meterLines.join("\n")}` : null,
-        fixedLines.length ? `Dich vu & phi co dinh:\n${fixedLines.join("\n")}` : null,
-        extraLines.length ? `Phi phat sinh / bo sung:\n${extraLines.join("\n")}` : null,
-        computed.discount > 0 ? `Giam gia / uu dai: ${computed.discount}` : null,
-    ]
-        .filter(Boolean)
-        .join("\n\n");
 };
 
 const INITIAL = {
@@ -129,6 +106,10 @@ export default function InvoiceCreator() {
     const [publishing, setPublishing] = useState(false);
     const [reconciliation, setReconciliation] = useState(null);
     const [reconciliationLoading, setReconciliationLoading] = useState(false);
+    const [agingReport, setAgingReport] = useState(null);
+    const [creditLedger, setCreditLedger] = useState(null);
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [insightLoading, setInsightLoading] = useState(false);
     const navigate = useNavigate();
 
     const patch = useCallback((updates) => setState((prev) => ({ ...prev, ...updates })), []);
@@ -244,21 +225,37 @@ export default function InvoiceCreator() {
         const load = async () => {
             if (!state.contractId) {
                 setReconciliation(null);
+                setAgingReport(null);
+                setCreditLedger(null);
+                setAuditLogs([]);
                 return;
             }
             setReconciliationLoading(true);
+            setInsightLoading(true);
             try {
-                const report = await getContractReconciliation(state.contractId);
+                const [report, aging, ledger, logs] = await Promise.all([
+                    getContractReconciliation(state.contractId),
+                    getDebtAgingReport(state.contractId),
+                    getCreditLedgerReport(state.contractId),
+                    getBillingAuditLogs({ contractId: state.contractId }),
+                ]);
                 if (!cancelled) {
                     setReconciliation(report);
+                    setAgingReport(aging);
+                    setCreditLedger(ledger);
+                    setAuditLogs(logs || []);
                 }
             } catch (error) {
                 if (!cancelled) {
                     setReconciliation(null);
+                    setAgingReport(null);
+                    setCreditLedger(null);
+                    setAuditLogs([]);
                 }
             } finally {
                 if (!cancelled) {
                     setReconciliationLoading(false);
+                    setInsightLoading(false);
                 }
             }
         };
@@ -443,7 +440,7 @@ export default function InvoiceCreator() {
         return { payload, response };
     }, [buildPreviewPayload]);
 
-    const validateBeforePublish = () => {
+    const validateBeforePublish = useCallback(() => {
         if (!state.roomId || !state.contractId) {
             message.error("Bạn cần chọn phòng có hợp đồng đang hiệu lực.");
             return false;
@@ -503,7 +500,27 @@ export default function InvoiceCreator() {
 
 
         return true;
-    };
+    }, [
+        state.roomId,
+        state.contractId,
+        state.dueDate,
+        state.meterReadings,
+        state.allowDuplicateBilling,
+        state.year,
+        state.month,
+        meterTotal,
+        fixedServicesTotal,
+        extrasTotal,
+        discount,
+        context?.hasBillThisMonth,
+        context?.contractSnapshot?.contractStartDate,
+        context?.contractSnapshot?.contractEndDate,
+    ]);
+
+    const handleBillingError = useCallback((error, fallback) => {
+        const friendlyMessage = getBillingUiErrorMessage(error, fallback);
+        setPreviewError(friendlyMessage);
+    }, []);
 
     const handlePreview = useCallback(async () => {
         if (!validateBeforePublish()) return;
@@ -520,11 +537,11 @@ export default function InvoiceCreator() {
             setShowPreview(true);
         } catch (error) {
             console.error("Preview invoice failed", error);
-            setPreviewError(error?.response?.data?.message || "Không thể xem trước hoá đơn");
+            handleBillingError(error, "Không thể xem trước hoá đơn");
         } finally {
             setPreviewLoading(false);
         }
-    }, [validateBeforePublish, persistMeterReadings, runPreview]);
+    }, [validateBeforePublish, persistMeterReadings, runPreview, handleBillingError]);
 
     const handlePublish = useCallback(async () => {
         if (!validateBeforePublish()) return;
@@ -532,9 +549,15 @@ export default function InvoiceCreator() {
         setPublishing(true);
         try {
             await persistMeterReadings();
-            const { payload } = await runPreview();
+            const { payload, response } = await runPreview();
             if (!payload) {
                 message.error("Không tìm thấy dữ liệu hoá đơn.");
+                return;
+            }
+            if (response?.hasMissingMeterReadings) {
+                setShowPreview(true);
+                setPreviewError("Thiếu chỉ số công tơ trong kỳ này. Vui lòng bổ sung trước khi phát hành.");
+                message.warning("Thiếu chỉ số công tơ trong kỳ. Hoá đơn chưa thể phát hành.");
                 return;
             }
             const billPayload = buildBillRequestPayload();
@@ -547,6 +570,7 @@ export default function InvoiceCreator() {
             navigate("/owner/bills");
         } catch (error) {
             console.error("Publish bill failed", error);
+            handleBillingError(error, "Không thể phát hành hoá đơn");
         } finally {
             setPublishing(false);
         }
@@ -557,7 +581,7 @@ export default function InvoiceCreator() {
         buildBillRequestPayload,
         showToast,
         navigate,
-        createBill,
+        handleBillingError,
     ]);
 
     const roomData = {
@@ -737,6 +761,11 @@ export default function InvoiceCreator() {
                     depositTransactions={context?.depositTransactions}
                     reconciliation={reconciliation}
                     reconciliationLoading={reconciliationLoading}
+                    agingReport={agingReport}
+                    creditLedger={creditLedger}
+                    auditLogs={auditLogs}
+                    insightLoading={insightLoading}
+                    previewError={previewError}
                     onPublish={handlePublish}
                     onPreview={handlePreview}
                     onShare={() => showToast("📋 Tính năng chia sẻ sẽ dùng sau khi hóa đơn được tạo", "info")}

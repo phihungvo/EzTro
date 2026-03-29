@@ -5,17 +5,16 @@ import dayjs from 'dayjs';
 import styles from './Bill.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import {
-    SearchOutlined, PlusOutlined, FilterOutlined, CloudUploadOutlined,
-    EditOutlined, DeleteOutlined, TableOutlined, AppstoreOutlined
+    PlusOutlined, CloudUploadOutlined,
+    EditOutlined, DeleteOutlined, TableOutlined, AppstoreOutlined, StopOutlined
 } from '@ant-design/icons';
-import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
 import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
-import {Form, message, Segmented, Tag, DatePicker, Spin, Empty, Row, Col} from 'antd';
+import {Form, message, Segmented, Tag, DatePicker, Spin, Empty, Row, Col, Modal} from 'antd';
 import {
-    getAllBills, createBill, updateBill, deleteBill, filterBills
+    createBill, updateBill, deleteBill, cancelBill, filterBills
 } from '~/service/admin/bill';
 import {getAllActiveContracts} from '~/service/admin/contract';
 import useDebounce from '~/hooks/useDebounce';
@@ -23,7 +22,6 @@ import usePagination from '~/hooks/usePagination';
 import { useNavigate } from 'react-router-dom';
 
 const cx = classNames.bind(styles);
-const {RangePicker} = DatePicker;
 
 function Bill() {
     const [bills, setBills] = useState([]);
@@ -70,6 +68,8 @@ function Bill() {
             PAID: {color: 'success', text: 'Đã thanh toán'},
             UNPAID: {color: 'warning', text: 'Chưa thanh toán'},
             OVERDUE: {color: 'error', text: 'Quá hạn'},
+            PARTIALLY_PAID: {color: 'processing', text: 'Thanh toán một phần'},
+            CANCELLED: {color: 'default', text: 'Đã hủy'},
         };
         const cfg = map[status] || {color: 'default', text: status};
         return <Tag color={cfg.color}>{cfg.text}</Tag>;
@@ -105,14 +105,26 @@ function Bill() {
                         icon={<EditOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleEdit(r)}
+                        disabled={r.status === 'CANCELLED'}
                     />
-                    <SmartButton
-                        type="danger"
-                        icon={<DeleteOutlined/>}
-                        buttonWidth={40}
-                        onClick={() => handleDelete(r)}
-                        style={{marginLeft: 8}}
-                    />
+                    {r.status !== 'PAID' && r.status !== 'CANCELLED' && (
+                        <SmartButton
+                            type="danger"
+                            icon={<StopOutlined/>}
+                            buttonWidth={40}
+                            onClick={() => handleCancel(r)}
+                            style={{marginLeft: 8}}
+                        />
+                    )}
+                    {r.status === 'UNPAID' && (
+                        <SmartButton
+                            type="danger"
+                            icon={<DeleteOutlined/>}
+                            buttonWidth={40}
+                            onClick={() => handleDelete(r)}
+                            style={{marginLeft: 8}}
+                        />
+                    )}
                 </>
             )
         }
@@ -224,9 +236,41 @@ function Bill() {
     };
 
     const handleDelete = (r) => {
-        setModalMode('delete');
-        setSelectedBill(r);
-        setIsModalOpen(true);
+        Modal.confirm({
+            title: 'Xóa hóa đơn',
+            content: `Bạn có chắc muốn xóa hóa đơn ${r.billCode}? Thao tác này chỉ nên dùng khi hóa đơn chưa có thanh toán/phân bổ.`,
+            okText: 'Xóa',
+            okButtonProps: { danger: true },
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    await deleteBill(r.id);
+                    message.success('Đã xóa hóa đơn');
+                    fetchBills();
+                } catch (error) {
+                    message.error(error.response?.data?.message || 'Không thể xóa hóa đơn');
+                }
+            }
+        });
+    };
+
+    const handleCancel = (r) => {
+        Modal.confirm({
+            title: 'Hủy hóa đơn',
+            content: `Hệ thống sẽ reverse allocation liên quan và chuyển hóa đơn ${r.billCode} sang trạng thái hủy.`,
+            okText: 'Hủy hóa đơn',
+            okButtonProps: { danger: true },
+            cancelText: 'Đóng',
+            onOk: async () => {
+                try {
+                    await cancelBill(r.id);
+                    message.success('Đã hủy hóa đơn');
+                    fetchBills();
+                } catch (error) {
+                    message.error(error.response?.data?.message || 'Không thể hủy hóa đơn');
+                }
+            }
+        });
     };
 
     const handleSubmit = async (values) => {
@@ -237,8 +281,7 @@ function Bill() {
 
         try {
             if (modalMode === 'create') await createBill(data);
-            // else if (modalMode === 'edit') await updateBill(selectedBill.id, data);
-            // else if (modalMode === 'delete') await deleteBill(selectedBill.id);
+            else if (modalMode === 'edit') await updateBill(selectedBill.id, data);
             setIsModalOpen(false);
             fetchBills();
         } catch (e) {
@@ -269,8 +312,10 @@ function Bill() {
                         options: [
                             {value: 'ALL', label: 'Tất cả trạng thái'},
                             {value: 'UNPAID', label: 'Chưa thanh toán'},
+                            {value: 'PARTIALLY_PAID', label: 'Thanh toán một phần'},
                             {value: 'PAID', label: 'Đã thanh toán'},
-                            {value: 'OVERDUE', label: 'Quá hạn'}
+                            {value: 'OVERDUE', label: 'Quá hạn'},
+                            {value: 'CANCELLED', label: 'Đã hủy'}
                         ]
                     },
                     // {type: 'month', value: monthFilter, onChange: setMonthFilter, placeholder: 'Tháng'},
@@ -333,10 +378,33 @@ function Bill() {
                                             <div><strong>{b.amount?.toLocaleString()}đ</strong></div>
                                             {getStatusTag(b.status)}
                                             <div style={{marginTop: 8}}>
-                                                <SmartButton size="small"
-                                                             onClick={() => handleEdit(b)}>Sửa</SmartButton>
-                                                <SmartButton size="small" type="danger" onClick={() => handleDelete(b)}
-                                                             style={{marginLeft: 8}}>Xóa</SmartButton>
+                                                <SmartButton
+                                                    size="small"
+                                                    onClick={() => handleEdit(b)}
+                                                    disabled={b.status === 'CANCELLED'}
+                                                >
+                                                    Sửa
+                                                </SmartButton>
+                                                {b.status !== 'PAID' && b.status !== 'CANCELLED' && (
+                                                    <SmartButton
+                                                        size="small"
+                                                        type="danger"
+                                                        onClick={() => handleCancel(b)}
+                                                        style={{marginLeft: 8}}
+                                                    >
+                                                        Hủy
+                                                    </SmartButton>
+                                                )}
+                                                {b.status === 'UNPAID' && (
+                                                    <SmartButton
+                                                        size="small"
+                                                        type="danger"
+                                                        onClick={() => handleDelete(b)}
+                                                        style={{marginLeft: 8}}
+                                                    >
+                                                        Xóa
+                                                    </SmartButton>
+                                                )}
                                             </div>
                                         </div>
                                     </Col>

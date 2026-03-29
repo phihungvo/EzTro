@@ -30,20 +30,31 @@ import carevn.luv2code.ez_tro.dto.requests.ContractViolationRequest;
 import carevn.luv2code.ez_tro.dto.response.ContractDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
+import carevn.luv2code.ez_tro.dto.response.InvoiceBalanceResponse;
+import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.ContractOperationLog;
 import carevn.luv2code.ez_tro.entity.ContractStateTransition;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
+import carevn.luv2code.ez_tro.entity.DepositTransaction;
 import carevn.luv2code.ez_tro.entity.Organization;
+import carevn.luv2code.ez_tro.entity.Payment;
+import carevn.luv2code.ez_tro.entity.PaymentAllocation;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
+import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.ContractLifecycleState;
 import carevn.luv2code.ez_tro.enums.ContractOperationStatus;
 import carevn.luv2code.ez_tro.enums.ContractOperationType;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
+import carevn.luv2code.ez_tro.enums.DepositReferenceType;
+import carevn.luv2code.ez_tro.enums.DepositTransactionType;
 import carevn.luv2code.ez_tro.enums.OrganizationStatus;
+import carevn.luv2code.ez_tro.enums.PaymentAllocationType;
+import carevn.luv2code.ez_tro.enums.PaymentSource;
+import carevn.luv2code.ez_tro.enums.PaymentStatus;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.BillMapper;
@@ -58,6 +69,8 @@ import carevn.luv2code.ez_tro.repository.ContractStateTransitionRepository;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.repository.DepositTransactionRepository;
 import carevn.luv2code.ez_tro.repository.OrganizationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
+import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
 import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
@@ -65,6 +78,8 @@ import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.repository.UtilityRepository;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
+import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
 import carevn.luv2code.ez_tro.util.RequestAuditUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -116,6 +131,12 @@ class ContractServiceImplTest {
     private OrganizationRepository organizationRepository;
 
     @Mock
+    private PaymentRepository paymentRepository;
+
+    @Mock
+    private PaymentAllocationRepository paymentAllocationRepository;
+
+    @Mock
     private ContractMapper contractMapper;
 
     @Mock
@@ -132,6 +153,12 @@ class ContractServiceImplTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private ObservabilityMetricsService observabilityMetricsService;
+
+    @Mock
+    private InvoiceBalanceCalculator invoiceBalanceCalculator;
 
     @InjectMocks
     private ContractServiceImpl contractService;
@@ -404,6 +431,88 @@ class ContractServiceImplTest {
 
         assertEquals(0, renewed);
         verify(contractRepository, never()).saveAndFlush(any(Contract.class));
+    }
+
+    @Test
+    void finalizeSettlement_shouldCreateDepositPaymentAndAllocations() {
+        User owner = createOwner();
+        Contract contract = createContract(owner);
+        Bill openBill = Bill.builder()
+                .id(201)
+                .contract(contract)
+                .amount(new BigDecimal("1000000"))
+                .dueDate(LocalDate.of(2026, 3, 5))
+                .status(BillStatus.PARTIALLY_PAID)
+                .build();
+        DepositTransaction collectedDeposit = DepositTransaction.builder()
+                .contract(contract)
+                .transactionType(DepositTransactionType.COLLECT)
+                .referenceType(DepositReferenceType.MANUAL_ADJUSTMENT)
+                .amount(new BigDecimal("1000000"))
+                .currency("VND")
+                .build();
+        ContractStateTransition cancelledTransition = ContractStateTransition.builder()
+                .contract(contract)
+                .toState(ContractLifecycleState.TERMINATED)
+                .changedAt(new Date())
+                .build();
+        InvoiceBalanceResponse balance = InvoiceBalanceResponse.builder()
+                .billId(openBill.getId())
+                .invoiceTotal(openBill.getAmount())
+                .allocatedAmount(new BigDecimal("400000"))
+                .outstandingAmount(new BigDecimal("600000"))
+                .build();
+
+        when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
+        when(depositTransactionRepository.findByContractIdOrderByOccurredAtDesc(contract.getId()))
+                .thenReturn(List.of(collectedDeposit));
+        when(billRepository.findByContractId(contract.getId())).thenReturn(List.of(openBill));
+        when(invoiceBalanceCalculator.calculate(openBill)).thenReturn(balance);
+        when(depositTransactionRepository.save(any(DepositTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentAllocationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(contractRepository.saveAndFlush(any(Contract.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(contractStateTransitionRepository.save(any(ContractStateTransition.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(contractVersionRepository.findByContractIdOrderByVersionNumberDesc(contract.getId()))
+                .thenReturn(List.of());
+        when(contractAmendmentRepository.findByContractIdOrderByEffectiveFromDesc(contract.getId()))
+                .thenReturn(List.of());
+        when(contractBillingRuleRepository.findByContractIdAndIsActiveTrueOrderByEffectiveFromDesc(contract.getId()))
+                .thenReturn(List.of());
+        when(contractStateTransitionRepository.findByContractIdOrderByChangedAtDesc(contract.getId()))
+                .thenReturn(List.of(cancelledTransition));
+
+        authenticate(owner);
+        try {
+            ContractDetailResponse response = contractService.finalizeSettlement(contract.getId());
+
+            assertNotNull(response);
+            assertEquals(BillStatus.PAID, openBill.getStatus());
+            assertNotNull(openBill.getPaymentDate());
+
+            ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+            verify(paymentRepository, atLeastOnce()).save(paymentCaptor.capture());
+            Payment finalSettlementPayment = paymentCaptor
+                    .getAllValues()
+                    .get(paymentCaptor.getAllValues().size() - 1);
+            assertEquals(PaymentSource.DEPOSIT, finalSettlementPayment.getSource());
+            assertEquals(0, new BigDecimal("600000").compareTo(finalSettlementPayment.getAmount()));
+            assertEquals(PaymentStatus.FULLY_ALLOCATED, finalSettlementPayment.getStatus());
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<PaymentAllocation>> allocationsCaptor = ArgumentCaptor.forClass(List.class);
+            verify(paymentAllocationRepository).saveAll(allocationsCaptor.capture());
+            List<PaymentAllocation> allocations = allocationsCaptor.getValue();
+            assertEquals(1, allocations.size());
+            assertEquals(PaymentAllocationType.ALLOCATE, allocations.get(0).getAllocationType());
+            assertEquals(openBill.getId(), allocations.get(0).getBill().getId());
+            assertEquals(
+                    0, new BigDecimal("600000").compareTo(allocations.get(0).getAmount()));
+        } finally {
+            clearAuthentication();
+        }
     }
 
     @Test

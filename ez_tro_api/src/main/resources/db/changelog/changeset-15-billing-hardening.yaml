@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 15-billing-hardening-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        not:
+          indexExists:
+            tableName: bills
+            indexName: idx_bills_contract_due_date
+      changes:
+        - createIndex:
+            tableName: bills
+            indexName: idx_bills_contract_due_date
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: due_date
+
+  - changeSet:
+      id: 15-billing-hardening-02
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        dbms:
+          type: mysql
+        sqlCheck:
+          expectedResult: 0
+          sql: |
+            SELECT COUNT(*)
+            FROM information_schema.table_constraints
+            WHERE table_schema = DATABASE()
+              AND table_name = 'payment_allocations'
+              AND constraint_name = 'chk_payment_allocations_amount_direction'
+      changes:
+        - sql:
+            dbms: mysql
+            sql: |
+              ALTER TABLE payment_allocations
+              ADD CONSTRAINT chk_payment_allocations_amount_direction
+              CHECK (
+                (allocation_type = 'ALLOCATE' AND amount > 0)
+                OR (allocation_type = 'REVERSAL' AND amount < 0)
+              )

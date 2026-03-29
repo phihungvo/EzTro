@@ -26,6 +26,7 @@ import carevn.luv2code.ez_tro.entity.PaymentAllocation;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.BillingOperationType;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.InvoiceType;
 import carevn.luv2code.ez_tro.enums.PaymentAllocationType;
@@ -39,6 +40,7 @@ import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
 import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillService;
+import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
 import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
 import carevn.luv2code.ez_tro.specification.BillSpecs;
 import jakarta.persistence.criteria.Join;
@@ -66,6 +68,7 @@ public class BillServiceImpl implements BillService {
     private final ContractRepository contractRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final PaymentRepository paymentRepository;
+    private final BillingOperationLogService billingOperationLogService;
 
     /**
      * Tạo hóa đơn mới cho hợp đồng theo orchestrator (preview → finalize).
@@ -77,6 +80,7 @@ public class BillServiceImpl implements BillService {
      * @return bill DTO sau khi tạo
      */
     @Override
+    @Transactional
     public BillResponse create(BillRequest request) {
         LocalDate dueDate = request.getDueDate();
         if (dueDate == null) {
@@ -107,7 +111,16 @@ public class BillServiceImpl implements BillService {
                 .internalNote(request.getInternalNote())
                 .build();
 
-        return billingOrchestratorService.finalizeInvoice(finalizeRequest);
+        BillResponse response = billingOrchestratorService.finalizeInvoice(finalizeRequest);
+        Bill createdBill = billRepository.findById(response.getId()).orElse(null);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_CREATE,
+                contract,
+                response.getId(),
+                null,
+                billingOperationLogService.snapshotBill(createdBill),
+                buildBillAuditMetadata("CREATE", request));
+        return response;
     }
 
     private void validateBillRequest(
@@ -145,11 +158,13 @@ public class BillServiceImpl implements BillService {
      * @return bill DTO sau khi cập nhật
      */
     @Override
+    @Transactional
     public BillResponse update(Integer id, BillRequest request) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
 
         validateBillAccess(bill);
         validateUpdateRequest(bill, request);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
 
         if (bill.getStatus() == BillStatus.PAID || bill.getStatus() == BillStatus.CANCELLED) {
             throw new AppException(ErrorCode.BILL_UPDATE_NOT_ALLOWED);
@@ -172,6 +187,13 @@ public class BillServiceImpl implements BillService {
         }
 
         billRepository.save(bill);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_UPDATE,
+                bill.getContract(),
+                bill.getId(),
+                beforeState,
+                billingOperationLogService.snapshotBill(bill),
+                buildBillAuditMetadata("UPDATE", request));
         return billMapper.toResponse(bill);
     }
 
@@ -181,9 +203,11 @@ public class BillServiceImpl implements BillService {
      * @param id id bill
      */
     @Override
+    @Transactional
     public void delete(Integer id) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
         validateBillAccess(bill);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
         // Không cho xóa bill đã được thanh toán hoặc đã có phân bổ để tránh sai lệch đối soát.
         if (bill.getStatus() != BillStatus.UNPAID) {
             throw new AppException(ErrorCode.BILL_DELETE_NOT_ALLOWED);
@@ -192,7 +216,10 @@ public class BillServiceImpl implements BillService {
         if (allocated != null && allocated.signum() != 0) {
             throw new AppException(ErrorCode.BILL_DELETE_NOT_ALLOWED);
         }
+        Contract contract = bill.getContract();
         billRepository.delete(bill);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_DELETE, contract, id, beforeState, null, Map.of("hardDelete", true));
     }
 
     /**
@@ -207,6 +234,7 @@ public class BillServiceImpl implements BillService {
     public BillResponse cancel(Integer id) {
         Bill bill = billRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
         validateBillAccess(bill);
+        Map<String, Object> beforeState = billingOperationLogService.snapshotBill(bill);
 
         // Nếu bill đã hủy thì trả lại luôn để tránh tạo reverse lặp.
         if (bill.getStatus() == BillStatus.CANCELLED) {
@@ -220,6 +248,7 @@ public class BillServiceImpl implements BillService {
 
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByBillId(bill.getId());
         BigDecimal netAllocated = paymentAllocationRepository.sumAllocatedByBillId(bill.getId());
+        int reversalCount = 0;
         if (netAllocated != null && netAllocated.signum() > 0 && allocations != null && !allocations.isEmpty()) {
             // Reverse theo từng payment dựa trên net amount để tránh reverse lặp.
             Map<Integer, BigDecimal> netByPaymentId = new LinkedHashMap<>();
@@ -260,6 +289,7 @@ public class BillServiceImpl implements BillService {
             }
             if (!reversals.isEmpty()) {
                 paymentAllocationRepository.saveAll(reversals);
+                reversalCount = reversals.size();
                 // Cập nhật lại trạng thái payment theo số tiền đã phân bổ còn lại.
                 for (Payment payment : paymentById.values()) {
                     refreshPaymentStatus(payment);
@@ -271,6 +301,16 @@ public class BillServiceImpl implements BillService {
         bill.setStatus(BillStatus.CANCELLED);
         bill.setPaymentDate(null);
         billRepository.save(bill);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("reversalCount", reversalCount);
+        metadata.put("reversedNetAllocated", netAllocated);
+        billingOperationLogService.logBillOperation(
+                BillingOperationType.BILL_CANCEL,
+                bill.getContract(),
+                bill.getId(),
+                beforeState,
+                billingOperationLogService.snapshotBill(bill),
+                metadata);
         return billMapper.toResponse(bill);
     }
 
@@ -428,6 +468,25 @@ public class BillServiceImpl implements BillService {
             sb.append("[INTERNAL] ").append(internalNote.trim());
         }
         return sb.toString();
+    }
+
+    private Map<String, Object> buildBillAuditMetadata(String action, BillRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("action", action);
+        if (request == null) {
+            return metadata;
+        }
+        metadata.put(
+                "dueDate",
+                request.getDueDate() == null ? null : request.getDueDate().toString());
+        metadata.put("billTitle", request.getBillTitle());
+        metadata.put("note", request.getNote());
+        metadata.put("publicNote", request.getPublicNote());
+        metadata.put("internalNote", request.getInternalNote());
+        metadata.put("extraAmount", request.getExtraAmount());
+        metadata.put("discountAmount", request.getDiscountAmount());
+        metadata.put("discountReason", request.getDiscountReason());
+        return metadata;
     }
 
     //    @Override

@@ -89,6 +89,16 @@ logging:
     root: INFO
     org.springframework: WARN
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
 file:
   upload-dir: ${FILE_UPLOAD_DIR:/var/uploads}
 

@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 16-bill-status-width-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: bills
+      changes:
+        - modifyDataType:
+            tableName: bills
+            columnName: status
+            newDataType: VARCHAR(30)

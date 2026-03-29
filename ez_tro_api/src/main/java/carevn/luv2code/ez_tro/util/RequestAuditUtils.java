@@ -31,4 +31,8 @@ public final class RequestAuditUtils {
         String key = servletAttributes.getRequest().getHeader(IDEMPOTENCY_KEY_HEADER);
         return key == null || key.isBlank() ? null : key.trim();
     }
+
+    public static boolean hasCurrentHttpRequest() {
+        return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes;
+    }
 }

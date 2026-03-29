@@ -152,6 +152,152 @@
   }
 }
 
+.contractMeta {
+  margin-bottom: 16px;
+}
+
+.receiveForm {
+  margin-top: 16px;
+}
+
+.infoPanel {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fafcff;
+  border: 1px solid #d6e4ff;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e5e7eb;
+  font-size: 13px;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  span:last-child {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+.paymentCode {
+  font-weight: 700;
+  color: #1677ff;
+}
+
+.paymentToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr);
+  gap: 12px;
+  padding: 0 24px 16px;
+}
+
+.quickSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 24px 16px;
+}
+
+.summaryBadge {
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fafcff;
+  border: 1px solid #d6e4ff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  span {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  strong {
+    font-size: 15px;
+    color: #111827;
+  }
+}
+
+.paymentRef,
+.auditMeta {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.billCode {
+  font-weight: 600;
+}
+
+.selectedRow {
+  :global(td) {
+    background: #f0f7ff !important;
+  }
+}
+
+.workspaceRow {
+  margin-top: 8px;
+}
+
+.actionBar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.actionSummary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.allocationList {
+  margin-top: 16px;
+}
+
+.allocationItem,
+.auditItem {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.allocationItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auditTitle {
+  font-weight: 600;
+  color: #262626;
+}
+
+.overdueItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dashed #e5e7eb;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
 /* Detail Modal */
 .detail-content {
   :global(.ant-descriptions-item-label) {
@@ -218,6 +364,15 @@
     :global(.ant-table) {
       font-size: 12px;
     }
+  }
+
+  .paymentToolbar {
+    grid-template-columns: 1fr;
+    padding: 0 16px 16px;
+  }
+
+  .quickSummary {
+    padding: 0 16px 16px;
   }
 }
 
