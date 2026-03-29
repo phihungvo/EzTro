@@ -1,9 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Alert,
     Button,
-    Card,
-    Col,
     DatePicker,
     Descriptions,
     Empty,
@@ -11,27 +8,35 @@ import {
     Input,
     InputNumber,
     Modal,
-    Row,
     Select,
     Space,
     Spin,
-    Statistic,
     Table,
-    Tag,
-    Typography,
+    Tooltip,
     message,
 } from "antd";
 import {
+    AuditOutlined,
+    BankOutlined,
+    ArrowRightOutlined,
     CheckCircleOutlined,
+    ClockCircleOutlined,
     CreditCardOutlined,
     DollarOutlined,
+    FileTextOutlined,
+    FilterOutlined,
     HistoryOutlined,
+    PlusOutlined,
     ReloadOutlined,
     RollbackOutlined,
+    SearchOutlined,
+    ThunderboltOutlined,
     WalletOutlined,
+    WarningOutlined,
 } from "@ant-design/icons";
 import classNames from "classnames/bind";
 import dayjs from "dayjs";
+
 import styles from "./AdminPaymentManagement.module.scss";
 import { getAllActiveContracts } from "~/service/admin/contract";
 import {
@@ -51,157 +56,155 @@ import {
 import { getBillingUiErrorMessage } from "~/utils/apiError";
 
 const cx = classNames.bind(styles);
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+// ─────────────────────────────────────────────────────────
+// Helpers & constants
+// ─────────────────────────────────────────────────────────
+const formatCurrency = (value) =>
+    `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
 
 const toContractOption = (contract) => ({
-    label: `${contract.boardingHouseName || "Khu trọ"} · P.${contract.roomNumber || "?"} · ${
-        contract.tenantFullName || "Không rõ người thuê"
-    }`,
+    label: `${contract.boardingHouseName || "Khu trọ"} · P.${contract.roomNumber || "?"} · ${contract.tenantFullName || "Không rõ"}`,
     value: contract.id,
 });
-
-const paymentStatusMeta = {
-    PENDING: { color: "orange", text: "Chờ xác nhận" },
-    CONFIRMED: { color: "blue", text: "Đã xác nhận" },
-    PARTIALLY_ALLOCATED: { color: "processing", text: "Phân bổ một phần" },
-    FULLY_ALLOCATED: { color: "success", text: "Đã phân bổ hết" },
-    OVERPAID: { color: "purple", text: "Dư tiền / credit" },
-    REVERSED: { color: "default", text: "Đã reverse" },
-    FAILED: { color: "error", text: "Thất bại" },
-};
-
-const invoiceStatusMeta = {
-    PAID: { color: "success", text: "Đã thanh toán" },
-    UNPAID: { color: "warning", text: "Chưa thanh toán" },
-    OVERDUE: { color: "error", text: "Quá hạn" },
-    PARTIALLY_PAID: { color: "processing", text: "Thanh toán một phần" },
-    CANCELLED: { color: "default", text: "Đã hủy" },
-};
 
 const formatEnumLabel = (value) =>
     String(value || "")
         .replace(/_/g, " ")
         .toLowerCase()
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+        .replace(/\b\w/g, (c) => c.toUpperCase());
 
+const PAYMENT_STATUS_META = {
+    PENDING:             { color: "#f0a443", bg: "rgba(240,164,67,0.12)",   text: "Chờ xác nhận" },
+    CONFIRMED:           { color: "#4b8eff", bg: "rgba(75,142,255,0.12)",   text: "Đã xác nhận" },
+    PARTIALLY_ALLOCATED: { color: "#a78bfa", bg: "rgba(167,139,250,0.12)", text: "Phân bổ một phần" },
+    FULLY_ALLOCATED:     { color: "#22c97a", bg: "rgba(34,201,122,0.12)",  text: "Đã phân bổ hết" },
+    OVERPAID:            { color: "#22d3ee", bg: "rgba(34,211,238,0.1)",    text: "Dư / Credit" },
+    REVERSED:            { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)",   text: "Đã đảo ngược" },
+    FAILED:              { color: "#f25c5c", bg: "rgba(242,92,92,0.1)",    text: "Thất bại" },
+};
+
+const INVOICE_STATUS_META = {
+    PAID:           { color: "#22c97a", bg: "rgba(34,201,122,0.12)",  text: "Đã thanh toán" },
+    UNPAID:         { color: "#f0a443", bg: "rgba(240,164,67,0.12)",  text: "Chưa thanh toán" },
+    OVERDUE:        { color: "#f25c5c", bg: "rgba(242,92,92,0.1)",   text: "Quá hạn" },
+    PARTIALLY_PAID: { color: "#a78bfa", bg: "rgba(167,139,250,0.12)",text: "Thanh toán một phần" },
+    CANCELLED:      { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)", text: "Đã hủy" },
+};
+
+const KPI_CONFIG = [
+    { key: "invoiceTotal",     label: "Tổng hóa đơn",   icon: <FileTextOutlined />,    cls: "kpiBlue" },
+    { key: "paymentTotal",     label: "Đã thu về",       icon: <CheckCircleOutlined />, cls: "kpiGreen" },
+    { key: "outstandingTotal", label: "Công nợ còn lại", icon: <WarningOutlined />,     cls: "kpiAmber" },
+    { key: "creditBalance",    label: "Credit tồn",      icon: <WalletOutlined />,      cls: "kpiViolet" },
+];
+
+// ─────────────────────────────────────────────────────────
+// StatusTag
+// ─────────────────────────────────────────────────────────
+const StatusTag = ({ status, meta }) => {
+    const m = meta[status] || { color: "#4e5f7c", bg: "rgba(78,95,124,0.12)", text: status };
+    return (
+        <span
+            className={cx("statusTag")}
+            style={{ color: m.color, background: m.bg, borderColor: `${m.color}44` }}
+        >
+            {m.text}
+        </span>
+    );
+};
+
+// ─────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────
 function AdminPaymentManagement() {
-    const [contractOptions, setContractOptions] = useState([]);
-    const [contractMap, setContractMap] = useState({});
+    const [contractOptions, setContractOptions]       = useState([]);
+    const [contractMap, setContractMap]               = useState({});
     const [selectedContractId, setSelectedContractId] = useState(null);
-    const [reconciliation, setReconciliation] = useState(null);
-    const [agingReport, setAgingReport] = useState(null);
-    const [creditLedger, setCreditLedger] = useState(null);
-    const [billingAuditLogs, setBillingAuditLogs] = useState([]);
-    const [payments, setPayments] = useState([]);
-    const [selectedPaymentId, setSelectedPaymentId] = useState(null);
-    const [selectedPayment, setSelectedPayment] = useState(null);
-    const [loadingContracts, setLoadingContracts] = useState(false);
-    const [loadingWorkspace, setLoadingWorkspace] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
+    const [reconciliation, setReconciliation]         = useState(null);
+    const [agingReport, setAgingReport]               = useState(null);
+    const [creditLedger, setCreditLedger]             = useState(null);
+    const [billingAuditLogs, setBillingAuditLogs]     = useState([]);
+    const [payments, setPayments]                     = useState([]);
+    const [selectedPaymentId, setSelectedPaymentId]   = useState(null);
+    const [selectedPayment, setSelectedPayment]       = useState(null);
+    const [loadingContracts, setLoadingContracts]     = useState(false);
+    const [loadingWorkspace, setLoadingWorkspace]     = useState(false);
+    const [submitting, setSubmitting]                 = useState(false);
     const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL");
-    const [paymentSearch, setPaymentSearch] = useState("");
+    const [paymentSearch, setPaymentSearch]           = useState("");
 
     const [receiveForm] = Form.useForm();
     const [reverseForm] = Form.useForm();
 
     const selectedContract = selectedContractId ? contractMap[selectedContractId] : null;
 
+    // ── Derived ──
     const outstandingInvoices = useMemo(
         () =>
             (reconciliation?.invoices || []).filter(
-                (invoice) => Number(invoice.outstandingAmount || 0) > 0 && invoice.billStatus !== "CANCELLED"
+                (i) => Number(i.outstandingAmount || 0) > 0 && i.billStatus !== "CANCELLED"
             ),
         [reconciliation]
     );
 
     const selectedPaymentUnallocated = Number(selectedPayment?.unallocatedAmount || 0);
 
-    const paymentTableData = useMemo(
-        () =>
-            payments.map((payment) => ({
-                ...payment,
-                key: payment.id,
-            })),
-        [payments]
-    );
-
     const filteredPayments = useMemo(() => {
-        const normalizedSearch = paymentSearch.trim().toLowerCase();
-        return paymentTableData.filter((payment) => {
-            const matchStatus = paymentStatusFilter === "ALL" || payment.status === paymentStatusFilter;
+        const s = paymentSearch.trim().toLowerCase();
+        return payments.filter((p) => {
+            const matchStatus = paymentStatusFilter === "ALL" || p.status === paymentStatusFilter;
             const matchSearch =
-                !normalizedSearch ||
-                String(payment.id).includes(normalizedSearch) ||
-                String(payment.externalReference || "").toLowerCase().includes(normalizedSearch);
+                !s ||
+                String(p.id).includes(s) ||
+                String(p.externalReference || "").toLowerCase().includes(s);
             return matchStatus && matchSearch;
         });
-    }, [paymentSearch, paymentStatusFilter, paymentTableData]);
+    }, [payments, paymentSearch, paymentStatusFilter]);
 
-    const paymentSummary = useMemo(
-        () => ({
-            pendingCount: payments.filter((payment) => payment.status === "PENDING").length,
-            actionableCount: payments.filter(
-                (payment) =>
-                    !["REVERSED", "FAILED"].includes(payment.status) &&
-                    Number(payment.unallocatedAmount || 0) > 0
-            ).length,
-            totalUnallocated: payments.reduce(
-                (sum, payment) => sum + Number(payment.unallocatedAmount || 0),
-                0
-            ),
-        }),
-        [payments]
-    );
+    const paymentSummary = useMemo(() => ({
+        pendingCount:     payments.filter((p) => p.status === "PENDING").length,
+        actionableCount:  payments.filter((p) => !["REVERSED", "FAILED"].includes(p.status) && Number(p.unallocatedAmount || 0) > 0).length,
+        totalUnallocated: payments.reduce((s, p) => s + Number(p.unallocatedAmount || 0), 0),
+    }), [payments]);
 
-    const agingInvoices = useMemo(
-        () =>
+    const agingInvoices = useMemo(() =>
             [...(agingReport?.invoices || [])]
-                .filter((invoice) => Number(invoice.outstandingAmount || 0) > 0)
-                .sort((left, right) => Number(right.ageDays || 0) - Number(left.ageDays || 0)),
+                .filter((i) => Number(i.outstandingAmount || 0) > 0)
+                .sort((a, b) => Number(b.ageDays || 0) - Number(a.ageDays || 0)),
         [agingReport]
     );
 
-    const creditEntries = useMemo(
-        () =>
+    const creditEntries = useMemo(() =>
             [...(creditLedger?.entries || [])]
-                .sort((left, right) => {
-                    const leftTime = left?.createdAt ? new Date(left.createdAt).getTime() : 0;
-                    const rightTime = right?.createdAt ? new Date(right.createdAt).getTime() : 0;
-                    return rightTime - leftTime;
-                })
+                .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
                 .slice(0, 6),
         [creditLedger]
     );
 
     const manualAllocationDraft = useMemo(
-        () =>
-            outstandingInvoices.reduce((sum, invoice) => sum + Number(invoice.manualAmount || 0), 0),
+        () => outstandingInvoices.reduce((s, i) => s + Number(i.manualAmount || 0), 0),
         [outstandingInvoices]
     );
 
-    const canAllocateSelectedPayment =
+    const canAllocate =
         !!selectedPayment &&
         !["REVERSED", "FAILED"].includes(selectedPayment.status) &&
         Number(selectedPayment.unallocatedAmount || 0) > 0;
-    const canReverseSelectedPayment =
+
+    const canReverse =
         !!selectedPayment && !["REVERSED", "FAILED"].includes(selectedPayment.status);
 
+    // ── Workspace refresh ──
     const refreshWorkspace = useCallback(
         async (contractId, preferredPaymentId = null) => {
             if (!contractId) {
-                setReconciliation(null);
-                setAgingReport(null);
-                setCreditLedger(null);
-                setBillingAuditLogs([]);
-                setPayments([]);
-                setSelectedPaymentId(null);
-                setSelectedPayment(null);
+                setReconciliation(null); setAgingReport(null); setCreditLedger(null);
+                setBillingAuditLogs([]); setPayments([]);
+                setSelectedPaymentId(null); setSelectedPayment(null);
                 return;
             }
-
             setLoadingWorkspace(true);
             try {
                 const [report, aging, credit, logs, paymentPage] = await Promise.all([
@@ -211,19 +214,11 @@ function AdminPaymentManagement() {
                     getBillingAuditLogs({ contractId }),
                     listPayments({ contractId, page: 0, size: 100 }),
                 ]);
-                const fetchedPayments = paymentPage?.content || [];
-
-                setReconciliation(report);
-                setAgingReport(aging);
-                setCreditLedger(credit);
-                setBillingAuditLogs(logs || []);
-                setPayments(fetchedPayments);
-                setPaymentSearch("");
-                setPaymentStatusFilter("ALL");
-
-                const fallbackPayment =
-                    preferredPaymentId || selectedPaymentId || fetchedPayments[0]?.id || null;
-                setSelectedPaymentId(fallbackPayment);
+                const fetched = paymentPage?.content || [];
+                setReconciliation(report); setAgingReport(aging); setCreditLedger(credit);
+                setBillingAuditLogs(logs || []); setPayments(fetched);
+                setPaymentSearch(""); setPaymentStatusFilter("ALL");
+                setSelectedPaymentId(preferredPaymentId || selectedPaymentId || fetched[0]?.id || null);
                 setSelectedPayment(null);
             } finally {
                 setLoadingWorkspace(false);
@@ -233,50 +228,51 @@ function AdminPaymentManagement() {
     );
 
     useEffect(() => {
-        const loadContracts = async () => {
+        (async () => {
             setLoadingContracts(true);
             try {
                 const contracts = await getAllActiveContracts();
-                const options = (contracts || []).map(toContractOption);
-                const map = Object.fromEntries((contracts || []).map((contract) => [contract.id, contract]));
-                setContractOptions(options);
-                setContractMap(map);
-                if (contracts?.length) {
-                    setSelectedContractId((current) => current || contracts[0].id);
-                }
+                setContractOptions((contracts || []).map(toContractOption));
+                setContractMap(Object.fromEntries((contracts || []).map((c) => [c.id, c])));
+                if (contracts?.length) setSelectedContractId((cur) => cur || contracts[0].id);
             } finally {
                 setLoadingContracts(false);
             }
-        };
-
-        loadContracts();
+        })();
     }, []);
 
     useEffect(() => {
         refreshWorkspace(selectedContractId);
-    }, [selectedContractId, refreshWorkspace]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedContractId]);
 
+    useEffect(() => {
+        if (!selectedPaymentId) { setSelectedPayment(null); return; }
+        let cancelled = false;
+        getPaymentById(selectedPaymentId)
+            .then((p) => { if (!cancelled) setSelectedPayment(p); })
+            .catch(() => { if (!cancelled) setSelectedPayment(null); });
+        return () => { cancelled = true; };
+    }, [selectedPaymentId, payments]);
+
+    // ── Handlers ──
     const handleReceive = async (values) => {
-        if (!selectedContractId) {
-            message.warning("Hãy chọn hợp đồng trước khi nhận thanh toán.");
-            return;
-        }
-
+        if (!selectedContractId) { message.warning("Hãy chọn hợp đồng trước."); return; }
         setSubmitting(true);
         try {
-            const payment = await receivePayment({
+            const p = await receivePayment({
                 contractId: selectedContractId,
                 amount: values.amount,
                 externalReference: values.externalReference,
                 currency: values.currency || "VND",
-                receivedAt: values.receivedAt ? values.receivedAt.toISOString() : undefined,
+                receivedAt: values.receivedAt?.toISOString(),
                 note: values.note,
             });
-            message.success("Đã ghi nhận thanh toán");
+            message.success("Đã ghi nhận thanh toán thành công");
             receiveForm.resetFields();
-            await refreshWorkspace(selectedContractId, payment.id);
-        } catch (error) {
-            message.error(getBillingUiErrorMessage(error, "Không thể ghi nhận thanh toán"));
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể ghi nhận thanh toán"));
         } finally {
             setSubmitting(false);
         }
@@ -285,11 +281,11 @@ function AdminPaymentManagement() {
     const handleConfirm = async (paymentId) => {
         setSubmitting(true);
         try {
-            const payment = await confirmPayment(paymentId);
-            message.success("Đã xác nhận thanh toán");
-            await refreshWorkspace(selectedContractId, payment.id);
-        } catch (error) {
-            message.error(getBillingUiErrorMessage(error, "Không thể xác nhận thanh toán"));
+            const p = await confirmPayment(paymentId);
+            message.success("Xác nhận thanh toán thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể xác nhận"));
         } finally {
             setSubmitting(false);
         }
@@ -298,629 +294,724 @@ function AdminPaymentManagement() {
     const handleAutoAllocate = async (paymentId) => {
         setSubmitting(true);
         try {
-            const payment = await allocatePayment(paymentId, null);
-            message.success("Đã auto allocate thanh toán");
-            await refreshWorkspace(selectedContractId, payment.id);
-        } catch (error) {
-            message.error(getBillingUiErrorMessage(error, "Không thể phân bổ thanh toán"));
+            const p = await allocatePayment(paymentId, null);
+            message.success("Phân bổ tự động thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể phân bổ tự động"));
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleManualAllocate = async () => {
-        if (!selectedPayment) {
-            message.warning("Hãy chọn payment trước khi manual allocate.");
-            return;
-        }
-
+        if (!selectedPayment) { message.warning("Hãy chọn một khoản thanh toán."); return; }
         const allocations = outstandingInvoices
-            .map((invoice) => ({
-                billId: invoice.billId,
-                amount: Number(invoice.manualAmount || 0),
-                outstandingAmount: Number(invoice.outstandingAmount || 0),
-            }))
-            .filter((invoice) => invoice.amount > 0);
-
-        if (!allocations.length) {
-            message.warning("Nhập ít nhất một amount > 0 để manual allocate.");
-            return;
-        }
-
-        const invalidItem = allocations.find((item) => item.amount > item.outstandingAmount);
-        if (invalidItem) {
-            message.error("Có khoản phân bổ vượt outstanding của bill.");
-            return;
-        }
-
-        const totalManual = allocations.reduce((sum, item) => sum + item.amount, 0);
-        if (totalManual > selectedPaymentUnallocated) {
-            message.error("Tổng manual allocation vượt phần tiền chưa phân bổ của payment.");
-            return;
-        }
-
+            .map((i) => ({ billId: i.billId, amount: Number(i.manualAmount || 0), outstandingAmount: Number(i.outstandingAmount || 0) }))
+            .filter((i) => i.amount > 0);
+        if (!allocations.length) { message.warning("Nhập ít nhất một số tiền > 0 để phân bổ thủ công."); return; }
+        if (allocations.find((i) => i.amount > i.outstandingAmount)) { message.error("Có khoản phân bổ vượt outstanding của bill."); return; }
+        if (allocations.reduce((s, i) => s + i.amount, 0) > selectedPaymentUnallocated) { message.error("Tổng vượt số tiền chưa phân bổ."); return; }
         setSubmitting(true);
         try {
-            const payment = await allocatePayment(selectedPayment.id, {
+            const p = await allocatePayment(selectedPayment.id, {
                 allocations: allocations.map(({ billId, amount }) => ({ billId, amount })),
                 note: "Manual allocation from finance workspace",
             });
-            message.success("Đã manual allocate thành công");
-            await refreshWorkspace(selectedContractId, payment.id);
-        } catch (error) {
-            message.error(getBillingUiErrorMessage(error, "Không thể manual allocate"));
+            message.success("Phân bổ thủ công thành công");
+            await refreshWorkspace(selectedContractId, p.id);
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể phân bổ thủ công"));
         } finally {
             setSubmitting(false);
         }
     };
 
     const openReverseModal = () => {
-        if (!selectedPayment) {
-            message.warning("Hãy chọn payment trước khi reverse.");
-            return;
-        }
-
+        if (!selectedPayment) { message.warning("Hãy chọn một khoản thanh toán."); return; }
         Modal.confirm({
-            title: `Reverse payment #${selectedPayment.id}`,
+            title: `Đảo ngược thanh toán #${selectedPayment.id}`,
             icon: <RollbackOutlined />,
             content: (
                 <Form form={reverseForm} layout="vertical">
-                    <Form.Item name="note" label="Lý do reverse">
-                        <TextArea rows={3} placeholder="Ví dụ: thu nhầm, hoàn cọc, retry giao dịch..." />
+                    <Form.Item name="note" label="Lý do đảo ngược">
+                        <TextArea rows={3} placeholder="VD: Thu nhầm, hoàn cọc, thử lại giao dịch..." />
                     </Form.Item>
                 </Form>
             ),
-            okText: "Reverse",
+            okText: "Đảo ngược",
             okButtonProps: { danger: true },
             cancelText: "Đóng",
             onOk: async () => {
                 try {
                     const values = await reverseForm.validateFields();
-                    const payment = await reversePayment(selectedPayment.id, values);
-                    message.success("Đã reverse payment");
+                    const p = await reversePayment(selectedPayment.id, values);
+                    message.success("Đã đảo ngược thanh toán");
                     reverseForm.resetFields();
-                    await refreshWorkspace(selectedContractId, payment.id);
-                } catch (error) {
-                    if (error?.errorFields) {
-                        return Promise.reject(error);
-                    }
-                    message.error(getBillingUiErrorMessage(error, "Không thể reverse payment"));
+                    await refreshWorkspace(selectedContractId, p.id);
+                } catch (e) {
+                    if (e?.errorFields) return Promise.reject(e);
+                    message.error(getBillingUiErrorMessage(e, "Không thể đảo ngược"));
                 }
-                return undefined;
             },
         });
     };
 
+    // ── Table columns ──
     const paymentColumns = [
         {
-            title: "Payment",
-            dataIndex: "id",
+            title: "Thanh toán",
             key: "id",
-            render: (_, record) => (
-                <div>
-                    <div className={cx("paymentCode")}>#{record.id}</div>
-                    <div className={cx("paymentRef")}>{record.externalReference}</div>
-                </div>
+            render: (_, r) => (
+                <>
+                    <div className={cx("payId")}>#{r.id}</div>
+                    <div className={cx("payRef")}>{r.externalReference || "—"}</div>
+                </>
             ),
         },
         {
             title: "Số tiền",
             dataIndex: "amount",
-            key: "amount",
-            render: (value) => <strong>{formatCurrency(value)}</strong>,
+            render: (v) => <span className={cx("amtPrimary")}>{formatCurrency(v)}</span>,
         },
         {
             title: "Đã phân bổ",
             dataIndex: "allocatedAmount",
-            key: "allocatedAmount",
-            render: (value) => formatCurrency(value),
+            render: (v) => <span className={cx("amtSub")}>{formatCurrency(v)}</span>,
         },
         {
             title: "Chưa phân bổ",
             dataIndex: "unallocatedAmount",
-            key: "unallocatedAmount",
-            render: (value) => formatCurrency(value),
+            render: (v) => (
+                <span className={cx(Number(v) > 0 ? "amtWarn" : "amtSub")}>{formatCurrency(v)}</span>
+            ),
         },
         {
             title: "Trạng thái",
             dataIndex: "status",
-            key: "status",
-            render: (status) => {
-                const meta = paymentStatusMeta[status] || { color: "default", text: status };
-                return <Tag color={meta.color}>{meta.text}</Tag>;
-            },
+            render: (s) => <StatusTag status={s} meta={PAYMENT_STATUS_META} />,
         },
         {
             title: "Thao tác",
             key: "actions",
-            render: (_, record) => {
-                const canAllocate =
-                    !["REVERSED", "FAILED"].includes(record.status) &&
-                    Number(record.unallocatedAmount || 0) > 0;
+            fixed: "right",
+            width: 220,
+            render: (_, r) => {
+                const canA = !["REVERSED", "FAILED"].includes(r.status) && Number(r.unallocatedAmount || 0) > 0;
                 return (
-                    <Space wrap>
-                        <Button size="small" onClick={() => setSelectedPaymentId(record.id)}>
-                        Chọn
-                        </Button>
-                        {record.status === "PENDING" && (
-                            <Button size="small" type="primary" onClick={() => handleConfirm(record.id)}>
-                            Confirm
+                    <Space size={6}>
+                        <Tooltip title="Chọn thanh toán này để xem và phân bổ">
+                            <Button
+                                size="small"
+                                className={cx("btnGhost", "btnSm")}
+                                icon={<ArrowRightOutlined />}
+                                onClick={() => setSelectedPaymentId(r.id)}
+                            >
+                                {r.id === selectedPaymentId ? "Đang chọn" : "Chọn"}
                             </Button>
+                        </Tooltip>
+                        {r.status === "PENDING" && (
+                            <Tooltip title="Xác nhận khoản thanh toán">
+                                <Button
+                                    size="small"
+                                    className={cx("btnPrimary", "btnSm")}
+                                    onClick={() => handleConfirm(r.id)}
+                                >
+                                    Xác nhận
+                                </Button>
+                            </Tooltip>
                         )}
-                        <Button size="small" onClick={() => handleAutoAllocate(record.id)} disabled={!canAllocate}>
-                            Auto allocate
-                        </Button>
+                        <Tooltip title="Tự động phân bổ theo thứ tự ưu tiên">
+                            <Button
+                                size="small"
+                                className={cx(canA ? "btnAccent" : "btnGhost", "btnSm")}
+                                disabled={!canA}
+                                icon={<ThunderboltOutlined />}
+                                onClick={() => handleAutoAllocate(r.id)}
+                            >
+                                Tự động
+                            </Button>
+                        </Tooltip>
                     </Space>
                 );
             },
         },
     ];
 
-    useEffect(() => {
-        if (!selectedPaymentId) {
-            setSelectedPayment(null);
-            return;
-        }
-
-        let cancelled = false;
-
-        const loadSelectedPayment = async () => {
-            try {
-                const payment = await getPaymentById(selectedPaymentId);
-                if (!cancelled) {
-                    setSelectedPayment(payment);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    setSelectedPayment(null);
-                }
-            }
-        };
-
-        loadSelectedPayment();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedPaymentId, payments]);
-
     const invoiceColumns = [
         {
-            title: "Bill",
-            dataIndex: "billId",
+            title: "Hóa đơn",
             key: "billId",
-            render: (_, record) => (
-                <div>
-                    <div className={cx("billCode")}>{record.generationKey || `#${record.billId}`}</div>
-                    <div className={cx("paymentRef")}>{record.billingPeriodStart} → {record.billingPeriodEnd}</div>
-                </div>
+            render: (_, r) => (
+                <>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-1, #f0f4ff)" }}>
+                        {r.generationKey || `#${r.billId}`}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-3, #4e5f7c)", marginTop: 2 }}>
+                        {r.billingPeriodStart} → {r.billingPeriodEnd}
+                    </div>
+                </>
             ),
         },
         {
-            title: "Status",
+            title: "Trạng thái",
             dataIndex: "billStatus",
-            key: "billStatus",
-            render: (status) => {
-                const meta = invoiceStatusMeta[status] || { color: "default", text: status };
-                return <Tag color={meta.color}>{meta.text}</Tag>;
-            },
+            render: (s) => <StatusTag status={s} meta={INVOICE_STATUS_META} />,
         },
         {
-            title: "Outstanding",
+            title: "Còn nợ",
             dataIndex: "outstandingAmount",
-            key: "outstandingAmount",
-            render: (value) => formatCurrency(value),
+            render: (v) => <span className={cx("amtWarn")} style={{ fontWeight: 800 }}>{formatCurrency(v)}</span>,
         },
         {
-            title: "Manual allocate",
+            title: "Phân bổ thủ công",
             key: "manual",
-            render: (_, record) => (
+            render: (_, r) => (
                 <InputNumber
                     min={0}
-                    max={Number(record.outstandingAmount || 0)}
+                    max={Number(r.outstandingAmount || 0)}
                     precision={0}
-                    value={record.manualAmount}
-                    disabled={!canAllocateSelectedPayment}
-                    onChange={(value) => {
-                        setReconciliation((current) => ({
-                            ...current,
-                            invoices: (current?.invoices || []).map((invoice) =>
-                                invoice.billId === record.billId ? { ...invoice, manualAmount: value || 0 } : invoice
+                    value={r.manualAmount}
+                    disabled={!canAllocate}
+                    style={{ width: 130 }}
+                    onChange={(v) =>
+                        setReconciliation((cur) => ({
+                            ...cur,
+                            invoices: (cur?.invoices || []).map((i) =>
+                                i.billId === r.billId ? { ...i, manualAmount: v || 0 } : i
                             ),
-                        }));
-                    }}
+                        }))
+                    }
                 />
             ),
         },
     ];
 
-    const auditItems = (billingAuditLogs || []).slice(0, 8);
-
+    // ─────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────
     return (
-        <div className={cx("payment-wrapper")}>
-            <div className={cx("page-header")}>
-                {/*<Title level={3} className={cx("page-title")}>*/}
-                {/*    <WalletOutlined />*/}
-                {/*    Finance Workspace*/}
-                {/*</Title>*/}
-                <p className={cx("page-description")}>
-                    Chọn hợp đồng đang active để nhận payment, allocate/reverse và theo dõi reconciliation theo thời gian thực.
-                </p>
-            </div>
+        <div className={cx("wrapper")}>
 
-            <Card className={cx("filter-card")}>
-                <Space wrap className={cx("filter-space")}>
+            {/* ════ Top navigation bar ════ */}
+            <header className={cx("topBar")}>
+                <div className={cx("topBarLeft")}>
+                    <div className={cx("brandIcon")}>
+                        <WalletOutlined />
+                    </div>
+                    <span className={cx("brandName")}>FinanceOps</span>
+                    <span className={cx("brandSep")} />
+                    <span className={cx("pageTitle")}>Quản lý Thanh toán</span>
+                </div>
+
+                <div className={cx("topBarRight")}>
                     <Select
                         showSearch
-                        style={{ minWidth: 360 }}
-                        placeholder="Chọn hợp đồng"
+                        className={cx("contractSelector")}
+                        style={{ minWidth: 320 }}
+                        placeholder="Chọn hợp đồng..."
                         options={contractOptions}
                         value={selectedContractId}
                         loading={loadingContracts}
                         onChange={setSelectedContractId}
                         optionFilterProp="label"
+                        suffixIcon={<FilterOutlined />}
                     />
-                    <Button icon={<ReloadOutlined />} onClick={() => refreshWorkspace(selectedContractId, selectedPaymentId)}>
-                        Làm mới dữ liệu
-                    </Button>
-                </Space>
-            </Card>
+                    <Tooltip title="Làm mới toàn bộ dữ liệu workspace">
+                        <Button
+                            className={cx("btnGhost")}
+                            icon={<ReloadOutlined />}
+                            onClick={() => refreshWorkspace(selectedContractId, selectedPaymentId)}
+                        >
+                            Làm mới
+                        </Button>
+                    </Tooltip>
+                </div>
+            </header>
 
+            {/* ════ No contract ════ */}
             {!selectedContractId ? (
-                <Card className={cx("table-card")}>
-                    <Empty description="Chưa có hợp đồng active để thao tác" />
-                </Card>
+                <div className={cx("fullEmpty")}>
+                    <BankOutlined />
+                    <p>Chưa có hợp đồng active để thao tác</p>
+                </div>
             ) : (
-                <Spin spinning={loadingWorkspace || submitting}>
-                    <Row gutter={[16, 16]} className={cx("statistics-row")}>
-                        <Col xs={24} md={12} xl={6}>
-                            <Card className={cx("stat-card", "primary")}>
-                                <Statistic
-                                    title="Tổng hóa đơn"
-                                    value={Number(reconciliation?.invoiceTotal || 0)}
-                                    formatter={(value) => formatCurrency(value)}
-                                    prefix={<DollarOutlined />}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={12} xl={6}>
-                            <Card className={cx("stat-card", "success")}>
-                                <Statistic
-                                    title="Đã thu"
-                                    value={Number(reconciliation?.paymentTotal || 0)}
-                                    formatter={(value) => formatCurrency(value)}
-                                    prefix={<CheckCircleOutlined />}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={12} xl={6}>
-                            <Card className={cx("stat-card", "warning")}>
-                                <Statistic
-                                    title="Công nợ"
-                                    value={Number(reconciliation?.outstandingTotal || 0)}
-                                    formatter={(value) => formatCurrency(value)}
-                                    prefix={<CreditCardOutlined />}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={12} xl={6}>
-                            <Card className={cx("stat-card", "danger")}>
-                                <Statistic
-                                    title="Credit còn lại"
-                                    value={Number(creditLedger?.currentBalance || 0)}
-                                    formatter={(value) => formatCurrency(value)}
-                                    prefix={<HistoryOutlined />}
-                                />
-                            </Card>
-                        </Col>
-                    </Row>
+                <Spin spinning={loadingWorkspace || submitting} tip="Đang tải...">
+                    <main className={cx("content")}>
 
-                    <Row gutter={[16, 16]}>
-                        <Col xs={24} xl={9}>
-                            <Card title="Nhận payment" className={cx("table-card")}>
-                                <Descriptions column={1} size="small" bordered className={cx("contractMeta")}>
-                                    <Descriptions.Item label="Khu trọ">
-                                        {selectedContract?.boardingHouseName || "—"}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Phòng">
-                                        {selectedContract?.roomNumber || "—"}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Người thuê">
-                                        {selectedContract?.tenantFullName || "—"}
-                                    </Descriptions.Item>
-                                </Descriptions>
+                        {/* ════ KPI strip ════ */}
+                        <div className={cx("kpiStrip")}>
+                            {KPI_CONFIG.map(({ key, label, icon, cls }) => {
+                                const value =
+                                    key === "creditBalance"
+                                        ? creditLedger?.currentBalance
+                                        : reconciliation?.[key];
+                                return (
+                                    <div key={key} className={cx("kpiCard", cls)}>
+                                        <div className={cx("kpiIconWrap")}>{icon}</div>
+                                        <div className={cx("kpiInfo")}>
+                                            <div className={cx("kpiLabel")}>{label}</div>
+                                            <div className={cx("kpiValue")}>{formatCurrency(value)}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
 
-                                <Form
-                                    layout="vertical"
-                                    form={receiveForm}
-                                    className={cx("receiveForm")}
-                                    onFinish={handleReceive}
-                                >
-                                    <Form.Item
-                                        label="Số tiền"
-                                        name="amount"
-                                        rules={[{ required: true, message: "Nhập số tiền" }]}
-                                    >
-                                        <InputNumber style={{ width: "100%" }} min={1} precision={0} />
-                                    </Form.Item>
-                                    <Form.Item
-                                        label="External reference"
-                                        name="externalReference"
-                                        rules={[{ required: true, message: "Nhập mã tham chiếu" }]}
-                                    >
-                                        <Input placeholder="VD: CK-20260329-001" />
-                                    </Form.Item>
-                                    <Form.Item label="Currency" name="currency" initialValue="VND">
-                                        <Input />
-                                    </Form.Item>
-                                    <Form.Item label="Ngày nhận tiền" name="receivedAt">
-                                        <DatePicker
-                                            showTime
-                                            style={{ width: "100%" }}
-                                            format="DD/MM/YYYY HH:mm"
-                                            disabledDate={(current) => current && current > dayjs().endOf("day")}
-                                        />
-                                    </Form.Item>
-                                    <Form.Item label="Ghi chú" name="note">
-                                        <TextArea rows={3} />
-                                    </Form.Item>
-                                    <Button type="primary" htmlType="submit" block>
-                                        Ghi nhận payment
-                                    </Button>
-                                </Form>
+                        {/* ════ Row 1: Receive form + Payment list ════ */}
+                        <div className={cx("mainGrid")}>
 
-                                {agingReport?.buckets?.length ? (
-                                    <div className={cx("infoPanel")}>
-                                        <Text strong>Debt aging</Text>
-                                        {(agingReport.buckets || [])
-                                            .filter((bucket) => Number(bucket.outstandingAmount || 0) > 0)
-                                            .map((bucket) => (
-                                                <div key={bucket.bucketCode} className={cx("infoRow")}>
-                                                    <span>{bucket.label}</span>
-                                                    <span>
-                                                        {formatCurrency(bucket.outstandingAmount)} · {bucket.invoiceCount} bill
-                                                    </span>
+                            {/* Receive form */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <PlusOutlined />
+                                        Ghi nhận thanh toán
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {/* Contract strip */}
+                                    <div className={cx("contractStrip")}>
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Khu trọ</span>
+                                            <span className={cx("contractStripValue")}>
+                                                {selectedContract?.boardingHouseName || "—"}
+                                            </span>
+                                        </div>
+                                        <span className={cx("contractStripDivider")} />
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Phòng</span>
+                                            <span className={cx("contractStripValue", "contractStripValue--accent")}>
+                                                P.{selectedContract?.roomNumber || "?"}
+                                            </span>
+                                        </div>
+                                        <span className={cx("contractStripDivider")} />
+                                        <div className={cx("contractStripItem")}>
+                                            <span className={cx("contractStripLabel")}>Người thuê</span>
+                                            <span className={cx("contractStripValue")}>
+                                                {selectedContract?.tenantFullName || "—"}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <Form layout="vertical" form={receiveForm} onFinish={handleReceive}>
+                                        <Form.Item
+                                            label="Số tiền (₫)"
+                                            name="amount"
+                                            rules={[{ required: true, message: "Nhập số tiền" }]}
+                                        >
+                                            <InputNumber
+                                                style={{ width: "100%" }}
+                                                min={1}
+                                                precision={0}
+                                                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                                            />
+                                        </Form.Item>
+                                        <Form.Item
+                                            label="Mã tham chiếu"
+                                            name="externalReference"
+                                            rules={[{ required: true, message: "Nhập mã tham chiếu" }]}
+                                        >
+                                            <Input placeholder="VD: CK-20260329-001" />
+                                        </Form.Item>
+                                        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
+                                            <Form.Item label="Tiền tệ" name="currency" initialValue="VND">
+                                                <Input />
+                                            </Form.Item>
+                                            <Form.Item label="Ngày nhận tiền" name="receivedAt">
+                                                <DatePicker
+                                                    showTime
+                                                    style={{ width: "100%" }}
+                                                    format="DD/MM/YYYY HH:mm"
+                                                    disabledDate={(d) => d && d > dayjs().endOf("day")}
+                                                />
+                                            </Form.Item>
+                                        </div>
+                                        <Form.Item label="Ghi chú" name="note">
+                                            <TextArea rows={2} />
+                                        </Form.Item>
+                                        <Button className={cx("btnReceive")} htmlType="submit">
+                                            <WalletOutlined /> Ghi nhận thanh toán
+                                        </Button>
+                                    </Form>
+
+                                    {/* Aging buckets */}
+                                    {(agingReport?.buckets || []).filter((b) => Number(b.outstandingAmount || 0) > 0).length > 0 && (
+                                        <div className={cx("miniPanel")}>
+                                            <div className={cx("miniPanelHead", "miniPanelHead--amber")}>
+                                                <ClockCircleOutlined /> Phân tầng tuổi nợ
+                                            </div>
+                                            {(agingReport.buckets || [])
+                                                .filter((b) => Number(b.outstandingAmount || 0) > 0)
+                                                .map((b) => (
+                                                    <div key={b.bucketCode} className={cx("agingRow")}>
+                                                        <span className={cx("agingLabel")}>{b.label}</span>
+                                                        <div>
+                                                            <div className={cx("agingAmount")}>{formatCurrency(b.outstandingAmount)}</div>
+                                                            <div className={cx("agingCount")}>{b.invoiceCount} hóa đơn</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
+
+                                    {/* Overdue invoices */}
+                                    {agingInvoices.slice(0, 4).length > 0 && (
+                                        <div className={cx("miniPanel", "miniPanel--red")}>
+                                            <div className={cx("miniPanelHead", "miniPanelHead--red")}>
+                                                <WarningOutlined /> Hóa đơn quá hạn
+                                            </div>
+                                            {agingInvoices.slice(0, 4).map((inv) => (
+                                                <div key={inv.billId} className={cx("overdueRow")}>
+                                                    <div>
+                                                        <div className={cx("overdueCode")}>{inv.billCode || `#${inv.billId}`}</div>
+                                                        <div className={cx("overdueDays")}>Quá hạn {inv.ageDays || 0} ngày</div>
+                                                    </div>
+                                                    <span className={cx("overdueAmount")}>{formatCurrency(inv.outstandingAmount)}</span>
                                                 </div>
                                             ))}
-                                    </div>
-                                ) : null}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                                {agingInvoices.length ? (
-                                    <div className={cx("infoPanel")}>
-                                        <Text strong>Overdue invoices cần chú ý</Text>
-                                        {agingInvoices.slice(0, 4).map((invoice) => (
-                                            <div key={invoice.billId} className={cx("overdueItem")}>
-                                                <div>
-                                                    <div className={cx("billCode")}>
-                                                        {invoice.billCode || `#${invoice.billId}`}
+                            {/* Payment list */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <CreditCardOutlined />
+                                        Danh sách thanh toán
+                                    </div>
+                                    <span className={cx("cardBadge")}>
+                                        {filteredPayments.length} / {payments.length}
+                                    </span>
+                                </div>
+
+                                <div className={cx("cardBodyZero")}>
+                                    {/* Toolbar */}
+                                    <div className={cx("paymentToolbar")}>
+                                        <Input
+                                            allowClear
+                                            prefix={<SearchOutlined style={{ color: "#4e5f7c" }} />}
+                                            placeholder="Tìm theo mã thanh toán hoặc tham chiếu..."
+                                            value={paymentSearch}
+                                            onChange={(e) => setPaymentSearch(e.target.value)}
+                                        />
+                                        <Select
+                                            value={paymentStatusFilter}
+                                            onChange={setPaymentStatusFilter}
+                                            style={{ width: 190 }}
+                                            options={[
+                                                { value: "ALL", label: "Tất cả trạng thái" },
+                                                ...Object.entries(PAYMENT_STATUS_META).map(([v, m]) => ({
+                                                    value: v,
+                                                    label: m.text,
+                                                })),
+                                            ]}
+                                        />
+                                    </div>
+
+                                    {/* Summary strip */}
+                                    <div className={cx("summaryStrip")}>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Chờ xác nhận</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--amber")}>
+                                                {paymentSummary.pendingCount}
+                                            </span>
+                                        </div>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Có thể phân bổ</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--blue")}>
+                                                {paymentSummary.actionableCount}
+                                            </span>
+                                        </div>
+                                        <div className={cx("summaryCell")}>
+                                            <span className={cx("summaryCellLabel")}>Chưa phân bổ</span>
+                                            <span className={cx("summaryCellValue", "summaryCellValue--violet")}>
+                                                {formatCurrency(paymentSummary.totalUnallocated)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className={cx("tableWrap")}>
+                                        <Table
+                                            rowKey="id"
+                                            size="small"
+                                            columns={paymentColumns}
+                                            dataSource={filteredPayments}
+                                            scroll={{ x: 700 }}
+                                            pagination={{ size: "small", pageSize: 8 }}
+                                            locale={{
+                                                emptyText: (
+                                                    <Empty description={
+                                                        <span style={{ color: "#4e5f7c", fontSize: 13 }}>
+                                                            Chưa có khoản thanh toán nào
+                                                        </span>
+                                                    } />
+                                                ),
+                                            }}
+                                            rowClassName={(r) => r.id === selectedPaymentId ? cx("selectedRow") : ""}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ════ Row 2: Allocation + Detail ════ */}
+                        <div className={cx("allocationGrid")}>
+
+                            {/* Allocation workspace */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <DollarOutlined />
+                                        Phân bổ thanh toán
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!selectedPayment ? (
+                                        <div className={cx("emptyState")}>
+                                            <ArrowRightOutlined />
+                                            <span>Chọn một khoản thanh toán từ danh sách bên trên để phân bổ</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className={cx(
+                                                "paymentBanner",
+                                                selectedPayment.status === "PENDING"
+                                                    ? "paymentBanner--pending"
+                                                    : "paymentBanner--normal"
+                                            )}>
+                                                <span className={cx("paymentBannerIcon")}>
+                                                    {selectedPayment.status === "PENDING"
+                                                        ? <ClockCircleOutlined />
+                                                        : <CheckCircleOutlined />}
+                                                </span>
+                                                <div className={cx("paymentBannerBody")}>
+                                                    <div className={cx("paymentBannerTitle")}>
+                                                        Thanh toán #{selectedPayment.id}
+                                                        <StatusTag status={selectedPayment.status} meta={PAYMENT_STATUS_META} />
                                                     </div>
-                                                    <div className={cx("paymentRef")}>
-                                                        {invoice.billTitle || "Hóa đơn"} · quá hạn {invoice.ageDays || 0} ngày
+                                                    <div className={cx("paymentBannerDesc")}>
+                                                        {selectedPayment.status === "PENDING"
+                                                            ? "Khoản này đang chờ xác nhận. "
+                                                            : ""}
+                                                        Chưa phân bổ:{" "}
+                                                        <strong className={cx("amtWarn")}>
+                                                            {formatCurrency(selectedPayment.unallocatedAmount)}
+                                                        </strong>
                                                     </div>
                                                 </div>
-                                                <strong>{formatCurrency(invoice.outstandingAmount)}</strong>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : null}
-                            </Card>
-                        </Col>
 
-                        <Col xs={24} xl={15}>
-                            <Card
-                                title="Payments gần đây"
-                                extra={
-                                    <Text type="secondary">
-                                        {filteredPayments.length}/{payments.length} payment từ API của contract
-                                    </Text>
-                                }
-                                className={cx("table-card")}
-                            >
-                                <div className={cx("paymentToolbar")}>
-                                    <Input
-                                        allowClear
-                                        placeholder="Tìm theo payment id hoặc external reference"
-                                        value={paymentSearch}
-                                        onChange={(event) => setPaymentSearch(event.target.value)}
-                                    />
-                                    <Select
-                                        value={paymentStatusFilter}
-                                        onChange={setPaymentStatusFilter}
-                                        options={[
-                                            { value: "ALL", label: "Tất cả trạng thái" },
-                                            ...Object.keys(paymentStatusMeta).map((status) => ({
-                                                value: status,
-                                                label: paymentStatusMeta[status]?.text || status,
-                                            })),
-                                        ]}
-                                    />
-                                </div>
-                                <div className={cx("quickSummary")}>
-                                    <div className={cx("summaryBadge")}>
-                                        <span>Pending</span>
-                                        <strong>{paymentSummary.pendingCount}</strong>
-                                    </div>
-                                    <div className={cx("summaryBadge")}>
-                                        <span>Có thể allocate</span>
-                                        <strong>{paymentSummary.actionableCount}</strong>
-                                    </div>
-                                    <div className={cx("summaryBadge")}>
-                                        <span>Chưa phân bổ</span>
-                                        <strong>{formatCurrency(paymentSummary.totalUnallocated)}</strong>
-                                    </div>
-                                </div>
-                                <Table
-                                    rowKey="id"
-                                    columns={paymentColumns}
-                                    dataSource={filteredPayments}
-                                    pagination={false}
-                                    locale={{ emptyText: "Chưa có payment nào cho hợp đồng này." }}
-                                    rowClassName={(record) =>
-                                        record.id === selectedPaymentId ? cx("selectedRow") : ""
-                                    }
-                                />
-                            </Card>
-                        </Col>
-                    </Row>
+                                            <div className={cx("allocationMeta")}>
+                                                <span>
+                                                    Tổng phân bổ thủ công:{" "}
+                                                    <strong className={cx("allocationMetaValue")}>
+                                                        {formatCurrency(manualAllocationDraft)}
+                                                    </strong>
+                                                </span>
+                                                <span>
+                                                    Còn lại:{" "}
+                                                    <strong
+                                                        className={cx(
+                                                            Math.max(selectedPaymentUnallocated - manualAllocationDraft, 0) > 0
+                                                                ? "allocationMetaValue--warn"
+                                                                : "allocationMetaValue--ok"
+                                                        )}
+                                                    >
+                                                        {formatCurrency(Math.max(selectedPaymentUnallocated - manualAllocationDraft, 0))}
+                                                    </strong>
+                                                </span>
+                                            </div>
 
-                    <Row gutter={[16, 16]} className={cx("workspaceRow")}>
-                        <Col xs={24} xl={14}>
-                            <Card title="Outstanding invoices & manual allocation" className={cx("table-card")}>
-                                {!selectedPayment ? (
-                                    <Empty description="Chọn một payment ở bảng trên để phân bổ" />
-                                ) : (
-                                    <>
-                                        <Alert
-                                            type={selectedPayment.status === "PENDING" ? "warning" : "info"}
-                                            showIcon
-                                            message={`Payment #${selectedPayment.id} · ${paymentStatusMeta[selectedPayment.status]?.text || selectedPayment.status}`}
-                                            description={
-                                                selectedPayment.status === "PENDING"
-                                                    ? `Payment này đang chờ xác nhận. Allocate sẽ tự confirm nếu backend chấp nhận. Chưa phân bổ: ${formatCurrency(selectedPayment.unallocatedAmount)}`
-                                                    : `Chưa phân bổ: ${formatCurrency(selectedPayment.unallocatedAmount)}`
-                                            }
-                                            style={{ marginBottom: 16 }}
-                                        />
-                                        <div className={cx("actionSummary")}>
-                                            <span>Tổng draft manual: {formatCurrency(manualAllocationDraft)}</span>
-                                            <span>
-                                                Còn lại sau draft:{" "}
-                                                {formatCurrency(
-                                                    Math.max(
-                                                        Number(selectedPayment.unallocatedAmount || 0) -
-                                                            manualAllocationDraft,
-                                                        0
-                                                    )
-                                                )}
-                                            </span>
-                                        </div>
-                                        <Table
-                                            rowKey="billId"
-                                            columns={invoiceColumns}
-                                            dataSource={outstandingInvoices}
-                                            pagination={false}
-                                            locale={{ emptyText: "Không còn invoice outstanding để phân bổ." }}
-                                        />
-                                        <div className={cx("actionBar")}>
-                                            <Button
-                                                type="primary"
-                                                onClick={handleManualAllocate}
-                                                disabled={!canAllocateSelectedPayment}
-                                            >
-                                                Manual allocate
-                                            </Button>
-                                            <Button
-                                                onClick={() => handleAutoAllocate(selectedPayment.id)}
-                                                disabled={!canAllocateSelectedPayment}
-                                            >
-                                                Auto allocate
-                                            </Button>
-                                            <Button danger onClick={openReverseModal} disabled={!canReverseSelectedPayment}>
-                                                Reverse payment
-                                            </Button>
-                                        </div>
-                                    </>
-                                )}
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} xl={10}>
-                            <Card title="Payment detail" className={cx("table-card")}>
-                                {!selectedPayment ? (
-                                    <Empty description="Chọn payment để xem chi tiết" />
-                                ) : (
-                                    <>
-                                        <Descriptions column={1} size="small" bordered>
-                                            <Descriptions.Item label="Payment ID">#{selectedPayment.id}</Descriptions.Item>
-                                            <Descriptions.Item label="External reference">
-                                                {selectedPayment.externalReference}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Nguồn">
-                                                {selectedPayment.source || "NORMAL"}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Trạng thái">
-                                                <Tag color={paymentStatusMeta[selectedPayment.status]?.color || "default"}>
-                                                    {paymentStatusMeta[selectedPayment.status]?.text || selectedPayment.status}
-                                                </Tag>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Số tiền">
-                                                {formatCurrency(selectedPayment.amount)}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Allocated">
-                                                {formatCurrency(selectedPayment.allocatedAmount)}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Unallocated">
-                                                {formatCurrency(selectedPayment.unallocatedAmount)}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Received at">
-                                                {selectedPayment.receivedAt
-                                                    ? dayjs(selectedPayment.receivedAt).format("DD/MM/YYYY HH:mm")
-                                                    : "—"}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Confirmed at">
-                                                {selectedPayment.confirmedAt ? dayjs(selectedPayment.confirmedAt).format("DD/MM/YYYY HH:mm") : "—"}
-                                            </Descriptions.Item>
-                                        </Descriptions>
-
-                                        <div className={cx("allocationList")}>
-                                            <Text strong>Allocations</Text>
-                                            {(selectedPayment.allocations || []).length === 0 ? (
-                                                <Empty
-                                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                    description="Payment này chưa có allocation"
+                                            <div className={cx("tableWrap")}>
+                                                <Table
+                                                    rowKey="billId"
+                                                    size="small"
+                                                    columns={invoiceColumns}
+                                                    dataSource={outstandingInvoices}
+                                                    scroll={{ x: 500 }}
+                                                    pagination={false}
+                                                    locale={{
+                                                        emptyText: (
+                                                            <Empty description={
+                                                                <span style={{ color: "#4e5f7c", fontSize: 13 }}>
+                                                                    Không có hóa đơn nào cần phân bổ
+                                                                </span>
+                                                            } />
+                                                        ),
+                                                    }}
                                                 />
-                                            ) : (
-                                                (selectedPayment.allocations || []).map((allocation) => (
-                                                    <div key={allocation.id} className={cx("allocationItem")}>
-                                                        <div>
-                                                            Bill #{allocation.billId} · {formatEnumLabel(allocation.allocationType)}
-                                                        </div>
-                                                        <strong>{formatCurrency(allocation.amount)}</strong>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    <Row gutter={[16, 16]}>
-                        <Col xs={24} xl={12}>
-                            <Card title="Credit ledger gần đây" className={cx("table-card")}>
-                                {creditEntries.length === 0 ? (
-                                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có credit ledger" />
-                                ) : (
-                                    creditEntries.map((entry) => (
-                                        <div key={entry.id} className={cx("infoRow")}>
-                                            <span>
-                                                {formatEnumLabel(entry.entryType)} {entry.billId ? `· bill #${entry.billId}` : ""}
-                                            </span>
-                                            <span>{formatCurrency(entry.amount)}</span>
-                                        </div>
-                                    ))
-                                )}
-                            </Card>
-                        </Col>
-                        <Col xs={24} xl={12}>
-                            <Card title="Billing audit gần đây" className={cx("table-card")}>
-                                {auditItems.length === 0 ? (
-                                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có audit log" />
-                                ) : (
-                                    auditItems.map((log) => (
-                                        <div key={log.id} className={cx("auditItem")}>
-                                            <div className={cx("auditTitle")}>{formatEnumLabel(log.operationType)}</div>
-                                            <div className={cx("auditMeta")}>
-                                                {formatEnumLabel(log.targetType)} #{log.targetId} · {log.actorName || "System"} ·{" "}
-                                                {log.createdAt ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm") : "—"}
                                             </div>
+
+                                            <div className={cx("actionBar")}>
+                                                <Tooltip title="Phân bổ thủ công theo số tiền đã nhập">
+                                                    <Button
+                                                        className={cx("btnPrimary")}
+                                                        disabled={!canAllocate}
+                                                        onClick={handleManualAllocate}
+                                                        icon={<CheckCircleOutlined />}
+                                                    >
+                                                        Phân bổ thủ công
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip title="Tự động phân bổ theo thứ tự ưu tiên hệ thống">
+                                                    <Button
+                                                        className={cx(canAllocate ? "btnAccent" : "btnGhost")}
+                                                        disabled={!canAllocate}
+                                                        onClick={() => handleAutoAllocate(selectedPayment.id)}
+                                                        icon={<ThunderboltOutlined />}
+                                                    >
+                                                        Phân bổ tự động
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip title="Đảo ngược và hoàn lại toàn bộ khoản thanh toán">
+                                                    <Button
+                                                        className={cx(canReverse ? "btnDanger" : "btnGhost")}
+                                                        disabled={!canReverse}
+                                                        onClick={openReverseModal}
+                                                        icon={<RollbackOutlined />}
+                                                    >
+                                                        Đảo ngược
+                                                    </Button>
+                                                </Tooltip>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Payment detail */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <AuditOutlined />
+                                        Chi tiết thanh toán
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!selectedPayment ? (
+                                        <div className={cx("emptyState")}>
+                                            <AuditOutlined />
+                                            <span>Chọn khoản thanh toán để xem chi tiết</span>
                                         </div>
-                                    ))
-                                )}
-                            </Card>
-                        </Col>
-                    </Row>
+                                    ) : (
+                                        <>
+                                            <Descriptions column={1} size="small" bordered>
+                                                {[
+                                                    ["Mã thanh toán",  <span className={cx("detailMonoId")}>#{selectedPayment.id}</span>],
+                                                    ["Mã tham chiếu",  selectedPayment.externalReference || "—"],
+                                                    ["Nguồn",          formatEnumLabel(selectedPayment.source || "NORMAL")],
+                                                    ["Trạng thái",     <StatusTag status={selectedPayment.status} meta={PAYMENT_STATUS_META} />],
+                                                    ["Số tiền",        <span className={cx("detailAmtLg")}>{formatCurrency(selectedPayment.amount)}</span>],
+                                                    ["Đã phân bổ",     <span className={cx("detailAlloc")}>{formatCurrency(selectedPayment.allocatedAmount)}</span>],
+                                                    ["Chưa phân bổ",   <span className={cx("detailUnalloc")}>{formatCurrency(selectedPayment.unallocatedAmount)}</span>],
+                                                    ["Ngày nhận",      selectedPayment.receivedAt  ? dayjs(selectedPayment.receivedAt).format("DD/MM/YYYY HH:mm")  : "—"],
+                                                    ["Ngày xác nhận",  selectedPayment.confirmedAt ? dayjs(selectedPayment.confirmedAt).format("DD/MM/YYYY HH:mm") : "—"],
+                                                ].map(([label, value], i) => (
+                                                    <Descriptions.Item
+                                                        key={i}
+                                                        label={label}
+                                                    >
+                                                        {value}
+                                                    </Descriptions.Item>
+                                                ))}
+                                            </Descriptions>
+
+                                            <div className={cx("allocHistory")}>
+                                                <div className={cx("allocHistoryTitle")}>Lịch sử phân bổ</div>
+                                                {!(selectedPayment.allocations || []).length ? (
+                                                    <div className={cx("allocEmpty")}>Chưa có lịch sử phân bổ</div>
+                                                ) : (
+                                                    (selectedPayment.allocations || []).map((a) => (
+                                                        <div key={a.id} className={cx("allocHistoryItem")}>
+                                                            <div>
+                                                                <span className={cx("allocBillId")}>Bill #{a.billId}</span>
+                                                                <span className={cx("allocTypeMeta")}>{formatEnumLabel(a.allocationType)}</span>
+                                                            </div>
+                                                            <span className={cx("allocAmt")}>{formatCurrency(a.amount)}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ════ Row 3: Credit ledger + Audit log ════ */}
+                        <div className={cx("bottomGrid")}>
+
+                            {/* Credit ledger */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <WalletOutlined style={{ color: "#a78bfa" }} />
+                                        Credit Ledger
+                                    </div>
+                                    <span className={cx("creditBal")}>
+                                        Số dư: <strong>{formatCurrency(creditLedger?.currentBalance)}</strong>
+                                    </span>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!creditEntries.length ? (
+                                        <div className={cx("emptyState")} style={{ padding: "36px 0" }}>
+                                            <WalletOutlined />
+                                            <span>Chưa có giao dịch tín dụng</span>
+                                        </div>
+                                    ) : (
+                                        creditEntries.map((e) => (
+                                            <div key={e.id} className={cx("creditRow")}>
+                                                <div>
+                                                    <div className={cx("creditType")}>{formatEnumLabel(e.entryType)}</div>
+                                                    {e.billId    && <div className={cx("creditBill")}>Bill #{e.billId}</div>}
+                                                    {e.createdAt && <div className={cx("creditDate")}>{dayjs(e.createdAt).format("DD/MM/YYYY HH:mm")}</div>}
+                                                </div>
+                                                <span className={cx(Number(e.amount || 0) >= 0 ? "creditPos" : "creditNeg")}>
+                                                    {formatCurrency(e.amount)}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Audit log */}
+                            <div className={cx("card")}>
+                                <div className={cx("cardHead")}>
+                                    <div className={cx("cardTitle")}>
+                                        <HistoryOutlined />
+                                        Nhật ký thao tác
+                                    </div>
+                                </div>
+                                <div className={cx("cardBody")}>
+                                    {!(billingAuditLogs || []).slice(0, 8).length ? (
+                                        <div className={cx("emptyState")} style={{ padding: "36px 0" }}>
+                                            <HistoryOutlined />
+                                            <span>Chưa có nhật ký thao tác</span>
+                                        </div>
+                                    ) : (
+                                        (billingAuditLogs || []).slice(0, 8).map((log) => (
+                                            <div key={log.id} className={cx("auditItem")}>
+                                                <div className={cx("auditOp")}>{formatEnumLabel(log.operationType)}</div>
+                                                <div className={cx("auditMeta")}>
+                                                    <span>{formatEnumLabel(log.targetType)} #{log.targetId}</span>
+                                                    <span className={cx("auditSep")}>·</span>
+                                                    <span>{log.actorName || "Hệ thống"}</span>
+                                                    <span className={cx("auditSep")}>·</span>
+                                                    <span>{log.createdAt ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm") : "—"}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
                 </Spin>
             )}
         </div>
