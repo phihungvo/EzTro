@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import carevn.luv2code.ez_tro.entity.ContractVersion;
@@ -25,4 +27,17 @@ public interface ContractVersionRepository extends JpaRepository<ContractVersion
     Optional<ContractVersion>
             findFirstByContractIdAndEffectiveFromLessThanEqualAndEffectiveToIsNullOrderByVersionNumberDesc(
                     Integer contractId, LocalDate asOfDate);
+
+    @Query(
+            """
+		SELECT v FROM ContractVersion v
+		WHERE v.contract.id = :contractId
+		AND v.effectiveFrom <= :periodEnd
+		AND (v.effectiveTo IS NULL OR v.effectiveTo >= :periodStart)
+		ORDER BY v.effectiveFrom ASC, v.versionNumber DESC
+		""")
+    List<ContractVersion> findOverlappingVersions(
+            @Param("contractId") Integer contractId,
+            @Param("periodStart") LocalDate periodStart,
+            @Param("periodEnd") LocalDate periodEnd);
 }

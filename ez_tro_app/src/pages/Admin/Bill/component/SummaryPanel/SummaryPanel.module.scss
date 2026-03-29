@@ -55,6 +55,128 @@
   border-bottom: 1px solid var(--border);
 }
 
+.depositGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.depositCell {
+  background: rgba(14, 165, 233, 0.06);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.depositLabel {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+  margin-bottom: 4px;
+}
+
+.depositValue {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.depositHighlight {
+  color: var(--green);
+}
+
+.depositList {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.depositTxn {
+  border-radius: 4px;
+  padding: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+}
+
+.depositTxnRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.depositTxnTitle {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.depositTxnAmount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.depositTxnMeta {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.depositTxnMore {
+  font-size: 11px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+}
+
+.paymentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.paymentCell {
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: rgba(159, 211, 255, 0.1);
+}
+
+.paymentLabel {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  margin-bottom: 4px;
+}
+
+.paymentValue {
+  font-weight: 700;
+  font-size: 15px;
+  font-family: var(--font-display);
+  color: var(--cyan);
+}
+
+.paymentAlert {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  background: rgba(255, 77, 94, 0.08);
+  border: 1px solid rgba(255, 77, 94, 0.3);
+  font-size: 12px;
+  color: var(--red);
+  font-family: var(--font-body);
+}
+
+.paymentLoading {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
 .sectionLabel {
   font-family: var(--font-mono);
   font-size: 10px;

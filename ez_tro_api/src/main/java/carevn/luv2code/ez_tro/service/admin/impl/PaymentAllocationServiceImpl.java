@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -56,6 +57,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     private final ContractRepository contractRepository;
     private final BillRepository billRepository;
     private final InvoiceBalanceCalculator invoiceBalanceCalculator;
+    private final BillingDiscrepancyAlertService billingDiscrepancyAlertService;
 
     /**
      * Ghi nhận một khoản thanh toán vào hệ thống.
@@ -140,8 +142,10 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     @Override
     @Transactional
     public PaymentResponse allocatePayment(Integer paymentId, PaymentAllocateRequest request) {
-        Payment payment =
-                paymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+        // Khóa payment để tránh race condition khi có nhiều request allocate đồng thời.
+        Payment payment = paymentRepository
+                .findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
         validateContractAccess(payment.getContract());
 
         if (payment.getStatus() == PaymentStatus.REVERSED || payment.getStatus() == PaymentStatus.FAILED) {
@@ -166,14 +170,27 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
         if (request != null
                 && request.getAllocations() != null
                 && !request.getAllocations().isEmpty()) {
-            available = applyManualAllocations(payment, request, available, newAllocations, touchedBillIds);
+            List<Integer> billIds = request.getAllocations().stream()
+                    .map(PaymentAllocationItemRequest::getBillId)
+                    .filter(Objects::nonNull)
+                    .toList();
+            Map<Integer, Bill> lockedBills = billRepository.findByIdInForUpdate(billIds).stream()
+                    .collect(HashMap::new, (map, bill) -> map.put(bill.getId(), bill), HashMap::putAll);
+            available =
+                    applyManualAllocations(payment, request, available, newAllocations, touchedBillIds, lockedBills);
         } else {
-            available = applyAutoAllocations(payment, available, newAllocations, touchedBillIds);
+            // Auto allocate: khóa toàn bộ bill của hợp đồng để đảm bảo không bị double allocate.
+            List<Bill> lockedBills = billRepository.findByContractIdForUpdate(
+                    payment.getContract().getId());
+            available = applyAutoAllocations(payment, available, newAllocations, touchedBillIds, lockedBills);
         }
 
         if (!newAllocations.isEmpty()) {
             paymentAllocationRepository.saveAll(newAllocations);
             syncBillsAfterAllocations(touchedBillIds);
+            billingDiscrepancyAlertService.checkAndAlert(
+                    payment.getContract(),
+                    getReconciliationReport(payment.getContract().getId()));
         }
 
         refreshPaymentStatus(payment);
@@ -280,7 +297,9 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         validateContractAccess(contract);
 
-        List<Bill> bills = billRepository.findByContractId(contractId);
+        List<Bill> bills = billRepository.findByContractId(contractId).stream()
+                .filter(bill -> bill.getStatus() != BillStatus.CANCELLED)
+                .toList();
         List<InvoiceBalanceResponse> invoiceBalances =
                 bills.stream().map(invoiceBalanceCalculator::calculate).toList();
 
@@ -299,7 +318,8 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
 
         List<Payment> payments = paymentRepository.findByContractIdOrderByReceivedAtAsc(contractId);
         BigDecimal paymentTotal = payments.stream()
-                .filter(p -> p.getStatus() != PaymentStatus.FAILED && p.getStatus() != PaymentStatus.REVERSED)
+                // Chỉ tính các khoản đã xác nhận/đã phân bổ; loại PENDING/FAILED/REVERSED để tránh sai số đối soát.
+                .filter(this::isCountableForReconciliation)
                 .map(Payment::getAmount)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -308,6 +328,13 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
         if (creditTotal.signum() < 0) {
             creditTotal = BigDecimal.ZERO;
         }
+        BigDecimal ratio = BigDecimal.ZERO;
+        if (invoiceTotal.signum() > 0) {
+            ratio = outstandingTotal
+                    .divide(invoiceTotal, 4, RoundingMode.HALF_UP)
+                    .max(BigDecimal.ZERO);
+        }
+        boolean hasDiscrepancy = ratio.compareTo(billingDiscrepancyAlertService.thresholdOrZero()) > 0;
 
         return ReconciliationReportResponse.builder()
                 .contractId(contractId)
@@ -317,6 +344,8 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 .outstandingTotal(outstandingTotal)
                 .creditTotal(creditTotal)
                 .invoices(invoiceBalances)
+                .discrepancyPercent(ratio)
+                .discrepancyAlert(hasDiscrepancy)
                 .build();
     }
 
@@ -325,15 +354,17 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
             PaymentAllocateRequest request,
             BigDecimal available,
             List<PaymentAllocation> newAllocations,
-            Set<Integer> touchedBillIds) {
+            Set<Integer> touchedBillIds,
+            Map<Integer, Bill> lockedBills) {
 
         User createdBy = SecurityUtils.getCurrentUserOrThrow();
         Map<Integer, BigDecimal> localAllocated = new HashMap<>();
 
         for (PaymentAllocationItemRequest item : request.getAllocations()) {
-            Bill bill = billRepository
-                    .findById(item.getBillId())
-                    .orElseThrow(() -> new AppException(ErrorCode.BILL_NOT_FOUND));
+            Bill bill = lockedBills != null ? lockedBills.get(item.getBillId()) : null;
+            if (bill == null) {
+                throw new AppException(ErrorCode.BILL_NOT_FOUND);
+            }
             if (bill.getContract() == null
                     || !bill.getContract().getId().equals(payment.getContract().getId())) {
                 throw new AppException(ErrorCode.PAYMENT_ALLOCATION_INVALID);
@@ -377,15 +408,18 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
             Payment payment,
             BigDecimal available,
             List<PaymentAllocation> newAllocations,
-            Set<Integer> touchedBillIds) {
+            Set<Integer> touchedBillIds,
+            List<Bill> lockedBills) {
 
         User createdBy = SecurityUtils.getCurrentUserOrThrow();
 
-        List<Bill> bills = billRepository.findByContractId(payment.getContract().getId()).stream()
-                .filter(bill -> bill.getAmount() != null && bill.getAmount().signum() > 0)
-                .sorted(Comparator.comparing(Bill::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Bill::getId))
-                .toList();
+        List<Bill> bills = (lockedBills != null ? lockedBills : List.<Bill>of())
+                .stream()
+                        .filter(bill ->
+                                bill.getAmount() != null && bill.getAmount().signum() > 0)
+                        .sorted(Comparator.comparing(Bill::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                                .thenComparing(Bill::getId))
+                        .toList();
 
         Map<Integer, BigDecimal> localAllocated = new HashMap<>();
 
@@ -443,8 +477,12 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     }
 
     private void applyBillStatusFromBalance(Bill bill, InvoiceBalanceResponse balance, LocalDate today) {
-        if (balance.getOutstandingAmount() != null
-                && balance.getOutstandingAmount().signum() <= 0) {
+        if (bill.getStatus() == BillStatus.CANCELLED) {
+            // Không tự động đổi trạng thái hóa đơn đã hủy.
+            return;
+        }
+        BigDecimal outstanding = balance.getOutstandingAmount();
+        if (outstanding != null && outstanding.signum() <= 0) {
             bill.setStatus(BillStatus.PAID);
             bill.setPaymentDate(new Date());
             return;
@@ -452,9 +490,18 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
 
         bill.setPaymentDate(null);
         if (bill.getDueDate() != null && bill.getDueDate().isBefore(today)) {
+            // Quá hạn thì ưu tiên OVERDUE, kể cả có trả một phần.
             bill.setStatus(BillStatus.OVERDUE);
         } else {
-            bill.setStatus(BillStatus.UNPAID);
+            // Nếu đã phân bổ một phần thì chuyển PARTIALLY_PAID để phản ánh đúng trạng thái thực tế.
+            if (outstanding != null
+                    && outstanding.signum() > 0
+                    && balance.getAllocatedAmount() != null
+                    && balance.getAllocatedAmount().signum() > 0) {
+                bill.setStatus(BillStatus.PARTIALLY_PAID);
+            } else {
+                bill.setStatus(BillStatus.UNPAID);
+            }
         }
     }
 
@@ -564,5 +611,15 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
 
     private BigDecimal nullToZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private boolean isCountableForReconciliation(Payment payment) {
+        if (payment == null || payment.getStatus() == null) {
+            return false;
+        }
+        return switch (payment.getStatus()) {
+            case CONFIRMED, PARTIALLY_ALLOCATED, FULLY_ALLOCATED, OVERPAID -> true;
+            default -> false;
+        };
     }
 }

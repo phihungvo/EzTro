@@ -27,6 +27,7 @@ import carevn.luv2code.ez_tro.entity.BillLine;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
+import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.BillLineType;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.BillingCycle;
@@ -108,8 +109,8 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         validateContractAccess(contract);
 
-        LocalDate asOfDate = request.getAsOfDate() != null ? request.getAsOfDate() : LocalDate.now();
-        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), asOfDate);
+        LocalDate asOfDate = resolveAsOfDate(request.getAsOfDate());
+        ContractSnapshotResponse snapshot = loadSnapshot(contract, asOfDate);
 
         PeriodResolution period = resolvePeriod(contract, snapshot, request, request.getInvoiceType());
         InvoiceLineBuildResult buildResult = invoiceLineBuilder.buildLines(
@@ -154,22 +155,9 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         validateContractAccess(contract);
 
-        LocalDate asOfDate = request.getAsOfDate() != null ? request.getAsOfDate() : LocalDate.now();
-        ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), asOfDate);
-
-        InvoicePreviewRequest previewRequest = InvoicePreviewRequest.builder()
-                .contractId(request.getContractId())
-                .asOfDate(asOfDate)
-                .billingPeriodStart(request.getBillingPeriodStart())
-                .billingPeriodEnd(request.getBillingPeriodEnd())
-                .dueDate(request.getDueDate())
-                .invoiceType(request.getInvoiceType())
-                .extraAmount(request.getExtraAmount())
-                .discountAmount(request.getDiscountAmount())
-                .discountReason(request.getDiscountReason())
-                .publicNote(request.getPublicNote())
-                .internalNote(request.getInternalNote())
-                .build();
+        LocalDate asOfDate = resolveAsOfDate(request.getAsOfDate());
+        ContractSnapshotResponse snapshot = loadSnapshot(contract, asOfDate);
+        InvoicePreviewRequest previewRequest = buildPreviewRequestFromFinalize(request, asOfDate);
 
         PeriodResolution period = resolvePeriod(contract, snapshot, previewRequest, request.getInvoiceType());
         Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
@@ -185,7 +173,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
     @Override
     @Transactional
     public int generateInvoices(LocalDate asOfDate) {
-        LocalDate effectiveDate = asOfDate != null ? asOfDate : LocalDate.now();
+        LocalDate effectiveDate = resolveAsOfDate(asOfDate);
         YearMonth ym = YearMonth.from(effectiveDate);
         LocalDate monthStart = ym.atDay(1);
         LocalDate monthEnd = ym.atEndOfMonth();
@@ -195,8 +183,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         int createdOrUpdated = 0;
         for (Contract contract : activeContracts) {
             try {
-                ContractSnapshotResponse snapshot =
-                        contractSnapshotService.getSnapshot(contract.getId(), effectiveDate);
+                ContractSnapshotResponse snapshot = loadSnapshot(contract, effectiveDate);
                 PeriodResolution period = resolvePeriod(
                         contract,
                         snapshot,
@@ -207,18 +194,9 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                                 .build(),
                         InvoiceType.RENT);
 
-                Bill bill = createOrUpdateInvoice(
-                        contract,
-                        snapshot,
-                        period,
-                        InvoicePreviewRequest.builder()
-                                .contractId(contract.getId())
-                                .asOfDate(effectiveDate)
-                                .billingPeriodStart(period.billingPeriodStart)
-                                .billingPeriodEnd(period.billingPeriodEnd)
-                                .dueDate(period.dueDate)
-                                .invoiceType(period.invoiceType)
-                                .build());
+                InvoicePreviewRequest previewRequest =
+                        buildPreviewRequestForGenerate(contract.getId(), effectiveDate, period);
+                Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
                 if (bill != null) {
                     createdOrUpdated++;
                 }
@@ -239,7 +217,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
     @Override
     @Transactional
     public int applyLatePenalties(LocalDate asOfDate) {
-        LocalDate today = asOfDate != null ? asOfDate : LocalDate.now();
+        LocalDate today = resolveAsOfDate(asOfDate);
 
         if (penaltyFixedFee == null) {
             penaltyFixedFee = BigDecimal.ZERO;
@@ -258,6 +236,10 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         int applied = 0;
         for (Bill bill : overdueBills) {
             try {
+                if (bill.getStatus() == BillStatus.CANCELLED) {
+                    // Không áp dụng phạt cho hóa đơn đã hủy.
+                    continue;
+                }
                 if (bill.getAmount() == null || bill.getAmount().signum() <= 0) {
                     continue;
                 }
@@ -295,12 +277,61 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 bill.setAmount(bill.getAmount().add(penalty));
                 billRepository.save(bill);
                 applied++;
+                Tenant tenant = bill.getTenant();
+                if (tenant != null && tenant.getUser() != null) {
+                    notificationService.sendToUser(
+                            tenant.getUser().getId(),
+                            "Hoá đơn quá hạn",
+                            "Phòng " + bill.getRoom().getRoomNumber() + " bị phạt trễ hạn " + penalty + "đ",
+                            "BILL_OVERDUE",
+                            Map.of("billId", bill.getId(), "penalty", penalty, "outstanding", outstanding));
+                }
             } catch (Exception e) {
                 log.error("Failed applying penalty for bill {}: {}", bill.getId(), e.getMessage(), e);
             }
         }
 
         return applied;
+    }
+
+    // Dùng chung để thống nhất cách lấy ngày "as of" (null -> hôm nay).
+    private LocalDate resolveAsOfDate(LocalDate asOfDate) {
+        return asOfDate != null ? asOfDate : LocalDate.now();
+    }
+
+    // Load snapshot để đảm bảo tính nhất quán khi tính tiền theo thời điểm.
+    private ContractSnapshotResponse loadSnapshot(Contract contract, LocalDate asOfDate) {
+        return contractSnapshotService.getSnapshot(contract.getId(), asOfDate);
+    }
+
+    // Chuyển finalize request về preview request để tái sử dụng flow build line.
+    private InvoicePreviewRequest buildPreviewRequestFromFinalize(InvoiceFinalizeRequest request, LocalDate asOfDate) {
+        return InvoicePreviewRequest.builder()
+                .contractId(request.getContractId())
+                .asOfDate(asOfDate)
+                .billingPeriodStart(request.getBillingPeriodStart())
+                .billingPeriodEnd(request.getBillingPeriodEnd())
+                .dueDate(request.getDueDate())
+                .invoiceType(request.getInvoiceType())
+                .extraAmount(request.getExtraAmount())
+                .discountAmount(request.getDiscountAmount())
+                .discountReason(request.getDiscountReason())
+                .publicNote(request.getPublicNote())
+                .internalNote(request.getInternalNote())
+                .build();
+    }
+
+    // Build preview request cho batch generate sau khi đã resolve kỳ và hạn thanh toán.
+    private InvoicePreviewRequest buildPreviewRequestForGenerate(
+            Integer contractId, LocalDate asOfDate, PeriodResolution period) {
+        return InvoicePreviewRequest.builder()
+                .contractId(contractId)
+                .asOfDate(asOfDate)
+                .billingPeriodStart(period.billingPeriodStart)
+                .billingPeriodEnd(period.billingPeriodEnd)
+                .dueDate(period.dueDate)
+                .invoiceType(period.invoiceType)
+                .build();
     }
 
     private InvoiceLinePreviewResponse toLinePreview(BillLine line) {
@@ -344,12 +375,14 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         ContractVersionSummaryResponse version = snapshot != null ? snapshot.getCurrentVersion() : null;
         BillingCycle billingCycle =
                 version != null && version.getBillingCycle() != null ? version.getBillingCycle() : BillingCycle.MONTHLY;
+        int paymentCycleMonths = resolvePaymentCycleMonths(contract, version);
 
         LocalDate billingPeriodStart = request.getBillingPeriodStart();
         LocalDate billingPeriodEnd = request.getBillingPeriodEnd();
 
         if (billingPeriodStart == null || billingPeriodEnd == null) {
-            BillingPeriod period = resolveBillingPeriodForDate(asOfDate, billingCycle);
+            BillingPeriod period =
+                    resolveBillingPeriodForDate(asOfDate, billingCycle, paymentCycleMonths, contract.getStartDate());
             billingPeriodStart = period.start();
             billingPeriodEnd = period.end();
         }
@@ -386,6 +419,11 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 period.invoiceType,
                 previewRequest);
 
+        if (buildResult.isHasMissingMeterReadings()) {
+            // Không cho finalize nếu thiếu chỉ số công tơ để tránh phát hành hóa đơn sai.
+            throw new AppException(ErrorCode.BILL_MISSING_METER_READING);
+        }
+
         if (buildResult.getTotalAmount() == null || buildResult.getTotalAmount().signum() <= 0) {
             return null;
         }
@@ -393,6 +431,15 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         Bill existing = billRepository.findByGenerationKey(period.generationKey).orElse(null);
         if (existing != null) {
             if (existing.getStatus() == BillStatus.PAID) {
+                return existing;
+            }
+            if (existing.getStatus() == BillStatus.CANCELLED) {
+                // Không tự "hồi sinh" hóa đơn đã hủy.
+                return existing;
+            }
+            // Nếu đã có phân bổ thanh toán thì không được rebuild lines để tránh sai lệch đối soát.
+            BigDecimal allocated = invoiceBalanceCalculator.calculate(existing).getAllocatedAmount();
+            if (allocated != null && allocated.signum() > 0) {
                 return existing;
             }
             return updateExistingBill(existing, contract, period, buildResult, previewRequest);
@@ -478,9 +525,33 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                         bill.getRoom().getRoomNumber(),
                         "generationKey",
                         Objects.toString(bill.getGenerationKey(), "")));
+
+        User owner = resolveOwner(bill);
+        if (owner != null) {
+            notificationService.sendToUser(
+                    owner.getId(),
+                    "Tạo hóa đơn mới",
+                    "Hóa đơn phòng " + bill.getRoom().getRoomNumber() + " đã được tạo (" + bill.getAmount() + "đ)",
+                    "BILL_CREATED_OWNER",
+                    Map.of(
+                            "billId",
+                            bill.getId(),
+                            "contractId",
+                            bill.getContract() != null ? bill.getContract().getId() : null,
+                            "generationKey",
+                            Objects.toString(bill.getGenerationKey(), "")));
+        }
     }
 
-    private BillingPeriod resolveBillingPeriodForDate(LocalDate asOfDate, BillingCycle billingCycle) {
+    private User resolveOwner(Bill bill) {
+        if (bill == null || bill.getRoom() == null || bill.getRoom().getBoardingHouse() == null) {
+            return null;
+        }
+        return bill.getRoom().getBoardingHouse().getOwner();
+    }
+
+    private BillingPeriod resolveBillingPeriodForDate(
+            LocalDate asOfDate, BillingCycle billingCycle, int paymentCycleMonths, LocalDate contractStart) {
         if (billingCycle == BillingCycle.DAILY) {
             return new BillingPeriod(asOfDate, asOfDate);
         }
@@ -489,8 +560,30 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             return new BillingPeriod(start, start.plusDays(6));
         }
 
-        YearMonth ym = YearMonth.from(asOfDate);
-        return new BillingPeriod(ym.atDay(1), ym.atEndOfMonth());
+        int cycleMonths = Math.max(paymentCycleMonths, 1);
+
+        // Với chu kỳ nhiều tháng, anchor theo tháng bắt đầu hợp đồng để giữ tính nhất quán theo thời gian.
+        LocalDate anchorDate = contractStart != null ? contractStart : asOfDate;
+        YearMonth anchorYm = YearMonth.from(anchorDate);
+        YearMonth effectiveYm = YearMonth.from(asOfDate);
+        int monthsBetween = (effectiveYm.getYear() - anchorYm.getYear()) * 12
+                + (effectiveYm.getMonthValue() - anchorYm.getMonthValue());
+        if (monthsBetween < 0) {
+            monthsBetween = 0;
+        }
+
+        int cyclesSince = monthsBetween / cycleMonths;
+        YearMonth cycleStartYm = anchorYm.plusMonths((long) cyclesSince * cycleMonths);
+        YearMonth cycleEndYm = cycleStartYm.plusMonths(cycleMonths - 1L);
+        return new BillingPeriod(cycleStartYm.atDay(1), cycleEndYm.atEndOfMonth());
+    }
+
+    private int resolvePaymentCycleMonths(Contract contract, ContractVersionSummaryResponse version) {
+        Integer months = version != null ? version.getPaymentCycleMonths() : null;
+        if (months == null || months <= 0) {
+            months = contract != null ? contract.getPaymentCycleMonths() : null;
+        }
+        return months == null || months <= 0 ? 1 : months;
     }
 
     private LocalDate resolveDueDate(

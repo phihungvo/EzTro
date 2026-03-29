@@ -10,6 +10,10 @@ export default function SummaryPanel({
     onPublish,
     onPreview,
     onShare,
+    depositSummary,
+    depositTransactions,
+    reconciliation,
+    reconciliationLoading,
 }) {
     const { room, month, year, dueDate } = state;
     const { subtotal, discount, total } = computed;
@@ -40,6 +44,28 @@ export default function SummaryPanel({
     const displaySubtotal = preview ? previewRent + previewService : subtotal;
     const displayDiscount = preview ? previewDiscount : discount;
     const displayTotal = preview ? previewTotal : total;
+    const depositTxns = (depositTransactions || []).slice(0, 3);
+    const depositItems = depositSummary
+        ? [
+              { label: 'Tổng thu cọc', value: depositSummary.totalCollected },
+              { label: 'Đã trừ / khấu trừ', value: depositSummary.totalDeducted },
+              { label: 'Đã hoàn / refund', value: depositSummary.totalRefunded },
+              { label: 'Số dư cọc', value: depositSummary.currentBalance, highlight: true },
+          ]
+        : [];
+    const paymentStats = reconciliation
+        ? [
+              { label: 'Tổng hóa đơn', value: reconciliation.invoiceTotal },
+              { label: 'Đã thu', value: reconciliation.paymentTotal },
+              { label: 'Đã phân bổ', value: reconciliation.allocationTotal },
+              { label: 'Công nợ', value: reconciliation.outstandingTotal },
+              { label: 'Credit', value: reconciliation.creditTotal },
+          ]
+        : [];
+    const discrepancyPercent = reconciliation?.discrepancyPercent
+        ? (Number(reconciliation.discrepancyPercent) * 100).toFixed(1)
+        : 0;
+    const showDiscrepancy = Boolean(reconciliation?.discrepancyAlert);
 
     return (
         <aside className={styles.panel}>
@@ -145,6 +171,77 @@ export default function SummaryPanel({
                             </div>
                         )}
                     </div>
+
+                    {depositItems.length > 0 && (
+                        <div className={styles.section}>
+                            <div className={styles.sectionLabel}>Sổ cọc & lịch sử</div>
+                            <div className={styles.depositGrid}>
+                                {depositItems.map((item) => (
+                                    <div key={item.label} className={styles.depositCell}>
+                                        <div className={styles.depositLabel}>{item.label}</div>
+                                        <div
+                                            className={`${styles.depositValue} ${item.highlight ? styles.depositHighlight : ''}`}
+                                        >
+                                            {fmt(item.value)} đ
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {depositTxns.length > 0 && (
+                                <div className={styles.depositList}>
+                                    {depositTxns.map((txn) => {
+                                        const txnDate = txn?.occurredAt
+                                            ? new Date(txn.occurredAt).toLocaleDateString('vi-VN')
+                                            : null;
+                                        const txnTitle = txn.transactionType
+                                            ? txn.transactionType.replace(/_/g, ' ')
+                                            : 'Giao dịch';
+                                        return (
+                                            <div key={txn.id || txn.referenceId || txnDate} className={styles.depositTxn}>
+                                                <div className={styles.depositTxnRow}>
+                                                    <span className={styles.depositTxnTitle}>{txnTitle}</span>
+                                                    <span className={styles.depositTxnAmount}>{fmt(txn.amount)} đ</span>
+                                                </div>
+                                                <div className={styles.depositTxnMeta}>
+                                                    {txn.referenceType ? `${txn.referenceType} #${txn.referenceId}` : txn.note || '—'}
+                                                    {txnDate && ` · ${txnDate}`}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            {depositTransactions?.length > depositTxns.length && (
+                                <div className={styles.depositTxnMore}>
+                                    +{depositTransactions.length - depositTxns.length} giao dịch khác
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {reconciliationLoading ? (
+                        <div className={styles.section}>
+                            <div className={styles.sectionLabel}>Đối soát thanh toán</div>
+                            <div className={styles.paymentLoading}>Đang tải báo cáo đối soát...</div>
+                        </div>
+                    ) : paymentStats.length > 0 ? (
+                        <div className={styles.section}>
+                            <div className={styles.sectionLabel}>Đối soát thanh toán</div>
+                            <div className={styles.paymentGrid}>
+                                {paymentStats.map((item) => (
+                                    <div key={item.label} className={styles.paymentCell}>
+                                        <div className={styles.paymentLabel}>{item.label}</div>
+                                        <div className={styles.paymentValue}>{fmt(item.value)} đ</div>
+                                    </div>
+                                ))}
+                            </div>
+                            {showDiscrepancy && (
+                                <div className={styles.paymentAlert}>
+                                    Công nợ {discrepancyPercent}% đang vượt ngưỡng. Vui lòng kiểm tra bill chưa trả.
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+                        </div>
+                    )}
 
                     {/* Total */}
                     <div className={styles.totalRow}>

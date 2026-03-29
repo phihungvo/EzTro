@@ -26,4 +26,6 @@ public class CreatorBillContextResponse {
 
     private ContractSnapshotResponse contractSnapshot;
     private List<ContractBillingRuleSummaryResponse> billingRules;
+    private DepositLedgerSummaryResponse depositSummary;
+    private List<DepositTransactionSummaryResponse> depositTransactions;
 }

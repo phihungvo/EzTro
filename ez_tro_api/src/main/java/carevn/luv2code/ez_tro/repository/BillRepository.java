@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Repository;
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecificationExecutor<Bill> {
@@ -32,6 +35,14 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     boolean existsByGenerationKey(String generationKey);
 
     Optional<Bill> findByGenerationKey(String generationKey);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Bill b WHERE b.id IN :ids ORDER BY b.id ASC")
+    List<Bill> findByIdInForUpdate(@Param("ids") Collection<Integer> ids);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "ORDER BY b.dueDate ASC, b.id ASC")
+    List<Bill> findByContractIdForUpdate(@Param("contractId") Integer contractId);
 
     List<Bill> findByStatusNotAndDueDateBefore(BillStatus status, LocalDate dueDate);
 
@@ -95,6 +106,10 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     default boolean existsByRoomIdAndMonthAndYear(Integer roomId, Integer month, Integer year) {
         return countByRoomIdAndMonthAndYear(roomId, month, year) > 0;
     }
+
+    List<Bill> findByStatusInAndDueDate(List<BillStatus> statuses, LocalDate dueDate);
+
+    List<Bill> findByStatus(BillStatus status);
 
     // Tìm bill theo contract và tháng/năm (nếu cần)
     //    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.month = :month AND b.year = :year")

@@ -75,6 +75,22 @@ public class BillController {
     }
 
     /**
+     * Hủy hóa đơn theo id (không xóa dữ liệu).
+     *
+     * @param id id hóa đơn
+     * @return response chứa bill sau khi hủy
+     */
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<BillResponse> cancel(@PathVariable Integer id) {
+        BillResponse response = billService.cancel(id);
+        return ApiResponse.<BillResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Bill cancelled successfully")
+                .result(response)
+                .build();
+    }
+
+    /**
      * Lấy chi tiết hóa đơn theo id.
      *
      * @param id id hóa đơn

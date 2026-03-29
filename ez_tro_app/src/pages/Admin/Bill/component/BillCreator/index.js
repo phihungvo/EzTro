@@ -19,7 +19,9 @@ import { getCreatorBillContext } from "~/service/admin/room";
 import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
 import { getContractSnapshot } from "~/service/admin/contract";
-import { previewInvoice, finalizeInvoice } from "~/service/admin/billing";
+import { previewInvoice } from "~/service/admin/billing";
+import { getContractReconciliation } from "~/service/admin/reconciliation";
+import { createBill } from "~/service/admin/bill";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -113,6 +115,7 @@ const INITIAL = {
     contractVersion: null,
     contractSnapshot: null,
     organizationName: "",
+    allowDuplicateBilling: false,
 };
 
 export default function InvoiceCreator() {
@@ -124,6 +127,8 @@ export default function InvoiceCreator() {
     const [showPreview, setShowPreview] = useState(false);
     const [toast, setToast] = useState(null);
     const [publishing, setPublishing] = useState(false);
+    const [reconciliation, setReconciliation] = useState(null);
+    const [reconciliationLoading, setReconciliationLoading] = useState(false);
     const navigate = useNavigate();
 
     const patch = useCallback((updates) => setState((prev) => ({ ...prev, ...updates })), []);
@@ -155,6 +160,7 @@ export default function InvoiceCreator() {
             currentOccupants: roomData?.currentOccupants || 0,
             floorNumber: roomData?.floorNumber || 1,
             boardingHouseId: roomData?.boardingHouseId || null,
+            allowDuplicateBilling: false,
         }));
         setContext(null);
         setPreview(null);
@@ -180,7 +186,7 @@ export default function InvoiceCreator() {
             const meterReadings = Array.isArray(ctx.meterReadings) ? ctx.meterReadings : [];
             const fixedServices = Array.isArray(ctx.fixedChargeUtilities) ? ctx.fixedChargeUtilities : [];
             const usageBasedUtilities = Array.isArray(ctx.usageBasedUtilities) ? ctx.usageBasedUtilities : [];
-            const roomMeterById = new Map(meterReadings.map((item) => [item.utilityId, item]));
+                const roomMeterById = new Map(meterReadings.map((item) => [item.utilityId, item]));
             const roomFixedById = new Map(fixedServices.map((item) => [item.id, item]));
             const allUtilities = Array.isArray(boardingHouseUtilities) ? boardingHouseUtilities : [];
 
@@ -226,6 +232,42 @@ export default function InvoiceCreator() {
 
         fetchContext();
     }, [state.roomId, state.boardingHouseId, state.month, state.year]);
+
+    useEffect(() => {
+        if (!context?.hasBillThisMonth && state.allowDuplicateBilling) {
+            patch({ allowDuplicateBilling: false });
+        }
+    }, [context?.hasBillThisMonth, patch, state.allowDuplicateBilling]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            if (!state.contractId) {
+                setReconciliation(null);
+                return;
+            }
+            setReconciliationLoading(true);
+            try {
+                const report = await getContractReconciliation(state.contractId);
+                if (!cancelled) {
+                    setReconciliation(report);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setReconciliation(null);
+                }
+            } finally {
+                if (!cancelled) {
+                    setReconciliationLoading(false);
+                }
+            }
+        };
+
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [state.contractId]);
 
     const onMeterCurrentChange = useCallback((utilityId, value) => {
         setState((prev) => ({
@@ -298,7 +340,7 @@ export default function InvoiceCreator() {
     const total = Math.max(0, subtotal - discount);
     const computed = { meterTotal, fixedServicesTotal, extrasTotal, subtotal, discount, total };
 
-    const buildInvoicePayload = useCallback(() => {
+    const buildPreviewPayload = useCallback(() => {
         if (!state.contractId) {
             return null;
         }
@@ -333,6 +375,44 @@ export default function InvoiceCreator() {
         discount,
     ]);
 
+    const buildBillRequestPayload = useCallback(() => {
+        if (!state.contractId) {
+            return null;
+        }
+        const baseTitle = state.room
+            ? `Hoá đơn Phòng ${state.room} ${state.month}/${state.year}`
+            : `Hoá đơn tháng ${state.month}/${state.year}`;
+        const serviceAmount = Number(meterTotal + fixedServicesTotal);
+
+        return {
+            contractId: state.contractId,
+            billTitle: baseTitle,
+            serviceAmount,
+            extraAmount: extrasTotal,
+            discountAmount: discount,
+            discountReason: state.discountReason,
+            publicNote: state.notePublic,
+            internalNote: state.noteInternal,
+            paymentInstructions: state.paymentInstructions,
+            note: state.noteInternal,
+            dueDate: state.dueDate,
+        };
+    }, [
+        state.contractId,
+        state.room,
+        state.month,
+        state.year,
+        state.discountReason,
+        state.notePublic,
+        state.noteInternal,
+        state.paymentInstructions,
+        state.dueDate,
+        meterTotal,
+        fixedServicesTotal,
+        extrasTotal,
+        discount,
+    ]);
+
     const persistMeterReadings = useCallback(async () => {
         const readings = state.meterReadings || [];
         if (!state.roomId || readings.length === 0) {
@@ -354,18 +434,23 @@ export default function InvoiceCreator() {
     }, [state.roomId, state.month, state.year, state.meterReadings]);
 
     const runPreview = useCallback(async () => {
-        const payload = buildInvoicePayload();
+        const payload = buildPreviewPayload();
         if (!payload) {
             throw new Error("Không có dữ liệu hoá đơn để xem trước.");
         }
         const response = await previewInvoice(payload);
         setPreview(response);
         return { payload, response };
-    }, [buildInvoicePayload]);
+    }, [buildPreviewPayload]);
 
     const validateBeforePublish = () => {
         if (!state.roomId || !state.contractId) {
             message.error("Bạn cần chọn phòng có hợp đồng đang hiệu lực.");
+            return false;
+        }
+
+        if (context?.hasBillThisMonth && !state.allowDuplicateBilling) {
+            message.warning("Phòng này đã có hóa đơn trong kỳ, xác nhận để tiếp tục.");
             return false;
         }
 
@@ -388,6 +473,34 @@ export default function InvoiceCreator() {
             message.error("Bạn cần nhập hạn thanh toán.");
             return false;
         }
+
+        const dueDateObj = new Date(state.dueDate);
+        const startOfPeriod = new Date(state.year, state.month - 1, 1);
+        if (dueDateObj < startOfPeriod) {
+            message.error("Hạn thanh toán phải nằm trong hoặc sau ngày bắt đầu kỳ.");
+            return false;
+        }
+        if (context?.contractSnapshot?.contractStartDate) {
+            const contractStart = new Date(context.contractSnapshot.contractStartDate);
+            if (dueDateObj < contractStart) {
+                message.error("Hạn thanh toán không thể trước khi hợp đồng có hiệu lực.");
+                return false;
+            }
+        }
+        if (context?.contractSnapshot?.contractEndDate) {
+            const contractEnd = new Date(context.contractSnapshot.contractEndDate);
+            if (dueDateObj > contractEnd) {
+                message.error("Hạn thanh toán không thể sau ngày kết thúc hợp đồng.");
+                return false;
+            }
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dueDateObj < today) {
+            message.error("Hạn thanh toán không thể nằm trước ngày hiện tại.");
+            return false;
+        }
+
 
         return true;
     };
@@ -424,7 +537,12 @@ export default function InvoiceCreator() {
                 message.error("Không tìm thấy dữ liệu hoá đơn.");
                 return;
             }
-            await finalizeInvoice(payload);
+            const billPayload = buildBillRequestPayload();
+            if (!billPayload) {
+                message.error("Không đủ dữ liệu để tạo hoá đơn.");
+                return;
+            }
+            await createBill(billPayload);
             showToast("✅ Hoá đơn đã được tạo thành công", "success");
             navigate("/owner/bills");
         } catch (error) {
@@ -432,7 +550,15 @@ export default function InvoiceCreator() {
         } finally {
             setPublishing(false);
         }
-    }, [validateBeforePublish, persistMeterReadings, runPreview, showToast, navigate]);
+    }, [
+        validateBeforePublish,
+        persistMeterReadings,
+        runPreview,
+        buildBillRequestPayload,
+        showToast,
+        navigate,
+        createBill,
+    ]);
 
     const roomData = {
         tenant: state.tenantName,
@@ -455,13 +581,28 @@ export default function InvoiceCreator() {
                         onYearChange={(y) => setPeriod(state.month, y)}
                     />
                     {context?.hasBillThisMonth && (
-                        <Alert
-                            message="Phòng đã có hoá đơn trong kỳ này"
-                            description="Vui lòng kiểm tra lại trước khi tạo hoá đơn mới để tránh trùng lặp."
-                            type="warning"
-                            showIcon
-                            style={{ margin: "16px 0" }}
-                        />
+                    <Alert
+                        message="Phòng đã có hoá đơn trong kỳ này"
+                        description={
+                            <div>
+                                <p>
+                                    Hệ thống đã ghi nhận một hóa đơn cho kỳ {state.month}/{state.year}. Nếu bạn vẫn muốn tạo
+                                    thêm (ví dụ để điều chỉnh thiếu sót), hãy xác nhận bằng cách nhấn nút dưới đây.
+                                </p>
+                                <button
+                                    type="button"
+                                    className={styles.duplicateAction}
+                                    onClick={() => patch({ allowDuplicateBilling: true })}
+                                    disabled={state.allowDuplicateBilling}
+                                >
+                                    {state.allowDuplicateBilling ? "Đã cho phép tạo bổ sung" : "Tôi hiểu và tiếp tục"}
+                                </button>
+                            </div>
+                        }
+                        type="warning"
+                        showIcon
+                        style={{ margin: "16px 0" }}
+                    />
                     )}
                     <RentSectionCard
                         state={state}
@@ -592,6 +733,10 @@ export default function InvoiceCreator() {
                     roomData={roomData}
                     preview={preview}
                     previewLoading={previewLoading}
+                    depositSummary={context?.depositSummary}
+                    depositTransactions={context?.depositTransactions}
+                    reconciliation={reconciliation}
+                    reconciliationLoading={reconciliationLoading}
                     onPublish={handlePublish}
                     onPreview={handlePreview}
                     onShare={() => showToast("📋 Tính năng chia sẻ sẽ dùng sau khi hóa đơn được tạo", "info")}

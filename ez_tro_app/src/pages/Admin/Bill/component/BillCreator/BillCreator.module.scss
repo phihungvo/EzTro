@@ -136,6 +136,34 @@
   transform: translateY(0);
 }
 
+@media (max-width: 768px) {
+  .duplicateAction {
+    width: 100%;
+  }
+}
+
+.duplicateAction {
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f1320;
+  background: #fadb14;
+  border: none;
+  font-weight: 700;
+  align-self: flex-start;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.duplicateAction:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.duplicateAction:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
 /* Shine effect on primary actions */
 .primaryShine {
   position: absolute;
@@ -152,4 +180,3 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-

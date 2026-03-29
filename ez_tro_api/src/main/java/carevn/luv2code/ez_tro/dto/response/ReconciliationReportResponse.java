@@ -18,4 +18,6 @@ public class ReconciliationReportResponse {
     BigDecimal outstandingTotal;
     BigDecimal creditTotal;
     List<InvoiceBalanceResponse> invoices;
+    BigDecimal discrepancyPercent;
+    Boolean discrepancyAlert;
 }

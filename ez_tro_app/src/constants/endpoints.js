@@ -149,6 +149,9 @@ const API_ENDPOINTS = {
         PREVIEW: `${BASE_URL}/billing/preview`,
         FINALIZE: `${BASE_URL}/billing/finalize`,
     },
+    RECONCILIATION: {
+        CONTRACT: (contractId) => `${BASE_URL}/reconciliation/contracts/${contractId}`,
+    },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/utilities`,

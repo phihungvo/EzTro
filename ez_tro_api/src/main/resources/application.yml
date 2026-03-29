@@ -99,6 +99,12 @@ app:
       batch-size: ${CONTRACT_STATUS_SYNC_BATCH_SIZE:100}
   system-config:
     default-plan-id: ${DEFAULT_PLAN_ID:}
+  billing:
+    discrepancy:
+      threshold: ${BILLING_DISCREPANCY_THRESHOLD:0.01}
+    notification:
+      reminder-days: ${BILLING_REMINDER_DAYS:3,1}
+      reminder-cron: ${BILLING_REMINDER_CRON:0 30 8 * * ?}
 
 springdoc:
   api-docs:

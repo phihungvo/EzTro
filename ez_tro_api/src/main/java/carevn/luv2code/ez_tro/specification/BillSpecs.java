@@ -23,7 +23,16 @@ public class BillSpecs {
     }
 
     public static Specification<Bill> hasPaid(Boolean paid) {
-        return (root, query, cb) -> cb.equal(root.get("paid"), paid);
+        return (root, query, cb) -> {
+            if (paid == null) {
+                return cb.conjunction();
+            }
+            // Bill không có field paid; suy ra paid từ status.
+            if (paid) {
+                return cb.equal(root.get("status"), BillStatus.PAID);
+            }
+            return cb.notEqual(root.get("status"), BillStatus.PAID);
+        };
     }
 
     public static Specification<Bill> inMonthYear(Integer month, Integer year) {

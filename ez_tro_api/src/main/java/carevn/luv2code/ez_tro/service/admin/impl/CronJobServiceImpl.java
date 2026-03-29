@@ -12,6 +12,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
+// Cho phép tắt toàn bộ cron/quartz ở môi trường test để giảm noise và tránh side-effect.
+@ConditionalOnProperty(name = "app.jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class CronJobServiceImpl implements CronJobService {
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
