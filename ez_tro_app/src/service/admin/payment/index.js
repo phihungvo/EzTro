@@ -38,9 +38,9 @@ export const getPaymentById = async (paymentId) => {
     }
 };
 
-export const confirmPayment = async (paymentId) => {
+export const confirmPayment = async (paymentId, payload = {}) => {
     try {
-        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId));
+        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId), payload);
         return response.data.result;
     } catch (error) {
         console.error("Error when confirming payment: ", error);

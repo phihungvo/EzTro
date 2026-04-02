@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.enums;
 public enum BillingOperationType {
     BILL_CREATE,
     BILL_UPDATE,
+    BILL_SEND,
     BILL_CANCEL,
     BILL_DELETE,
     PAYMENT_RECEIVE,

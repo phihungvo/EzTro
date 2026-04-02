@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.User;
+import carevn.luv2code.ez_tro.enums.BillLifecycleStatus;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
@@ -40,6 +41,9 @@ public class BillingNotificationService {
             }
             log.info("Sending {} reminders for bills due in {} days ({}).", bills.size(), day, targetDate);
             bills.forEach(bill -> {
+                if (!isReminderEligible(bill)) {
+                    return;
+                }
                 try {
                     notificationService.sendBillReminder(bill.getId());
                     User owner = resolveOwner(bill);
@@ -93,5 +97,15 @@ public class BillingNotificationService {
             return null;
         }
         return bill.getRoom().getBoardingHouse().getOwner();
+    }
+
+    private boolean isReminderEligible(Bill bill) {
+        if (bill == null) {
+            return false;
+        }
+        if (bill.getLifecycleStatus() == null) {
+            return true;
+        }
+        return bill.getLifecycleStatus() == BillLifecycleStatus.SENT;
     }
 }

@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 18-bill-delivery-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: bills
+      changes:
+        - addColumn:
+            tableName: bills
+            columns:
+              - column:
+                  name: sent_at
+                  type: DATETIME
+              - column:
+                  name: delivery_status
+                  type: VARCHAR(30)
+              - column:
+                  name: delivery_channels_json
+                  type: LONGTEXT

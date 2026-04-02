@@ -139,7 +139,7 @@ public class NotificationServiceImpl implements NotificationService {
         Map<String, Object> data = Map.of(
                 "billId", bill.getId(),
                 "amount", bill.getAmount(),
-                "dueDate", bill.getDueDate(),
+                "dueDate", bill.getDueDate() != null ? bill.getDueDate().toString() : null,
                 "roomNumber", bill.getRoom().getRoomNumber());
 
         sendToUser(

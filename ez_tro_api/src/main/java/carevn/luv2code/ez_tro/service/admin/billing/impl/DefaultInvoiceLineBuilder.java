@@ -405,6 +405,10 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
                 "openingReadingDate",
                 openingReading != null ? Objects.toString(toLocalDate(openingReading.getReadingDate()), "") : null);
         metadata.put("closingReadingDate", Objects.toString(toLocalDate(closingReading.getReadingDate()), ""));
+        metadata.put("openingIndex", openingIndex);
+        metadata.put("closingIndex", closingIndex);
+        metadata.put("consumption", totalConsumption);
+        metadata.put("unitPrice", unitPrice);
         metadata.put("utilityId", Objects.toString(utilityId, ""));
         metadata.put("periodStart", Objects.toString(periodStart, ""));
         metadata.put("periodEnd", Objects.toString(periodEnd, ""));

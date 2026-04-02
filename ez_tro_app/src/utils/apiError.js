@@ -12,6 +12,8 @@ export const getBillingUiErrorMessage = (error, fallback) => {
             return "Tổng tiền hoá đơn đang lệch với các dòng chi tiết. Vui lòng tải lại preview và kiểm tra lại dữ liệu.";
         case 1136:
             return "Số tiền phân bổ phải lớn hơn 0.";
+        case 1144:
+            return "Kỳ billing này đã có hóa đơn rồi. Hãy mở hóa đơn hiện có để gửi lại, cập nhật hoặc xử lý thanh toán thay vì tạo trùng.";
         default:
             return extractApiErrorMessage(error, fallback);
     }

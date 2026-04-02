@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.Contract;
+import carevn.luv2code.ez_tro.enums.BillLifecycleStatus;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import jakarta.persistence.LockModeType;
 
@@ -29,6 +30,49 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     List<Bill> findByTenantId(Integer tenantId);
 
     Page<Bill> findByTenant_User_Id(Integer userId, Pageable pageable);
+
+    @Query(
+            """
+			SELECT b
+			FROM Bill b
+			WHERE b.tenant.user.id = :userId
+			AND (
+					b.lifecycleStatus = :sentStatus
+					OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+				)
+			ORDER BY b.createdAt DESC, b.id DESC
+			""")
+    List<Bill> findVisibleToTenantByUserId(
+            @Param("userId") Integer userId,
+            @Param("sentStatus") BillLifecycleStatus sentStatus,
+            @Param("cancelledStatus") BillLifecycleStatus cancelledStatus);
+
+    @Query(
+            value =
+                    """
+					SELECT b
+					FROM Bill b
+					WHERE b.tenant.user.id = :userId
+					AND (
+							b.lifecycleStatus = :sentStatus
+							OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+						)
+					""",
+            countQuery =
+                    """
+					SELECT COUNT(b)
+					FROM Bill b
+					WHERE b.tenant.user.id = :userId
+					AND (
+							b.lifecycleStatus = :sentStatus
+							OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+						)
+					""")
+    Page<Bill> findVisibleToTenantByUserId(
+            @Param("userId") Integer userId,
+            @Param("sentStatus") BillLifecycleStatus sentStatus,
+            @Param("cancelledStatus") BillLifecycleStatus cancelledStatus,
+            Pageable pageable);
 
     Optional<Bill> findTopByContractOrderByCreatedAtDesc(Contract contract);
 

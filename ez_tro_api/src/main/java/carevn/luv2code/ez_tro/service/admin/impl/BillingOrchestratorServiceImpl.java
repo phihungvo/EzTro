@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
+import carevn.luv2code.ez_tro.enums.BillLifecycleStatus;
 import carevn.luv2code.ez_tro.enums.BillLineType;
 import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.BillingCycle;
@@ -332,6 +334,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 .discountReason(request.getDiscountReason())
                 .publicNote(request.getPublicNote())
                 .internalNote(request.getInternalNote())
+                .paymentInstructions(request.getPaymentInstructions())
                 .build();
     }
 
@@ -445,17 +448,14 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         Bill existing = billRepository.findByGenerationKey(period.generationKey).orElse(null);
         if (existing != null) {
-            if (existing.getStatus() == BillStatus.PAID) {
-                return existing;
-            }
-            if (existing.getStatus() == BillStatus.CANCELLED) {
-                // Không tự "hồi sinh" hóa đơn đã hủy.
-                return existing;
-            }
-            // Nếu đã có phân bổ thanh toán thì không được rebuild lines để tránh sai lệch đối soát.
             BigDecimal allocated = invoiceBalanceCalculator.calculate(existing).getAllocatedAmount();
-            if (allocated != null && allocated.signum() > 0) {
-                return existing;
+            boolean legacyDraftLike = existing.getLifecycleStatus() == null
+                    && existing.getIssuedAt() == null
+                    && existing.getStatus() != BillStatus.PAID
+                    && existing.getStatus() != BillStatus.CANCELLED
+                    && (allocated == null || allocated.signum() == 0);
+            if (!legacyDraftLike) {
+                throw new AppException(ErrorCode.BILL_DUPLICATE_PERIOD);
             }
             return updateExistingBill(existing, contract, period, buildResult, previewRequest);
         }
@@ -473,9 +473,15 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         bill.setInvoiceType(period.invoiceType);
         bill.setDueDate(period.dueDate);
         bill.setStatus(BillStatus.UNPAID);
+        bill.setIssuedAt(new Date());
+        bill.setLifecycleStatus(BillLifecycleStatus.ISSUED);
         bill.setServiceAmount(nullToZero(buildResult.getServiceAmount()));
         bill.setAmount(buildResult.getTotalAmount());
-        bill.setNote(buildInvoiceNote(previewRequest));
+        bill.setPublicNote(normalizeText(previewRequest != null ? previewRequest.getPublicNote() : null));
+        bill.setInternalNote(normalizeText(previewRequest != null ? previewRequest.getInternalNote() : null));
+        bill.setPaymentInstructions(
+                normalizeText(previewRequest != null ? previewRequest.getPaymentInstructions() : null));
+        bill.setNote(normalizeLegacyInternalNote(previewRequest));
 
         List<BillLine> lines = buildResult.getLines();
         if (lines != null) {
@@ -488,7 +494,6 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         Bill saved = billRepository.save(bill);
         observabilityMetricsService.incrementInvoiceGenerated(contract, period.invoiceType, "create");
-        dispatchInvoiceNotification(saved);
         return saved;
     }
 
@@ -510,7 +515,17 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         existing.setDueDate(period.dueDate);
         existing.setServiceAmount(nullToZero(buildResult.getServiceAmount()));
         existing.setAmount(buildResult.getTotalAmount());
-        existing.setNote(buildInvoiceNote(previewRequest));
+        if (existing.getIssuedAt() == null) {
+            existing.setIssuedAt(existing.getCreatedAt() != null ? existing.getCreatedAt() : new Date());
+        }
+        if (existing.getLifecycleStatus() == null) {
+            existing.setLifecycleStatus(BillLifecycleStatus.ISSUED);
+        }
+        existing.setPublicNote(normalizeText(previewRequest != null ? previewRequest.getPublicNote() : null));
+        existing.setInternalNote(normalizeText(previewRequest != null ? previewRequest.getInternalNote() : null));
+        existing.setPaymentInstructions(
+                normalizeText(previewRequest != null ? previewRequest.getPaymentInstructions() : null));
+        existing.setNote(normalizeLegacyInternalNote(previewRequest));
         existing.setStatus(existing.getStatus() == null ? BillStatus.UNPAID : existing.getStatus());
 
         List<BillLine> lines = buildResult.getLines();
@@ -532,42 +547,6 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             return appException.getErrorCode().name();
         }
         return exception.getClass().getSimpleName();
-    }
-
-    private void dispatchInvoiceNotification(Bill bill) {
-        Tenant tenant = bill.getTenant();
-        if (tenant == null || tenant.getUser() == null) {
-            return;
-        }
-
-        notificationService.sendToUser(
-                tenant.getUser().getId(),
-                "Hóa đơn mới",
-                "Phòng " + bill.getRoom().getRoomNumber() + " - " + bill.getAmount() + "đ - Hạn: " + bill.getDueDate(),
-                "BILL_CREATED",
-                Map.of(
-                        "billId",
-                        bill.getId(),
-                        "roomNumber",
-                        bill.getRoom().getRoomNumber(),
-                        "generationKey",
-                        Objects.toString(bill.getGenerationKey(), "")));
-
-        User owner = resolveOwner(bill);
-        if (owner != null) {
-            notificationService.sendToUser(
-                    owner.getId(),
-                    "Tạo hóa đơn mới",
-                    "Hóa đơn phòng " + bill.getRoom().getRoomNumber() + " đã được tạo (" + bill.getAmount() + "đ)",
-                    "BILL_CREATED_OWNER",
-                    Map.of(
-                            "billId",
-                            bill.getId(),
-                            "contractId",
-                            bill.getContract() != null ? bill.getContract().getId() : null,
-                            "generationKey",
-                            Objects.toString(bill.getGenerationKey(), "")));
-        }
     }
 
     private User resolveOwner(Bill bill) {
@@ -664,29 +643,20 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         return "INV-" + contractId + "-" + invoiceType + "-" + start + "-" + end;
     }
 
-    private String buildInvoiceNote(InvoicePreviewRequest request) {
+    private String normalizeLegacyInternalNote(InvoicePreviewRequest request) {
         if (request == null) {
             return null;
         }
-
-        String publicNote = request.getPublicNote();
         String internalNote = request.getInternalNote();
+        return normalizeText(internalNote);
+    }
 
-        if ((publicNote == null || publicNote.isBlank()) && (internalNote == null || internalNote.isBlank())) {
+    private String normalizeText(String value) {
+        if (value == null) {
             return null;
         }
-
-        StringBuilder sb = new StringBuilder();
-        if (publicNote != null && !publicNote.isBlank()) {
-            sb.append(publicNote.trim());
-        }
-        if (internalNote != null && !internalNote.isBlank()) {
-            if (sb.length() > 0) {
-                sb.append("\n\n");
-            }
-            sb.append("[INTERNAL] ").append(internalNote.trim());
-        }
-        return sb.toString();
+        String trimmed = value.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 
     private BigDecimal nullToZero(BigDecimal value) {

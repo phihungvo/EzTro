@@ -144,6 +144,10 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
         FILTER: `${BASE_URL}/bills/filter`,
+        DETAIL: (billId) => `${BASE_URL}/bills/${billId}/detail`,
+        DOCUMENT: (billId) => `${BASE_URL}/bills/${billId}/document`,
+        RECEIPT: (billId) => `${BASE_URL}/bills/${billId}/receipt`,
+        SEND: (billId) => `${BASE_URL}/bills/${billId}/send`,
         UPDATE: (billId) => `${BASE_URL}/bills/${billId}`,
         DELETE: (billId) => `${BASE_URL}/bills/${billId}`,
         CANCEL: (billId) => `${BASE_URL}/bills/${billId}/cancel`,
@@ -215,6 +219,11 @@ const API_ENDPOINTS = {
     },
     MY_BILL: {
         GET_ALL: `${BASE_URL}/user/bills/paged`,
+        DETAIL: (billId) => `${BASE_URL}/user/bills/${billId}`,
+        DOCUMENT: (billId) => `${BASE_URL}/user/bills/${billId}/document`,
+        RECEIPT: (billId) => `${BASE_URL}/user/bills/${billId}/receipt`,
+        UPLOAD_PROOF: (billId) => `${BASE_URL}/user/bills/${billId}/proof-file`,
+        SUBMIT_PAYMENT: (billId) => `${BASE_URL}/user/bills/${billId}/payments`,
     },
     MY_INCIDENT_REPORT: {
         GET_ALL: `${BASE_URL}/user/incident-reports`,

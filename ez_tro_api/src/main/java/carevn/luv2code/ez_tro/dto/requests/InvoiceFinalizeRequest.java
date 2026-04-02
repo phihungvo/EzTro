@@ -36,4 +36,6 @@ public class InvoiceFinalizeRequest {
     String publicNote;
 
     String internalNote;
+
+    String paymentInstructions;
 }

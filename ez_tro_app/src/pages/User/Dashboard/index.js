@@ -33,41 +33,6 @@ const MOCK_CONTRACT = {
     monthsLeft: 8,
 };
 
-const MOCK_PAYMENTS = [
-    {
-        id: 1,
-        name: "Tiền thuê tháng 3/2026",
-        date: "Hạn: 15/03/2026",
-        amount: "5.100.000 ₫",
-        status: "overdue",
-        statusLabel: "Chưa thanh toán",
-    },
-    {
-        id: 2,
-        name: "Tiền thuê tháng 2/2026",
-        date: "Đã thanh toán: 10/02/2026",
-        amount: "4.900.000 ₫",
-        status: "paid",
-        statusLabel: "Đã thanh toán",
-    },
-    {
-        id: 3,
-        name: "Tiền thuê tháng 1/2026",
-        date: "Đã thanh toán: 08/01/2026",
-        amount: "4.750.000 ₫",
-        status: "paid",
-        statusLabel: "Đã thanh toán",
-    },
-    {
-        id: 4,
-        name: "Tiền thuê tháng 12/2025",
-        date: "Đã thanh toán: 05/12/2025",
-        amount: "4.700.000 ₫",
-        status: "paid",
-        statusLabel: "Đã thanh toán",
-    },
-];
-
 const MOCK_UTILITIES = {
     electricity: { value: 312, unit: "kWh", cost: "468.000 ₫", percent: 72 },
     water: { value: 8, unit: "m³", cost: "72.000 ₫", percent: 45 },
@@ -145,6 +110,22 @@ const Dashboard = () => {
     const [summary, setSummary] = useState(null);
     const [bills, setBills] = useState([]);
 
+    const formatCurrencyCompact = (value) => `${(Number(value || 0) / 1_000_000).toFixed(1)} tr`;
+    const parseDate = (value) => {
+        if (!value) {
+            return null;
+        }
+        const date = new Date(`${value}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? null : date;
+    };
+    const formatDate = (value) => {
+        const date = parseDate(value);
+        if (!date) {
+            return "—";
+        }
+        return date.toLocaleDateString("vi-VN");
+    };
+
     const fetchDashboardData = useCallback(async () => {
         try {
             const [summaryRes, billsRes] = await Promise.all([
@@ -174,16 +155,18 @@ const Dashboard = () => {
             { label: "Phòng hiện tại", value: summary.roomNumber },
             {
                 label: "Tiền thuê tháng này",
-                value: `${(summary.monthlyRent / 1_000_000).toFixed(1)} tr`,
+                value: formatCurrencyCompact(summary.monthlyRent),
             },
             {
                 label: "Thanh toán",
                 value: summary.paymentStatus,
-                status: summary.paymentStatus?.includes("Chưa") ? "unpaid" : "paid",
+                status: summary.paymentStatus?.includes("Chưa") || summary.paymentStatus?.includes("Quá hạn")
+                    ? "unpaid"
+                    : "paid",
             },
             {
                 label: "Hết hạn hợp đồng",
-                value: new Date(summary.contractEndDate).toLocaleDateString("vi-VN"),
+                value: formatDate(summary.contractEndDate),
             },
         ]
         : [];
@@ -195,7 +178,40 @@ const Dashboard = () => {
         { icon: "📞", label: "Liên hệ", onClick: () => {} },
     ];
 
-    const unpaidCount = bills.filter((b) => !b.paid).length;
+    const unpaidCount = Number(summary?.unpaidBillCount ?? bills.filter((b) =>
+        ["UNPAID", "OVERDUE", "PARTIALLY_PAID"].includes(b?.status)
+    ).length);
+    const outstandingAmount = Number(summary?.outstandingAmount || 0);
+    const bannerRoomLabel = summary?.roomNumber ? `Phòng ${summary.roomNumber}` : `Phòng ${MOCK_ROOM.number}`;
+    const bannerSubText = unpaidCount > 0
+        ? `Bạn có ${unpaidCount} hoá đơn chưa thanh toán${outstandingAmount > 0 ? ` · Còn nợ ${(outstandingAmount / 1_000_000).toFixed(1)} triệu` : ""}`
+        : summary?.latestBillDueDate
+            ? `Hợp đồng còn hiệu lực · Kỳ gần nhất đến hạn: ${formatDate(summary.latestBillDueDate)}`
+            : "Hợp đồng còn hiệu lực";
+    const contractStartDate = parseDate(summary?.contractStartDate);
+    const contractEndDate = parseDate(summary?.contractEndDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const totalContractDays = contractStartDate && contractEndDate
+        ? Math.max(1, Math.round((contractEndDate - contractStartDate) / (1000 * 60 * 60 * 24)))
+        : null;
+    const elapsedContractDays = contractStartDate && contractEndDate
+        ? Math.min(
+            totalContractDays,
+            Math.max(0, Math.round((today - contractStartDate) / (1000 * 60 * 60 * 24)))
+        )
+        : null;
+    const contractProgressPercent = totalContractDays
+        ? Math.min(100, Math.max(0, Math.round((elapsedContractDays / totalContractDays) * 100)))
+        : MOCK_CONTRACT.progressPercent;
+    const monthsLeft = contractEndDate
+        ? Math.max(
+            0,
+            (contractEndDate.getFullYear() - today.getFullYear()) * 12
+                + (contractEndDate.getMonth() - today.getMonth())
+                + (contractEndDate.getDate() >= today.getDate() ? 0 : -1)
+        )
+        : MOCK_CONTRACT.monthsLeft;
 
     return (
         <div className={cx("dashboard")}>
@@ -203,12 +219,8 @@ const Dashboard = () => {
             {/* ── Banner ── */}
             <div className={cx("banner")}>
                 <div className={cx("bannerContent")}>
-                    <div className={cx("bannerRoom")}>Phòng {MOCK_ROOM.number} — {MOCK_ROOM.building}</div>
-                    <div className={cx("bannerSub")}>
-                        {unpaidCount > 0
-                            ? `Bạn có ${unpaidCount} hoá đơn chưa thanh toán`
-                            : "Hợp đồng còn hiệu lực · Đến hạn thanh toán: 15/03/2026"}
-                    </div>
+                    <div className={cx("bannerRoom")}>{bannerRoomLabel}</div>
+                    <div className={cx("bannerSub")}>{bannerSubText}</div>
                     <div className={cx("bannerActions")}>
                         <button className={cx("btnPrimary")} onClick={() => navigate("/user/bills")}>
                             💳 Thanh toán ngay
@@ -242,7 +254,7 @@ const Dashboard = () => {
                         <div className={cx("roomHero")}>
                             <div className={cx("roomHeroBg")}>🏢</div>
                             <div className={cx("roomHeroInfo")}>
-                                <div className={cx("roomNumber")}>Phòng {MOCK_ROOM.number}</div>
+                                <div className={cx("roomNumber")}>{bannerRoomLabel}</div>
                                 <div className={cx("roomType")}>
                                     {MOCK_ROOM.type} · {MOCK_ROOM.floor} · {MOCK_ROOM.building}
                                 </div>
@@ -253,7 +265,7 @@ const Dashboard = () => {
                             {[
                                 { label: "Diện tích", value: MOCK_ROOM.area },
                                 { label: "Ngày vào ở", value: MOCK_ROOM.moveInDate },
-                                { label: "Giá thuê", value: MOCK_ROOM.monthlyRent },
+                                { label: "Giá thuê", value: summary?.monthlyRent ? `${Number(summary.monthlyRent).toLocaleString("vi-VN")} ₫` : MOCK_ROOM.monthlyRent },
                                 { label: "Số người", value: MOCK_ROOM.occupants },
                             ].map((item) => (
                                 <div key={item.label} className={cx("roomDetailItem")}>
@@ -292,23 +304,27 @@ const Dashboard = () => {
                                 <div className={cx("contractDates")}>
                                     <div className={cx("contractDateItem")}>
                                         <div className={cx("contractDateLabel")}>Ngày bắt đầu</div>
-                                        <div className={cx("contractDateValue")}>{MOCK_CONTRACT.startDate}</div>
+                                        <div className={cx("contractDateValue")}>
+                                            {summary?.contractStartDate ? formatDate(summary.contractStartDate) : MOCK_CONTRACT.startDate}
+                                        </div>
                                     </div>
                                     <span className={cx("contractArrow")}>→</span>
                                     <div className={cx("contractDateItem")}>
                                         <div className={cx("contractDateLabel")}>Ngày kết thúc</div>
-                                        <div className={cx("contractDateValue")}>{MOCK_CONTRACT.endDate}</div>
+                                        <div className={cx("contractDateValue")}>
+                                            {summary?.contractEndDate ? formatDate(summary.contractEndDate) : MOCK_CONTRACT.endDate}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className={cx("contractDivider")} />
                                 <div className={cx("progressLabel")}>
                                     <span>Tiến độ hợp đồng</span>
-                                    <span>{MOCK_CONTRACT.progressPercent}% — còn {MOCK_CONTRACT.monthsLeft} tháng</span>
+                                    <span>{contractProgressPercent}% — còn {monthsLeft} tháng</span>
                                 </div>
                                 <div className={cx("progressBarWrap")}>
                                     <div
                                         className={cx("progressBar")}
-                                        style={{ "--progress": `${MOCK_CONTRACT.progressPercent}%` }}
+                                        style={{ "--progress": `${contractProgressPercent}%` }}
                                     />
                                 </div>
                             </div>

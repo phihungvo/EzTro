@@ -31,3 +31,11 @@ databaseChangeLog:
       file: db/changelog/changeset-15-billing-hardening.yaml
   - include:
       file: db/changelog/changeset-16-bill-status-width.yaml
+  - include:
+      file: db/changelog/changeset-17-bill-note-separation.yaml
+  - include:
+      file: db/changelog/changeset-18-bill-delivery.yaml
+  - include:
+      file: db/changelog/changeset-19-bill-lifecycle.yaml
+  - include:
+      file: db/changelog/changeset-20-payment-metadata.yaml

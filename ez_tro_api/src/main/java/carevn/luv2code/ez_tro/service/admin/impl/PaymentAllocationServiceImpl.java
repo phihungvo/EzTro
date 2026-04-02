@@ -17,8 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
 
+import carevn.luv2code.ez_tro.dto.requests.BillPaymentSubmissionRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentAllocateRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentAllocationItemRequest;
+import carevn.luv2code.ez_tro.dto.requests.PaymentConfirmRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReceiveRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReverseRequest;
 import carevn.luv2code.ez_tro.dto.response.CreditLedgerEntryResponse;
@@ -45,6 +47,7 @@ import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.repository.CreditLedgerEntryRepository;
+import carevn.luv2code.ez_tro.repository.FileRepository;
 import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
 import carevn.luv2code.ez_tro.repository.PaymentOperationLogRepository;
 import carevn.luv2code.ez_tro.repository.PaymentRepository;
@@ -95,6 +98,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final ContractRepository contractRepository;
     private final BillRepository billRepository;
+    private final FileRepository fileRepository;
     private final CreditLedgerEntryRepository creditLedgerEntryRepository;
     private final InvoiceBalanceCalculator invoiceBalanceCalculator;
     private final BillingDiscrepancyAlertService billingDiscrepancyAlertService;
@@ -128,6 +132,65 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 () -> receivePaymentInternal(contract, request));
     }
 
+    @Override
+    @Transactional
+    public PaymentResponse receiveTenantSubmittedPayment(Bill bill, BillPaymentSubmissionRequest request) {
+        if (bill == null || bill.getContract() == null) {
+            throw new AppException(ErrorCode.BILL_NOT_FOUND);
+        }
+
+        Contract contract = bill.getContract();
+        File proofFile = resolvePaymentProofFile(bill, request != null ? request.getProofFileId() : null);
+        String externalReference = request.getExternalReference() != null
+                        && !request.getExternalReference().isBlank()
+                ? request.getExternalReference().trim()
+                : buildTenantExternalReference(bill);
+
+        Payment existing =
+                paymentRepository.findByExternalReference(externalReference).orElse(null);
+        if (existing != null) {
+            boolean sameContract = existing.getContract() != null
+                    && existing.getContract().getId() != null
+                    && existing.getContract().getId().equals(contract.getId());
+            boolean sameTenant = existing.getTenant() != null
+                    && bill.getTenant() != null
+                    && existing.getTenant().getId() != null
+                    && existing.getTenant().getId().equals(bill.getTenant().getId());
+            if (sameContract && sameTenant) {
+                return toPaymentResponse(existing);
+            }
+            throw new AppException(ErrorCode.PAYMENT_ALREADY_EXISTS);
+        }
+
+        User createdBy = SecurityUtils.getCurrentUserOrThrow();
+        String currency =
+                request.getCurrency() != null && !request.getCurrency().isBlank() ? request.getCurrency() : "VND";
+
+        Payment payment = Payment.builder()
+                .organization(contract.getOrganization())
+                .contract(contract)
+                .tenant(contract.getTenant())
+                .amount(request.getAmount())
+                .currency(currency)
+                .externalReference(externalReference)
+                .source(PaymentSource.TENANT_SUBMITTED)
+                .status(PaymentStatus.PENDING)
+                .note(normalizeTenantSubmittedNote(request))
+                .metadataJson(gson.toJson(buildTenantPaymentMetadata(bill, request, proofFile)))
+                .createdBy(createdBy)
+                .build();
+
+        Payment savedPayment = paymentRepository.save(payment);
+        billingOperationLogService.logPaymentOperation(
+                BillingOperationType.PAYMENT_RECEIVE,
+                contract,
+                savedPayment.getId(),
+                null,
+                billingOperationLogService.snapshotPayment(savedPayment),
+                buildTenantSubmissionAuditMetadata(bill, request, externalReference, proofFile));
+        return toPaymentResponse(savedPayment);
+    }
+
     private PaymentResponse receivePaymentInternal(Contract contract, PaymentReceiveRequest request) {
         Payment existing = paymentRepository
                 .findByExternalReference(request.getExternalReference())
@@ -151,6 +214,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 .status(PaymentStatus.PENDING)
                 .receivedAt(request.getReceivedAt())
                 .note(request.getNote())
+                .metadataJson(null)
                 .createdBy(createdBy)
                 .build();
 
@@ -173,7 +237,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
      */
     @Override
     @Transactional
-    public PaymentResponse confirmPayment(Integer paymentId) {
+    public PaymentResponse confirmPayment(Integer paymentId, PaymentConfirmRequest request) {
         Payment payment =
                 paymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
         validateContractAccess(payment.getContract());
@@ -199,7 +263,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                     savedPayment.getId(),
                     beforeState,
                     billingOperationLogService.snapshotPayment(savedPayment),
-                    null);
+                    buildConfirmAuditMetadata(savedPayment, request));
             return toPaymentResponse(savedPayment);
         } catch (RuntimeException ex) {
             observabilityMetricsService.incrementPaymentAllocationFailure(
@@ -705,6 +769,22 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
         billingDiscrepancyAlertService.checkAndAlert(bill.getContract(), buildReconciliationReport(bill.getContract()));
     }
 
+    @Override
+    @Transactional
+    public void syncPaymentDerivedState(Integer paymentId, String note) {
+        Payment payment = paymentRepository
+                .findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+        validateContractAccess(payment.getContract());
+
+        refreshPaymentStatus(payment);
+        Payment savedPayment = paymentRepository.save(payment);
+        syncCreditLedgerForPayment(savedPayment, null, note);
+        billingDiscrepancyAlertService.checkAndAlert(
+                savedPayment.getContract(),
+                getReconciliationReport(savedPayment.getContract().getId()));
+    }
+
     private PaymentResponse executeIdempotentPaymentOperation(
             Contract contract,
             Payment payment,
@@ -859,6 +939,58 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
         return metadata;
     }
 
+    private Map<String, Object> buildTenantSubmissionAuditMetadata(
+            Bill bill, BillPaymentSubmissionRequest request, String externalReference, File proofFile) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("origin", "TENANT_PORTAL");
+        metadata.put("billId", bill != null ? bill.getId() : null);
+        metadata.put("billCode", bill != null ? bill.getBillCode() : null);
+        metadata.put("externalReference", externalReference);
+        metadata.put("amount", request != null ? request.getAmount() : null);
+        metadata.put("currency", request != null ? request.getCurrency() : null);
+        metadata.put("paymentMethod", request != null ? request.getPaymentMethod() : null);
+        metadata.put("proofFileId", proofFile != null ? proofFile.getId() : null);
+        metadata.put("proofFileName", proofFile != null ? proofFile.getOriginalName() : null);
+        metadata.put("note", request != null ? request.getNote() : null);
+        return metadata;
+    }
+
+    private Map<String, Object> buildTenantPaymentMetadata(
+            Bill bill, BillPaymentSubmissionRequest request, File proofFile) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("origin", "TENANT_PORTAL");
+        metadata.put("billId", bill != null ? bill.getId() : null);
+        metadata.put("billCode", bill != null ? bill.getBillCode() : null);
+        metadata.put("paymentMethod", request != null ? request.getPaymentMethod() : null);
+        metadata.put("proofFileId", proofFile != null ? proofFile.getId() : null);
+        metadata.put("proofFileName", proofFile != null ? proofFile.getOriginalName() : null);
+        metadata.put("submittedByTenant", true);
+        return metadata;
+    }
+
+    private String normalizeTenantSubmittedNote(BillPaymentSubmissionRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String method =
+                request.getPaymentMethod() != null ? request.getPaymentMethod().trim() : null;
+        String note = request.getNote() != null ? request.getNote().trim() : null;
+        if ((note == null || note.isBlank()) && (method == null || method.isBlank())) {
+            return "Tenant gửi xác nhận thanh toán từ portal";
+        }
+        if (note == null || note.isBlank()) {
+            return "Tenant gửi xác nhận thanh toán qua " + method;
+        }
+        if (method == null || method.isBlank()) {
+            return note;
+        }
+        return "Phương thức: " + method + ". " + note;
+    }
+
+    private String buildTenantExternalReference(Bill bill) {
+        return "TENANT-" + (bill != null ? bill.getId() : "BILL") + "-" + System.currentTimeMillis();
+    }
+
     private Map<String, Object> buildAllocateAuditMetadata(
             PaymentAllocateRequest request, List<PaymentAllocation> allocations, boolean autoAllocation) {
         Map<String, Object> metadata = new LinkedHashMap<>();
@@ -999,6 +1131,9 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                     || !bill.getContract().getId().equals(payment.getContract().getId())) {
                 throw new AppException(ErrorCode.PAYMENT_ALLOCATION_INVALID);
             }
+            if (bill.getStatus() == BillStatus.CANCELLED) {
+                throw new AppException(ErrorCode.PAYMENT_ALLOCATION_INVALID);
+            }
 
             BigDecimal alreadyAllocated = nullToZero(paymentAllocationRepository.sumAllocatedByBillId(bill.getId()));
             BigDecimal alreadyAllocatedInBatch = nullToZero(localAllocated.get(bill.getId()));
@@ -1042,12 +1177,17 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
             List<Bill> lockedBills) {
 
         User createdBy = SecurityUtils.getCurrentUserOrThrow();
+        Map<String, Object> paymentMetadata = parsePaymentMetadata(payment.getMetadataJson());
+        Integer preferredBillId = metadataInteger(paymentMetadata, "billId");
 
         List<Bill> bills = (lockedBills != null ? lockedBills : List.<Bill>of())
                 .stream()
-                        .filter(bill ->
-                                bill.getAmount() != null && bill.getAmount().signum() > 0)
-                        .sorted(Comparator.comparing(Bill::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .filter(bill -> bill.getAmount() != null
+                                && bill.getAmount().signum() > 0
+                                && bill.getStatus() != BillStatus.CANCELLED)
+                        .sorted(Comparator.comparing(
+                                        (Bill bill) -> Objects.equals(bill.getId(), preferredBillId) ? 0 : 1)
+                                .thenComparing(Bill::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
                                 .thenComparing(Bill::getId))
                         .toList();
 
@@ -1237,6 +1377,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     }
 
     private PaymentResponse toPaymentResponse(Payment payment) {
+        Map<String, Object> metadata = parsePaymentMetadata(payment.getMetadataJson());
         BigDecimal allocated = nullToZero(paymentAllocationRepository.sumAllocatedByPaymentId(payment.getId()));
         BigDecimal unallocated = nullToZero(payment.getAmount()).subtract(allocated);
         if (unallocated.signum() < 0) {
@@ -1263,6 +1404,14 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 .externalReference(payment.getExternalReference())
                 .source(payment.getSource())
                 .status(payment.getStatus())
+                .paymentMethod(metadataString(metadata, "paymentMethod"))
+                .submittedBillId(metadataInteger(metadata, "billId"))
+                .submittedBillCode(metadataString(metadata, "billCode"))
+                .submittedByTenant(metadataBoolean(metadata, "submittedByTenant"))
+                .createdByName(
+                        payment.getCreatedBy() != null ? payment.getCreatedBy().getFullName() : null)
+                .proofFileId(metadataInteger(metadata, "proofFileId"))
+                .proofFileName(metadataString(metadata, "proofFileName"))
                 .allocatedAmount(allocated)
                 .unallocatedAmount(unallocated)
                 .note(payment.getNote())
@@ -1274,6 +1423,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     }
 
     private PaymentListItemResponse toPaymentListItemResponse(Payment payment) {
+        Map<String, Object> metadata = parsePaymentMetadata(payment.getMetadataJson());
         BigDecimal allocated = nullToZero(paymentAllocationRepository.sumAllocatedByPaymentId(payment.getId()));
         BigDecimal unallocated = nullToZero(payment.getAmount()).subtract(allocated);
         if (unallocated.signum() < 0) {
@@ -1295,6 +1445,14 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 .externalReference(payment.getExternalReference())
                 .source(payment.getSource())
                 .status(payment.getStatus())
+                .paymentMethod(metadataString(metadata, "paymentMethod"))
+                .submittedBillId(metadataInteger(metadata, "billId"))
+                .submittedBillCode(metadataString(metadata, "billCode"))
+                .submittedByTenant(metadataBoolean(metadata, "submittedByTenant"))
+                .createdByName(
+                        payment.getCreatedBy() != null ? payment.getCreatedBy().getFullName() : null)
+                .proofFileId(metadataInteger(metadata, "proofFileId"))
+                .proofFileName(metadataString(metadata, "proofFileName"))
                 .allocatedAmount(allocated)
                 .unallocatedAmount(unallocated)
                 .note(payment.getNote())
@@ -1333,6 +1491,115 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
             return null;
         }
         return payment.getContract().getRoom().getBoardingHouse().getName();
+    }
+
+    private Map<String, Object> buildConfirmAuditMetadata(Payment payment, PaymentConfirmRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("externalReference", payment != null ? payment.getExternalReference() : null);
+        metadata.put(
+                "source",
+                payment != null && payment.getSource() != null
+                        ? payment.getSource().name()
+                        : null);
+        Map<String, Object> paymentMetadata = parsePaymentMetadata(payment != null ? payment.getMetadataJson() : null);
+        metadata.put("billId", metadataInteger(paymentMetadata, "billId"));
+        metadata.put("billCode", metadataString(paymentMetadata, "billCode"));
+        metadata.put("paymentMethod", metadataString(paymentMetadata, "paymentMethod"));
+        metadata.put("proofFileId", metadataInteger(paymentMetadata, "proofFileId"));
+        metadata.put("proofFileName", metadataString(paymentMetadata, "proofFileName"));
+        metadata.put("financeNote", request != null ? trimToNull(request.getNote()) : null);
+        metadata.put("evidenceReference", request != null ? trimToNull(request.getEvidenceReference()) : null);
+        return metadata;
+    }
+
+    private File resolvePaymentProofFile(Bill bill, Integer proofFileId) {
+        if (proofFileId == null) {
+            return null;
+        }
+        File proofFile = fileRepository
+                .findByIdAndIsDeletedFalse(proofFileId)
+                .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
+        if (bill == null
+                || bill.getContract() == null
+                || proofFile.getContract() == null
+                || proofFile.getContract().getId() == null
+                || !proofFile.getContract().getId().equals(bill.getContract().getId())) {
+            throw new AppException(ErrorCode.PAYMENT_PROOF_FILE_INVALID);
+        }
+        return proofFile;
+    }
+
+    private Map<String, Object> parsePaymentMetadata(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            Object parsed = gson.fromJson(metadataJson, Object.class);
+            if (parsed instanceof Map<?, ?> raw) {
+                Map<String, Object> result = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> entry : raw.entrySet()) {
+                    if (entry.getKey() != null) {
+                        result.put(String.valueOf(entry.getKey()), entry.getValue());
+                    }
+                }
+                return result;
+            }
+        } catch (RuntimeException ignored) {
+            // metadata lỗi không được làm fail luồng payment
+        }
+        return Collections.emptyMap();
+    }
+
+    private String metadataString(Map<String, Object> metadata, String key) {
+        if (metadata == null || key == null) {
+            return null;
+        }
+        Object value = metadata.get(key);
+        if (value == null) {
+            return null;
+        }
+        String normalized = String.valueOf(value).trim();
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private Integer metadataInteger(Map<String, Object> metadata, String key) {
+        if (metadata == null || key == null) {
+            return null;
+        }
+        Object value = metadata.get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(String.valueOf(value));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private Boolean metadataBoolean(Map<String, Object> metadata, String key) {
+        if (metadata == null || key == null) {
+            return null;
+        }
+        Object value = metadata.get(key);
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value == null) {
+            return null;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isBlank() ? null : normalized;
     }
 
     private CreditLedgerEntryResponse toCreditLedgerEntryResponse(CreditLedgerEntry entry) {

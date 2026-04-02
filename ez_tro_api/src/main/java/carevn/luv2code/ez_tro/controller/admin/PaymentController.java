@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.PaymentAllocateRequest;
+import carevn.luv2code.ez_tro.dto.requests.PaymentConfirmRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReceiveRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReverseRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
@@ -73,11 +74,13 @@ public class PaymentController {
      * Xác nhận một khoản thanh toán.
      *
      * @param id id payment
+     * @param request payload confirm, có thể null
      * @return response chứa payment sau khi confirm
      */
     @PostMapping("/{id}/confirm")
-    public ApiResponse<PaymentResponse> confirm(@PathVariable Integer id) {
-        PaymentResponse response = paymentAllocationService.confirmPayment(id);
+    public ApiResponse<PaymentResponse> confirm(
+            @PathVariable Integer id, @RequestBody(required = false) PaymentConfirmRequest request) {
+        PaymentResponse response = paymentAllocationService.confirmPayment(id, request);
         return ApiResponse.<PaymentResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Payment confirmed successfully")

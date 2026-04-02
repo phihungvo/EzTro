@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import styles from "./PreviewModal.module.scss";
 import { fmt } from "../data.js";
 
@@ -12,6 +13,7 @@ export default function PreviewModal({
     onPublish,
     onPrint,
 }) {
+    const previewRef = useRef(null);
     const { room, month, year, issueDate, paymentMethod, paymentInstructions, notePublic } = state;
     const totalAmount = preview ? Number(preview.totalAmount || 0) : computed.total;
     const previewPeriod = preview
@@ -27,6 +29,48 @@ export default function PreviewModal({
 
     const pmLabels = { cash: "Tiền mặt", bank: "Chuyển khoản Vietcombank", momo: "Momo / ZaloPay" };
     const fmtDate = (str) => (str ? new Date(str).toLocaleDateString("vi-VN") : "—");
+    const handlePrint = () => {
+        if (typeof onPrint === "function") {
+            onPrint();
+            return;
+        }
+        if (typeof window === "undefined" || !previewRef.current) {
+            return;
+        }
+
+        const printWindow = window.open("", "_blank", "width=960,height=1200");
+        if (!printWindow) {
+            return;
+        }
+
+        const headMarkup = Array.from(document.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map((node) => node.outerHTML)
+            .join("");
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html lang="vi">
+                <head>
+                    <meta charset="utf-8" />
+                    <title>${previewCode}</title>
+                    ${headMarkup}
+                    <style>
+                        body { margin: 0; padding: 24px; background: #f5f5f5; }
+                        .print-shell { max-width: 960px; margin: 0 auto; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-shell">${previewRef.current.outerHTML}</div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        window.setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 300);
+    };
 
     const renderLine = (line, idx) => (
         <div key={`${line.lineKey}-${idx}`} className={styles.lineItem}>
@@ -66,7 +110,7 @@ export default function PreviewModal({
                 </div>
 
                 <div className={styles.body}>
-                    <div className={styles.previewDoc}>
+                    <div className={styles.previewDoc} ref={previewRef}>
                         <div className={styles.previewHead}>
                             <div className={styles.previewHeadSub}>KHU NHÀ TRỌ TÂN BÌNH</div>
                             <h3 className={styles.previewTitle}>HOÁ ĐƠN TIỀN PHÒNG</h3>
@@ -120,7 +164,7 @@ export default function PreviewModal({
 
                 <div className={styles.footer}>
                     <button className={styles.btnGhost} onClick={onClose}>Đóng</button>
-                    <button className={styles.btnOutline} onClick={onPrint}>🖨 In hoá đơn</button>
+                    <button className={styles.btnOutline} onClick={handlePrint}>🖨 In hoá đơn</button>
                     <button className={styles.btnPrimary} onClick={onPublish} disabled={publishDisabled}>
                         {hasMissing ? "Bổ sung meter trước khi phát hành" : "✅ Phát hành"}
                     </button>

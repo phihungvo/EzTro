@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 17-bill-note-separation-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: bills
+      changes:
+        - addColumn:
+            tableName: bills
+            columns:
+              - column:
+                  name: public_note
+                  type: VARCHAR(1000)
+              - column:
+                  name: internal_note
+                  type: VARCHAR(1000)
+              - column:
+                  name: payment_instructions
+                  type: VARCHAR(1000)

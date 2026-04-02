@@ -37,10 +37,26 @@ public class BillSpecs {
 
     public static Specification<Bill> inMonthYear(Integer month, Integer year) {
         return (root, query, cb) -> {
-            if (month == null || year == null) return cb.conjunction();
-            Expression<Integer> monthExpr = cb.function("MONTH", Integer.class, root.get("createdAt"));
-            Expression<Integer> yearExpr = cb.function("YEAR", Integer.class, root.get("createdAt"));
+            if (month == null && year == null) return cb.conjunction();
+            Expression<Integer> monthExpr = cb.function("MONTH", Integer.class, root.get("dueDate"));
+            Expression<Integer> yearExpr = cb.function("YEAR", Integer.class, root.get("dueDate"));
+            if (month == null) {
+                return cb.equal(yearExpr, year);
+            }
+            if (year == null) {
+                return cb.equal(monthExpr, month);
+            }
             return cb.and(cb.equal(monthExpr, month), cb.equal(yearExpr, year));
         };
+    }
+
+    public static Specification<Bill> dueDateFrom(java.time.LocalDate startDate) {
+        return (root, query, cb) ->
+                startDate == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("dueDate"), startDate);
+    }
+
+    public static Specification<Bill> dueDateTo(java.time.LocalDate endDate) {
+        return (root, query, cb) ->
+                endDate == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("dueDate"), endDate);
     }
 }

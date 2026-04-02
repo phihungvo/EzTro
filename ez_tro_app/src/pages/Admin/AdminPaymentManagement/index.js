@@ -38,7 +38,7 @@ import classNames from "classnames/bind";
 import dayjs from "dayjs";
 
 import styles from "./AdminPaymentManagement.module.scss";
-import { getAllActiveContracts } from "~/service/admin/contract";
+import { getAllActiveContracts, getPresignedUrl } from "~/service/admin/contract";
 import {
     getContractReconciliation,
     getCreditLedgerReport,
@@ -137,6 +137,7 @@ function AdminPaymentManagement() {
 
     const [receiveForm] = Form.useForm();
     const [reverseForm] = Form.useForm();
+    const [confirmForm] = Form.useForm();
 
     const selectedContract = selectedContractId ? contractMap[selectedContractId] : null;
 
@@ -195,6 +196,100 @@ function AdminPaymentManagement() {
 
     const canReverse =
         !!selectedPayment && !["REVERSED", "FAILED"].includes(selectedPayment.status);
+
+    const describePaymentSource = useCallback((payment) => {
+        if (!payment) {
+            return "—";
+        }
+        if (payment.source === "TENANT_SUBMITTED") {
+            return "Tenant portal";
+        }
+        return formatEnumLabel(payment.source || "NORMAL");
+    }, []);
+
+    const summarizePaymentContext = useCallback((payment) => {
+        if (!payment) {
+            return null;
+        }
+        const parts = [];
+        if (payment.submittedBillCode) {
+            parts.push(payment.submittedBillCode);
+        }
+        if (payment.paymentMethod) {
+            parts.push(formatEnumLabel(payment.paymentMethod));
+        }
+        if (payment.createdByName) {
+            parts.push(payment.createdByName);
+        }
+        return parts.length ? parts.join(" · ") : null;
+    }, []);
+
+    const summarizeAuditMetadata = useCallback((log) => {
+        const metadata = log?.metadata;
+        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+            return null;
+        }
+        const parts = [];
+        if (log.operationType === "PAYMENT_RECEIVE") {
+            if (metadata.origin === "TENANT_PORTAL") {
+                parts.push("Tenant portal");
+            }
+            if (metadata.billCode) {
+                parts.push(String(metadata.billCode));
+            }
+            if (metadata.paymentMethod) {
+                parts.push(formatEnumLabel(metadata.paymentMethod));
+            }
+            if (metadata.externalReference) {
+                parts.push(`Ref ${metadata.externalReference}`);
+            }
+            if (metadata.proofFileName) {
+                parts.push(`Proof ${metadata.proofFileName}`);
+            }
+            return parts.length ? parts.join(" · ") : null;
+        }
+        if (log.operationType === "PAYMENT_CONFIRM") {
+            if (metadata.billCode) {
+                parts.push(String(metadata.billCode));
+            }
+            if (metadata.paymentMethod) {
+                parts.push(formatEnumLabel(metadata.paymentMethod));
+            }
+            if (metadata.evidenceReference) {
+                parts.push(`Evidence ${metadata.evidenceReference}`);
+            }
+            if (metadata.proofFileName) {
+                parts.push(`Proof ${metadata.proofFileName}`);
+            }
+            if (metadata.financeNote) {
+                parts.push(String(metadata.financeNote));
+            }
+            return parts.length ? parts.join(" · ") : null;
+        }
+        return null;
+    }, []);
+
+    const handleOpenProofFile = useCallback(async (payment, action = "view") => {
+        if (!payment?.proofFileId) {
+            message.warning("Khoản thanh toán này chưa có chứng từ");
+            return;
+        }
+        try {
+            const url = await getPresignedUrl(payment.proofFileId, action);
+            if (action === "download") {
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = payment.proofFileName || `payment-proof-${payment.proofFileId}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
+            }
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch (e) {
+            message.error(getBillingUiErrorMessage(e, "Không thể mở chứng từ thanh toán"));
+        }
+    }, []);
 
     // ── Workspace refresh ──
     const refreshWorkspace = useCallback(
@@ -278,18 +373,81 @@ function AdminPaymentManagement() {
         }
     };
 
-    const handleConfirm = async (paymentId) => {
-        setSubmitting(true);
+    const handleConfirm = useCallback(async (paymentId) => {
         try {
-            const p = await confirmPayment(paymentId);
-            message.success("Xác nhận thanh toán thành công");
-            await refreshWorkspace(selectedContractId, p.id);
+            const payment = selectedPayment?.id === paymentId
+                ? selectedPayment
+                : await getPaymentById(paymentId);
+            confirmForm.setFieldsValue({
+                note: "",
+                evidenceReference: payment?.externalReference || "",
+            });
+
+            Modal.confirm({
+                title: `Xác nhận thanh toán #${payment.id}`,
+                icon: <CheckCircleOutlined />,
+                width: 640,
+                okText: "Xác nhận",
+                cancelText: "Đóng",
+                content: (
+                    <div style={{marginTop: 16}}>
+                        <Descriptions bordered size="small" column={1} style={{marginBottom: 16}}>
+                            <Descriptions.Item label="Nguồn">{describePaymentSource(payment)}</Descriptions.Item>
+                            <Descriptions.Item label="Bill liên quan">{payment.submittedBillCode || "—"}</Descriptions.Item>
+                            <Descriptions.Item label="Phương thức">{payment.paymentMethod ? formatEnumLabel(payment.paymentMethod) : "—"}</Descriptions.Item>
+                            <Descriptions.Item label="Người gửi / ghi nhận">{payment.createdByName || "—"}</Descriptions.Item>
+                            <Descriptions.Item label="Mã tham chiếu">{payment.externalReference || "—"}</Descriptions.Item>
+                            <Descriptions.Item label="Chứng từ">
+                                {payment.proofFileId ? (
+                                    <Space>
+                                        <span>{payment.proofFileName || `File #${payment.proofFileId}`}</span>
+                                        <Button size="small" onClick={() => handleOpenProofFile(payment, "view")}>Xem</Button>
+                                    </Space>
+                                ) : "—"}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Ghi chú từ tenant / thu ngân">{payment.note || "—"}</Descriptions.Item>
+                        </Descriptions>
+                        <Form form={confirmForm} layout="vertical">
+                            <Form.Item
+                                label="Ghi chú đối soát"
+                                name="note"
+                                extra="Nên ghi rõ lý do xác nhận, đối chiếu sao kê hoặc ghi chú nghiệp vụ."
+                            >
+                                <TextArea rows={3} placeholder="VD: Đã đối chiếu sao kê BIDV lúc 08:15, khớp số tiền và nội dung chuyển khoản." />
+                            </Form.Item>
+                            <Form.Item
+                                label="Mã bằng chứng / sao kê"
+                                name="evidenceReference"
+                                extra="Có thể nhập mã giao dịch, id sao kê hoặc ref nội bộ của bộ phận kế toán."
+                            >
+                                <Input placeholder="VD: BIDV-STATEMENT-20260402-001" />
+                            </Form.Item>
+                        </Form>
+                    </div>
+                ),
+                onOk: async () => {
+                    try {
+                        const values = await confirmForm.validateFields();
+                        setSubmitting(true);
+                        const p = await confirmPayment(paymentId, values);
+                        message.success("Xác nhận thanh toán thành công");
+                        await refreshWorkspace(selectedContractId, p.id);
+                        confirmForm.resetFields();
+                    } catch (e) {
+                        if (e?.errorFields) {
+                            return Promise.reject(e);
+                        }
+                        message.error(getBillingUiErrorMessage(e, "Không thể xác nhận"));
+                    } finally {
+                        setSubmitting(false);
+                    }
+                },
+                onCancel: () => confirmForm.resetFields(),
+            });
         } catch (e) {
-            message.error(getBillingUiErrorMessage(e, "Không thể xác nhận"));
-        } finally {
-            setSubmitting(false);
+            message.error(getBillingUiErrorMessage(e, "Không thể tải chi tiết thanh toán"));
         }
-    };
+    }, [confirmForm, describePaymentSource, handleOpenProofFile, selectedContractId, selectedPayment]);
 
     const handleAutoAllocate = async (paymentId) => {
         setSubmitting(true);
@@ -366,6 +524,9 @@ function AdminPaymentManagement() {
                 <>
                     <div className={cx("payId")}>#{r.id}</div>
                     <div className={cx("payRef")}>{r.externalReference || "—"}</div>
+                    {summarizePaymentContext(r) && (
+                        <div className={cx("payRef")}>{summarizePaymentContext(r)}</div>
+                    )}
                 </>
             ),
         },
@@ -797,6 +958,12 @@ function AdminPaymentManagement() {
                                                         {selectedPayment.status === "PENDING"
                                                             ? "Khoản này đang chờ xác nhận. "
                                                             : ""}
+                                                        {selectedPayment.source === "TENANT_SUBMITTED" && (
+                                                            <>
+                                                                Tenant đã gửi xác nhận
+                                                                {selectedPayment.submittedBillCode ? ` cho bill ${selectedPayment.submittedBillCode}. ` : ". "}
+                                                            </>
+                                                        )}
                                                         Chưa phân bổ:{" "}
                                                         <strong className={cx("amtWarn")}>
                                                             {formatCurrency(selectedPayment.unallocatedAmount)}
@@ -903,13 +1070,24 @@ function AdminPaymentManagement() {
                                                 {[
                                                     ["Mã thanh toán",  <span className={cx("detailMonoId")}>#{selectedPayment.id}</span>],
                                                     ["Mã tham chiếu",  selectedPayment.externalReference || "—"],
-                                                    ["Nguồn",          formatEnumLabel(selectedPayment.source || "NORMAL")],
+                                                    ["Nguồn",          describePaymentSource(selectedPayment)],
                                                     ["Trạng thái",     <StatusTag status={selectedPayment.status} meta={PAYMENT_STATUS_META} />],
+                                                    ["Bill liên quan", selectedPayment.submittedBillCode || "—"],
+                                                    ["Phương thức",    selectedPayment.paymentMethod ? formatEnumLabel(selectedPayment.paymentMethod) : "—"],
+                                                    ["Người gửi / ghi nhận", selectedPayment.createdByName || "—"],
+                                                    ["Chứng từ",       selectedPayment.proofFileId ? (
+                                                        <Space>
+                                                            <span>{selectedPayment.proofFileName || `File #${selectedPayment.proofFileId}`}</span>
+                                                            <Button size="small" onClick={() => handleOpenProofFile(selectedPayment, "view")}>Xem</Button>
+                                                            <Button size="small" onClick={() => handleOpenProofFile(selectedPayment, "download")}>Tải</Button>
+                                                        </Space>
+                                                    ) : "—"],
                                                     ["Số tiền",        <span className={cx("detailAmtLg")}>{formatCurrency(selectedPayment.amount)}</span>],
                                                     ["Đã phân bổ",     <span className={cx("detailAlloc")}>{formatCurrency(selectedPayment.allocatedAmount)}</span>],
                                                     ["Chưa phân bổ",   <span className={cx("detailUnalloc")}>{formatCurrency(selectedPayment.unallocatedAmount)}</span>],
                                                     ["Ngày nhận",      selectedPayment.receivedAt  ? dayjs(selectedPayment.receivedAt).format("DD/MM/YYYY HH:mm")  : "—"],
                                                     ["Ngày xác nhận",  selectedPayment.confirmedAt ? dayjs(selectedPayment.confirmedAt).format("DD/MM/YYYY HH:mm") : "—"],
+                                                    ["Ghi chú",        selectedPayment.note || "—"],
                                                 ].map(([label, value], i) => (
                                                     <Descriptions.Item
                                                         key={i}
@@ -1004,6 +1182,9 @@ function AdminPaymentManagement() {
                                                     <span className={cx("auditSep")}>·</span>
                                                     <span>{log.createdAt ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm") : "—"}</span>
                                                 </div>
+                                                {summarizeAuditMetadata(log) && (
+                                                    <div className={cx("auditMeta")}>{summarizeAuditMetadata(log)}</div>
+                                                )}
                                             </div>
                                         ))
                                     )}

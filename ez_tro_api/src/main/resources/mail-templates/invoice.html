@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hóa đơn thanh toán – EZ Trọ</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+            @bottom-center {
+                content: "Trang " counter(page) " / " counter(pages);
+                font-size: 8pt;
+                color: #94a3b8;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: "EZTro Sans", Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.5;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+        }
+
+        .top-bar {
+            height: 7px;
+            background: #1d3557;
+            border-bottom: 2px solid #b08d3e;
+        }
+
+        .content {
+            padding: 11mm 13mm 10mm;
+        }
+
+        .header-table,
+        .two-col-table,
+        .payment-summary-table,
+        .notes-table,
+        .signature-table,
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-table td,
+        .two-col-table td,
+        .payment-summary-table td,
+        .notes-table td,
+        .signature-table td,
+        .footer-table td {
+            vertical-align: top;
+        }
+
+        .brand-cell {
+            width: 58%;
+            padding-right: 10mm;
+        }
+
+        .meta-cell {
+            width: 42%;
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e7eef8;
+            color: #1d3557;
+            border: 1px solid #cad7ea;
+            border-radius: 16px;
+            font-size: 7pt;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .brand-name {
+            margin-top: 8px;
+            color: #1d3557;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 23pt;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .brand-tagline {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 8pt;
+        }
+
+        .company-info {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #d9e2ec;
+        }
+
+        .company-info p {
+            margin: 2px 0;
+            font-size: 8pt;
+            color: #334155;
+        }
+
+        .company-info strong {
+            color: #0f172a;
+        }
+
+        .doc-title {
+            margin: 0 0 7px;
+            text-align: right;
+            color: #1d3557;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 13pt;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .doc-card {
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 9px 12px;
+        }
+
+        .meta-table,
+        .kv-table,
+        .mini-history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .meta-table td {
+            padding: 5px 0;
+            border-bottom: 1px solid #dbe3ee;
+        }
+
+        .meta-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .meta-label {
+            color: #64748b;
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .meta-value {
+            text-align: right;
+            color: #0f172a;
+            font-size: 8.5pt;
+            font-weight: 700;
+        }
+
+        .meta-value-big {
+            color: #1d3557;
+            font-size: 11pt;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 14px;
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-unpaid {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-paid {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-partial {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-primary {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-neutral {
+            background: #e5e7eb;
+            color: #475569;
+        }
+
+        .section-gap {
+            height: 7mm;
+        }
+
+        .panel-cell-left {
+            width: 50%;
+            padding-right: 2.5mm;
+        }
+
+        .panel-cell-right {
+            width: 50%;
+            padding-left: 2.5mm;
+        }
+
+        .panel {
+            border: 1.5px solid #d8e1eb;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .panel-head {
+            background: #f1f5f9;
+            border-bottom: 1px solid #d8e1eb;
+            padding: 7px 10px;
+            color: #1d3557;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+        }
+
+        .panel-body {
+            padding: 9px 10px;
+        }
+
+        .kv-table td {
+            padding: 4px 0;
+            border-bottom: 1px dashed #dbe3ee;
+            font-size: 8.5pt;
+        }
+
+        .kv-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .kv-table td:first-child {
+            width: 42%;
+            color: #64748b;
+        }
+
+        .kv-table td:last-child {
+            color: #0f172a;
+            font-weight: 500;
+        }
+
+        .badge-row {
+            margin-top: 8px;
+        }
+
+        .badge-row .badge {
+            margin-right: 5px;
+            margin-bottom: 3px;
+        }
+
+        .section-title {
+            margin: 0 0 8px;
+            color: #1d3557;
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 5px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.3pt;
+        }
+
+        .items-table thead th {
+            background: #1d3557;
+            color: #ffffff;
+            padding: 8px 7px;
+            font-size: 7pt;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            border: 1px solid #1d3557;
+            text-align: left;
+        }
+
+        .items-table tbody td {
+            padding: 7px 7px;
+            border: 1px solid #d9e2ec;
+            color: #334155;
+        }
+
+        .items-table tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .items-table .desc {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .line-note {
+            margin-top: 2px;
+            color: #94a3b8;
+            font-size: 7pt;
+            font-weight: 400;
+        }
+
+        .mono {
+            font-family: "EZTro Sans", Arial, sans-serif;
+        }
+
+        .tr {
+            text-align: right;
+        }
+
+        .tc {
+            text-align: center;
+        }
+
+        .tfoot-note {
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 7.3pt;
+            font-style: italic;
+        }
+
+        .empty-box {
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 14px;
+            background: #f8fafc;
+            text-align: center;
+            color: #64748b;
+            font-size: 8.5pt;
+        }
+
+        .payment-col {
+            width: 64%;
+            padding-right: 2.5mm;
+        }
+
+        .summary-col {
+            width: 36%;
+            padding-left: 2.5mm;
+        }
+
+        .bank-card,
+        .summary-card,
+        .note-box,
+        .legal-box {
+            border: 1.5px solid #d8e1eb;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .bank-head,
+        .summary-head {
+            padding: 7px 10px;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .bank-head {
+            background: #1d3557;
+            color: #ffffff;
+        }
+
+        .summary-head {
+            background: #f1f5f9;
+            color: #1d3557;
+            border-bottom: 1px solid #d8e1eb;
+        }
+
+        .bank-body,
+        .summary-body {
+            padding: 9px 10px;
+        }
+
+        .bank-table,
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bank-table td,
+        .summary-table td {
+            padding: 5px 0;
+            border-bottom: 1px dashed #dbe3ee;
+            font-size: 8.5pt;
+        }
+
+        .bank-table tr:last-child td,
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .bank-table td:first-child,
+        .summary-table td:first-child {
+            color: #64748b;
+        }
+
+        .bank-table td:last-child,
+        .summary-table td:last-child {
+            text-align: right;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: #1d3557;
+            font-weight: 700;
+        }
+
+        .transfer-note {
+            margin-top: 7px;
+            padding: 7px 9px;
+            background: #fdf6e8;
+            border: 1px solid #ead8aa;
+            border-radius: 6px;
+            color: #9a6700;
+            font-size: 7.5pt;
+        }
+
+        .qr-wrap {
+            margin-top: 6px;
+            padding: 9px;
+            border: 1.5px solid #d8e1eb;
+            border-radius: 8px;
+            background: #f8fafc;
+            text-align: center;
+        }
+
+        .qr-placeholder {
+            width: 52mm;
+            height: 52mm;
+            margin: 0 auto;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+        }
+
+        .qr-label {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 7.5pt;
+        }
+
+        .qr-amount {
+            margin-top: 3px;
+            color: #1d3557;
+            font-size: 9pt;
+            font-weight: 700;
+        }
+
+        .note-box {
+            padding: 9px 10px;
+            background: #f8fafc;
+        }
+
+        .note-title {
+            margin-bottom: 4px;
+            color: #1d3557;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .note-box p {
+            margin: 0;
+            color: #334155;
+            font-size: 8pt;
+            line-height: 1.6;
+        }
+
+        .summary-divider {
+            height: 1px;
+            margin: 6px 0;
+            background: #cbd5e1;
+        }
+
+        .summary-total td {
+            color: #1d3557;
+            font-size: 11.5pt;
+            font-weight: 800;
+        }
+
+        .mini-history {
+            margin-top: 6px;
+            border: 1.5px solid #d8e1eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mini-history-head {
+            background: #f1f5f9;
+            border-bottom: 1px solid #d8e1eb;
+            padding: 7px 10px;
+            color: #1d3557;
+            font-size: 7.2pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .mini-history-body {
+            padding: 7px 10px;
+        }
+
+        .mini-history-table td {
+            padding: 4px 0;
+            border-bottom: 1px dashed #dbe3ee;
+            font-size: 7.7pt;
+        }
+
+        .mini-history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mini-history-table td:nth-child(2) {
+            text-align: center;
+            color: #475569;
+        }
+
+        .mini-history-table td:last-child {
+            text-align: right;
+            color: #15803d;
+            font-weight: 700;
+        }
+
+        .notes-table td {
+            width: 50%;
+        }
+
+        .notes-left {
+            padding-right: 2.5mm;
+        }
+
+        .notes-right {
+            padding-left: 2.5mm;
+        }
+
+        .legal-box {
+            margin-top: 6mm;
+            padding: 8px 10px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 7.5pt;
+            line-height: 1.7;
+        }
+
+        .legal-box strong {
+            color: #0f172a;
+        }
+
+        .signature-table {
+            margin-top: 8mm;
+        }
+
+        .signature-table td {
+            width: 33.33%;
+            text-align: center;
+            padding: 0 2mm;
+        }
+
+        .sig-head {
+            color: #1d3557;
+            font-size: 7.8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .sig-sub {
+            margin-top: 2px;
+            color: #94a3b8;
+            font-size: 7.2pt;
+        }
+
+        .sig-space {
+            height: 24mm;
+            margin-top: 4px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .sig-name {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 8pt;
+        }
+
+        .footer-table {
+            margin-top: 6mm;
+            border-top: 1px solid #d8e1eb;
+            padding-top: 4mm;
+        }
+
+        .footer-left {
+            width: 52%;
+            color: #94a3b8;
+            font-size: 7.3pt;
+        }
+
+        .footer-right {
+            width: 48%;
+            text-align: right;
+            color: #94a3b8;
+            font-size: 7.3pt;
+        }
+
+        .footer-brand {
+            color: #1d3557;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="top-bar"></div>
+
+    <div class="content">
+        <table class="header-table">
+            <tr>
+                <td class="brand-cell">
+                    <span class="chip" th:text="${documentLabel}">Chứng từ tài chính</span>
+                    <div class="brand-name" th:text="${companyName}">Nhà Trọ Bình Minh</div>
+                    <div class="brand-tagline" th:text="${documentSubtitle}">Chứng từ thanh toán tiền phòng và dịch vụ theo kỳ</div>
+
+                    <div class="company-info">
+                        <p><strong>Địa chỉ:</strong> <span th:text="${companyAddress}">123 Đường Lê Văn Việt, TP. Thủ Đức</span></p>
+                        <p><strong>Điện thoại:</strong> <span th:text="${companyPhone}">0909 123 456</span> &#160;·&#160; <strong>Email:</strong> <span th:text="${companyEmail}">cskh@binhminh.vn</span></p>
+                        <p><strong>MST / CCCD chủ nhà:</strong> <span th:text="${companyTaxId}">Chưa cấu hình</span></p>
+                    </div>
+                </td>
+                <td class="meta-cell">
+                    <div class="doc-title" th:text="${documentTitle}">Hóa Đơn Thanh Toán</div>
+                    <div class="doc-card">
+                        <table class="meta-table">
+                            <tr>
+                                <td class="meta-label">Số hóa đơn</td>
+                                <td class="meta-value meta-value-big" th:text="${documentNumber}">HD-2026-04-A101</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Ngày phát hành</td>
+                                <td class="meta-value" th:text="${issuedAtLabel}">02/04/2026</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Kỳ tính phí</td>
+                                <td class="meta-value" th:text="${billingPeriodLabel}">01/04/2026 - 30/04/2026</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Hạn thanh toán</td>
+                                <td class="meta-value" th:text="${dueDateLabel}">15/04/2026</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Trạng thái</td>
+                                <td class="meta-value">
+                                    <span class="badge" th:classappend="' ' + ${billStatusClass}" th:text="${billStatusLabel}">Chưa thanh toán</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-gap"></div>
+
+        <table class="two-col-table">
+            <tr>
+                <td class="panel-cell-left">
+                    <div class="panel">
+                        <div class="panel-head">Thông tin hóa đơn</div>
+                        <div class="panel-body">
+                            <table class="kv-table">
+                                <tr><td>Tiêu đề</td><td th:text="${billTitle}">Tiền phòng tháng 4/2026</td></tr>
+                                <tr><td>Loại hóa đơn</td><td th:text="${invoiceTypeLabel}">Tiền phòng</td></tr>
+                                <tr><td>Kỳ tính phí</td><td th:text="${billingPeriodLabel}">01/04/2026 - 30/04/2026</td></tr>
+                                <tr><td>Ngày phát hành</td><td th:text="${issuedAtLabel}">02/04/2026</td></tr>
+                                <tr><td>Hạn thanh toán</td><td th:text="${dueDateLabel}">15/04/2026</td></tr>
+                                <tr><td>Xuất lúc</td><td th:text="${generatedAt}">02/04/2026 10:30:00</td></tr>
+                            </table>
+                            <div class="badge-row">
+                                <span class="badge" th:classappend="' ' + ${billStatusClass}" th:text="${billStatusLabel}">Chưa thanh toán</span>
+                                <span class="badge" th:classappend="' ' + ${lifecycleStatusClass}" th:text="${lifecycleStatusLabel}">Đã phát hành</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="panel-cell-right">
+                    <div class="panel">
+                        <div class="panel-head">Thông tin người thuê</div>
+                        <div class="panel-body">
+                            <table class="kv-table">
+                                <tr><td>Người thuê chính</td><td th:text="${tenantName}">Nguyễn Văn A</td></tr>
+                                <tr><td>CCCD / CMND</td><td th:text="${tenantIdNumber}">079082099876</td></tr>
+                                <tr><td>Số điện thoại</td><td th:text="${tenantPhone}">0912 345 678</td></tr>
+                                <tr><td>Phòng</td><td th:text="${roomNumber}">A101</td></tr>
+                                <tr><td>Mã hợp đồng</td><td th:text="${contractCode}">HDCT-2025-A101-001</td></tr>
+                                <tr><td>Số người ở</td><td th:text="${occupantsCount}">2 người</td></tr>
+                                <tr>
+                                    <td>Tình trạng nợ</td>
+                                    <td>
+                                        <span class="badge" th:classappend="${isSettled ? ' badge-paid' : ' badge-unpaid'}"
+                                              th:text="${isSettled ? 'Đã tất toán' : 'Còn công nợ'}">Còn công nợ</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-gap"></div>
+
+        <div class="section-title">Chi tiết khoản thu</div>
+        <table class="items-table" th:if="${lineItemsPresent}">
+            <thead>
+            <tr>
+                <th style="width: 5%;" class="tc">STT</th>
+                <th style="width: 31%;">Khoản thu / Mô tả</th>
+                <th style="width: 14%;">Danh mục</th>
+                <th style="width: 12%;" class="tr">Chỉ số / Đơn vị</th>
+                <th style="width: 8%;" class="tc">SL</th>
+                <th style="width: 14%;" class="tr">Đơn giá</th>
+                <th style="width: 16%;" class="tr">Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="line : ${lineItems}">
+                <td class="tc mono" th:text="${line.index}">1</td>
+                <td class="desc">
+                    <span th:text="${line.description}">Tiền phòng tháng 4/2026</span>
+                    <div class="line-note" th:if="${line.note != null}" th:text="${line.note}">Ghi chú dòng</div>
+                </td>
+                <td th:text="${line.typeLabel}">Tiền phòng</td>
+                <td class="tr mono" th:text="${line.meterInfo}">—</td>
+                <td class="tc mono" th:text="${line.quantity}">1</td>
+                <td class="tr mono" th:text="${line.unitPrice}">2.500.000 đ</td>
+                <td class="tr mono" style="font-weight: 700; color: #0f172a;" th:text="${line.amount}">2.500.000 đ</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="tfoot-note" th:if="${lineItemsPresent}">
+            Đơn vị tiền tệ: VNĐ (Việt Nam Đồng). Giá trị hiển thị dùng cho đối soát công nợ theo hợp đồng thuê.
+        </div>
+        <div class="empty-box" th:unless="${lineItemsPresent}">
+            Chưa có dòng chi tiết cho hóa đơn này.
+        </div>
+
+        <div class="section-gap"></div>
+
+        <table class="payment-summary-table">
+            <tr>
+                <td class="payment-col">
+                    <div class="section-title">Thông tin thanh toán</div>
+
+                    <div class="bank-card">
+                        <div class="bank-head">Chuyển khoản ngân hàng</div>
+                        <div class="bank-body">
+                            <table class="bank-table">
+                                <tr><td>Ngân hàng</td><td><span class="highlight" th:text="${bankName}">Vietcombank</span></td></tr>
+                                <tr><td>Chi nhánh</td><td th:text="${bankBranch}">CN Thủ Đức</td></tr>
+                                <tr><td>Số tài khoản</td><td><span class="highlight" th:text="${bankAccountNumber}">102045678901</span></td></tr>
+                                <tr><td>Chủ tài khoản</td><td th:text="${bankAccountName}">NGUYEN VAN CHINH</td></tr>
+                                <tr><td>Nội dung CK</td><td><span class="highlight" th:text="${transferContent}">HD-2026-04-A101 NGUYEN VAN A</span></td></tr>
+                                <tr><td>Số tiền</td><td><span class="highlight" th:text="${amountOutstanding}">900.000 đ</span></td></tr>
+                            </table>
+                            <div class="transfer-note">
+                                Vui lòng ghi đúng nội dung chuyển khoản để hệ thống và chủ trọ đối soát nhanh. Thanh toán sau <span th:text="${dueDateLabel}">15/04/2026</span> có thể phát sinh phí trễ hạn.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="qr-wrap" th:if="${qrCodePresent}">
+                        <div class="qr-placeholder"></div>
+                        <div class="qr-label">Quét để thanh toán qua VietQR / ngân hàng</div>
+                        <div class="qr-amount" th:text="${amountOutstanding}">900.000 đ</div>
+                    </div>
+
+                    <div class="note-box" style="margin-top: 6px;">
+                        <div class="note-title">Thanh toán trực tiếp</div>
+                        <p th:text="${cashPaymentNote}">Nộp trực tiếp cho chủ nhà hoặc người quản lý để nhận xác nhận.</p>
+                    </div>
+                </td>
+                <td class="summary-col">
+                    <div class="summary-card">
+                        <div class="summary-head">Tổng hợp</div>
+                        <div class="summary-body">
+                            <table class="summary-table">
+                                <tr><td>Tổng tiền phòng</td><td th:text="${amountRent}">2.500.000 đ</td></tr>
+                                <tr><td>Tổng dịch vụ</td><td th:text="${amountServices}">450.000 đ</td></tr>
+                                <tr><td>Các khoản khác</td><td th:text="${amountOther}">0 đ</td></tr>
+                                <tr th:if="${hasDiscount}"><td style="color: #15803d;">Giảm giá / Khuyến mãi</td><td style="color: #15803d;" th:text="${amountDiscount}">– 50.000 đ</td></tr>
+                                <tr th:if="${hasPenalty}"><td style="color: #b91c1c;">Phí phạt / Trễ hạn</td><td style="color: #b91c1c;" th:text="${amountPenalty}">50.000 đ</td></tr>
+                            </table>
+                            <div class="summary-divider"></div>
+                            <table class="summary-table">
+                                <tr><td style="font-weight: 700;">Tổng hóa đơn</td><td style="font-weight: 700;" th:text="${amountTotal}">2.950.000 đ</td></tr>
+                                <tr><td>Số dư kỳ trước</td><td th:text="${amountPreviousBalance}">0 đ</td></tr>
+                                <tr><td style="color: #15803d;">Đã thanh toán / Phân bổ</td><td style="color: #15803d;" th:text="${amountAllocated}">– 600.000 đ</td></tr>
+                            </table>
+                            <div class="summary-divider"></div>
+                            <table class="summary-table summary-total">
+                                <tr><td>Còn phải thanh toán</td><td th:text="${amountOutstanding}">900.000 đ</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mini-history" th:if="${paymentHistoryPresent}">
+                        <div class="mini-history-head">Lịch sử đã thu</div>
+                        <div class="mini-history-body">
+                            <table class="mini-history-table">
+                                <tr th:each="ph : ${paymentHistory}">
+                                    <td th:text="${ph.date}">01/04/2026</td>
+                                    <td th:text="${ph.method}">Chuyển khoản</td>
+                                    <td th:text="${ph.amount}">600.000 đ</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="notes-table" th:if="${paymentInstructionsPresent or publicNotePresent}" style="margin-top: 6mm;">
+            <tr>
+                <td class="notes-left" th:if="${paymentInstructionsPresent}">
+                    <div class="note-box">
+                        <div class="note-title">Hướng dẫn thanh toán</div>
+                        <p th:text="${paymentInstructions}">Vui lòng chuyển khoản đúng nội dung để xác nhận tự động.</p>
+                    </div>
+                </td>
+                <td class="notes-right" th:if="${publicNotePresent}">
+                    <div class="note-box">
+                        <div class="note-title">Ghi chú</div>
+                        <p th:text="${publicNote}">Thanh toán trước ngày 15 để tránh phí trễ hạn.</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="legal-box">
+            <strong>Lưu ý pháp lý:</strong> Đây là chứng từ thanh toán nội bộ giữa bên thuê và bên cho thuê, có giá trị đối soát theo hợp đồng <span th:text="${contractCode}">HDCT-2025-A101-001</span>.
+            Trong trường hợp có tranh chấp, các bên căn cứ vào hợp đồng thuê phòng đã ký kết và quy định hiện hành.
+            Hóa đơn này không thay thế hóa đơn VAT theo quy định của Bộ Tài chính nếu không có xác nhận riêng.
+        </div>
+
+        <table class="signature-table">
+            <tr>
+                <td>
+                    <div class="sig-head">Chủ nhà / Đại diện</div>
+                    <div class="sig-sub">Ký tên, đóng dấu (nếu có)</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name" th:text="${companyName}">Nhà Trọ Bình Minh</div>
+                </td>
+                <td>
+                    <div class="sig-head">Người quản lý</div>
+                    <div class="sig-sub">Xác nhận và ký tên</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name" th:text="${managerName}">Nguyễn Văn Chính</div>
+                </td>
+                <td>
+                    <div class="sig-head">Người thuê</div>
+                    <div class="sig-sub">Ký và ghi rõ họ tên</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name" th:text="${tenantName}">Nguyễn Văn A</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="footer-table">
+            <tr>
+                <td class="footer-left">
+                    Xuất bởi <span class="footer-brand" th:text="${systemName}">EZ Trọ – Phần mềm quản lý nhà trọ</span> &#160;·&#160; <span th:text="${generatedAt}">02/04/2026 10:30:00</span>
+                </td>
+                <td class="footer-right">
+                    Số HĐ: <strong th:text="${documentNumber}">HD-2026-04-A101</strong> &#160;·&#160; Hợp đồng: <strong th:text="${contractCode}">HDCT-2025-A101-001</strong>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+</body>
+</html>
