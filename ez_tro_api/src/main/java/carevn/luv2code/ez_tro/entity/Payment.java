@@ -76,6 +76,9 @@ public class Payment {
     @Column(columnDefinition = "TEXT")
     String note;
 
+    @Column(name = "metadata_json", columnDefinition = "LONGTEXT")
+    String metadataJson;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     User createdBy;

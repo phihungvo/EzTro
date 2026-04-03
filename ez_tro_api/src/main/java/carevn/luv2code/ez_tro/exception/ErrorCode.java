@@ -150,9 +150,21 @@ public enum ErrorCode {
             1115, "Số dư tiền đặt cọc không đủ cho giao dịch này", HttpStatus.BAD_REQUEST),
     BILL_SERVICE_AMOUNT_INVALID(1125, "Tổng phí dịch vụ phải lớn hơn hoặc bằng 0", HttpStatus.BAD_REQUEST),
     BILL_DUE_DATE_INVALID(1126, "Hạn thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
-    BILL_DELETE_NOT_ALLOWED(1129, "Không thể xóa hóa đơn đã có thanh toán/phân bổ", HttpStatus.BAD_REQUEST),
+    BILL_DELETE_NOT_ALLOWED(
+            1129, "Không thể xóa hóa đơn đã phát hành hoặc đã có thanh toán/phân bổ", HttpStatus.BAD_REQUEST),
     BILL_CANCEL_NOT_ALLOWED(1130, "Không thể hủy hóa đơn đã thanh toán", HttpStatus.BAD_REQUEST),
     BILL_UPDATE_NOT_ALLOWED(1131, "Không thể cập nhật hóa đơn ở trạng thái hiện tại", HttpStatus.BAD_REQUEST),
+    BILL_SEND_CHANNEL_REQUIRED(1137, "Cần chọn ít nhất một kênh gửi hóa đơn", HttpStatus.BAD_REQUEST),
+    BILL_SEND_NOT_ALLOWED(1138, "Không thể gửi hóa đơn ở trạng thái hiện tại", HttpStatus.BAD_REQUEST),
+    PAYMENT_SUBMISSION_AMOUNT_EXCEEDS_OUTSTANDING(
+            1139, "Số tiền xác nhận thanh toán vượt quá số dư hóa đơn", HttpStatus.BAD_REQUEST),
+    PAYMENT_SUBMISSION_NOT_ALLOWED(
+            1140, "Không thể gửi xác nhận thanh toán cho hóa đơn ở trạng thái hiện tại", HttpStatus.BAD_REQUEST),
+    PAYMENT_PROOF_FILE_REQUIRED(1141, "Phương thức thanh toán này yêu cầu tải lên chứng từ", HttpStatus.BAD_REQUEST),
+    PAYMENT_PROOF_FILE_INVALID(
+            1142, "Chứng từ thanh toán không hợp lệ hoặc không thuộc hợp đồng của hóa đơn", HttpStatus.BAD_REQUEST),
+    PAYMENT_PROOF_FILE_TYPE_INVALID(1143, "Chứng từ chỉ hỗ trợ jpg, jpeg, png, webp hoặc pdf", HttpStatus.BAD_REQUEST),
+    BILL_DUPLICATE_PERIOD(1144, "Đã tồn tại hóa đơn cho hợp đồng và kỳ billing này", HttpStatus.CONFLICT),
 
     PAYMENT_NOT_FOUND(1106, "Không tìm thấy thanh toán", HttpStatus.NOT_FOUND),
     PAYMENT_ALREADY_EXISTS(1107, "Thanh toán đã tồn tại", HttpStatus.CONFLICT),

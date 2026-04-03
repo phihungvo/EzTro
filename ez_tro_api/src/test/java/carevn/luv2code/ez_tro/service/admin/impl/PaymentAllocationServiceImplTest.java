@@ -386,7 +386,7 @@ class PaymentAllocationServiceImplTest {
         when(creditLedgerEntryRepository.save(any(CreditLedgerEntry.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        PaymentResponse response = paymentAllocationService.confirmPayment(payment.getId());
+        PaymentResponse response = paymentAllocationService.confirmPayment(payment.getId(), null);
 
         assertNotNull(response);
         assertEquals(PaymentStatus.CONFIRMED, response.getStatus());
@@ -395,6 +395,81 @@ class PaymentAllocationServiceImplTest {
                         && entry.getPayment() != null
                         && payment.getId().equals(entry.getPayment().getId())
                         && 0 == new BigDecimal("500000").compareTo(entry.getAmount())));
+    }
+
+    @Test
+    void allocatePayment_auto_shouldPrioritizeSubmittedBillFromTenantPortal() {
+        authenticateAdmin();
+
+        Contract contract = createContract();
+        Bill olderBill = Bill.builder()
+                .id(101)
+                .contract(contract)
+                .amount(new BigDecimal("200000"))
+                .dueDate(LocalDate.now().minusDays(10))
+                .status(BillStatus.OVERDUE)
+                .build();
+        Bill submittedBill = Bill.builder()
+                .id(102)
+                .contract(contract)
+                .amount(new BigDecimal("100000"))
+                .dueDate(LocalDate.now().plusDays(2))
+                .status(BillStatus.UNPAID)
+                .build();
+        Payment payment = Payment.builder()
+                .id(57)
+                .contract(contract)
+                .tenant(contract.getTenant())
+                .amount(new BigDecimal("300000"))
+                .status(PaymentStatus.PENDING)
+                .metadataJson("{\"billId\":102,\"submittedByTenant\":true}")
+                .build();
+
+        when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByIdForUpdate(payment.getId())).thenReturn(Optional.of(payment));
+        when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(billRepository.findByContractIdForUpdate(contract.getId())).thenReturn(List.of(olderBill, submittedBill));
+        when(billRepository.findById(olderBill.getId())).thenReturn(Optional.of(olderBill));
+        when(billRepository.findById(submittedBill.getId())).thenReturn(Optional.of(submittedBill));
+        when(billRepository.findByContractId(contract.getId())).thenReturn(List.of(olderBill, submittedBill));
+        when(paymentRepository.findByContractIdOrderByReceivedAtAsc(contract.getId()))
+                .thenReturn(List.of(payment));
+        when(paymentAllocationRepository.sumAllocatedByPaymentId(payment.getId()))
+                .thenReturn(BigDecimal.ZERO, new BigDecimal("300000"), new BigDecimal("300000"));
+        when(paymentAllocationRepository.sumAllocatedByBillId(olderBill.getId()))
+                .thenReturn(BigDecimal.ZERO);
+        when(paymentAllocationRepository.sumAllocatedByBillId(submittedBill.getId()))
+                .thenReturn(BigDecimal.ZERO);
+        when(paymentAllocationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentAllocationRepository.findByPaymentIdOrderByCreatedAtAsc(payment.getId()))
+                .thenReturn(List.of());
+        when(invoiceBalanceCalculator.calculate(olderBill))
+                .thenReturn(InvoiceBalanceResponse.builder()
+                        .billId(olderBill.getId())
+                        .invoiceTotal(olderBill.getAmount())
+                        .allocatedAmount(new BigDecimal("200000"))
+                        .outstandingAmount(BigDecimal.ZERO)
+                        .build());
+        when(invoiceBalanceCalculator.calculate(submittedBill))
+                .thenReturn(InvoiceBalanceResponse.builder()
+                        .billId(submittedBill.getId())
+                        .invoiceTotal(submittedBill.getAmount())
+                        .allocatedAmount(new BigDecimal("100000"))
+                        .outstandingAmount(BigDecimal.ZERO)
+                        .build());
+        when(billingDiscrepancyAlertService.thresholdOrZero()).thenReturn(BigDecimal.ZERO);
+
+        paymentAllocationService.allocatePayment(payment.getId(), null);
+
+        verify(paymentAllocationRepository)
+                .saveAll(argThat((List<PaymentAllocation> allocations) -> allocations.size() == 2
+                        && allocations.get(0).getBill() != null
+                        && submittedBill
+                                .getId()
+                                .equals(allocations.get(0).getBill().getId())
+                        && allocations.get(1).getBill() != null
+                        && olderBill.getId().equals(allocations.get(1).getBill().getId())));
     }
 
     @Test

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hóa đơn thanh toán</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 14mm 12mm 16mm;
+            @bottom-right {
+                content: "Trang " counter(page) " / " counter(pages);
+                font-size: 9pt;
+                color: #6b7280;
+            }
+        }
+
+        body {
+            margin: 0;
+            color: #18212f;
+            font-family: "EZTro Sans", sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.45;
+            background: #ffffff;
+        }
+
+        .page {
+            width: 100%;
+        }
+
+        .header-table,
+        .section-grid,
+        .data-table,
+        .summary-table,
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-table td {
+            vertical-align: top;
+        }
+
+        .brand {
+            width: 56%;
+        }
+
+        .brand-label {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #eaf2ff;
+            color: #1d4ed8;
+            font-size: 8.5pt;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .brand-title {
+            margin: 10px 0 4px;
+            font-size: 22pt;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .brand-subtitle {
+            margin: 0;
+            color: #5b6472;
+        }
+
+        .document-box {
+            width: 44%;
+            padding-left: 14mm;
+        }
+
+        .meta-card,
+        .panel,
+        .summary-wrap,
+        .note-box {
+            border: 1px solid #d8dee8;
+            border-radius: 10px;
+            background: #ffffff;
+        }
+
+        .meta-card {
+            padding: 14px 16px;
+            background: #f8fafc;
+        }
+
+        .meta-caption {
+            color: #667085;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .meta-value {
+            margin-top: 6px;
+            font-size: 12pt;
+            font-weight: 700;
+        }
+
+        .meta-value.secondary {
+            font-size: 10pt;
+            font-weight: 600;
+        }
+
+        .section-grid {
+            margin-top: 12mm;
+        }
+
+        .section-grid td {
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .section-grid td + td {
+            padding-left: 8mm;
+        }
+
+        .panel {
+            padding: 12px 14px;
+            page-break-inside: avoid;
+        }
+
+        .panel-title,
+        .section-title {
+            font-size: 11pt;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .kv {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .kv td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+
+        .kv td:first-child {
+            width: 42%;
+            color: #667085;
+        }
+
+        .badges {
+            margin-top: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 8.5pt;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        .badge-primary {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-neutral {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .section {
+            margin-top: 12mm;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #d8dee8;
+            padding: 8px 10px;
+            vertical-align: top;
+        }
+
+        .data-table thead th {
+            background: #eef4ff;
+            color: #344054;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .summary-wrap {
+            width: 72mm;
+            margin-top: 8mm;
+            margin-left: auto;
+            padding: 10px 12px;
+            page-break-inside: avoid;
+            background: #f8fafc;
+        }
+
+        .summary-table td {
+            padding: 5px 0;
+        }
+
+        .summary-table td:first-child {
+            color: #667085;
+        }
+
+        .summary-total td {
+            padding-top: 8px;
+            border-top: 1px solid #d8dee8;
+            font-size: 11.5pt;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .note-box {
+            margin-top: 8mm;
+            padding: 10px 12px;
+            page-break-inside: avoid;
+            background: #fcfcfd;
+        }
+
+        .note-box + .note-box {
+            margin-top: 4mm;
+        }
+
+        .note-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .signature-table {
+            margin-top: 14mm;
+            page-break-inside: avoid;
+        }
+
+        .signature-table td {
+            width: 50%;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        .signature-table td + td {
+            padding-left: 8mm;
+        }
+
+        .signature-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .signature-subtext {
+            color: #667085;
+            font-size: 9pt;
+            margin-top: 2px;
+        }
+
+        .signature-space {
+            height: 26mm;
+        }
+
+        .footer-note {
+            margin-top: 8mm;
+            color: #667085;
+            font-size: 9pt;
+        }
+
+        .empty-box {
+            padding: 14px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            color: #667085;
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <table class="header-table">
+        <tr>
+            <td class="brand">
+                <div class="brand-label" th:text="${documentLabel}">HÓA ĐƠN</div>
+                <div class="brand-title" th:text="${documentTitle}">Hóa đơn thanh toán</div>
+                <p class="brand-subtitle" th:text="${documentSubtitle}">
+                    Chứng từ thanh toán tiền phòng và dịch vụ theo kỳ.
+                </p>
+            </td>
+            <td class="document-box">
+                <div class="meta-card">
+                    <div class="meta-caption" th:text="${documentCodeLabel}">Số hóa đơn</div>
+                    <div class="meta-value" th:text="${documentNumber}">HD-2026-04-A101</div>
+                    <div class="meta-caption" style="margin-top: 10px;">Xuất lúc</div>
+                    <div class="meta-value secondary" th:text="${generatedAt}">02/04/2026 10:30:00</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="section-grid">
+        <tr>
+            <td>
+                <div class="panel">
+                    <div class="panel-title">Thông tin hóa đơn</div>
+                    <table class="kv">
+                        <tr>
+                            <td>Tiêu đề</td>
+                            <td th:text="${billTitle}">Tiền phòng tháng 4</td>
+                        </tr>
+                        <tr>
+                            <td>Loại hóa đơn</td>
+                            <td th:text="${invoiceTypeLabel}">Tiền phòng</td>
+                        </tr>
+                        <tr>
+                            <td>Kỳ tính</td>
+                            <td th:text="${billingPeriodLabel}">01/04/2026 - 30/04/2026</td>
+                        </tr>
+                        <tr>
+                            <td>Hạn thanh toán</td>
+                            <td th:text="${dueDateLabel}">15/04/2026</td>
+                        </tr>
+                        <tr>
+                            <td>Phát hành</td>
+                            <td th:text="${issuedAtLabel}">02/04/2026 10:30:00</td>
+                        </tr>
+                    </table>
+                    <div class="badges">
+                        <span class="badge" th:classappend="' ' + ${billStatusTone}" th:text="${billStatusLabel}">Chưa thanh toán</span>
+                        <span class="badge" th:classappend="' ' + ${lifecycleStatusTone}" th:text="${lifecycleStatusLabel}">Đã phát hành</span>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="panel">
+                    <div class="panel-title">Thông tin người thuê</div>
+                    <table class="kv">
+                        <tr>
+                            <td>Người thuê</td>
+                            <td th:text="${tenantName}">Nguyễn Văn A</td>
+                        </tr>
+                        <tr>
+                            <td>Phòng</td>
+                            <td th:text="${roomNumber}">A101</td>
+                        </tr>
+                        <tr>
+                            <td>Mã hợp đồng</td>
+                            <td th:text="${contractCode}">HDCT-01</td>
+                        </tr>
+                        <tr>
+                            <td>Thanh toán</td>
+                            <td th:text="${isSettled ? 'Đã tất toán' : 'Còn công nợ'}">Còn công nợ</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section">
+        <div class="section-title">Chi tiết khoản thu</div>
+        <table class="data-table" th:if="${lineItemsPresent}">
+            <thead>
+            <tr>
+                <th style="width: 8%;" class="text-center">STT</th>
+                <th style="width: 36%;">Khoản thu</th>
+                <th style="width: 18%;">Loại dòng</th>
+                <th style="width: 12%;" class="text-right">Số lượng</th>
+                <th style="width: 13%;" class="text-right">Đơn giá</th>
+                <th style="width: 13%;" class="text-right">Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="line : ${lineItems}">
+                <td class="text-center" th:text="${line.index}">1</td>
+                <td th:text="${line.description}">Tiền thuê tháng 4/2026</td>
+                <td th:text="${line.typeLabel}">Tiền phòng</td>
+                <td class="text-right" th:text="${line.quantity}">1</td>
+                <td class="text-right" th:text="${line.unitPrice}">1.200.000 đ</td>
+                <td class="text-right" th:text="${line.amount}">1.200.000 đ</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty-box" th:unless="${lineItemsPresent}">
+            Chưa có dòng chi tiết cho hóa đơn này.
+        </div>
+    </div>
+
+    <div class="summary-wrap">
+        <table class="summary-table">
+            <tr>
+                <td>Tổng tiền hóa đơn</td>
+                <td class="text-right" th:text="${amountTotal}">1.500.000 đ</td>
+            </tr>
+            <tr>
+                <td>Đã phân bổ</td>
+                <td class="text-right" th:text="${amountAllocated}">600.000 đ</td>
+            </tr>
+            <tr class="summary-total">
+                <td>Còn phải thanh toán</td>
+                <td class="text-right" th:text="${amountOutstanding}">900.000 đ</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="note-box" th:if="${paymentInstructionsPresent}">
+        <div class="note-title">Hướng dẫn thanh toán</div>
+        <div th:text="${paymentInstructions}">Chuyển khoản Vietcombank</div>
+    </div>
+
+    <div class="note-box" th:if="${publicNotePresent}">
+        <div class="note-title">Ghi chú</div>
+        <div th:text="${publicNote}">Thanh toán trước hạn để tránh phí trễ.</div>
+    </div>
+
+    <table class="signature-table">
+        <tr>
+            <td>
+                <div class="signature-label">Bên cho thuê</div>
+                <div class="signature-subtext">Ký xác nhận / đóng dấu</div>
+                <div class="signature-space"></div>
+            </td>
+            <td>
+                <div class="signature-label">Người thuê</div>
+                <div class="signature-subtext">Ký và ghi rõ họ tên</div>
+                <div class="signature-space"></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer-note">
+        Tài liệu được xuất từ hệ thống EZ Trọ để đối soát công nợ và thanh toán theo kỳ.
+    </div>
+</div>
+</body>
+</html>

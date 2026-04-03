@@ -19,5 +19,13 @@ public class DashboardSummaryResponse {
 
     String paymentStatus;
 
+    Integer unpaidBillCount;
+
+    BigDecimal outstandingAmount;
+
+    LocalDate latestBillDueDate;
+
+    LocalDate contractStartDate;
+
     LocalDate contractEndDate;
 }

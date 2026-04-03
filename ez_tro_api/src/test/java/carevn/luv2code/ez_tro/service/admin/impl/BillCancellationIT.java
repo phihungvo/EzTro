@@ -40,6 +40,7 @@ import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
 import carevn.luv2code.ez_tro.repository.BuildingRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
+import carevn.luv2code.ez_tro.repository.CreditLedgerEntryRepository;
 import carevn.luv2code.ez_tro.repository.PaymentAllocationRepository;
 import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.repository.RoomRepository;
@@ -82,6 +83,9 @@ class BillCancellationIT {
 
     @Autowired
     private PaymentAllocationRepository paymentAllocationRepository;
+
+    @Autowired
+    private CreditLedgerEntryRepository creditLedgerEntryRepository;
 
     @Autowired
     private BillingOperationLogService billingOperationLogService;
@@ -198,6 +202,9 @@ class BillCancellationIT {
 
         Payment refreshedPayment = paymentRepository.findById(payment.getId()).orElseThrow();
         assertEquals(PaymentStatus.CONFIRMED, refreshedPayment.getStatus());
+        assertEquals(
+                0,
+                new BigDecimal("1000000").compareTo(creditLedgerEntryRepository.sumAmountByPaymentId(payment.getId())));
 
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByBillId(bill.getId());
         long reversalCount = allocations.stream()

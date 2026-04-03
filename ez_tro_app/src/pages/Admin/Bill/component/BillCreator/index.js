@@ -19,15 +19,15 @@ import { getCreatorBillContext } from "~/service/admin/room";
 import { upsertMeterReading } from "~/service/admin/meter-reading";
 import { getUtilityByBoardingHouse } from "~/service/admin/boarding_house";
 import { getContractSnapshot } from "~/service/admin/contract";
-import { previewInvoice } from "~/service/admin/billing";
+import { finalizeInvoice, previewInvoice } from "~/service/admin/billing";
 import {
     getContractReconciliation,
     getCreditLedgerReport,
     getDebtAgingReport,
 } from "~/service/admin/reconciliation";
 import { getBillingAuditLogs } from "~/service/admin/billing-audit";
-import { createBill } from "~/service/admin/bill";
 import { getBillingUiErrorMessage } from "~/utils/apiError";
+import { sendBill } from "~/service/admin/bill";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -92,7 +92,6 @@ const INITIAL = {
     contractVersion: null,
     contractSnapshot: null,
     organizationName: "",
-    allowDuplicateBilling: false,
 };
 
 export default function InvoiceCreator() {
@@ -141,7 +140,6 @@ export default function InvoiceCreator() {
             currentOccupants: roomData?.currentOccupants || 0,
             floorNumber: roomData?.floorNumber || 1,
             boardingHouseId: roomData?.boardingHouseId || null,
-            allowDuplicateBilling: false,
         }));
         setContext(null);
         setPreview(null);
@@ -213,12 +211,6 @@ export default function InvoiceCreator() {
 
         fetchContext();
     }, [state.roomId, state.boardingHouseId, state.month, state.year]);
-
-    useEffect(() => {
-        if (!context?.hasBillThisMonth && state.allowDuplicateBilling) {
-            patch({ allowDuplicateBilling: false });
-        }
-    }, [context?.hasBillThisMonth, patch, state.allowDuplicateBilling]);
 
     useEffect(() => {
         let cancelled = false;
@@ -358,6 +350,7 @@ export default function InvoiceCreator() {
             discountReason: state.discountReason,
             publicNote: state.notePublic,
             internalNote: state.noteInternal,
+            paymentInstructions: state.paymentInstructions,
         };
     }, [
         state.contractId,
@@ -368,44 +361,7 @@ export default function InvoiceCreator() {
         state.discountReason,
         state.notePublic,
         state.noteInternal,
-        extrasTotal,
-        discount,
-    ]);
-
-    const buildBillRequestPayload = useCallback(() => {
-        if (!state.contractId) {
-            return null;
-        }
-        const baseTitle = state.room
-            ? `Hoá đơn Phòng ${state.room} ${state.month}/${state.year}`
-            : `Hoá đơn tháng ${state.month}/${state.year}`;
-        const serviceAmount = Number(meterTotal + fixedServicesTotal);
-
-        return {
-            contractId: state.contractId,
-            billTitle: baseTitle,
-            serviceAmount,
-            extraAmount: extrasTotal,
-            discountAmount: discount,
-            discountReason: state.discountReason,
-            publicNote: state.notePublic,
-            internalNote: state.noteInternal,
-            paymentInstructions: state.paymentInstructions,
-            note: state.noteInternal,
-            dueDate: state.dueDate,
-        };
-    }, [
-        state.contractId,
-        state.room,
-        state.month,
-        state.year,
-        state.discountReason,
-        state.notePublic,
-        state.noteInternal,
         state.paymentInstructions,
-        state.dueDate,
-        meterTotal,
-        fixedServicesTotal,
         extrasTotal,
         discount,
     ]);
@@ -446,11 +402,6 @@ export default function InvoiceCreator() {
             return false;
         }
 
-        if (context?.hasBillThisMonth && !state.allowDuplicateBilling) {
-            message.warning("Phòng này đã có hóa đơn trong kỳ, xác nhận để tiếp tục.");
-            return false;
-        }
-
         const invalidMeter = (state.meterReadings || []).find((item) => {
             if (item.currentIndex === "" || item.currentIndex == null) return true;
             return Number(item.currentIndex) < Number(item.previousIndex || 0);
@@ -477,15 +428,15 @@ export default function InvoiceCreator() {
             message.error("Hạn thanh toán phải nằm trong hoặc sau ngày bắt đầu kỳ.");
             return false;
         }
-        if (context?.contractSnapshot?.contractStartDate) {
-            const contractStart = new Date(context.contractSnapshot.contractStartDate);
+        if (state.contractSnapshot?.contractStartDate) {
+            const contractStart = new Date(state.contractSnapshot.contractStartDate);
             if (dueDateObj < contractStart) {
                 message.error("Hạn thanh toán không thể trước khi hợp đồng có hiệu lực.");
                 return false;
             }
         }
-        if (context?.contractSnapshot?.contractEndDate) {
-            const contractEnd = new Date(context.contractSnapshot.contractEndDate);
+        if (state.contractSnapshot?.contractEndDate) {
+            const contractEnd = new Date(state.contractSnapshot.contractEndDate);
             if (dueDateObj > contractEnd) {
                 message.error("Hạn thanh toán không thể sau ngày kết thúc hợp đồng.");
                 return false;
@@ -505,16 +456,14 @@ export default function InvoiceCreator() {
         state.contractId,
         state.dueDate,
         state.meterReadings,
-        state.allowDuplicateBilling,
         state.year,
         state.month,
         meterTotal,
         fixedServicesTotal,
         extrasTotal,
         discount,
-        context?.hasBillThisMonth,
-        context?.contractSnapshot?.contractStartDate,
-        context?.contractSnapshot?.contractEndDate,
+        state.contractSnapshot?.contractStartDate,
+        state.contractSnapshot?.contractEndDate,
     ]);
 
     const handleBillingError = useCallback((error, fallback) => {
@@ -560,12 +509,19 @@ export default function InvoiceCreator() {
                 message.warning("Thiếu chỉ số công tơ trong kỳ. Hoá đơn chưa thể phát hành.");
                 return;
             }
-            const billPayload = buildBillRequestPayload();
-            if (!billPayload) {
+            if (!payload) {
                 message.error("Không đủ dữ liệu để tạo hoá đơn.");
                 return;
             }
-            await createBill(billPayload);
+            const bill = await finalizeInvoice(payload);
+            if (bill?.id && state.sendNow) {
+                await sendBill(bill.id, {
+                    sendInApp: true,
+                    sendEmail: !!state.sendEmail,
+                    sendSms: !!state.sendSms,
+                    sendZalo: !!state.sendZalo,
+                });
+            }
             showToast("✅ Hoá đơn đã được tạo thành công", "success");
             navigate("/owner/bills");
         } catch (error) {
@@ -578,10 +534,53 @@ export default function InvoiceCreator() {
         validateBeforePublish,
         persistMeterReadings,
         runPreview,
-        buildBillRequestPayload,
         showToast,
         navigate,
         handleBillingError,
+        state.sendNow,
+        state.sendEmail,
+        state.sendSms,
+        state.sendZalo,
+    ]);
+
+    const handleSharePaymentInfo = useCallback(async () => {
+        const totalAmount = Number(preview?.totalAmount ?? computed.total ?? 0);
+        const billingPeriod = preview?.billingPeriodStart && preview?.billingPeriodEnd
+            ? `${preview.billingPeriodStart} - ${preview.billingPeriodEnd}`
+            : `Tháng ${String(state.month).padStart(2, "0")}/${state.year}`;
+        const shareText = [
+            preview?.generationKey ? `Hoá đơn: ${preview.generationKey}` : "Thông tin thanh toán",
+            `Phòng: ${state.room || "—"}`,
+            `Khách thuê: ${state.tenantName || "—"}`,
+            `Kỳ tính: ${billingPeriod}`,
+            `Hạn thanh toán: ${state.dueDate || "—"}`,
+            `Tổng thanh toán: ${totalAmount.toLocaleString("vi-VN")} đ`,
+            state.paymentInstructions ? `Hướng dẫn thanh toán: ${state.paymentInstructions}` : null,
+            state.notePublic ? `Ghi chú: ${state.notePublic}` : null,
+        ].filter(Boolean).join("\n");
+
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(shareText);
+                showToast("📋 Đã sao chép nội dung thanh toán", "success");
+                return;
+            }
+        } catch (error) {
+            console.error("Copy payment info failed", error);
+        }
+
+        showToast("Không thể sao chép tự động. Vui lòng cấp quyền clipboard cho trình duyệt.", "info");
+    }, [
+        computed.total,
+        preview,
+        showToast,
+        state.dueDate,
+        state.month,
+        state.notePublic,
+        state.paymentInstructions,
+        state.room,
+        state.tenantName,
+        state.year,
     ]);
 
     const roomData = {
@@ -606,22 +605,9 @@ export default function InvoiceCreator() {
                     />
                     {context?.hasBillThisMonth && (
                     <Alert
-                        message="Phòng đã có hoá đơn trong kỳ này"
+                        message="Phòng đã có dữ liệu billing trong kỳ này"
                         description={
-                            <div>
-                                <p>
-                                    Hệ thống đã ghi nhận một hóa đơn cho kỳ {state.month}/{state.year}. Nếu bạn vẫn muốn tạo
-                                    thêm (ví dụ để điều chỉnh thiếu sót), hãy xác nhận bằng cách nhấn nút dưới đây.
-                                </p>
-                                <button
-                                    type="button"
-                                    className={styles.duplicateAction}
-                                    onClick={() => patch({ allowDuplicateBilling: true })}
-                                    disabled={state.allowDuplicateBilling}
-                                >
-                                    {state.allowDuplicateBilling ? "Đã cho phép tạo bổ sung" : "Tôi hiểu và tiếp tục"}
-                                </button>
-                            </div>
+                            `Hệ thống đã ghi nhận bill hoặc dữ liệu billing cho kỳ ${state.month}/${state.year}. Khi phát hành, backend sẽ chặn tạo trùng theo generation key nếu kỳ này đã có hóa đơn chính thức.`
                         }
                         type="warning"
                         showIcon
@@ -768,7 +754,7 @@ export default function InvoiceCreator() {
                     previewError={previewError}
                     onPublish={handlePublish}
                     onPreview={handlePreview}
-                    onShare={() => showToast("📋 Tính năng chia sẻ sẽ dùng sau khi hóa đơn được tạo", "info")}
+                    onShare={handleSharePaymentInfo}
                 />
             </div>
 
@@ -785,7 +771,6 @@ export default function InvoiceCreator() {
                         setPreviewError(null);
                     }}
                     onPublish={handlePublish}
-                    onPrint={() => showToast("🖨 In hoá đơn (mock)", "info")}
                 />
             )}
             {toast && <Toast msg={toast.msg} type={toast.type} />}

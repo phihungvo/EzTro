@@ -72,6 +72,14 @@ public class BillingOperationLogServiceImpl implements BillingOperationLogServic
                         ? null
                         : bill.getBillingPeriodEnd().toString());
         snapshot.put("note", bill.getNote());
+        snapshot.put("publicNote", bill.getPublicNote());
+        snapshot.put("internalNote", bill.getInternalNote());
+        snapshot.put("paymentInstructions", bill.getPaymentInstructions());
+        snapshot.put("issuedAt", bill.getIssuedAt());
+        snapshot.put("lifecycleStatus", bill.getLifecycleStatus());
+        snapshot.put("sentAt", bill.getSentAt());
+        snapshot.put("deliveryStatus", bill.getDeliveryStatus());
+        snapshot.put("deliveryChannelsJson", bill.getDeliveryChannelsJson());
         snapshot.put("allocatedAmount", paymentAllocationRepository.sumAllocatedByBillId(bill.getId()));
         return snapshot;
     }
@@ -100,6 +108,7 @@ public class BillingOperationLogServiceImpl implements BillingOperationLogServic
         snapshot.put("status", payment.getStatus());
         snapshot.put("receivedAt", payment.getReceivedAt());
         snapshot.put("confirmedAt", payment.getConfirmedAt());
+        snapshot.put("metadataJson", payment.getMetadataJson());
         snapshot.put("allocatedAmount", allocatedAmount);
         snapshot.put("unallocatedAmount", unallocatedAmount.max(BigDecimal.ZERO));
         return snapshot;

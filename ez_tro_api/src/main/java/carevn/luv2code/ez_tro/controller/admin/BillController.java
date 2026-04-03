@@ -1,15 +1,28 @@
 package carevn.luv2code.ez_tro.controller.admin;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
+import carevn.luv2code.ez_tro.dto.requests.BillSendRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.BillDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.BillResponse;
 import carevn.luv2code.ez_tro.service.admin.BillService;
+import carevn.luv2code.ez_tro.service.admin.document.BillDocumentExportService;
+import carevn.luv2code.ez_tro.service.admin.document.BillDocumentFile;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class BillController {
 
     private final BillService billService;
+    private final BillDocumentExportService billDocumentExportService;
 
     /**
      * Tạo mới hóa đơn cho một hợp đồng/phòng.
@@ -55,6 +69,17 @@ public class BillController {
         return ApiResponse.<BillResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Bill updated successfully")
+                .result(response)
+                .build();
+    }
+
+    @PostMapping("/{id}/send")
+    public ApiResponse<BillResponse> send(
+            @PathVariable Integer id, @RequestBody(required = false) BillSendRequest request) {
+        BillResponse response = billService.send(id, request);
+        return ApiResponse.<BillResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Bill sent successfully")
                 .result(response)
                 .build();
     }
@@ -106,6 +131,30 @@ public class BillController {
                 .build();
     }
 
+    @GetMapping("/{id}/detail")
+    public ApiResponse<BillDetailResponse> getDetail(@PathVariable Integer id) {
+        BillDetailResponse response = billService.getDetail(id);
+        return ApiResponse.<BillDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get bill detail successfully")
+                .result(response)
+                .build();
+    }
+
+    @GetMapping("/{id}/document")
+    public ResponseEntity<Resource> downloadDocument(@PathVariable Integer id) {
+        BillDetailResponse detail = billService.getDetail(id);
+        BillDocumentFile file = billDocumentExportService.exportInvoiceDocument(detail);
+        return buildDocumentResponse(file);
+    }
+
+    @GetMapping("/{id}/receipt")
+    public ResponseEntity<Resource> downloadReceipt(@PathVariable Integer id) {
+        BillDetailResponse detail = billService.getDetail(id);
+        BillDocumentFile file = billDocumentExportService.exportReceiptDocument(detail);
+        return buildDocumentResponse(file);
+    }
+
     /**
      * Lấy danh sách hóa đơn.
      *
@@ -144,6 +193,8 @@ public class BillController {
      * @param month tháng
      * @param year năm
      * @param contractId id hợp đồng
+     * @param startDate ngày bắt đầu lọc theo hạn thanh toán
+     * @param endDate ngày kết thúc lọc theo hạn thanh toán
      * @param page trang (0-based)
      * @param size kích thước trang
      * @return response chứa danh sách phân trang
@@ -156,14 +207,29 @@ public class BillController {
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer contractId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<BillResponse> result = billService.filterBills(search, status, paid, month, year, contractId, page, size);
+        Page<BillResponse> result =
+                billService.filterBills(search, status, paid, month, year, contractId, startDate, endDate, page, size);
         return ApiResponse.<Page<BillResponse>>builder()
                 .code(200)
                 .message("Lọc hóa đơn thành công")
                 .result(result)
                 .build();
+    }
+
+    private ResponseEntity<Resource> buildDocumentResponse(BillDocumentFile file) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(file.fileName(), StandardCharsets.UTF_8)
+                .build());
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(file.content().length)
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .body(new ByteArrayResource(file.content()));
     }
 }

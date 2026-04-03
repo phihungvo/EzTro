@@ -36,4 +36,6 @@ public class InvoicePreviewRequest {
     String publicNote;
 
     String internalNote;
+
+    String paymentInstructions;
 }

@@ -26,6 +26,13 @@ public class PaymentResponse {
     String externalReference;
     PaymentSource source;
     PaymentStatus status;
+    String paymentMethod;
+    Integer submittedBillId;
+    String submittedBillCode;
+    Boolean submittedByTenant;
+    String createdByName;
+    Integer proofFileId;
+    String proofFileName;
     BigDecimal allocatedAmount;
     BigDecimal unallocatedAmount;
     String note;
