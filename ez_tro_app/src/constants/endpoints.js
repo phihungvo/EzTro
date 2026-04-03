@@ -1,4 +1,6 @@
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+import {normalizeApiBaseUrl} from '~/utils/normalizeBaseUrl';
+
+const BASE_URL = normalizeApiBaseUrl(process.env.REACT_APP_API_URL);
 
 const API_ENDPOINTS = {
     AUTH: {
@@ -23,7 +25,14 @@ const API_ENDPOINTS = {
         GET_MY_NOTIFICATIONS: `${BASE_URL}/notifications/me`,
         MARK_AS_READ: (id) => `${BASE_URL}/notifications/read/${id}`,
         MARK_ALL_AS_READ: `${BASE_URL}/notifications/read-all`,
+        ARCHIVE: (id) => `${BASE_URL}/notifications/archive/${id}`,
+        ANNOUNCEMENT_PREVIEW: `${BASE_URL}/notifications/announcements/preview`,
+        ANNOUNCEMENT_SEND: `${BASE_URL}/notifications/announcements`,
+        DELIVERY_LOGS: `${BASE_URL}/notifications/delivery-logs`,
+        PROCESS_PENDING_DELIVERY_LOGS: `${BASE_URL}/notifications/delivery-logs/process-pending`,
         UNREAD_COUNT: `${BASE_URL}/notifications/unread-count`,
+        GET_MY_PREFERENCES: `${BASE_URL}/notifications/preferences/me`,
+        UPDATE_MY_PREFERENCES: `${BASE_URL}/notifications/preferences/me`,
     },
     USER: {
         GET_ALL: `${BASE_URL}/user/getAll`,
@@ -192,8 +201,8 @@ const API_ENDPOINTS = {
     INCIDENT_REPORT: {
         GET_ALL: `${BASE_URL}/incident-reports/paged`,
         CREATE: `${BASE_URL}/incident-reports`,
-        UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
-        DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+        UPDATE: (incidentId) => `${BASE_URL}/incident-reports/${incidentId}`,
+        DELETE: (incidentId) => `${BASE_URL}/incident-reports/${incidentId}`,
     },
     PERIOD: {
         GET_ALL: `${BASE_URL}/meter-periods`,

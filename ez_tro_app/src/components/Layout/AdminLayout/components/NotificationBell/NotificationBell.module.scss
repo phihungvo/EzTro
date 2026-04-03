@@ -28,7 +28,7 @@
 
 .header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f766e 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -53,6 +53,14 @@
       background: rgba(255, 255, 255, 0.2);
     }
   }
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .listContainer {
@@ -107,10 +115,53 @@
   z-index: 1;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
 .notiTitle {
   font-weight: 600;
   font-size: 14.5px;
   color: #1a1a1a;
+}
+
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.billing {
+  background: #fef3c7;
+}
+
+.payment {
+  background: #dcfce7;
+}
+
+.contract {
+  background: #ede9fe;
+}
+
+.incident {
+  background: #fee2e2;
+}
+
+.security {
+  background: #fecaca;
+}
+
+.subscription {
+  background: #dbeafe;
 }
 
 .message {
@@ -130,6 +181,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+
+.actionHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 
 .loadMore, .loadingMore {

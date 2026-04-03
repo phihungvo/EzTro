@@ -40,6 +40,25 @@ public class IncidentReportController {
                 .build();
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<IncidentReportResponse> update(
+            @PathVariable Integer id, @RequestBody IncidentReportRequest request) {
+        return ApiResponse.<IncidentReportResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cập nhật báo cáo sự cố thành công")
+                .result(incidentReportService.update(id, request))
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Integer id) {
+        incidentReportService.delete(id);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.NO_CONTENT.value())
+                .message("Xóa báo cáo sự cố thành công")
+                .build();
+    }
+
     /**
      * Lấy danh sách báo cáo sự cố phân trang.
      *

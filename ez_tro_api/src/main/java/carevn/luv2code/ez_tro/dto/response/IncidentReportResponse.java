@@ -1,5 +1,7 @@
 package carevn.luv2code.ez_tro.dto.response;
 
+import java.time.LocalDateTime;
+
 import carevn.luv2code.ez_tro.enums.IncidentStatus;
 import lombok.*;
 
@@ -10,6 +12,8 @@ import lombok.*;
 @Builder
 public class IncidentReportResponse {
     Integer id;
+    Integer tenantId;
+    Integer roomId;
 
     String title;
 
@@ -26,4 +30,12 @@ public class IncidentReportResponse {
     String boardingHouseName;
 
     String expectedResolveDate;
+
+    String resolveNote;
+
+    LocalDateTime resolvedAt;
+
+    LocalDateTime createdAt;
+
+    LocalDateTime updatedAt;
 }

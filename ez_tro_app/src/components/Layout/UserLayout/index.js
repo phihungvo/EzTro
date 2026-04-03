@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import classNames from "classnames/bind";
 import styles from "./UserLayout.module.scss";
 import Dashboard from "~/pages/User/Dashboard";
@@ -9,6 +9,7 @@ import Utilities from "~/pages/User/Utilities";
 import Profile from "~/pages/User/Profile";
 
 import {
+    BellOutlined,
     HomeOutlined,
     FileTextOutlined,
     DollarOutlined,
@@ -16,13 +17,20 @@ import {
     UserOutlined,
     AppstoreOutlined
 } from "@ant-design/icons";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import {message, Button} from "antd";
 import NotificationBell from "~/components/Layout/AdminLayout/components/NotificationBell";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
 
 const cx = classNames.bind(styles);
 
 const userMenuConfig = [
+    {
+        key: "notifications",
+        label: "Thông Báo",
+        icon: <BellOutlined/>,
+        component: <NotificationCenter embedded/>,
+    },
     {
         key: "dashboard",
         label: "Trang Chủ",
@@ -63,7 +71,8 @@ const userMenuConfig = [
 
 const UserLayout = () => {
     const navigate = useNavigate();
-    const [selected, setSelected] = useState("dashboard");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [selected, setSelected] = useState(searchParams.get("tab") || "dashboard");
 
     // Mock user info - replace with real data
     const userInfo = {
@@ -71,7 +80,21 @@ const UserLayout = () => {
         room: "101",
     };
 
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab && userMenuConfig.some((item) => item.key === tab)) {
+            setSelected(tab);
+            return;
+        }
+        setSelected("dashboard");
+    }, [searchParams]);
+
     const activeMenu = userMenuConfig.find((item) => item.key === selected);
+
+    const handleTabChange = (tabKey) => {
+        setSelected(tabKey);
+        setSearchParams({tab: tabKey});
+    };
 
     const handleLogout = () => {
         localStorage.clear();
@@ -111,7 +134,7 @@ const UserLayout = () => {
                     {userMenuConfig.map((item) => (
                         <button
                             key={item.key}
-                            onClick={() => setSelected(item.key)}
+                            onClick={() => handleTabChange(item.key)}
                             className={cx("navItem", {active: selected === item.key})}
                         >
                             <span className={cx("navIcon")}>{item.icon}</span>

@@ -115,6 +115,24 @@ app:
     notification:
       reminder-days: ${BILLING_REMINDER_DAYS:3,1}
       reminder-cron: ${BILLING_REMINDER_CRON:0 30 8 * * ?}
+  notifications:
+    delivery:
+      max-attempts: ${NOTIFICATION_DELIVERY_MAX_ATTEMPTS:3}
+      retry-backoff-minutes: ${NOTIFICATION_DELIVERY_RETRY_BACKOFF_MINUTES:15}
+      processor:
+        fixed-delay-ms: ${NOTIFICATION_DELIVERY_PROCESSOR_DELAY_MS:60000}
+    channels:
+      sms:
+        enabled: ${NOTIFICATION_SMS_ENABLED:false}
+        simulate: ${NOTIFICATION_SMS_SIMULATE:true}
+      zalo:
+        enabled: ${NOTIFICATION_ZALO_ENABLED:false}
+        simulate: ${NOTIFICATION_ZALO_SIMULATE:true}
+  incidents:
+    notification:
+      escalation:
+        cron: ${INCIDENT_ESCALATION_CRON:0 0 9 * * ?}
+        pending-hours: ${INCIDENT_PENDING_ESCALATION_HOURS:48}
 
 springdoc:
   api-docs:
