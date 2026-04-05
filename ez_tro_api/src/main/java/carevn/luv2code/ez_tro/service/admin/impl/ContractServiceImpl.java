@@ -204,6 +204,52 @@ public class ContractServiceImpl implements ContractService {
         }
         syncRoomOccupancyStatus(room);
         observabilityMetricsService.incrementContractCreated(contract);
+
+        notifyTenantLifecycleEvent(
+                contract,
+                "Hợp đồng mới đã được tạo",
+                "Hợp đồng " + contract.getContractCode() + " đã được tạo cho phòng "
+                        + (room.getRoomNumber() != null ? room.getRoomNumber() : "")
+                        + ". Ngày bắt đầu: " + request.getStartDate()
+                        + (request.getEndDate() != null ? (", ngày kết thúc: " + request.getEndDate()) : ""),
+                "TENANT_CONTRACT_CREATED",
+                new LinkedHashMap<>(Map.of(
+                        "contractId", contract.getId(),
+                        "contractCode", contract.getContractCode(),
+                        "roomId", room.getId(),
+                        "roomNumber", room.getRoomNumber(),
+                        "tenantId", tenant.getId(),
+                        "startDate",
+                                request.getStartDate() != null
+                                        ? request.getStartDate().toString()
+                                        : null,
+                        "endDate",
+                                request.getEndDate() != null
+                                        ? request.getEndDate().toString()
+                                        : null)));
+
+        notifyOwnerLifecycleEvent(
+                contract,
+                "Hợp đồng mới đã được tạo",
+                "Admin đã tạo hợp đồng " + contract.getContractCode()
+                        + " cho phòng " + (room.getRoomNumber() != null ? room.getRoomNumber() : "")
+                        + ".",
+                "OWNER_CONTRACT_CREATED",
+                new LinkedHashMap<>(Map.of(
+                        "contractId", contract.getId(),
+                        "contractCode", contract.getContractCode(),
+                        "roomId", room.getId(),
+                        "roomNumber", room.getRoomNumber(),
+                        "tenantId", tenant.getId(),
+                        "startDate",
+                                request.getStartDate() != null
+                                        ? request.getStartDate().toString()
+                                        : null,
+                        "endDate",
+                                request.getEndDate() != null
+                                        ? request.getEndDate().toString()
+                                        : null,
+                        "dedupeKey", "owner-contract-created-" + contract.getId())));
         return contractMapper.toResponse(contract);
     }
 
@@ -705,6 +751,64 @@ public class ContractServiceImpl implements ContractService {
             createVersionFromAmendment(contract, request);
         }
 
+        notifyTenantLifecycleEvent(
+                contract,
+                "Hợp đồng có phụ lục mới",
+                "Hợp đồng " + contract.getContractCode()
+                        + " vừa được cập nhật phụ lục ("
+                        + (request.getAmendmentType() != null
+                                ? request.getAmendmentType().name()
+                                : "UNKNOWN")
+                        + ")"
+                        + (request.getEffectiveFrom() != null ? " từ ngày " + request.getEffectiveFrom() : "")
+                        + (request.getEffectiveTo() != null ? " đến " + request.getEffectiveTo() : "")
+                        + ".",
+                "TENANT_CONTRACT_AMENDED",
+                new LinkedHashMap<>(Map.of(
+                        "contractId", contract.getId(),
+                        "contractCode", contract.getContractCode(),
+                        "amendmentId", savedAmendment.getId(),
+                        "amendmentType",
+                                request.getAmendmentType() != null
+                                        ? request.getAmendmentType().name()
+                                        : null,
+                        "effectiveFrom",
+                                request.getEffectiveFrom() != null
+                                        ? request.getEffectiveFrom().toString()
+                                        : null,
+                        "effectiveTo",
+                                request.getEffectiveTo() != null
+                                        ? request.getEffectiveTo().toString()
+                                        : null,
+                        "note", request.getNote())));
+
+        notifyOwnerLifecycleEvent(
+                contract,
+                "Hợp đồng có phụ lục mới",
+                "Admin vừa cập nhật phụ lục cho hợp đồng " + contract.getContractCode() + ".",
+                "OWNER_CONTRACT_AMENDED",
+                new LinkedHashMap<>(Map.of(
+                        "contractId",
+                        contract.getId(),
+                        "contractCode",
+                        contract.getContractCode(),
+                        "amendmentId",
+                        savedAmendment.getId(),
+                        "amendmentType",
+                        request.getAmendmentType() != null
+                                ? request.getAmendmentType().name()
+                                : null,
+                        "effectiveFrom",
+                        request.getEffectiveFrom() != null
+                                ? request.getEffectiveFrom().toString()
+                                : null,
+                        "effectiveTo",
+                        request.getEffectiveTo() != null
+                                ? request.getEffectiveTo().toString()
+                                : null,
+                        "dedupeKey",
+                        "owner-contract-amended-" + savedAmendment.getId())));
+
         return toAmendmentSummary(savedAmendment);
     }
 
@@ -1151,6 +1255,18 @@ public class ContractServiceImpl implements ContractService {
                             "contractId", contract.getId(),
                             "contractCode", contract.getContractCode(),
                             "terminationDate", request.getTerminationDate().toString()));
+
+            notifyOwnerLifecycleEvent(
+                    contract,
+                    "Hợp đồng đã được chấm dứt",
+                    "Admin đã chấm dứt hợp đồng " + contract.getContractCode() + " vào ngày "
+                            + request.getTerminationDate() + ".",
+                    "OWNER_CONTRACT_TERMINATED",
+                    Map.of(
+                            "contractId", contract.getId(),
+                            "contractCode", contract.getContractCode(),
+                            "terminationDate", request.getTerminationDate().toString(),
+                            "dedupeKey", "owner-contract-terminated-" + contract.getId()));
             syncRoomOccupancyStatus(contract.getRoom());
             return toDetailResponse(contract);
         });
@@ -1419,6 +1535,65 @@ public class ContractServiceImpl implements ContractService {
             syncRoomOccupancyStatus(sourceContract.getRoom());
             syncRoomOccupancyStatus(targetRoom);
 
+            notifyTenantLifecycleEvent(
+                    targetContract,
+                    "Bạn đã được chuyển phòng",
+                    "Bạn đã được chuyển từ phòng "
+                            + (sourceContract.getRoom() != null
+                                    ? sourceContract.getRoom().getRoomNumber()
+                                    : "cũ")
+                            + " sang phòng "
+                            + (targetRoom.getRoomNumber() != null ? targetRoom.getRoomNumber() : "mới")
+                            + " vào ngày " + request.getTransferDate()
+                            + ".",
+                    "TENANT_ROOM_CHANGED",
+                    new LinkedHashMap<>(Map.of(
+                            "contractId", targetContract.getId(),
+                            "contractCode", targetContract.getContractCode(),
+                            "sourceContractId", sourceContract.getId(),
+                            "sourceContractCode", sourceContract.getContractCode(),
+                            "transferDate",
+                                    request.getTransferDate() != null
+                                            ? request.getTransferDate().toString()
+                                            : null,
+                            "targetRoomId", targetRoom.getId(),
+                            "targetRoomNumber", targetRoom.getRoomNumber(),
+                            "previousRoomId",
+                                    sourceContract.getRoom() != null
+                                            ? sourceContract.getRoom().getId()
+                                            : null,
+                            "previousRoomNumber",
+                                    sourceContract.getRoom() != null
+                                            ? sourceContract.getRoom().getRoomNumber()
+                                            : null,
+                            "transferredDepositAmount", transferredDepositAmount)));
+
+            notifyOwnerLifecycleEvent(
+                    targetContract,
+                    "Đã chuyển phòng cho tenant",
+                    "Admin đã chuyển tenant từ phòng "
+                            + (sourceContract.getRoom() != null
+                                    ? sourceContract.getRoom().getRoomNumber()
+                                    : "cũ")
+                            + " sang phòng " + (targetRoom.getRoomNumber() != null ? targetRoom.getRoomNumber() : "mới")
+                            + " vào ngày " + request.getTransferDate() + ".",
+                    "OWNER_CONTRACT_TRANSFERRED",
+                    new LinkedHashMap<>(Map.of(
+                            "contractId", targetContract.getId(),
+                            "contractCode", targetContract.getContractCode(),
+                            "sourceContractId", sourceContract.getId(),
+                            "sourceContractCode", sourceContract.getContractCode(),
+                            "transferDate",
+                                    request.getTransferDate() != null
+                                            ? request.getTransferDate().toString()
+                                            : null,
+                            "targetRoomId", targetRoom.getId(),
+                            "targetRoomNumber", targetRoom.getRoomNumber(),
+                            "transferredDepositAmount", transferredDepositAmount,
+                            "dedupeKey",
+                                    "owner-contract-transferred-" + sourceContract.getId() + "-" + targetRoom.getId()
+                                            + "-" + request.getTransferDate())));
+
             return ContractRoomTransferResponse.builder()
                     .sourceContractId(sourceContract.getId())
                     .sourceContractCode(sourceContract.getContractCode())
@@ -1548,6 +1723,19 @@ public class ContractServiceImpl implements ContractService {
                         "contractCode", contract.getContractCode(),
                         "effectiveFrom", effectiveFrom.toString(),
                         "newEndDate", request.getNewEndDate().toString()));
+
+        notifyOwnerLifecycleEvent(
+                contract,
+                autoGenerated ? "Hợp đồng đã tự gia hạn" : "Hợp đồng đã được gia hạn",
+                "Admin đã gia hạn hợp đồng " + contract.getContractCode() + " đến ngày " + request.getNewEndDate()
+                        + ".",
+                "OWNER_CONTRACT_RENEWED",
+                Map.of(
+                        "contractId", contract.getId(),
+                        "contractCode", contract.getContractCode(),
+                        "effectiveFrom", effectiveFrom.toString(),
+                        "newEndDate", request.getNewEndDate().toString(),
+                        "dedupeKey", "owner-contract-renewed-" + contract.getId() + "-" + request.getNewEndDate()));
 
         syncRoomOccupancyStatus(contract.getRoom());
         log.info(
@@ -2730,6 +2918,35 @@ public class ContractServiceImpl implements ContractService {
             notificationService.sendToUser(contract.getTenant().getUser().getId(), title, message, type, data);
         } catch (Exception ex) {
             log.warn("Failed to send lifecycle notification for contract {}: {}", contract.getId(), ex.getMessage());
+        }
+    }
+
+    private void notifyOwnerLifecycleEvent(
+            Contract contract, String title, String message, String type, Map<String, Object> data) {
+        if (contract == null || contract.getRoom() == null || contract.getRoom().getBoardingHouse() == null) {
+            return;
+        }
+
+        User actor = SecurityUtils.getCurrentUser();
+        if (actor == null || !SecurityUtils.isAdmin()) {
+            return;
+        }
+
+        User owner = contract.getRoom().getBoardingHouse().getOwner();
+        if (owner == null || owner.getId() == null) {
+            return;
+        }
+        if (actor.getId() != null && owner.getId().equals(actor.getId())) {
+            return;
+        }
+
+        try {
+            notificationService.sendToUser(owner.getId(), title, message, type, data);
+        } catch (Exception ex) {
+            log.warn(
+                    "Failed to send owner lifecycle notification for contract {}: {}",
+                    contract.getId(),
+                    ex.getMessage());
         }
     }
 

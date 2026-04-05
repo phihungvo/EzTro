@@ -15,5 +15,5 @@ public interface IncidentReportUserService {
 
     IncidentReportResponse update(Integer userId, Integer reportId, IncidentReportRequest request);
 
-    void delete(Integer reportId);
+    void delete(Integer userId, Integer reportId);
 }

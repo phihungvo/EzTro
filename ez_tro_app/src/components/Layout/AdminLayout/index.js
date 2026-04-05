@@ -12,7 +12,9 @@ import {
     DashboardOutlined,
     AppstoreOutlined,
     BankOutlined,
+    BellOutlined,
     HomeOutlined,
+    NotificationOutlined,
     UserSwitchOutlined,
     TeamOutlined,
     ToolOutlined,
@@ -55,6 +57,8 @@ import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
 import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
+import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -70,6 +74,22 @@ const adminMenuConfig = [
                 icon: <DashboardOutlined/>,
                 color: "#3b82f6",
                 path: "/admin/dashboard",  // Add path for routing
+            },
+            {
+                key: "notifications",
+                label: "Thông báo",
+                title: "Trung tâm thông báo",
+                icon: <BellOutlined/>,
+                color: "#2563eb",
+                path: "/admin/notifications",
+            },
+            {
+                key: "announcement-center",
+                label: "Gửi announcement",
+                title: "Gửi thông báo tới tenant",
+                icon: <NotificationOutlined/>,
+                color: "#0f766e",
+                path: "/admin/notifications/announcements",
             },
         ],
     },
@@ -285,10 +305,16 @@ const AdminLayout = ({onLogout}) => {
 
     // Function to find active menu key based on current path
     const getActiveKey = (pathname) => {
-        const activeItem = adminMenuConfig
+        const matchedItems = adminMenuConfig
             .flatMap((group) => group.items)
-            .find((item) => pathname.startsWith(item.path) || pathname === item.path);
-        return activeItem?.key || 'dashboard';
+            .filter((item) => pathname === item.path || pathname.startsWith(item.path + "/"));
+
+        if (matchedItems.length === 0) {
+            return "dashboard";
+        }
+
+        const activeItem = matchedItems.sort((left, right) => right.path.length - left.path.length)[0];
+        return activeItem?.key || "dashboard";
     };
 
     const selected = getActiveKey(location.pathname);
@@ -322,6 +348,8 @@ const AdminLayout = ({onLogout}) => {
                 <div className={cx("content")}>
                     <Routes>
                         <Route path="/dashboard" element={<Dashboard/>}/>
+                        <Route path="/notifications" element={<NotificationCenter/>}/>
+                        <Route path="/notifications/announcements" element={<AnnouncementCenter/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
                         <Route path="/tenants/create-tenant" element={<TenantCreatorPage/>}/>
                         <Route path="/tenants/:id/edit" element={<TenantCreatorPage/>}/>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { message } from "antd";
 
 import styles from "./Profile.module.scss";
@@ -6,8 +6,13 @@ import ProfileInfo from "~/components/Layout/UserLayout/components/ProfileInfo";
 import PasswordSection from "~/components/Layout/UserLayout/components/PasswordSection";
 import EmergencyContact from "~/components/Layout/UserLayout/components/EmergencyContact";
 import NotificationSettings from "~/components/Layout/UserLayout/components/NotificationSettings";
+import {
+    getMyNotificationPreferences,
+    updateMyNotificationPreferences
+} from "~/service/admin/notification-service";
 
 const Profile = () => {
+    const [preferencesLoading, setPreferencesLoading] = useState(true);
     // Mock data - replace with API call
     const [profileData] = useState({
         fullName: "Nguyễn Văn C",
@@ -26,12 +31,38 @@ const Profile = () => {
         phone: ""
     });
 
-    const [notificationSettings] = useState({
-        newInvoice: true,
-        invoiceExpiring: true,
-        maintenanceAlert: true,
-        promotions: false
+    const [notificationSettings, setNotificationSettings] = useState({
+        billingIssue: {inApp: true, email: true, sms: false, zalo: false, mandatoryChannels: []},
+        contractExpiring: {inApp: true, email: true, sms: false, zalo: false, mandatoryChannels: []},
+        incidentUpdates: {inApp: true, email: false, sms: false, zalo: true, mandatoryChannels: []},
+        announcements: {inApp: false, email: false, sms: false, zalo: false, mandatoryChannels: []},
+        paymentUpdates: {inApp: true, email: true, sms: true, zalo: false, mandatoryChannels: ["IN_APP", "EMAIL"]},
+        securityAlerts: {inApp: true, email: true, sms: true, zalo: false, mandatoryChannels: ["IN_APP", "EMAIL", "SMS"]},
+        subscriptionAlerts: {inApp: true, email: true, sms: false, zalo: false, mandatoryChannels: []}
     });
+
+    useEffect(() => {
+        let active = true;
+
+        const loadPreferences = async () => {
+            try {
+                const preferences = await getMyNotificationPreferences();
+                if (!active || !preferences) return;
+                setNotificationSettings(preferences);
+            } catch (error) {
+                console.error("Failed to load notification preferences", error);
+            } finally {
+                if (active) {
+                    setPreferencesLoading(false);
+                }
+            }
+        };
+
+        loadPreferences();
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const handleEditProfile = () => {
         message.info("Tính năng chỉnh sửa thông tin đang được phát triển");
@@ -50,10 +81,10 @@ const Profile = () => {
         // API call to save contact
     };
 
-    const handleSaveNotificationSettings = (settings) => {
-        console.log('Save notification settings:', settings);
+    const handleSaveNotificationSettings = async (settings) => {
+        const response = await updateMyNotificationPreferences(settings);
+        setNotificationSettings(response || settings);
         message.success("Lưu cài đặt thông báo thành công!");
-        // API call to save settings
     };
 
     return (
@@ -77,6 +108,9 @@ const Profile = () => {
             <NotificationSettings
                 settings={notificationSettings}
                 onSave={handleSaveNotificationSettings}
+                loading={preferencesLoading}
+                title="Cài đặt thông báo"
+                description="Tùy chỉnh cách bạn muốn nhận từng loại notification trong portal thuê trọ."
             />
         </div>
     );

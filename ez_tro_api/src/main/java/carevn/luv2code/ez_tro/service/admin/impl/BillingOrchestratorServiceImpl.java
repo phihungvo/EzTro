@@ -168,7 +168,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         InvoicePreviewRequest previewRequest = buildPreviewRequestFromFinalize(request, asOfDate);
 
         PeriodResolution period = resolvePeriod(contract, snapshot, previewRequest, request.getInvoiceType());
-        Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
+        Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest, true);
         if (bill != null) {
             paymentAllocationService.applyCarryForwardCredits(bill.getId());
         }
@@ -207,12 +207,16 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
                 InvoicePreviewRequest previewRequest =
                         buildPreviewRequestForGenerate(contract.getId(), effectiveDate, period);
-                Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest);
+                Bill bill = createOrUpdateInvoice(contract, snapshot, period, previewRequest, true);
                 if (bill != null) {
                     paymentAllocationService.applyCarryForwardCredits(bill.getId());
                     createdOrUpdated++;
                 }
             } catch (Exception e) {
+                if (e instanceof AppException appException
+                        && appException.getErrorCode() == ErrorCode.BILL_MISSING_METER_READING) {
+                    notifyOwnerMissingMeterReading(contract, effectiveDate, appException.getMessage());
+                }
                 observabilityMetricsService.incrementBillingFailure(
                         contract, "generate_invoices", resolveFailureReason(e));
                 log.error("Billing orchestrator failed for contract {}: {}", contract.getId(), e.getMessage(), e);
@@ -297,8 +301,43 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                             tenant.getUser().getId(),
                             "Hoá đơn quá hạn",
                             "Phòng " + bill.getRoom().getRoomNumber() + " bị phạt trễ hạn " + penalty + "đ",
-                            "BILL_OVERDUE",
-                            Map.of("billId", bill.getId(), "penalty", penalty, "outstanding", outstanding));
+                            "TENANT_BILL_PENALIZED",
+                            Map.of(
+                                    "billId",
+                                    bill.getId(),
+                                    "contractId",
+                                    bill.getContract() != null
+                                            ? bill.getContract().getId()
+                                            : null,
+                                    "penalty",
+                                    penalty,
+                                    "outstanding",
+                                    outstanding,
+                                    "dedupeKey",
+                                    "tenant-bill-penalized-" + bill.getId() + "-" + lineKey));
+                }
+
+                User owner = resolveOwner(bill);
+                if (owner != null && owner.getId() != null) {
+                    notificationService.sendToUser(
+                            owner.getId(),
+                            "Hóa đơn quá hạn",
+                            "Phòng " + bill.getRoom().getRoomNumber() + " đang quá hạn và bị áp phí phạt " + penalty
+                                    + "đ.",
+                            "OWNER_BILL_OVERDUE",
+                            Map.of(
+                                    "billId",
+                                    bill.getId(),
+                                    "contractId",
+                                    bill.getContract() != null
+                                            ? bill.getContract().getId()
+                                            : null,
+                                    "penalty",
+                                    penalty,
+                                    "outstanding",
+                                    outstanding,
+                                    "dedupeKey",
+                                    "owner-bill-overdue-" + bill.getId() + "-" + lineKey));
                 }
             } catch (Exception e) {
                 observabilityMetricsService.incrementBillingFailure(
@@ -423,7 +462,8 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             Contract contract,
             ContractSnapshotResponse snapshot,
             PeriodResolution period,
-            InvoicePreviewRequest previewRequest) {
+            InvoicePreviewRequest previewRequest,
+            boolean notifyOwnerOnIssue) {
         if (period == null) {
             return null;
         }
@@ -457,7 +497,11 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             if (!legacyDraftLike) {
                 throw new AppException(ErrorCode.BILL_DUPLICATE_PERIOD);
             }
-            return updateExistingBill(existing, contract, period, buildResult, previewRequest);
+            Bill updated = updateExistingBill(existing, contract, period, buildResult, previewRequest);
+            if (notifyOwnerOnIssue) {
+                notifyOwnerBillIssued(updated, period);
+            }
+            return updated;
         }
 
         Bill bill = new Bill();
@@ -494,7 +538,52 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         Bill saved = billRepository.save(bill);
         observabilityMetricsService.incrementInvoiceGenerated(contract, period.invoiceType, "create");
+        if (notifyOwnerOnIssue) {
+            notifyOwnerBillIssued(saved, period);
+        }
         return saved;
+    }
+
+    private void notifyOwnerBillIssued(Bill bill, PeriodResolution period) {
+        User owner = resolveOwner(bill);
+        if (owner == null || owner.getId() == null) {
+            return;
+        }
+        if (bill == null || bill.getId() == null) {
+            return;
+        }
+
+        String message = "Hóa đơn "
+                + (bill.getBillCode() != null ? bill.getBillCode() : ("#" + bill.getId()))
+                + " đã được phát hành cho phòng "
+                + (bill.getRoom() != null ? bill.getRoom().getRoomNumber() : "")
+                + (bill.getDueDate() != null ? ". Hạn thanh toán: " + bill.getDueDate() : "")
+                + ".";
+
+        notificationService.sendToUser(
+                owner.getId(),
+                "Hóa đơn đã được phát hành",
+                message,
+                "OWNER_BILL_ISSUED",
+                Map.of(
+                        "billId",
+                        bill.getId(),
+                        "billCode",
+                        bill.getBillCode(),
+                        "contractId",
+                        bill.getContract() != null ? bill.getContract().getId() : null,
+                        "tenantId",
+                        bill.getTenant() != null ? bill.getTenant().getId() : null,
+                        "roomId",
+                        bill.getRoom() != null ? bill.getRoom().getId() : null,
+                        "roomNumber",
+                        bill.getRoom() != null ? bill.getRoom().getRoomNumber() : null,
+                        "amount",
+                        bill.getAmount(),
+                        "dueDate",
+                        bill.getDueDate() != null ? bill.getDueDate().toString() : null,
+                        "dedupeKey",
+                        "owner-bill-issued-" + (period != null ? period.generationKey : bill.getGenerationKey())));
     }
 
     private Bill updateExistingBill(
@@ -554,6 +643,37 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             return null;
         }
         return bill.getRoom().getBoardingHouse().getOwner();
+    }
+
+    private void notifyOwnerMissingMeterReading(Contract contract, LocalDate asOfDate, String reason) {
+        if (contract == null || contract.getRoom() == null || contract.getRoom().getBoardingHouse() == null) {
+            return;
+        }
+        User owner = contract.getRoom().getBoardingHouse().getOwner();
+        if (owner == null || owner.getId() == null) {
+            return;
+        }
+
+        String roomNumber = contract.getRoom().getRoomNumber();
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("contractId", contract.getId());
+        payload.put("roomId", contract.getRoom().getId());
+        payload.put("roomNumber", roomNumber);
+        payload.put("asOfDate", asOfDate != null ? asOfDate.toString() : null);
+        payload.put("reason", reason);
+        payload.put(
+                "dedupeKey",
+                "owner-meter-reading-missing-" + contract.getId() + "-"
+                        + (asOfDate != null ? asOfDate : LocalDate.now()));
+
+        notificationService.sendToUser(
+                owner.getId(),
+                "Thiếu chỉ số công tơ",
+                "Thiếu chỉ số công tơ để lập hóa đơn cho "
+                        + (roomNumber != null ? ("phòng " + roomNumber) : "hợp đồng #" + contract.getId())
+                        + ". Vui lòng cập nhật chỉ số để hệ thống phát hành hóa đơn.",
+                "OWNER_METER_READING_MISSING",
+                payload);
     }
 
     private BillingPeriod resolveBillingPeriodForDate(

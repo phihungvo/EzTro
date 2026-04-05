@@ -2,10 +2,20 @@ import API_ENDPOINTS from '~/constants/endpoints';
 import apiClient from '~/service/api/api';
 import {message} from 'antd';
 
-export const getMyNotifications = async (page = 0, size = 10) => {
+export const getMyNotifications = async (page = 0, size = 10, filters = {}) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.GET_MY_NOTIFICATIONS, {
-            params: {page, size},
+            params: {
+                page,
+                size,
+                ...(filters.status ? {status: filters.status} : {}),
+                ...(filters.category ? {category: filters.category} : {}),
+                ...(filters.priority ? {priority: filters.priority} : {}),
+                ...(filters.channel ? {channel: filters.channel} : {}),
+                ...(filters.from ? {from: filters.from} : {}),
+                ...(filters.to ? {to: filters.to} : {}),
+                ...(filters.keyword ? {keyword: filters.keyword} : {}),
+            },
         });
         return response.data.result;
     } catch (error) {
@@ -38,6 +48,16 @@ export const markAllAsRead = async () => {
     }
 };
 
+export const bulkMarkAsRead = async (ids = []) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.BULK_MARK_AS_READ, {ids});
+        return response.data.result || 0;
+    } catch (error) {
+        console.error('Error bulk marking notifications as read:', error);
+        return 0;
+    }
+};
+
 export const getUnreadCount = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.UNREAD_COUNT);
@@ -46,4 +66,60 @@ export const getUnreadCount = async () => {
         console.error('Error fetching unread count:', error);
         return 0;
     }
+};
+
+export const archiveNotification = async (notificationId) => {
+    await apiClient.post(API_ENDPOINTS.NOTIFICATION.ARCHIVE(notificationId));
+    return true;
+};
+
+export const bulkArchiveNotifications = async (ids = []) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.BULK_ARCHIVE, {ids});
+        return response.data.result || 0;
+    } catch (error) {
+        console.error('Error bulk archiving notifications:', error);
+        return 0;
+    }
+};
+
+export const previewAnnouncement = async (payload) => {
+    const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.ANNOUNCEMENT_PREVIEW, payload);
+    return response.data.result;
+};
+
+export const sendAnnouncement = async (payload) => {
+    const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.ANNOUNCEMENT_SEND, payload);
+    return response.data.result;
+};
+
+export const getNotificationDeliveryLogs = async (page = 0, size = 20, filters = {}) => {
+    const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.DELIVERY_LOGS, {
+        params: {
+            page,
+            size,
+            ...(filters.channel ? {channel: filters.channel} : {}),
+            ...(filters.status ? {status: filters.status} : {}),
+            ...(filters.eventId ? {eventId: filters.eventId} : {}),
+            ...(filters.keyword ? {keyword: filters.keyword} : {}),
+        },
+    });
+    return response.data.result;
+};
+
+export const processPendingNotificationDeliveries = async (limit = 50) => {
+    const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.PROCESS_PENDING_DELIVERY_LOGS, null, {
+        params: {limit},
+    });
+    return response.data.result;
+};
+
+export const getMyNotificationPreferences = async () => {
+    const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.GET_MY_PREFERENCES);
+    return response.data.result;
+};
+
+export const updateMyNotificationPreferences = async (payload) => {
+    const response = await apiClient.put(API_ENDPOINTS.NOTIFICATION.UPDATE_MY_PREFERENCES, payload);
+    return response.data.result;
 };

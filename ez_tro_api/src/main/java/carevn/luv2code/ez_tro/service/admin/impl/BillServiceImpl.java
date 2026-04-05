@@ -283,6 +283,32 @@ public class BillServiceImpl implements BillService {
                         "BILL_SENT",
                         notificationData);
                 deliveredChannels.add("IN_APP");
+
+                User actor = SecurityUtils.getCurrentUser();
+                User owner = bill.getRoom() != null && bill.getRoom().getBoardingHouse() != null
+                        ? bill.getRoom().getBoardingHouse().getOwner()
+                        : null;
+                if (owner != null
+                        && owner.getId() != null
+                        && actor != null
+                        && SecurityUtils.isAdmin()
+                        && !owner.getId().equals(actor.getId())) {
+                    Map<String, Object> ownerData = new LinkedHashMap<>(notificationData);
+                    ownerData.put(
+                            "tenantName",
+                            bill.getTenant() != null && bill.getTenant().getUser() != null
+                                    ? bill.getTenant().getUser().getFullName()
+                                    : null);
+                    ownerData.put("dedupeKey", "owner-bill-sent-" + bill.getId() + "-" + System.currentTimeMillis());
+                    notificationService.sendToUser(
+                            owner.getId(),
+                            "Hóa đơn đã được gửi",
+                            "Admin đã gửi hóa đơn "
+                                    + (bill.getBillCode() != null ? bill.getBillCode() : ("#" + bill.getId()))
+                                    + " cho phòng " + bill.getRoom().getRoomNumber() + ".",
+                            "OWNER_BILL_SENT",
+                            ownerData);
+                }
             }
         }
 

@@ -34,6 +34,7 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final List<String> publicEndpoints = List.of(
+            "/ws/**",
             "/api/auth/login",
             "/api/auth/google",
             "/api/auth/register",

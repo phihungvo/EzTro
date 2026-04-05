@@ -55,6 +55,7 @@ import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
 import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
 import carevn.luv2code.ez_tro.service.admin.PaymentAllocationService;
+import carevn.luv2code.ez_tro.service.admin.PaymentNotificationService;
 import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
 import carevn.luv2code.ez_tro.specification.PaymentSpecs;
 import carevn.luv2code.ez_tro.util.BillingIntegrityUtils;
@@ -105,6 +106,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
     private final PaymentOperationLogRepository paymentOperationLogRepository;
     private final BillingOperationLogService billingOperationLogService;
     private final ObservabilityMetricsService observabilityMetricsService;
+    private final PaymentNotificationService paymentNotificationService;
     private final Gson gson = new Gson();
 
     /**
@@ -188,6 +190,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 null,
                 billingOperationLogService.snapshotPayment(savedPayment),
                 buildTenantSubmissionAuditMetadata(bill, request, externalReference, proofFile));
+        paymentNotificationService.notifyTenantSubmitted(savedPayment);
         return toPaymentResponse(savedPayment);
     }
 
@@ -226,6 +229,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 null,
                 billingOperationLogService.snapshotPayment(savedPayment),
                 buildReceiveAuditMetadata(request));
+        paymentNotificationService.notifyBackofficePaymentReceived(savedPayment);
         return toPaymentResponse(savedPayment);
     }
 
@@ -243,6 +247,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
         validateContractAccess(payment.getContract());
         try {
             Map<String, Object> beforeState = billingOperationLogService.snapshotPayment(payment);
+            boolean shouldNotifyConfirmed = payment.getStatus() == PaymentStatus.PENDING;
 
             if (payment.getStatus() == PaymentStatus.REVERSED || payment.getStatus() == PaymentStatus.FAILED) {
                 throw new AppException(ErrorCode.PAYMENT_INVALID_STATE);
@@ -264,6 +269,9 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                     beforeState,
                     billingOperationLogService.snapshotPayment(savedPayment),
                     buildConfirmAuditMetadata(savedPayment, request));
+            if (shouldNotifyConfirmed) {
+                paymentNotificationService.notifyPaymentConfirmed(savedPayment);
+            }
             return toPaymentResponse(savedPayment);
         } catch (RuntimeException ex) {
             observabilityMetricsService.incrementPaymentAllocationFailure(
@@ -378,6 +386,9 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 beforeState,
                 billingOperationLogService.snapshotPayment(savedPayment),
                 buildAllocateAuditMetadata(request, newAllocations, autoAllocation));
+        if (!newAllocations.isEmpty()) {
+            paymentNotificationService.notifyPaymentAllocated(savedPayment, newAllocations, autoAllocation);
+        }
         return toPaymentResponse(savedPayment);
     }
 
@@ -486,6 +497,7 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
                 beforeState,
                 billingOperationLogService.snapshotPayment(savedPayment),
                 buildReverseAuditMetadata(request, reversalAllocations));
+        paymentNotificationService.notifyPaymentReversed(savedPayment, request != null ? request.getNote() : null);
         return toPaymentResponse(savedPayment);
     }
 

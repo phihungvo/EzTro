@@ -120,6 +120,9 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
     List<Contract> findByAutoRenewTrueAndEndDateLessThanEqualAndStatusIn(
             LocalDate endDate, Collection<ContractStatus> statuses);
 
+    @Query("SELECT c FROM Contract c WHERE c.status = :status AND c.endDate = :endDate")
+    List<Contract> findByStatusAndEndDate(@Param("status") ContractStatus status, @Param("endDate") LocalDate endDate);
+
     default List<Contract> findActiveContractsForBilling(int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());

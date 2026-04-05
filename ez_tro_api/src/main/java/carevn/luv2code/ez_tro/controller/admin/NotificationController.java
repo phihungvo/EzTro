@@ -5,10 +5,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import carevn.luv2code.ez_tro.dto.requests.NotificationAnnouncementRequest;
+import carevn.luv2code.ez_tro.dto.requests.NotificationBulkActionRequest;
+import carevn.luv2code.ez_tro.dto.requests.NotificationPreferencesUpdateRequest;
 import carevn.luv2code.ez_tro.dto.requests.SendNotificationRequest;
 import carevn.luv2code.ez_tro.dto.response.ApiResponse;
+import carevn.luv2code.ez_tro.dto.response.NotificationAnnouncementPreviewResponse;
+import carevn.luv2code.ez_tro.dto.response.NotificationDeliveryLogResponse;
+import carevn.luv2code.ez_tro.dto.response.NotificationPreferencesResponse;
 import carevn.luv2code.ez_tro.dto.response.NotificationResponse;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
+import carevn.luv2code.ez_tro.service.admin.NotificationDeliveryService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationDeliveryService notificationDeliveryService;
 
     /**
      * Lấy danh sách thông báo của user hiện tại.
@@ -38,12 +46,21 @@ public class NotificationController {
      */
     @GetMapping("/me")
     public ApiResponse<Page<NotificationResponse>> getMyNotifications(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         return ApiResponse.<Page<NotificationResponse>>builder()
                 .code(200)
                 .message("Lấy thông báo thành công")
-                .result(notificationService.getMyNotifications(pageable))
+                .result(notificationService.getMyNotifications(
+                        pageable, status, category, priority, channel, from, to, keyword))
                 .build();
     }
 
@@ -70,6 +87,14 @@ public class NotificationController {
     public ApiResponse<Void> markAsRead(@PathVariable Integer id) {
         notificationService.markAsRead(id);
         return ApiResponse.<Void>builder().code(200).message("Đã đọc").build();
+    }
+
+    /**
+     * Alias endpoint theo roadmap: POST /api/notifications/{id}/read
+     */
+    @PostMapping("/{id}/read")
+    public ApiResponse<Void> markAsReadAlias(@PathVariable Integer id) {
+        return markAsRead(id);
     }
 
     /**
@@ -114,6 +139,107 @@ public class NotificationController {
         return ApiResponse.<Void>builder()
                 .code(200)
                 .message("Đã đánh dấu tất cả đã đọc")
+                .build();
+    }
+
+    @PostMapping("/bulk/read")
+    public ApiResponse<Integer> markBulkAsRead(@RequestBody NotificationBulkActionRequest request) {
+        int updated = notificationService.markAsReadBulk(request != null ? request.getIds() : null);
+        return ApiResponse.<Integer>builder()
+                .code(200)
+                .message("Đã đánh dấu đã đọc")
+                .result(updated)
+                .build();
+    }
+
+    @PostMapping("/archive/{id}")
+    public ApiResponse<Void> archive(@PathVariable Integer id) {
+        notificationService.archive(id);
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Đã lưu trữ thông báo")
+                .build();
+    }
+
+    /**
+     * Alias endpoint theo roadmap: POST /api/notifications/{id}/archive
+     */
+    @PostMapping("/{id}/archive")
+    public ApiResponse<Void> archiveAlias(@PathVariable Integer id) {
+        return archive(id);
+    }
+
+    @PostMapping("/announcements/preview")
+    public ApiResponse<NotificationAnnouncementPreviewResponse> previewAnnouncement(
+            @RequestBody NotificationAnnouncementRequest request) {
+        return ApiResponse.<NotificationAnnouncementPreviewResponse>builder()
+                .code(200)
+                .message("Preview danh sách người nhận thành công")
+                .result(notificationService.previewAnnouncement(request))
+                .build();
+    }
+
+    @PostMapping("/bulk/archive")
+    public ApiResponse<Integer> archiveBulk(@RequestBody NotificationBulkActionRequest request) {
+        int updated = notificationService.archiveBulk(request != null ? request.getIds() : null);
+        return ApiResponse.<Integer>builder()
+                .code(200)
+                .message("Đã lưu trữ thông báo")
+                .result(updated)
+                .build();
+    }
+
+    @PostMapping("/announcements")
+    public ApiResponse<NotificationAnnouncementPreviewResponse> sendAnnouncement(
+            @RequestBody NotificationAnnouncementRequest request) {
+        return ApiResponse.<NotificationAnnouncementPreviewResponse>builder()
+                .code(200)
+                .message("Gửi thông báo thành công")
+                .result(notificationService.sendAnnouncement(request))
+                .build();
+    }
+
+    @GetMapping("/preferences/me")
+    public ApiResponse<NotificationPreferencesResponse> getMyPreferences() {
+        return ApiResponse.<NotificationPreferencesResponse>builder()
+                .code(200)
+                .message("Lấy cài đặt thông báo thành công")
+                .result(notificationService.getMyPreferences())
+                .build();
+    }
+
+    @PutMapping("/preferences/me")
+    public ApiResponse<NotificationPreferencesResponse> updateMyPreferences(
+            @RequestBody NotificationPreferencesUpdateRequest request) {
+        return ApiResponse.<NotificationPreferencesResponse>builder()
+                .code(200)
+                .message("Cập nhật cài đặt thông báo thành công")
+                .result(notificationService.updateMyPreferences(request))
+                .build();
+    }
+
+    @GetMapping("/delivery-logs")
+    public ApiResponse<Page<NotificationDeliveryLogResponse>> getDeliveryLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer eventId,
+            @RequestParam(required = false) String keyword) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.<Page<NotificationDeliveryLogResponse>>builder()
+                .code(200)
+                .message("Lấy audit log notification delivery thành công")
+                .result(notificationDeliveryService.getDeliveryLogs(pageable, channel, status, eventId, keyword))
+                .build();
+    }
+
+    @PostMapping("/delivery-logs/process-pending")
+    public ApiResponse<Integer> processPendingDeliveries(@RequestParam(defaultValue = "50") int limit) {
+        return ApiResponse.<Integer>builder()
+                .code(200)
+                .message("Đã xử lý hàng đợi notification delivery")
+                .result(notificationDeliveryService.processPendingDeliveries(limit))
                 .build();
     }
 }

@@ -5,30 +5,98 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
+  &.embedded {
+    padding: 24px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+  }
+
   .title {
     font-size: 20px;
     font-weight: 700;
     color: #1f2937;
-    margin: 0 0 24px;
+    margin: 0;
   }
 
-  .checkboxList {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  .description {
+    margin: 8px 0 0 !important;
+    color: #64748b;
+    max-width: 760px;
+  }
+
+  .channelLegend {
+    gap: 8px;
+  }
+
+  .legendItem {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .matrix {
+    display: grid;
+    gap: 12px;
     margin-bottom: 32px;
   }
 
-  .checkboxItem {
-    display: flex;
-    align-items: center;
+  .matrixHeader,
+  .matrixRow {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(72px, 0.5fr));
     gap: 12px;
+    align-items: center;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr repeat(2, minmax(64px, 80px));
+    }
+  }
+
+  .matrixHeader {
+    padding: 0 4px;
+  }
+
+  .eventHeader,
+  .channelHeader {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: #64748b;
+  }
+
+  .matrixRow {
+    padding: 16px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+
+  .eventCell {
+    display: grid;
+    gap: 4px;
+  }
+
+  .channelCell {
+    display: flex;
+    justify-content: center;
 
     :global {
-      .ant-checkbox-wrapper {
-        margin: 0;
-      }
-
       .ant-checkbox-inner {
         width: 20px;
         height: 20px;
@@ -40,13 +108,17 @@
         border-color: #22c55e;
       }
     }
+  }
 
-    .checkboxLabel {
-      font-size: 15px;
-      font-weight: 500;
-      color: #1f2937;
-      user-select: none;
-    }
+  .checkboxLabel {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    user-select: none;
+  }
+
+  .mandatoryHint {
+    font-size: 12px;
   }
 
   .submitButton {

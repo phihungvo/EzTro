@@ -1,8 +1,10 @@
 import {
+    BellOutlined,
     DashboardOutlined,
     AppstoreOutlined,
     BankOutlined,
     HomeOutlined,
+    NotificationOutlined,
     UserSwitchOutlined,
     TeamOutlined,
     ToolOutlined,
@@ -215,6 +217,22 @@ export const MENU_CONFIG = {
                     path: "/owner/dashboard",
                     color: "#3b82f6"
                 },
+                {
+                    key: "notifications",
+                    label: "Thông báo",
+                    title: "Trung tâm thông báo",
+                    icon: <BellOutlined/>,
+                    path: "/owner/notifications",
+                    color: "#2563eb"
+                },
+                {
+                    key: "announcement-center",
+                    label: "Gửi announcement",
+                    title: "Gửi thông báo tới tenant",
+                    icon: <NotificationOutlined/>,
+                    path: "/owner/notifications/announcements",
+                    color: "#0f766e"
+                },
             ],
         },
         {
@@ -248,6 +266,13 @@ export const MENU_CONFIG = {
                     icon: <UserSwitchOutlined/>,
                     path: "/owner/tenants",
                     color: "#f59e0b"
+                },
+                {
+                    key: "incidents",
+                    label: "Sự cố",
+                    icon: <AlertOutlined/>,
+                    path: "/owner/incidents",
+                    color: "#f97316"
                 },
             ],
         },

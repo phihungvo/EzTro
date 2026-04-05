@@ -266,7 +266,9 @@ function IncidentReport() {
         form.setFieldsValue({
             roomId: record.roomId,
             title: record.title,
-            description: record.description
+            description: record.description,
+            status: record.status,
+            expectedResolveDate: record.expectedResolveDate ? moment(record.expectedResolveDate) : null,
         });
         setIsModalOpen(true);
     };
@@ -317,13 +319,13 @@ function IncidentReport() {
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm toà nhà mới';
+                return 'Thêm báo cáo sự cố';
             case 'edit':
-                return 'Chỉnh sửa toà nhà';
+                return 'Chỉnh sửa báo cáo sự cố';
             case 'delete':
-                return 'Xóa toà nhà';
+                return 'Xóa báo cáo sự cố';
             default:
-                return 'Chi tiết toà nhà';
+                return 'Chi tiết báo cáo sự cố';
         }
     };
 

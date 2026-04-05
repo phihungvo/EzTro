@@ -38,6 +38,8 @@ import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage
 import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
 import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
 import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
+import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -75,6 +77,8 @@ const AppRoutes = () => {
                         <SharedLayout>
                             <Routes>
                                 <Route path="dashboard" element={<AdminDashboard />} />
+                                <Route path="notifications" element={<NotificationCenter />} />
+                                <Route path="notifications/announcements" element={<AnnouncementCenter />} />
                                 <Route path="boarding-houses" element={<BoardingHouses />} />
                                 <Route path="boarding-houses/create" element={<BoardingHouseCreatorPage />} />
                                 <Route path="boarding-houses/:id/edit" element={<BoardingHouseCreatorPage />} />
@@ -98,6 +102,7 @@ const AppRoutes = () => {
                                 <Route path="assets" element={<Asset />} />
                                 <Route path="assets/create" element={<PropertyAssetCreatorPage />} />
                                 <Route path="expenses" element={<OperatingCostTracker />} />
+                                <Route path="incidents" element={<IncidentReport />} />
                                 <Route path="admin-payment-management" element={<AdminPaymentManagement/>}/>
                                 <Route path="owner-subscription" element={<OwnerSubscriptionPage/>}/>
                             </Routes>

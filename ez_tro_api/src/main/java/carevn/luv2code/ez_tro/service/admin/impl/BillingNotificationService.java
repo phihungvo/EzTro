@@ -53,16 +53,26 @@ public class BillingNotificationService {
                                 "Hóa đơn sắp đến hạn",
                                 "Phòng " + bill.getRoom().getRoomNumber() + " - " + bill.getAmount()
                                         + "đ đến hạn vào ngày " + bill.getDueDate(),
-                                "BILL_REMINDER_OWNER",
+                                "OWNER_BILL_DUE_SOON",
                                 Map.of(
-                                        "billId", bill.getId(),
+                                        "billId",
+                                        bill.getId(),
+                                        "contractId",
+                                        bill.getContract() != null
+                                                ? bill.getContract().getId()
+                                                : null,
+                                        "dueDate",
+                                        bill.getDueDate() != null
+                                                ? bill.getDueDate().toString()
+                                                : null,
+                                        "dedupeKey",
+                                        "owner-bill-due-soon-" + bill.getId() + "-" + targetDate,
                                         "tenantName",
-                                                bill.getTenant() != null
-                                                        ? bill.getTenant()
-                                                                .getUser()
-                                                                .getFullName()
-                                                        : null,
-                                        "outstanding", bill.getAmount()));
+                                        bill.getTenant() != null
+                                                ? bill.getTenant().getUser().getFullName()
+                                                : null,
+                                        "outstanding",
+                                        bill.getAmount()));
                     }
                 } catch (Exception e) {
                     log.error("Failed to send reminder for bill {}: {}", bill.getId(), e.getMessage(), e);
