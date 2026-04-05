@@ -19,5 +19,7 @@ public interface NotificationRepository
     java.util.List<Notification> findByRecipientAndReadStatusAndArchivedAtIsNull(
             User recipient, NotificationReadStatus readStatus);
 
+    java.util.List<Notification> findByIdInAndRecipient(java.util.List<Integer> ids, User recipient);
+
     boolean existsByEventAndRecipient(NotificationEvent event, User recipient);
 }

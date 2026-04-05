@@ -1,11 +1,15 @@
 package carevn.luv2code.ez_tro.specification;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import carevn.luv2code.ez_tro.entity.Notification;
 import carevn.luv2code.ez_tro.entity.User;
 import carevn.luv2code.ez_tro.enums.NotificationCategory;
+import carevn.luv2code.ez_tro.enums.NotificationChannel;
 import carevn.luv2code.ez_tro.enums.NotificationInboxStatus;
+import carevn.luv2code.ez_tro.enums.NotificationPriority;
 import carevn.luv2code.ez_tro.enums.NotificationReadStatus;
 
 public final class NotificationInboxSpecs {
@@ -40,6 +44,33 @@ public final class NotificationInboxSpecs {
             return Specification.where(null);
         }
         return (root, query, cb) -> cb.equal(root.get("category"), category);
+    }
+
+    public static Specification<Notification> priority(NotificationPriority priority) {
+        if (priority == null) {
+            return Specification.where(null);
+        }
+        return (root, query, cb) -> cb.equal(root.get("priority"), priority);
+    }
+
+    public static Specification<Notification> channel(NotificationChannel channel) {
+        if (channel == null) {
+            return Specification.where(null);
+        }
+        return (root, query, cb) -> cb.equal(root.get("channel"), channel);
+    }
+
+    public static Specification<Notification> createdBetween(LocalDateTime from, LocalDateTime to) {
+        if (from == null && to == null) {
+            return Specification.where(null);
+        }
+        if (from != null && to != null) {
+            return (root, query, cb) -> cb.between(root.get("createdAt"), from, to);
+        }
+        if (from != null) {
+            return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), from);
+        }
+        return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), to);
     }
 
     public static Specification<Notification> keyword(String keyword) {

@@ -20,7 +20,15 @@ public interface NotificationService {
 
     void sendToUsers(List<Integer> userIds, String title, String message, String type, Object data);
 
-    Page<NotificationResponse> getMyNotifications(Pageable pageable, String status, String category, String keyword);
+    Page<NotificationResponse> getMyNotifications(
+            Pageable pageable,
+            String status,
+            String category,
+            String priority,
+            String channel,
+            String from,
+            String to,
+            String keyword);
 
     void markAsRead(Integer notificationId);
 
@@ -35,6 +43,10 @@ public interface NotificationService {
     void markAllAsRead();
 
     void archive(Integer notificationId);
+
+    int markAsReadBulk(java.util.List<Integer> notificationIds);
+
+    int archiveBulk(java.util.List<Integer> notificationIds);
 
     NotificationAnnouncementPreviewResponse previewAnnouncement(NotificationAnnouncementRequest request);
 

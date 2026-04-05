@@ -9,7 +9,7 @@ import {
     NotificationOutlined,
     SearchOutlined
 } from "@ant-design/icons";
-import {Button, Card, Empty, Input, List, Select, Space, Tag, Typography, message} from "antd";
+import {Button, Card, Checkbox, Empty, Input, List, Select, Space, Tag, Typography, message} from "antd";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -19,6 +19,8 @@ import {useAuth} from "~/routes/AuthContext";
 import NotificationSettings from "~/components/Layout/UserLayout/components/NotificationSettings";
 import {
     archiveNotification,
+    bulkArchiveNotifications,
+    bulkMarkAsRead,
     getMyNotificationPreferences,
     getMyNotifications,
     getUnreadCount,
@@ -91,6 +93,7 @@ const NotificationCenter = ({embedded = false}) => {
     const [keyword, setKeyword] = useState("");
     const [preferences, setPreferences] = useState(null);
     const [preferencesLoading, setPreferencesLoading] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
     const canSendAnnouncements = user?.role === "ADMIN" || user?.role === "OWNER";
     const announcementPath = user?.role === "ADMIN"
         ? "/admin/notifications/announcements"
@@ -123,6 +126,7 @@ const NotificationCenter = ({embedded = false}) => {
             } else {
                 setNotifications(items);
                 setPage(0);
+                setSelectedIds([]);
             }
         } catch (error) {
             console.error("Failed to load notifications", error);
@@ -184,6 +188,51 @@ const NotificationCenter = ({embedded = false}) => {
             setUnreadCount(count => Math.max(0, count - 1));
         }
         message.success("Đã lưu trữ thông báo");
+    };
+
+    const toggleSelected = (notificationId, checked) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (checked) {
+                next.add(notificationId);
+            } else {
+                next.delete(notificationId);
+            }
+            return Array.from(next);
+        });
+    };
+
+    const clearSelection = () => setSelectedIds([]);
+
+    const handleBulkRead = async () => {
+        if (!selectedIds.length) return;
+        const updated = await bulkMarkAsRead(selectedIds);
+        if (updated > 0) {
+            setNotifications(prev => prev.map(item => selectedIds.includes(item.id) ? {...item, isRead: true} : item));
+            setUnreadCount(count => Math.max(0, count - updated));
+            message.success(`Đã đánh dấu đã đọc (${updated})`);
+        }
+        clearSelection();
+    };
+
+    const handleBulkArchive = async () => {
+        if (!selectedIds.length) return;
+        const updated = await bulkArchiveNotifications(selectedIds);
+        if (updated > 0) {
+            if (status === "ARCHIVED") {
+                setNotifications(prev => prev.map(item => selectedIds.includes(item.id) ? {...item, isRead: true} : item));
+            } else {
+                setNotifications(prev => prev.filter(item => !selectedIds.includes(item.id)));
+            }
+            const unreadSelected = notifications.filter(
+                item => selectedIds.includes(item.id) && !item.isRead && item.archivedAt == null
+            ).length;
+            if (unreadSelected > 0) {
+                setUnreadCount(count => Math.max(0, count - unreadSelected));
+            }
+            message.success(`Đã lưu trữ (${updated})`);
+        }
+        clearSelection();
     };
 
     const handleOpen = async (notification) => {
@@ -264,6 +313,22 @@ const NotificationCenter = ({embedded = false}) => {
                         Lọc
                     </Button>
                 </div>
+                {selectedIds.length > 0 && (
+                    <div className={styles.bulkBar}>
+                        <Space wrap>
+                            <Tag color="blue">Đã chọn {selectedIds.length}</Tag>
+                            <Button icon={<CheckOutlined/>} onClick={handleBulkRead} disabled={status === "ARCHIVED"}>
+                                Đánh dấu đã đọc
+                            </Button>
+                            <Button icon={<InboxOutlined/>} onClick={handleBulkArchive} disabled={status === "ARCHIVED"}>
+                                Lưu trữ
+                            </Button>
+                            <Button type="text" onClick={clearSelection}>
+                                Bỏ chọn
+                            </Button>
+                        </Space>
+                    </div>
+                )}
             </Card>
 
             {showPreferences && preferences && (
@@ -285,6 +350,12 @@ const NotificationCenter = ({embedded = false}) => {
                     locale={{emptyText: <Empty description="Không có thông báo phù hợp" />}}
                     renderItem={(item) => (
                         <List.Item className={`${styles.item} ${!item.isRead ? styles.unread : ""}`}>
+                            <div className={styles.itemSelect}>
+                                <Checkbox
+                                    checked={selectedIds.includes(item.id)}
+                                    onChange={(e) => toggleSelected(item.id, e.target.checked)}
+                                />
+                            </div>
                             <div className={styles.itemBody}>
                                 <div className={styles.itemHeader}>
                                     <Space wrap>

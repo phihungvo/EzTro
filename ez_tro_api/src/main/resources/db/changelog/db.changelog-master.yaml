@@ -43,3 +43,5 @@ databaseChangeLog:
       file: db/changelog/changeset-21-notification-foundation.yaml
   - include:
       file: db/changelog/changeset-22-notification-delivery-outbox.yaml
+  - include:
+      file: db/changelog/changeset-23-notification-hardening.yaml

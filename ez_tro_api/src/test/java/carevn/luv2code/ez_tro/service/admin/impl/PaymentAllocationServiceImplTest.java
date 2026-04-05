@@ -66,6 +66,7 @@ import carevn.luv2code.ez_tro.repository.PaymentOperationLogRepository;
 import carevn.luv2code.ez_tro.repository.PaymentRepository;
 import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
 import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
+import carevn.luv2code.ez_tro.service.admin.PaymentNotificationService;
 import carevn.luv2code.ez_tro.service.admin.payment.InvoiceBalanceCalculator;
 import carevn.luv2code.ez_tro.util.RequestAuditUtils;
 
@@ -101,6 +102,9 @@ class PaymentAllocationServiceImplTest {
 
     @Mock
     private ObservabilityMetricsService observabilityMetricsService;
+
+    @Mock
+    private PaymentNotificationService paymentNotificationService;
 
     @InjectMocks
     private PaymentAllocationServiceImpl paymentAllocationService;

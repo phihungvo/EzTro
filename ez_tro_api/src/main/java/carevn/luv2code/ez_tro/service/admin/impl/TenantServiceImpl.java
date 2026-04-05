@@ -37,6 +37,7 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
+import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
 import carevn.luv2code.ez_tro.specification.TenantSpecs;
 import jakarta.persistence.criteria.*;
@@ -68,6 +69,7 @@ public class TenantServiceImpl implements TenantService {
     private final BuildingRepository buildingRepository;
     private final RoleRepository roleRepository;
     private final ContractSnapshotService contractSnapshotService;
+    private final NotificationService notificationService;
 
     /**
      * Tạo mới tenant và user account tương ứng.
@@ -112,8 +114,34 @@ public class TenantServiceImpl implements TenantService {
 
         tenant = tenantRepository.save(tenant);
 
-        // Handle email noti when create tenant if needed
-        // .....
+        try {
+            notificationService.sendToUser(
+                    ownerId,
+                    "Tạo khách thuê thành công",
+                    "Bạn đã tạo khách thuê " + request.getFullName() + " (" + request.getEmail() + ") thành công.",
+                    "OWNER_TENANT_CREATED",
+                    java.util.Map.of(
+                            "tenantId", tenant.getId(),
+                            "tenantName", request.getFullName(),
+                            "tenantEmail", request.getEmail(),
+                            "dedupeKey", "owner-tenant-created-" + tenant.getId()));
+        } catch (Exception ex) {
+            log.warn(
+                    "Failed to send owner tenant created notification for tenant {}: {}",
+                    tenant.getId(),
+                    ex.getMessage());
+        }
+
+        try {
+            notificationService.sendToUser(
+                    user.getId(),
+                    "Tài khoản của bạn đã được tạo",
+                    "Tài khoản EZ TRO đã được tạo thành công. Bạn có thể đăng nhập bằng email đã đăng ký.",
+                    "TENANT_ACCOUNT_WELCOME",
+                    java.util.Map.of("tenantId", tenant.getId(), "profileAction", "WELCOME"));
+        } catch (Exception ex) {
+            log.warn("Failed to send tenant welcome notification for tenant {}: {}", tenant.getId(), ex.getMessage());
+        }
 
         return tenantMapper.toResponse(tenant);
     }

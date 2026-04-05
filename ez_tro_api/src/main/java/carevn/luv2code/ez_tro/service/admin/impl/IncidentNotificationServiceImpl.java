@@ -40,7 +40,7 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 owner.getId(),
                 "Có báo cáo sự cố mới",
                 buildOwnerMessage(report, "Người thuê vừa gửi một báo cáo sự cố mới"),
-                "INCIDENT_REPORTED",
+                "OWNER_INCIDENT_CREATED",
                 buildPayload(report, Map.of("source", "TENANT_CREATE")));
     }
 
@@ -55,7 +55,7 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 owner.getId(),
                 "Báo cáo sự cố đã được cập nhật",
                 buildOwnerMessage(report, "Người thuê vừa cập nhật nội dung báo cáo sự cố"),
-                "INCIDENT_UPDATED_BY_TENANT",
+                "OWNER_INCIDENT_UPDATED",
                 buildPayload(report, Map.of("source", "TENANT_UPDATE")));
     }
 
@@ -70,8 +70,8 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 owner.getId(),
                 "Báo cáo sự cố đã bị hủy",
                 buildOwnerMessage(report, "Người thuê đã xóa báo cáo sự cố trước khi xử lý"),
-                "INCIDENT_CANCELLED_BY_TENANT",
-                buildPayload(report, Map.of("source", "TENANT_DELETE")));
+                "OWNER_INCIDENT_UPDATED",
+                buildPayload(report, Map.of("source", "TENANT_DELETE", "updateType", "CANCELLED")));
     }
 
     @Override
@@ -144,31 +144,41 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
 
         int processed = 0;
         for (IncidentReport report : incidents.values()) {
-            List<Integer> recipientIds = new ArrayList<>();
+            List<Integer> adminIds = userRepository.findAllAdmins().stream()
+                    .map(User::getId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .toList();
             User owner = resolveOwner(report);
-            if (owner != null) {
-                recipientIds.add(owner.getId());
+            if (owner != null && owner.getId() != null) {
+                notificationService.sendToUser(
+                        owner.getId(),
+                        "Sự cố quá SLA cần xử lý",
+                        buildOwnerMessage(report, "Báo cáo sự cố đang quá hạn xử lý hoặc pending quá lâu"),
+                        "OWNER_INCIDENT_SLA_BREACH",
+                        buildPayload(
+                                report,
+                                Map.of(
+                                        "source",
+                                        "SLA_ESCALATION",
+                                        "dedupeKey",
+                                        "owner-incident-sla-" + report.getId() + "-" + LocalDate.now())));
             }
-            recipientIds.addAll(
-                    userRepository.findAllAdmins().stream().map(User::getId).toList());
-            recipientIds = recipientIds.stream().distinct().toList();
 
-            if (recipientIds.isEmpty()) {
-                continue;
+            if (!adminIds.isEmpty()) {
+                notificationService.sendToUsers(
+                        adminIds,
+                        "Sự cố quá SLA cần xử lý",
+                        buildOwnerMessage(report, "Báo cáo sự cố đang quá hạn xử lý hoặc pending quá lâu"),
+                        "ADMIN_INCIDENT_SLA_BREACH",
+                        buildPayload(
+                                report,
+                                Map.of(
+                                        "source",
+                                        "SLA_ESCALATION",
+                                        "dedupeKey",
+                                        "admin-incident-sla-" + report.getId() + "-" + LocalDate.now())));
             }
-
-            notificationService.sendToUsers(
-                    recipientIds,
-                    "Sự cố quá SLA cần xử lý",
-                    buildOwnerMessage(report, "Báo cáo sự cố đang quá hạn xử lý hoặc pending quá lâu"),
-                    "INCIDENT_SLA_ESCALATED",
-                    buildPayload(
-                            report,
-                            Map.of(
-                                    "source",
-                                    "SLA_ESCALATION",
-                                    "dedupeKey",
-                                    "incident-sla-" + report.getId() + "-" + LocalDate.now())));
             processed++;
         }
         return processed;

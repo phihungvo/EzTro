@@ -10,6 +10,10 @@ export const getMyNotifications = async (page = 0, size = 10, filters = {}) => {
                 size,
                 ...(filters.status ? {status: filters.status} : {}),
                 ...(filters.category ? {category: filters.category} : {}),
+                ...(filters.priority ? {priority: filters.priority} : {}),
+                ...(filters.channel ? {channel: filters.channel} : {}),
+                ...(filters.from ? {from: filters.from} : {}),
+                ...(filters.to ? {to: filters.to} : {}),
                 ...(filters.keyword ? {keyword: filters.keyword} : {}),
             },
         });
@@ -44,6 +48,16 @@ export const markAllAsRead = async () => {
     }
 };
 
+export const bulkMarkAsRead = async (ids = []) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.BULK_MARK_AS_READ, {ids});
+        return response.data.result || 0;
+    } catch (error) {
+        console.error('Error bulk marking notifications as read:', error);
+        return 0;
+    }
+};
+
 export const getUnreadCount = async () => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.UNREAD_COUNT);
@@ -57,6 +71,16 @@ export const getUnreadCount = async () => {
 export const archiveNotification = async (notificationId) => {
     await apiClient.post(API_ENDPOINTS.NOTIFICATION.ARCHIVE(notificationId));
     return true;
+};
+
+export const bulkArchiveNotifications = async (ids = []) => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.NOTIFICATION.BULK_ARCHIVE, {ids});
+        return response.data.result || 0;
+    } catch (error) {
+        console.error('Error bulk archiving notifications:', error);
+        return 0;
+    }
 };
 
 export const previewAnnouncement = async (payload) => {

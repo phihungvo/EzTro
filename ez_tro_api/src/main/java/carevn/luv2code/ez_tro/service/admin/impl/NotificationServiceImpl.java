@@ -1,6 +1,9 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -125,10 +128,21 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getMyNotifications(
-            Pageable pageable, String status, String category, String keyword) {
+            Pageable pageable,
+            String status,
+            String category,
+            String priority,
+            String channel,
+            String from,
+            String to,
+            String keyword) {
         User currentUser = SecurityUtils.getCurrentUserOrThrow();
         NotificationInboxStatus inboxStatus = parseInboxStatus(status);
         NotificationCategory notificationCategory = parseCategory(category);
+        NotificationPriority notificationPriority = parsePriority(priority);
+        NotificationChannel notificationChannel = parseChannel(channel);
+        LocalDateTime fromDate = parseDateTime(from, false);
+        LocalDateTime toDate = parseDateTime(to, true);
 
         Pageable sorted = PageRequest.of(
                 pageable.getPageNumber(),
@@ -140,6 +154,9 @@ public class NotificationServiceImpl implements NotificationService {
                         NotificationInboxSpecs.recipient(currentUser)
                                 .and(NotificationInboxSpecs.inboxStatus(inboxStatus))
                                 .and(NotificationInboxSpecs.category(notificationCategory))
+                                .and(NotificationInboxSpecs.priority(notificationPriority))
+                                .and(NotificationInboxSpecs.channel(notificationChannel))
+                                .and(NotificationInboxSpecs.createdBetween(fromDate, toDate))
                                 .and(NotificationInboxSpecs.keyword(keyword)),
                         sorted)
                 .map(this::toResponse);
@@ -202,6 +219,82 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setReadStatus(NotificationReadStatus.ARCHIVED);
         notification.setIsRead(true);
         notificationRepo.save(notification);
+    }
+
+    @Override
+    public int markAsReadBulk(List<Integer> notificationIds) {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+
+        User currentUser = SecurityUtils.getCurrentUserOrThrow();
+        List<Integer> uniqueIds =
+                notificationIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (uniqueIds.isEmpty()) {
+            return 0;
+        }
+
+        List<Notification> notifications = notificationRepo.findByIdInAndRecipient(uniqueIds, currentUser);
+        if (notifications.isEmpty()) {
+            return 0;
+        }
+
+        LocalDateTime readAt = LocalDateTime.now();
+        int updated = 0;
+        for (Notification notification : notifications) {
+            if (notification.getArchivedAt() != null) {
+                continue;
+            }
+            if (normalizeReadStatus(notification) == NotificationReadStatus.READ) {
+                continue;
+            }
+            notification.setIsRead(true);
+            notification.setReadAt(readAt);
+            notification.setReadStatus(NotificationReadStatus.READ);
+            updated++;
+        }
+
+        if (updated > 0) {
+            notificationRepo.saveAll(notifications);
+        }
+        return updated;
+    }
+
+    @Override
+    public int archiveBulk(List<Integer> notificationIds) {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+
+        User currentUser = SecurityUtils.getCurrentUserOrThrow();
+        List<Integer> uniqueIds =
+                notificationIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (uniqueIds.isEmpty()) {
+            return 0;
+        }
+
+        List<Notification> notifications = notificationRepo.findByIdInAndRecipient(uniqueIds, currentUser);
+        if (notifications.isEmpty()) {
+            return 0;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        int updated = 0;
+        for (Notification notification : notifications) {
+            if (notification.getArchivedAt() != null) {
+                continue;
+            }
+            notification.setArchivedAt(now);
+            notification.setReadAt(notification.getReadAt() != null ? notification.getReadAt() : now);
+            notification.setReadStatus(NotificationReadStatus.ARCHIVED);
+            notification.setIsRead(true);
+            updated++;
+        }
+
+        if (updated > 0) {
+            notificationRepo.saveAll(notifications);
+        }
+        return updated;
     }
 
     @Override
@@ -954,6 +1047,40 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             return NotificationPriority.valueOf(raw.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private NotificationChannel parseChannel(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return NotificationChannel.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private LocalDateTime parseDateTime(String raw, boolean endOfDayIfDateOnly) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String value = raw.trim();
+        try {
+            return OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+            // ignore
+        }
+        try {
+            return LocalDateTime.parse(value);
+        } catch (DateTimeParseException ignored) {
+            // ignore
+        }
+        try {
+            LocalDate date = LocalDate.parse(value);
+            return endOfDayIfDateOnly ? date.atTime(23, 59, 59, 999_999_999) : date.atStartOfDay();
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }

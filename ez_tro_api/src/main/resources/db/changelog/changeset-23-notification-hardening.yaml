@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 23-notification-hardening-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        - tableExists:
+            tableName: notification_events
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*) FROM (
+                SELECT dedupe_key
+                FROM notification_events
+                WHERE dedupe_key IS NOT NULL AND dedupe_key <> ''
+                GROUP BY dedupe_key
+                HAVING COUNT(*) > 1
+              ) t;
+      changes:
+        - addUniqueConstraint:
+            tableName: notification_events
+            columnNames: dedupe_key
+            constraintName: uk_notification_events_dedupe_key
+
+  - changeSet:
+      id: 23-notification-hardening-02
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        - tableExists:
+            tableName: notifications
+        - columnExists:
+            tableName: notifications
+            columnName: event_id
+        - columnExists:
+            tableName: notifications
+            columnName: recipient_id
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*) FROM (
+                SELECT event_id, recipient_id
+                FROM notifications
+                WHERE event_id IS NOT NULL AND recipient_id IS NOT NULL
+                GROUP BY event_id, recipient_id
+                HAVING COUNT(*) > 1
+              ) t;
+      changes:
+        - addUniqueConstraint:
+            tableName: notifications
+            columnNames: event_id,recipient_id
+            constraintName: uk_notifications_event_recipient
+

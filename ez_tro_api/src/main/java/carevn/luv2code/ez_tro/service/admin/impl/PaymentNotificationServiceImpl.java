@@ -2,11 +2,9 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,19 +40,12 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
             return;
         }
 
-        Set<Integer> recipientIds = new LinkedHashSet<>();
         User owner = resolveOwner(payment);
-        if (owner != null && owner.getId() != null) {
-            recipientIds.add(owner.getId());
-        }
-        userRepository.findAllAdmins().stream()
+        List<Integer> adminIds = userRepository.findAllAdmins().stream()
                 .map(User::getId)
                 .filter(id -> id != null)
-                .forEach(recipientIds::add);
-
-        if (recipientIds.isEmpty()) {
-            return;
-        }
+                .distinct()
+                .toList();
 
         Map<String, Object> metadata = parseMetadata(payment);
         boolean hasProof = metadataInteger(metadata, "proofFileId") != null;
@@ -71,12 +62,22 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
 
         Map<String, Object> extra = new LinkedHashMap<>();
         extra.put("source", "TENANT_SUBMITTED");
-        notificationService.sendToUsers(
-                new ArrayList<>(recipientIds),
-                title,
-                message,
-                "PAYMENT_SUBMITTED_BY_TENANT",
-                buildPayload(payment, extra));
+        Map<String, Object> ownerExtra = new LinkedHashMap<>(extra);
+        ownerExtra.put("dedupeKey", "owner-payment-submitted-" + payment.getId());
+
+        if (owner != null && owner.getId() != null) {
+            notificationService.sendToUser(
+                    owner.getId(), title, message, "OWNER_PAYMENT_SUBMITTED", buildPayload(payment, ownerExtra));
+        }
+
+        if (!adminIds.isEmpty()) {
+            notificationService.sendToUsers(
+                    new ArrayList<>(adminIds),
+                    title,
+                    message,
+                    "PAYMENT_SUBMITTED_BY_TENANT",
+                    buildPayload(payment, extra));
+        }
     }
 
     @Override
@@ -144,7 +145,7 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
                     owner.getId(),
                     "Admin đã xác nhận thanh toán",
                     message,
-                    "PAYMENT_CONFIRMED_BY_ADMIN",
+                    "OWNER_PAYMENT_CONFIRMED",
                     buildPayload(payment, extra));
         }
     }
@@ -238,7 +239,7 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
                     owner.getId(),
                     "Admin đã hoàn tác thanh toán",
                     message,
-                    "PAYMENT_REVERSED_BY_ADMIN",
+                    "OWNER_PAYMENT_REVERSED",
                     buildPayload(payment, extra));
         }
     }
