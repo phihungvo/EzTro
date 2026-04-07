@@ -2,7 +2,6 @@ package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,29 +12,54 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.entity.*;
-import carevn.luv2code.ez_tro.enums.BillStatus;
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
 import carevn.luv2code.ez_tro.repository.*;
+import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
+import carevn.luv2code.ez_tro.service.admin.ClusterJobLockService;
+import carevn.luv2code.ez_tro.service.admin.ContractService;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.CronJobService;
+import carevn.luv2code.ez_tro.service.admin.ObservabilityMetricsService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service quản lý cron/quartz job và các batch job chạy định kỳ.
+ *
+ * <p>Lớp này hiện đảm nhiệm:
+ * <ul>
+ *   <li>Schedule/update/delete job Quartz runtime.</li>
+ *   <li>Job định kỳ đồng bộ trạng thái hợp đồng (PENDING/ACTIVE/EXPIRED) theo ngày hiện tại.</li>
+ *   <li>Job tạo hóa đơn hàng tháng + áp dụng penalty thông qua {@link BillingOrchestratorService}.</li>
+ *   <li>Job auto-renew hợp đồng nếu bật autoRenew.</li>
+ * </ul>
+ */
 @Service
 @Slf4j
+// Cho phép tắt toàn bộ cron/quartz ở môi trường test để giảm noise và tránh side-effect.
+@ConditionalOnProperty(name = "app.jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class CronJobServiceImpl implements CronJobService {
+    private static final String BILLING_CLUSTER_LOCK_KEY = "billing-monthly";
+
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
     //    private final AmenityRepository amenityRepository;
     //    private final RoomAmenityRepository roomAmenityRepository;
     //    private final ElectricWaterRecordRepository electricWaterRecordRepository;
     private final BillRepository billRepository;
+    private final ContractSnapshotService contractSnapshotService;
+    private final ContractService contractService;
+    private final BillingOrchestratorService billingOrchestratorService;
+    private final ClusterJobLockService clusterJobLockService;
+    private final ObservabilityMetricsService observabilityMetricsService;
 
     @Autowired
     private Scheduler scheduler;
@@ -43,13 +67,27 @@ public class CronJobServiceImpl implements CronJobService {
     @Value("${app.jobs.contract-status-sync.batch-size:100}")
     private int contractStatusSyncBatchSize;
 
+    @Value("${app.jobs.billing.quartz.enabled:false}")
+    private boolean billingQuartzEnabled;
+
+    @Value("${app.jobs.billing.quartz.cron:0 0 1 * * ?}")
+    private String billingQuartzCron;
+
+    @Value("${app.jobs.billing.cluster-lock.ttl-seconds:1800}")
+    private long billingClusterLockTtlSeconds;
+
     public CronJobServiceImpl(
             ContractRepository contractRepository,
             RoomRepository roomRepository,
             //            AmenityRepository amenityRepository,
             //            RoomAmenityRepository roomAmenityRepository,
             //            ElectricWaterRecordRepository electricWaterRecordRepository,
-            BillRepository billRepository)
+            BillRepository billRepository,
+            ContractSnapshotService contractSnapshotService,
+            ContractService contractService,
+            BillingOrchestratorService billingOrchestratorService,
+            ClusterJobLockService clusterJobLockService,
+            ObservabilityMetricsService observabilityMetricsService)
             throws SchedulerException {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
@@ -57,16 +95,32 @@ public class CronJobServiceImpl implements CronJobService {
         //        this.roomAmenityRepository = roomAmenityRepository;
         //        this.electricWaterRecordRepository = electricWaterRecordRepository;
         this.billRepository = billRepository;
+        this.contractSnapshotService = contractSnapshotService;
+        this.contractService = contractService;
+        this.billingOrchestratorService = billingOrchestratorService;
+        this.clusterJobLockService = clusterJobLockService;
+        this.observabilityMetricsService = observabilityMetricsService;
         scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
     }
 
     @PostConstruct
     public void initDefaultBillJob() {
-        scheduleBillGenerationJob("0 * * * * ?"); // Mỗi phút (giây 0)
-        log.info("Auto-scheduled bill generation job every minute for testing");
+        if (!billingQuartzEnabled) {
+            return;
+        }
+
+        scheduleBillGenerationJob(billingQuartzCron);
+        log.info("Auto-scheduled bill generation job with cron: {}", billingQuartzCron);
     }
 
+    /**
+     * Schedule một job với {@code jobId} và cron expression.
+     *
+     * @param jobId id job
+     * @param cronExpression cron expression Quartz
+     * @param task runnable cần chạy (hiện chỉ dùng để log/debug)
+     */
     @Override
     public void scheduleJob(String jobId, String cronExpression, Runnable task) {
         try {
@@ -86,6 +140,12 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Update cron expression cho một job đã schedule.
+     *
+     * @param jobId id job
+     * @param cronExpression cron expression Quartz
+     */
     @Override
     public void updateJob(String jobId, String cronExpression) {
         try {
@@ -100,6 +160,11 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Xóa một job đã schedule.
+     *
+     * @param jobId id job
+     */
     @Override
     public void deleteJob(String jobId) {
         try {
@@ -109,6 +174,11 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Liệt kê danh sách job đã schedule.
+     *
+     * @return danh sách jobId
+     */
     @Override
     public List<String> listScheduledJobs() {
         try {
@@ -120,6 +190,12 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Kiểm tra một job có tồn tại trong scheduler hay không.
+     *
+     * @param jobId id job
+     * @return true nếu tồn tại
+     */
     @Override
     public boolean isJobScheduled(String jobId) {
         try {
@@ -129,6 +205,12 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Lấy thông tin chi tiết của job (string).
+     *
+     * @param jobId id job
+     * @return thông tin job hoặc "Job not found"
+     */
     @Override
     public String getJobDetails(String jobId) {
         try {
@@ -139,6 +221,11 @@ public class CronJobServiceImpl implements CronJobService {
         }
     }
 
+    /**
+     * Schedule job tạo hóa đơn định kỳ theo cron expression.
+     *
+     * @param cronExpression cron expression Quartz
+     */
     @Override
     @Transactional
     public void scheduleBillGenerationJob(String cronExpression) {
@@ -148,12 +235,43 @@ public class CronJobServiceImpl implements CronJobService {
         log.info("Scheduled bill generation job with cron: {}", cronExpression);
     }
 
+    /**
+     * Scheduled task: đồng bộ trạng thái hợp đồng theo ngày hiện tại.
+     */
     @Scheduled(cron = "${app.jobs.contract-status-sync.cron:0 10 0 * * *}")
     public void runDailyContractStatusSync() {
         int updated = syncContractStatusesDaily();
+        observabilityMetricsService.recordJobExecution("contract_status_sync", "success", updated);
         log.info("Daily contract status sync completed. Updated {} contract(s).", updated);
     }
 
+    /**
+     * Scheduled task: chạy auto-renew hợp đồng theo ngày.
+     */
+    @Scheduled(cron = "${app.jobs.contract-auto-renew.cron:0 20 0 * * *}")
+    public void scheduledContractAutoRenewal() {
+        int renewed = runDailyContractAutoRenewal();
+        observabilityMetricsService.recordJobExecution("contract_auto_renew", "success", renewed);
+        log.info("Daily contract auto-renew completed. Renewed {} contract(s).", renewed);
+    }
+
+    /**
+     * Chạy auto-renew hợp đồng (gọi về {@link ContractService#processAutoRenewals(LocalDate)}).
+     *
+     * @return số hợp đồng được renew
+     */
+    @Transactional
+    public int runDailyContractAutoRenewal() {
+        return contractService.processAutoRenewals(LocalDate.now());
+    }
+
+    /**
+     * Đồng bộ trạng thái hợp đồng theo ngày hiện tại (batch).
+     *
+     * <p>Luồng này cập nhật status contract và đồng bộ trạng thái phòng (AVAILABLE/OCCUPIED) theo hợp đồng hiệu lực.
+     *
+     * @return số hợp đồng đã được update trạng thái
+     */
     @Override
     @Transactional
     public int syncContractStatusesDaily() {
@@ -191,66 +309,36 @@ public class CronJobServiceImpl implements CronJobService {
         return totalUpdated;
     }
 
-    // Business logic: Generate bills for current month
+    /**
+     * Batch tạo hóa đơn và áp dụng penalty cho tháng hiện tại.
+     */
     public void generateMonthlyBills() {
-        LocalDate now = LocalDate.now(); // 2025-10-26
-        int currentMonth = now.getMonthValue();
-        int currentYear = now.getYear();
-        LocalDate dueDateLocal = now.withDayOfMonth(now.lengthOfMonth()); // 2025-10-31
-
-        // 1. Lấy active contracts
-        List<Contract> activeContracts = contractRepository.findActiveContractsForBilling(currentMonth, currentYear);
-
-        for (Contract contract : activeContracts) {
-            try {
-                // Skip nếu đã có bill tháng này
-                //                Optional<Bill> existingBill =
-                //                        billRepository.findByContractAndMonthYear(contract, currentMonth,
-                // currentYear);
-                //                if (existingBill.isPresent()) continue;
-
-                // 2. Validate room & tenant
-                Room room = contract.getRoom();
-                if (!room.getStatus().equals(RoomStatus.OCCUPIED) || Boolean.TRUE.equals(room.getIsDeleted())) {
-                    log.warn("Skipping bill for contract {}: Room not occupied", contract.getId());
-                    continue;
-                }
-                Tenant tenant = contract.getTenant();
-                if (tenant == null || !tenant.getUser().isEnabled()) continue;
-
-                // 3. Tính amount
-                BigDecimal rent = contract.getRentPrice();
-                BigDecimal services = calculateServiceAmount(room, currentMonth, currentYear);
-
-                BigDecimal totalAmount = rent.add(services);
-                String billCode = "BILL-" + contract.getContractCode() + "-"
-                        + String.format("%02d%04d", currentMonth, currentYear);
-
-                // 4. Tạo bill
-                Bill bill = Bill.builder()
-                        .contract(contract)
-                        .room(room)
-                        .tenant(tenant)
-                        .billTitle(String.format("Hóa đơn tháng %02d/%d", currentMonth, currentYear))
-                        .billCode(billCode)
-                        .amount(totalAmount)
-                        .serviceAmount(services)
-                        .dueDate(dueDateLocal)
-                        .status(BillStatus.UNPAID)
-                        .note(String.format("Rent: %s, Services: %s", rent, services))
-                        .build();
-
-                Bill savedBill = billRepository.save(bill);
-                log.info("Generated bill {} for contract {}", savedBill.getId(), contract.getId());
-
-            } catch (Exception e) {
-                log.error("Error generating bill for contract {}: {}", contract.getId(), e.getMessage(), e);
-            }
+        boolean executed = clusterJobLockService.executeWithLock(
+                BILLING_CLUSTER_LOCK_KEY,
+                java.time.Duration.ofSeconds(Math.max(60, billingClusterLockTtlSeconds)),
+                () -> {
+                    LocalDate now = LocalDate.now();
+                    int invoices = billingOrchestratorService.generateInvoices(now);
+                    int penalties = billingOrchestratorService.applyLatePenalties(now);
+                    observabilityMetricsService.recordJobExecution("billing_monthly", "success", invoices + penalties);
+                    log.info("Quartz bill generation completed. invoices={}, penalties={}", invoices, penalties);
+                });
+        if (!executed) {
+            observabilityMetricsService.recordJobExecution("billing_monthly", "skipped_lock", 0);
+            log.info("Skip Quartz bill generation because billing cluster lock is held by another instance.");
         }
-        log.info("Monthly bill generation completed for {}/{}", currentMonth, currentYear);
     }
 
-    // Helper: Tính service amount từ amenities & utilities
+    /**
+     * Helper (legacy): tính tổng phí dịch vụ của phòng theo kỳ.
+     *
+     * <p>Hiện tại phần amenities/usage-based đang được comment out (tích hợp cũ).
+     *
+     * @param room phòng
+     * @param month tháng
+     * @param year năm
+     * @return tổng phí dịch vụ
+     */
     public BigDecimal calculateServiceAmount(Room room, int month, int year) {
         BigDecimal total = BigDecimal.ZERO;
 
@@ -293,20 +381,14 @@ public class CronJobServiceImpl implements CronJobService {
         }
 
         if (contract.getStartDate() != null) {
-            LocalDate startDate = contract.getStartDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate startDate = contract.getStartDate();
             if (startDate.isAfter(today)) {
                 return ContractStatus.PENDING;
             }
         }
 
         if (contract.getEndDate() != null) {
-            LocalDate endDate = contract.getEndDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate endDate = contract.getEndDate();
             if (endDate.isBefore(today)) {
                 return ContractStatus.EXPIRED;
             }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from '~/pages/Admin/Tenant/Tenant.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import {
@@ -18,12 +18,12 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
 import {
     Form,
     message,
     Row,
     Col,
-    Pagination,
     Segmented,
     Tag,
     DatePicker,
@@ -37,13 +37,10 @@ import {
 } from 'antd';
 import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
 import {
-    getAllTenants,
     filterTenants,
-    createTenant,
-    updateTenant,
-    deleteTenant,
 } from '~/service/admin/tenant';
 import useDebounce from '~/hooks/useDebounce';
+import usePagination from '~/hooks/usePagination';
 import { disablePastDates } from "~/utils/dateUtils";
 import {useOwnerQuota} from "~/hooks/useOwnerQuota";
 import {useInvalidateQuota} from "~/hooks/useInvalidateQuota";
@@ -55,17 +52,20 @@ const { RangePicker } = DatePicker;
 function Tenant() {
     const [tenantSource, setTenantSource] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        reset: resetPagination,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTenant, setSelectedTenant] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [form] = Form.useForm();
     const navigate = useNavigate();
+    const location = useLocation();
+    const tenantBasePath = location.pathname.startsWith('/admin') ? '/admin/tenants' : '/owner/tenants';
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -104,7 +104,7 @@ function Tenant() {
         setGenderFilter(null);
         setOccupationFilter(null);
         setHasActiveContractFilter(null);
-        setPagination(prev => ({...prev, current: 1}));
+        resetPagination();
         message.success('Đã reset bộ lọc!');
     };
 
@@ -189,7 +189,7 @@ function Tenant() {
                         type="default"
                         icon={<EyeOutlined />}
                         buttonWidth={50}
-                        onClick={() => navigate(`/admin/tenants/${record.id}`)}
+                        onClick={() => navigate(`${tenantBasePath}/${record.id}`)}
                     />
                     <SmartButton
                         type="primary"
@@ -336,79 +336,54 @@ function Tenant() {
 
             if (response && Array.isArray(response.content)) {
                 setTenantSource(response.content);
-                setPagination({
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: response.totalElements,
-                });
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setTenantSource([]);
+                setPaginationTotal(0);
             }
         } catch (error) {
             console.error('Error filtering tenants:', error);
             message.error(`Lỗi khi lọc người thuê: ${error.response?.data?.message || error.message}`);
             setTenantSource([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-        handleFilterTenants();
-    }, [debouncedSearchTerm, dateRange, genderFilter, occupationFilter, hasActiveContractFilter]);
+        resetPagination();
+    }, [
+        debouncedSearchTerm,
+        dateRange,
+        genderFilter,
+        occupationFilter,
+        hasActiveContractFilter,
+        resetPagination,
+    ]);
 
     useEffect(() => {
         handleFilterTenants();
-    }, [pagination.current, pagination.pageSize]);
-
-    useEffect(() => {
-        handleFilterTenants();
-    }, []);
+    }, [
+        debouncedSearchTerm,
+        dateRange,
+        genderFilter,
+        occupationFilter,
+        hasActiveContractFilter,
+        pagination.current,
+        pagination.pageSize,
+    ]);
 
     const handleAddTenant = () => {
         if (isAddDisabled) {
             message.warning('Bạn đã đạt giới hạn số người thuê theo gói hiện tại. Vui lòng nâng cấp gói!');
             return;
         }
-        setModalMode('create');
-        setSelectedTenant(null);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleCallCreateTenant = async (formData) => {
-        try {
-            await createTenant(formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            // message.success('Tạo người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi tạo người thuê: ${error.response?.data?.message || error.message}`);
-        }
+        navigate(`${tenantBasePath}/create-tenant`);
     };
 
     const handleEditTenant = (record) => {
-        setSelectedTenant(record);
-        setModalMode('edit');
-        const formValues = {
-            ...record,
-            dateOfBirth: record.dateOfBirth ? new Date(record.dateOfBirth) : null,
-            // issueDate: record.issueDate ? new Date(record.issueDate) : null,
-        };
-        form.setFieldsValue(formValues);
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateTenant = async (formData) => {
-        try {
-            // await updateTenant(selectedTenant.id, formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            message.success('Cập nhật người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi cập nhật người thuê: ${error.response?.data?.message || error.message}`);
-        }
+        navigate(`${tenantBasePath}/${record.id}/edit`);
     };
 
     const handleDeleteTenant = (record) => {
@@ -435,22 +410,14 @@ function Tenant() {
             dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
         };
 
-        if (modalMode === 'create') {
-            handleCallCreateTenant(submitData);
-        } else if (modalMode === 'edit') {
-            handleCallUpdateTenant(submitData);
-        } else if (modalMode === 'delete') {
+        if (modalMode === 'delete') {
             handleCallDeleteTenant();
         }
         setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
-        setPagination(prev => ({
-            ...prev,
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-        }));
+        handlePaginationChange(pagination.current, pagination.pageSize);
     };
 
     const getModalTitle = () => {
@@ -468,14 +435,6 @@ function Tenant() {
 
     const handleViewModeChange = (value) => {
         setViewMode(value);
-    };
-
-    const handlePaginationChange = (page, pageSize) => {
-        setPagination(prev => ({
-            ...prev,
-            current: page,
-            pageSize,
-        }));
     };
 
     return (
@@ -585,13 +544,12 @@ function Tenant() {
                                 onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
                             />
                         </div>
-                        <Pagination
+                        <AppPagination
                             current={pagination.current}
                             pageSize={pagination.pageSize}
                             total={pagination.total}
                             onChange={handlePaginationChange}
-                            showSizeChanger
-                            showTotal={(total) => `Tổng ${total} người thuê`}
+                            showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} người thuê`}
                             pageSizeOptions={['10', '20', '30']}
                         />
                     </div>
@@ -641,46 +599,6 @@ function Tenant() {
                                     </Row>
                                 )}
                             </Spin>
-                            {/* Pagination bottom for card view */}
-                            <div className={cx('pagination-wrapper')}>
-                                <div className={cx('left-actions')}>
-                                    <div className={cx('view-mode-toggle')}>
-                                        <Segmented
-                                            options={[
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <TableOutlined />
-                                                            Bảng
-                                                        </>
-                                                    ),
-                                                    value: 'table',
-                                                },
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <AppstoreOutlined />
-                                                            Thẻ
-                                                        </>
-                                                    ),
-                                                    value: 'card',
-                                                },
-                                            ]}
-                                            value={viewMode}
-                                            onChange={handleViewModeChange}
-                                        />
-                                    </div>
-                                </div>
-                                <Pagination
-                                    current={pagination.current}
-                                    pageSize={pagination.pageSize}
-                                    total={pagination.total}
-                                    onChange={handlePaginationChange}
-                                    showSizeChanger
-                                    showQuickJumper
-                                    pageSizeOptions={['10', '20', '30']}
-                                />
-                            </div>
                         </>
                     )}
                 </div>

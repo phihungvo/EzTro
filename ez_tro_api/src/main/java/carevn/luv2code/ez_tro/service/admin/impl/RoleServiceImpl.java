@@ -22,6 +22,11 @@ import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.service.admin.RoleService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý Role và gán Permission cho Role.
+ *
+ * <p>Một số method evict cache quyền (userPermissions/rolePermissions) để đảm bảo dữ liệu mới có hiệu lực.
+ */
 @Service
 @RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {
@@ -30,6 +35,12 @@ public class RoleServiceImpl implements RoleService {
     private final PermissionRepository permissionRepository;
     private final RoleMapper roleMapper;
 
+    /**
+     * Tạo mới role và (tùy chọn) gán permissions.
+     *
+     * @param request payload tạo role
+     * @return role DTO sau khi tạo
+     */
     @CacheEvict(
             value = {"userPermissions", "rolePermissions"},
             allEntries = true)
@@ -58,6 +69,12 @@ public class RoleServiceImpl implements RoleService {
         return roleMapper.toDTO(savedRole);
     }
 
+    /**
+     * Gán danh sách permission cho role (thay thế set hiện tại).
+     *
+     * @param request payload gán permission
+     * @return role DTO sau khi gán
+     */
     @CacheEvict(
             value = {"userPermissions", "rolePermissions"},
             allEntries = true)
@@ -78,6 +95,13 @@ public class RoleServiceImpl implements RoleService {
         return roleMapper.toDTO(updatedRole);
     }
 
+    /**
+     * Cập nhật role và (tùy chọn) cập nhật permissions.
+     *
+     * @param id id role
+     * @param request payload cập nhật role
+     * @return role DTO sau khi cập nhật
+     */
     @CacheEvict(
             value = {"userPermissions", "rolePermissions"},
             allEntries = true)
@@ -184,6 +208,11 @@ public class RoleServiceImpl implements RoleService {
         return roleRepository.findAll(PageRequest.of(page, size)).map(this::convertToDTO);
     }
 
+    /**
+     * Lấy danh sách role không phân trang.
+     *
+     * @return danh sách role DTO
+     */
     @Override
     public List<RoleDTO> getAllRolesNoPaging() {
         List<Role> roles = roleRepository.findAll();

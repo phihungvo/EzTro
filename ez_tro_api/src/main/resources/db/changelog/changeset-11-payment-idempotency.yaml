@@ -1,0 +1,99 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11-payment-idempotency-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: payment_operation_logs
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_id
+                  type: INT
+              - column:
+                  name: target_key
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operation_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_id
+                  type: VARCHAR(120)
+              - column:
+                  name: actor_id
+                  type: INT
+              - column:
+                  name: result_json
+                  type: LONGTEXT
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: DATETIME
+        - addUniqueConstraint:
+            tableName: payment_operation_logs
+            columnNames: target_key, operation_type, idempotency_key
+            constraintName: uk_payment_operation_logs_idempotency
+        - addForeignKeyConstraint:
+            baseTableName: payment_operation_logs
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_payment_operation_logs_organization
+        - addForeignKeyConstraint:
+            baseTableName: payment_operation_logs
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_payment_operation_logs_contract
+        - addForeignKeyConstraint:
+            baseTableName: payment_operation_logs
+            baseColumnNames: payment_id
+            referencedTableName: payments
+            referencedColumnNames: id
+            constraintName: fk_payment_operation_logs_payment
+        - addForeignKeyConstraint:
+            baseTableName: payment_operation_logs
+            baseColumnNames: actor_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_payment_operation_logs_actor
+        - createIndex:
+            tableName: payment_operation_logs
+            indexName: idx_payment_operation_logs_contract
+            columns:
+              - column:
+                  name: contract_id

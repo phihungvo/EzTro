@@ -16,7 +16,8 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Row, Col, Pagination, Segmented} from 'antd';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import {Form, message, Row, Col, Segmented} from 'antd';
 import {
     createBuilding,
     updateBuilding,
@@ -27,6 +28,7 @@ import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 import {useOwnerQuota} from '~/hooks/useOwnerQuota';
 import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
 import {useAuth} from "~/routes/AuthContext";
+import usePagination from '~/hooks/usePagination';
 
 const cx = classNames.bind(styles);
 
@@ -34,11 +36,11 @@ function Building() {
     const [buildingSource, setBuildingSource] = useState([]);
     const [boardingHouseOptionSource, setBoardingHouseOptionSource] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        setTotal: setPaginationTotal,
+    } = usePagination({ initialPageSize: 10 });
     const [modalMode, setModalMode] = useState('create');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBuilding, setSelectedBuilding] = useState(null);
@@ -138,7 +140,6 @@ function Building() {
 
     useEffect(() => {
         handleGetAllBoardingHouses();
-        handleGetBuildings();
     }, []);
 
     const handleGetAllBoardingHouses = async () => {
@@ -155,28 +156,30 @@ function Building() {
         }
     };
 
-    const handleGetBuildings = async (page = 1, pageSize = pagination.pageSize) => {
+    const handleGetBuildings = async (page = pagination.current, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
             const response = await getAllBuildingsByRole({page: page - 1, pageSize});
             if (response?.content) {
                 setBuildingSource(response.content);
-                setPagination({
-                    current: page,
-                    pageSize,
-                    total: response.totalElements,
-                });
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setBuildingSource([]);
+                setPaginationTotal(0);
                 message.error('Dữ liệu tòa nhà không hợp lệ');
             }
         } catch (error) {
             message.error(`Lỗi khi lấy danh sách tòa nhà: ${error.response?.data?.message || error.message}`);
             setBuildingSource([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        handleGetBuildings();
+    }, [pagination.current, pagination.pageSize]);
 
     const handleAddBuilding = () => {
         if (isAddDisabled) {
@@ -249,7 +252,7 @@ function Building() {
     };
 
     const handleTableChange = (newPagination) => {
-        handleGetBuildings(newPagination.current, newPagination.pageSize);
+        handlePaginationChange(newPagination.current, newPagination.pageSize);
     };
 
     const getModalTitle = () => {
@@ -292,6 +295,14 @@ function Building() {
 
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
+                    <AppPagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={handlePaginationChange}
+                        showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} tòa nhà`}
+                    />
                 </div>
             </div>
 
@@ -302,36 +313,22 @@ function Building() {
                         columns={columns}
                         dataSources={buildingSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {buildingSource.map((building) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={building.id}>
-                                    <BuildingCard
-                                        building={building}
-                                        // onView={() => handleViewBuilding(building)}
-                                        onEdit={() => handleEditBuilding(building)}
-                                        onDelete={() => handleDeleteBuilding(building)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetBuildings(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {buildingSource.map((building) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={building.id}>
+                                <BuildingCard
+                                    building={building}
+                                    onView={() => handleEditBuilding(building)}
+                                    onEdit={() => handleEditBuilding(building)}
+                                    onDelete={() => handleDeleteBuilding(building)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

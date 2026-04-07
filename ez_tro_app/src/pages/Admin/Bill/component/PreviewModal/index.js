@@ -1,23 +1,105 @@
+import { useRef } from "react";
 import styles from "./PreviewModal.module.scss";
 import { fmt } from "../data.js";
 
-export default function PreviewModal({ state, computed, roomData, onClose, onPublish, onPrint }) {
-    const { room, month, year, issueDate, dueDate, extras, paymentMethod, notePublic, paymentInstructions } = state;
-    const { total } = computed;
-    const fixedServiceLines = (state.fixedServices || []).filter((item) => Number(item.totalAmount || 0) > 0);
-    const activeExtras   = extras.filter(e => parseFloat(e.amount) > 0);
+export default function PreviewModal({
+    state,
+    computed,
+    preview,
+    loading,
+    error,
+    roomData,
+    onClose,
+    onPublish,
+    onPrint,
+}) {
+    const previewRef = useRef(null);
+    const { room, month, year, issueDate, paymentMethod, paymentInstructions, notePublic } = state;
+    const totalAmount = preview ? Number(preview.totalAmount || 0) : computed.total;
+    const previewPeriod = preview
+        ? `${preview.billingPeriodStart || ""} → ${preview.billingPeriodEnd || ""}`
+        : `Tháng ${month}/${year}`;
+    const previewCode = preview?.generationKey
+        ? preview.generationKey
+        : `#HD-${room}-${year}-${String(month).padStart(2, "0")}`;
+    const previewDueDate = preview?.dueDate || state.dueDate;
+    const previewLines = preview?.lines || [];
+    const hasMissing = preview?.hasMissingMeterReadings;
+    const publishDisabled = loading || Boolean(error) || hasMissing;
 
     const pmLabels = { cash: "Tiền mặt", bank: "Chuyển khoản Vietcombank", momo: "Momo / ZaloPay" };
+    const fmtDate = (str) => (str ? new Date(str).toLocaleDateString("vi-VN") : "—");
+    const handlePrint = () => {
+        if (typeof onPrint === "function") {
+            onPrint();
+            return;
+        }
+        if (typeof window === "undefined" || !previewRef.current) {
+            return;
+        }
 
-    const fmtDate = (str) => str ? new Date(str).toLocaleDateString("vi-VN") : "—";
-    const meterLines = (state.meterReadings || []).map((r) => {
-        const prev = Number(r.previousIndex || 0);
-        const curr = r.currentIndex === "" || r.currentIndex == null ? null : Number(r.currentIndex);
-        const price = Number(r.unitPrice || 0);
-        const diff = curr == null ? null : curr - prev;
-        const amount = curr == null ? 0 : Math.max(0, (diff || 0) * price);
-        return { ...r, prev, curr, diff, amount, price };
-    }).filter((r) => r.curr != null);
+        const printWindow = window.open("", "_blank", "width=960,height=1200");
+        if (!printWindow) {
+            return;
+        }
+
+        const headMarkup = Array.from(document.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map((node) => node.outerHTML)
+            .join("");
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html lang="vi">
+                <head>
+                    <meta charset="utf-8" />
+                    <title>${previewCode}</title>
+                    ${headMarkup}
+                    <style>
+                        body { margin: 0; padding: 24px; background: #f5f5f5; }
+                        .print-shell { max-width: 960px; margin: 0 auto; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-shell">${previewRef.current.outerHTML}</div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        window.setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 300);
+    };
+
+    const renderLine = (line, idx) => (
+        <div key={`${line.lineKey}-${idx}`} className={styles.lineItem}>
+            <span>
+                {line.description || line.lineKey || "Dịch vụ"}
+                {line.quantity && line.unitPrice ? ` (${line.quantity} x ${fmt(line.unitPrice)})` : ""}
+            </span>
+            <span>{fmt(Number(line.amount || 0))} ₫</span>
+        </div>
+    );
+
+    const renderBodyContent = () => {
+        if (loading) {
+            return <div style={{ textAlign: "center", padding: 24 }}>Đang tải preview...</div>;
+        }
+        if (error) {
+            return (
+                <div style={{ textAlign: "center", padding: 24, color: "#cf1322" }}>
+                    {error}
+                </div>
+            );
+        }
+        if (previewLines.length === 0) {
+            return (
+                <div style={{ textAlign: "center", padding: 24 }}>Không có dòng chi tiết để hiển thị.</div>
+            );
+        }
+        return previewLines.map(renderLine);
+    };
 
     return (
         <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -28,19 +110,17 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
                 </div>
 
                 <div className={styles.body}>
-                    <div className={styles.previewDoc}>
-                        {/* Head */}
+                    <div className={styles.previewDoc} ref={previewRef}>
                         <div className={styles.previewHead}>
                             <div className={styles.previewHeadSub}>KHU NHÀ TRỌ TÂN BÌNH</div>
                             <h3 className={styles.previewTitle}>HOÁ ĐƠN TIỀN PHÒNG</h3>
-                            <p className={styles.previewPeriod}>Tháng {month}/{year}</p>
+                            <p className={styles.previewPeriod}>{previewPeriod}</p>
                         </div>
 
-                        {/* Meta */}
                         <div className={styles.previewMeta}>
                             <div className={styles.metaBlock}>
-                                <div className={styles.metaLbl}>Mã hoá đơn</div>
-                                <div className={styles.metaVal}>#HD-{room}-{year}-{String(month).padStart(2,"0")}</div>
+                                <div className={styles.metaLbl}>Mã hóa đơn</div>
+                                <div className={styles.metaVal}>{previewCode}</div>
                             </div>
                             <div className={styles.metaBlock}>
                                 <div className={styles.metaLbl}>Ngày phát hành</div>
@@ -56,41 +136,21 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
                             </div>
                         </div>
 
-                        {/* Lines */}
-                        <div className={styles.lines}>
-                            <div className={styles.lineItem}>
-                                <span>Tiền phòng (tháng {month})</span>
-                                <span>{fmt(state.roomPrice)} ₫</span>
+                        <div className={styles.lines}>{renderBodyContent()}</div>
+
+                        {hasMissing && (
+                            <div style={{ color: "#d48806", paddingLeft: 8, marginBottom: 6 }}>
+                                Cảnh báo: một số tiện ích chưa có chỉ số công tơ trong kỳ này.
                             </div>
-                            {meterLines.map((r) => (
-                                <div key={r.utilityId} className={styles.lineItem}>
-                                    <span>
-                                        {r.utilityName} ({r.prev}→{r.curr} = {r.diff} {r.unit} × {fmt(r.price)}₫)
-                                    </span>
-                                    <span>{fmt(r.amount)} ₫</span>
-                                </div>
-                            ))}
-                            {fixedServiceLines.map((item) => (
-                                <div key={item.id} className={styles.lineItem}>
-                                    <span>{item.name} ({item.quantity} x {fmt(item.unitPrice)}₫)</span>
-                                    <span>{fmt(item.totalAmount)} ₫</span>
-                                </div>
-                            ))}
-                            {activeExtras.map((e) => (
-                                <div key={e.id} className={styles.lineItem}>
-                                    <span>{e.name || "Phí phát sinh"}</span>
-                                    <span>{fmt(e.amount)} ₫</span>
-                                </div>
-                            ))}
-                        </div>
+                        )}
 
                         <div className={styles.previewTotal}>
                             <span>TỔNG CỘNG</span>
-                            <span>{fmt(total)} ₫</span>
+                            <span>{fmt(totalAmount)} ₫</span>
                         </div>
 
                         <div className={styles.previewNote}>
-                            <strong>Hạn thanh toán:</strong> {fmtDate(dueDate)}<br />
+                            <strong>Hạn thanh toán:</strong> {fmtDate(previewDueDate)}<br />
                             <strong>Phương thức:</strong> {pmLabels[paymentMethod] || paymentMethod}<br />
                             <strong>Hướng dẫn:</strong> {paymentInstructions}<br />
                             <em>{notePublic}</em>
@@ -104,8 +164,10 @@ export default function PreviewModal({ state, computed, roomData, onClose, onPub
 
                 <div className={styles.footer}>
                     <button className={styles.btnGhost} onClick={onClose}>Đóng</button>
-                    <button className={styles.btnOutline} onClick={onPrint}>🖨 In hoá đơn</button>
-                    <button className={styles.btnPrimary} onClick={onPublish}>✅ Phát hành</button>
+                    <button className={styles.btnOutline} onClick={handlePrint}>🖨 In hoá đơn</button>
+                    <button className={styles.btnPrimary} onClick={onPublish} disabled={publishDisabled}>
+                        {hasMissing ? "Bổ sung meter trước khi phát hành" : "✅ Phát hành"}
+                    </button>
                 </div>
             </div>
         </div>

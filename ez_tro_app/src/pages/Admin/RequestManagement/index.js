@@ -553,6 +553,15 @@ function Request() {
                         icon={<CloudUploadOutlined />}
                         onClick={() => message.info('Xuất Excel sắp có!')}
                     />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetRequests(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -563,38 +572,24 @@ function Request() {
                         columns={columns}
                         dataSources={requestSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {requestSource.map((request) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={request.id}>
-                                    <RequestCard
-                                        request={request}
-                                        onView={() => handleViewRequest(request)}
-                                        onApprove={() => handleApproveRequest(request)}
-                                        onReject={() => handleRejectRequest(request)}
-                                        renderStatusTag={renderStatusTag}
-                                        renderTypeTag={renderTypeTag}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetRequests(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {requestSource.map((request) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={request.id}>
+                                <RequestCard
+                                    request={request}
+                                    onView={() => handleViewRequest(request)}
+                                    onApprove={() => handleApproveRequest(request)}
+                                    onReject={() => handleRejectRequest(request)}
+                                    renderStatusTag={renderStatusTag}
+                                    renderTypeTag={renderTypeTag}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

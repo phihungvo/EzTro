@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,12 +9,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import carevn.luv2code.ez_tro.entity.Bill;
 import carevn.luv2code.ez_tro.entity.Contract;
+import carevn.luv2code.ez_tro.enums.BillLifecycleStatus;
+import carevn.luv2code.ez_tro.enums.BillStatus;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecificationExecutor<Bill> {
@@ -26,7 +31,64 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
 
     Page<Bill> findByTenant_User_Id(Integer userId, Pageable pageable);
 
+    @Query(
+            """
+			SELECT b
+			FROM Bill b
+			WHERE b.tenant.user.id = :userId
+			AND (
+					b.lifecycleStatus = :sentStatus
+					OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+				)
+			ORDER BY b.createdAt DESC, b.id DESC
+			""")
+    List<Bill> findVisibleToTenantByUserId(
+            @Param("userId") Integer userId,
+            @Param("sentStatus") BillLifecycleStatus sentStatus,
+            @Param("cancelledStatus") BillLifecycleStatus cancelledStatus);
+
+    @Query(
+            value =
+                    """
+					SELECT b
+					FROM Bill b
+					WHERE b.tenant.user.id = :userId
+					AND (
+							b.lifecycleStatus = :sentStatus
+							OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+						)
+					""",
+            countQuery =
+                    """
+					SELECT COUNT(b)
+					FROM Bill b
+					WHERE b.tenant.user.id = :userId
+					AND (
+							b.lifecycleStatus = :sentStatus
+							OR (b.lifecycleStatus = :cancelledStatus AND b.sentAt IS NOT NULL)
+						)
+					""")
+    Page<Bill> findVisibleToTenantByUserId(
+            @Param("userId") Integer userId,
+            @Param("sentStatus") BillLifecycleStatus sentStatus,
+            @Param("cancelledStatus") BillLifecycleStatus cancelledStatus,
+            Pageable pageable);
+
     Optional<Bill> findTopByContractOrderByCreatedAtDesc(Contract contract);
+
+    boolean existsByGenerationKey(String generationKey);
+
+    Optional<Bill> findByGenerationKey(String generationKey);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Bill b WHERE b.id IN :ids ORDER BY b.id ASC")
+    List<Bill> findByIdInForUpdate(@Param("ids") Collection<Integer> ids);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "ORDER BY b.dueDate ASC, b.id ASC")
+    List<Bill> findByContractIdForUpdate(@Param("contractId") Integer contractId);
+
+    List<Bill> findByStatusNotAndDueDateBefore(BillStatus status, LocalDate dueDate);
 
     // Kiểm tra tồn tại bill trong tháng/năm chỉ định
     //    @Query("SELECT COUNT(b) > 0 FROM Bill b " + "WHERE b.room.id = :roomId "
@@ -88,6 +150,10 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     default boolean existsByRoomIdAndMonthAndYear(Integer roomId, Integer month, Integer year) {
         return countByRoomIdAndMonthAndYear(roomId, month, year) > 0;
     }
+
+    List<Bill> findByStatusInAndDueDate(List<BillStatus> statuses, LocalDate dueDate);
+
+    List<Bill> findByStatus(BillStatus status);
 
     // Tìm bill theo contract và tháng/năm (nếu cần)
     //    @Query("SELECT b FROM Bill b WHERE b.contract.id = :contractId " + "AND b.month = :month AND b.year = :year")

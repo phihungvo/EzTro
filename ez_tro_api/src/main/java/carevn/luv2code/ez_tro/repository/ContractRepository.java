@@ -33,6 +33,8 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     boolean existsByRoomIdAndStatusIn(Integer roomId, Collection<ContractStatus> statuses);
 
+    boolean existsByRoomIdAndIdNotAndStatusIn(Integer roomId, Integer id, Collection<ContractStatus> statuses);
+
     Optional<Contract> findTopByOrderByIdDesc();
 
     Optional<Contract> findByRoomIdAndStatus(Integer roomId, ContractStatus status);
@@ -114,6 +116,12 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 			AND (c.endDate IS NULL OR c.endDate >= :today)
 			""")
     boolean existsEffectiveActiveContractByRoomId(@Param("roomId") Integer roomId, @Param("today") LocalDate today);
+
+    List<Contract> findByAutoRenewTrueAndEndDateLessThanEqualAndStatusIn(
+            LocalDate endDate, Collection<ContractStatus> statuses);
+
+    @Query("SELECT c FROM Contract c WHERE c.status = :status AND c.endDate = :endDate")
+    List<Contract> findByStatusAndEndDate(@Param("status") ContractStatus status, @Param("endDate") LocalDate endDate);
 
     default List<Contract> findActiveContractsForBilling(int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);

@@ -13,6 +13,11 @@ import carevn.luv2code.ez_tro.service.admin.UtilityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý tiện ích/dịch vụ (Utility) của khu nhà trọ.
+ *
+ * <p>Utility thường được dùng để cấu hình giá điện/nước/dịch vụ và làm input cho billing.
+ */
 @RestController
 @RequestMapping("/api/utilities")
 @RequiredArgsConstructor
@@ -20,6 +25,12 @@ public class UtilityController {
 
     private final UtilityService utilityService;
 
+    /**
+     * Tạo mới utility.
+     *
+     * @param request payload tạo utility
+     * @return response chứa utility vừa tạo
+     */
     @PostMapping
     public ApiResponse<UtilityResponse> create(@Valid @RequestBody UtilityRequest request) {
         UtilityResponse response = utilityService.create(request);
@@ -30,6 +41,13 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Cập nhật utility theo id.
+     *
+     * @param id id utility
+     * @param request payload cập nhật utility
+     * @return response chứa utility sau cập nhật
+     */
     @PutMapping("/{id}")
     public ApiResponse<UtilityResponse> update(@PathVariable Integer id, @Valid @RequestBody UtilityRequest request) {
         UtilityResponse response = utilityService.update(id, request);
@@ -40,6 +58,12 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Xóa utility theo id.
+     *
+     * @param id id utility
+     * @return response không có payload
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Integer id) {
         utilityService.delete(id);
@@ -49,6 +73,12 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Lấy utility theo id.
+     *
+     * @param id id utility
+     * @return response chứa utility
+     */
     @GetMapping("/{id}")
     public ApiResponse<UtilityResponse> getById(@PathVariable Integer id) {
         UtilityResponse response = utilityService.getById(id);
@@ -59,6 +89,11 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách utilities (theo role hiện tại).
+     *
+     * @return response chứa danh sách utilities
+     */
     @GetMapping
     public ApiResponse<List<UtilityResponse>> getAll() {
         List<UtilityResponse> responses = utilityService.getAll();
@@ -69,6 +104,13 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách utilities phân trang.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa page utilities
+     */
     @GetMapping("/paged")
     public ApiResponse<Page<UtilityResponse>> getPaged(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
@@ -80,6 +122,12 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách utilities theo khu nhà trọ.
+     *
+     * @param boardingHouseId id khu nhà trọ
+     * @return response chứa danh sách utilities
+     */
     @GetMapping("/boarding/{boardingHouseId}")
     public ApiResponse<List<UtilityResponse>> getByBoardingHouse(@PathVariable Integer boardingHouseId) {
         List<UtilityResponse> responses = utilityService.getByBoardingHouse(boardingHouseId);
@@ -90,6 +138,14 @@ public class UtilityController {
                 .build();
     }
 
+    /**
+     * Lấy utilities active theo khu nhà trọ (phân trang).
+     *
+     * @param boardingHouseId id khu nhà trọ
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa page utilities active
+     */
     @GetMapping("/active/boarding/{boardingHouseId}")
     public ApiResponse<Page<UtilityResponse>> getActiveByBoardingHouse(
             @PathVariable Integer boardingHouseId,

@@ -4,17 +4,24 @@ import sharedStyles from '../shared/FormFields.module.scss';
 import styles from './ContractInfoSection.module.scss';
 
 export default function ContractInfoSection({
-                                                state, patch, boardingHouses, rooms, loadingRooms, selectedRoom,
+                                                state, patch, boardingHouses, rooms, loadingRooms, selectedRoom, isEditMode,
                                             }) {
+    const statusText = {
+        ACTIVE: 'Đang hiệu lực',
+        PENDING: 'Sắp hiệu lực',
+        EXPIRED: 'Đã hết hạn',
+        CANCELLED: 'Đã hủy',
+    }[state.status] || 'Bản nháp';
+
     return (
         <SectionCard
             icon="📋"
             iconColor="blue"
             title="Thông tin hợp đồng"
-            desc="Mã hợp đồng, loại hợp đồng và thời hạn"
+            desc={isEditMode ? "Cập nhật thông tin hợp đồng hiện có" : "Chọn phòng và thiết lập kỳ hạn hợp đồng"}
             headerRight={
                 <div className={`${styles.statusChip} ${styles.draft}`}>
-                    <div className={styles.dot} /> Bản nháp
+                    <div className={styles.dot} /> {statusText}
                 </div>
             }
         >
@@ -24,6 +31,7 @@ export default function ContractInfoSection({
                     <select
                         className={sharedStyles.select}
                         value={state.boardingHouseId}
+                        disabled={isEditMode}
                         onChange={(e) => patch({ boardingHouseId: e.target.value })}
                     >
                         <option value="">Chọn khu trọ</option>
@@ -37,15 +45,15 @@ export default function ContractInfoSection({
                     <select
                         className={sharedStyles.select}
                         value={state.roomId}
-                        disabled={!state.boardingHouseId || loadingRooms}
+                        disabled={isEditMode || !state.boardingHouseId || loadingRooms}
                         onChange={(e) => patch({ roomId: e.target.value })}
                     >
                         <option value="">
-                            {loadingRooms ? 'Đang tải...' : 'Chọn phòng trống'}
+                            {loadingRooms ? 'Đang tải...' : 'Chọn phòng'}
                         </option>
                         {rooms.map((r) => (
                             <option key={r.id} value={r.id}>
-                                P.{r.roomNumber} – Tầng {r.floorNumber || 'N/A'} – Đang trống
+                                P.{r.roomNumber} – Tầng {r.floorNumber || 'N/A'} – {r.status === 'AVAILABLE' ? 'Đang trống' : 'Đang sử dụng'}
                             </option>
                         ))}
                     </select>
@@ -54,30 +62,23 @@ export default function ContractInfoSection({
 
             <div className={sharedStyles.sectionDivider} />
 
-            {/* ── Mã HĐ, loại, ngày ── */}
             <div className={sharedStyles.formGrid3}>
-                <Field label="Mã hợp đồng" required hint="Tự động tạo, có thể chỉnh sửa">
+                <Field label="Mã hợp đồng" hint="Hệ thống tự sinh sau khi lưu">
                     <input
                         className={sharedStyles.input}
                         type="text"
-                        defaultValue="HD-2024-0087"
+                        value={state.contractCode || ''}
+                        readOnly
+                        placeholder="Sẽ được tạo tự động"
                     />
                 </Field>
 
-                <Field label="Loại hợp đồng" required>
-                    <select className={sharedStyles.select}>
-                        <option>Hợp đồng dài hạn (≥ 6 tháng)</option>
-                        <option>Hợp đồng ngắn hạn (&lt; 6 tháng)</option>
-                        <option>Hợp đồng theo tháng</option>
-                        <option>Hợp đồng thử việc</option>
-                    </select>
-                </Field>
-
-                <Field label="Ngày ký hợp đồng" required>
+                <Field label="Trạng thái hệ thống">
                     <input
                         className={sharedStyles.input}
-                        type="date"
-                        defaultValue="2024-12-01"
+                        type="text"
+                        value={statusText}
+                        readOnly
                     />
                 </Field>
 
@@ -109,6 +110,17 @@ export default function ContractInfoSection({
                         max={120}
                     />
                 </Field>
+
+                <Field label="Tự gia hạn">
+                    <label className={styles.toggleField}>
+                        <input
+                            type="checkbox"
+                            checked={Boolean(state.autoRenew)}
+                            onChange={(e) => patch({ autoRenew: e.target.checked })}
+                        />
+                        <span>{state.autoRenew ? 'Bật tự gia hạn' : 'Tắt tự gia hạn'}</span>
+                    </label>
+                </Field>
             </div>
 
             {/* ── Info box phòng đã chọn ── */}
@@ -118,7 +130,7 @@ export default function ContractInfoSection({
                     <div>
                         Phòng {selectedRoom.roomNumber} – Tầng {selectedRoom.floorNumber || 'N/A'} –
                         Tối đa {selectedRoom.maxOccupants || 'N/A'} người.
-                        Phòng hiện đang <strong>trống</strong>, có thể ký hợp đồng ngay.
+                        Phòng hiện đang <strong>{selectedRoom.status === 'AVAILABLE' ? 'trống' : 'được sử dụng'}</strong>.
                     </div>
                 </div>
             )}

@@ -1,14 +1,6 @@
-import dayjs from 'dayjs';
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import classNames from 'classnames/bind';
 import {useLocation, useNavigate} from 'react-router-dom';
-// import moment from 'moment';
-import styles from '~/pages/Admin/Contract/Contract.module.scss';
-import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
-import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
-import ContractFileUploadModal from '~/components/Layout/AdminLayout/components/ContractFileUploadModal';
-import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal';
-// import ContractEditor from '~/pages/Admin/Contract/components/ContractEditor';
 import {
     PlusOutlined,
     CloudUploadOutlined,
@@ -18,32 +10,25 @@ import {
     AppstoreOutlined,
     UploadOutlined,
     FileTextOutlined,
+    EyeOutlined,
+    SyncOutlined,
 } from '@ant-design/icons';
+import {message, Row, Col, Segmented, Tag, Empty, Spin, ConfigProvider, Modal} from 'antd';
+
+import styles from '~/pages/Admin/Contract/Contract.module.scss';
+import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
+import ContractCard from '~/components/Layout/AdminLayout/components/ContractCard';
+import ContractFileUploadModal from '~/components/Layout/AdminLayout/components/ContractFileUploadModal';
+import ContractFileListModal from '~/components/Layout/AdminLayout/components/ContractFileListModal';
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
-import {
-    Form,
-    message,
-    Row,
-    Col,
-    Pagination,
-    Segmented,
-    Tag,
-    Empty,
-    Spin,
-    ConfigProvider,
-    Modal,
-} from 'antd';
-import {
-    filterContracts,
-    createContract,
-    updateContract,
-    deleteContract,
-} from '~/service/admin/contract';
-import {getAllRoomAvailable, getRoomsByBoardingHouse} from "~/service/admin/room";
-import {getAllTenantNoPaged} from "~/service/admin/tenant";
+import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
+
+import {filterContracts, deleteContract, backfillContractFoundation} from '~/service/admin/contract';
+import {getRoomsByBoardingHouse} from '~/service/admin/room';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 import useDebounce from '~/hooks/useDebounce';
-import {getAllBoardingHousesNoPaged} from "~/service/admin/boarding_house";
-import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
+import usePagination from '~/hooks/usePagination';
 
 const cx = classNames.bind(styles);
 
@@ -51,32 +36,29 @@ function Contract() {
     const navigate = useNavigate();
     const location = useLocation();
     const contractBasePath = location.pathname.startsWith('/admin') ? '/admin/contracts' : '/owner/contracts';
-    const [contractSource, setContractSource] = useState([]);
-    const [roomOptions, setRoomOptions] = useState([]);
-    const [roomCatalog, setRoomCatalog] = useState([]);
-    const [tenantCatalog, setTenantCatalog] = useState([]);
-    const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [editorSubmitting, setEditorSubmitting] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
-    const currentPage = pagination.current;
-    const currentPageSize = pagination.pageSize;
-    const [modalMode, setModalMode] = useState('create');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedContract, setSelectedContract] = useState(null);
-    const [viewMode, setViewMode] = useState('table');
-    const [form] = Form.useForm();
 
-    // State cho modal upload file
+    const [contractSource, setContractSource] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [viewMode, setViewMode] = useState('table');
+
+    const [boardingHouseOptions, setBoardingHouseOptions] = useState([]);
+    const [roomOptions, setRoomOptions] = useState([]);
+    const [roomsLoading, setRoomsLoading] = useState(false);
+
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedContractForUpload, setSelectedContractForUpload] = useState(null);
 
     const [isFileListModalOpen, setIsFileListModalOpen] = useState(false);
     const [selectedContractForViewFiles, setSelectedContractForViewFiles] = useState(null);
+
+    const [backfilling, setBackfilling] = useState(false);
+
+    const {
+        pagination,
+        handleChange: handlePaginationChange,
+        reset: resetPagination,
+        setTotal: setPaginationTotal,
+    } = usePagination({initialPageSize: 10});
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -84,16 +66,29 @@ function Contract() {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [boardingHouseFilter, setBoardingHouseFilter] = useState(null);
     const [roomFilter, setRoomFilter] = useState(null);
-    const [roomsLoading, setRoomsLoading] = useState(false);
+
+    const filterFingerprint = useMemo(() => {
+        const start = dateRange?.[0]?.format?.('YYYY-MM-DD') || '';
+        const end = dateRange?.[1]?.format?.('YYYY-MM-DD') || '';
+        return [
+            debouncedSearchTerm || '',
+            start,
+            end,
+            statusFilter || 'ALL',
+            boardingHouseFilter || '',
+            roomFilter || '',
+        ].join('|');
+    }, [debouncedSearchTerm, dateRange, statusFilter, boardingHouseFilter, roomFilter]);
+    const lastFilterFingerprintRef = useRef(filterFingerprint);
 
     const getStatusTag = (status) => {
         const statusConfig = {
-            'ACTIVE': {color: 'success', text: 'Đang hiệu lực'},
-            'PENDING': {color: 'processing', text: 'Sắp hiệu lực'},
-            'CANCELLED': {color: 'warning', text: 'Đã chấm dứt'},
-            'EXPIRED': {color: 'error', text: 'Hết hạn'},
+            ACTIVE: {color: 'success', text: 'Đang hiệu lực'},
+            PENDING: {color: 'processing', text: 'Sắp hiệu lực'},
+            CANCELLED: {color: 'warning', text: 'Đã chấm dứt'},
+            EXPIRED: {color: 'error', text: 'Hết hạn'},
         };
-        const config = statusConfig[status] || {color: 'default', text: status};
+        const config = statusConfig[status] || {color: 'default', text: status || 'N/A'};
         return <Tag color={config.color}>{config.text}</Tag>;
     };
 
@@ -109,7 +104,7 @@ function Contract() {
         setBoardingHouseFilter(null);
         setRoomFilter(null);
         setRoomOptions([]);
-        setPagination(prev => ({...prev, current: 1}));
+        resetPagination();
         message.success('Đã reset bộ lọc!');
     };
 
@@ -160,7 +155,7 @@ function Contract() {
                         <span className={cx('date-end')}>{end}</span>
                     </div>
                 );
-            }
+            },
         },
         {
             title: 'Trạng thái hợp đồng',
@@ -202,8 +197,7 @@ function Contract() {
             key: 'createdAt',
             align: 'center',
             width: 200,
-            render: (date) =>
-                date ? new Date(date).toLocaleString('vi-VN') : 'N/A',
+            render: (date) => (date ? new Date(date).toLocaleString('vi-VN') : 'N/A'),
         },
         {
             title: 'Ngày cập nhật',
@@ -211,8 +205,7 @@ function Contract() {
             key: 'updatedAt',
             align: 'center',
             width: 200,
-            render: (date) =>
-                date ? new Date(date).toLocaleString('vi-VN') : 'N/A',
+            render: (date) => (date ? new Date(date).toLocaleString('vi-VN') : 'N/A'),
         },
         {
             title: 'Số file',
@@ -227,9 +220,7 @@ function Contract() {
                     title="Click để xem danh sách file"
                 >
                     <FileTextOutlined className={cx('file-icon')}/>
-                    <span className={cx('file-number')}>
-                        {fileCount || 0}
-                    </span>
+                    <span className={cx('file-number')}>{fileCount || 0}</span>
                 </div>
             ),
         },
@@ -241,10 +232,17 @@ function Contract() {
             render: (_, record) => (
                 <>
                     <SmartButton
+                        type="default"
+                        icon={<EyeOutlined/>}
+                        buttonWidth={40}
+                        onClick={() => handleViewContract(record)}
+                    />
+                    <SmartButton
                         type="primary"
                         icon={<EditOutlined/>}
                         buttonWidth={40}
                         onClick={() => handleEditContract(record)}
+                        style={{marginLeft: '8px'}}
                     />
                     <SmartButton
                         type="success"
@@ -265,228 +263,126 @@ function Contract() {
         },
     ];
 
-    const loadRoomsForBoardingHouse = async (boardingHouseId) => {
+    const fetchBoardingHouseOptions = useCallback(async () => {
+        try {
+            const response = await getAllBoardingHousesNoPaged();
+            const options = Array.isArray(response)
+                ? response.map((bh) => ({label: bh.name, value: bh.id}))
+                : [];
+            setBoardingHouseOptions(options);
+        } catch (error) {
+            console.error('Error fetching boarding houses:', error);
+        }
+    }, []);
+
+    const loadRoomsForBoardingHouse = useCallback(async (boardingHouseId) => {
         if (!boardingHouseId) {
             setRoomOptions([]);
             return;
         }
+
         setRoomsLoading(true);
         try {
             const rooms = await getRoomsByBoardingHouse(boardingHouseId);
-            if (rooms && Array.isArray(rooms)) {
-                const roomOpts = rooms.map((room) => ({
+            const roomOpts = Array.isArray(rooms)
+                ? rooms.map((room) => ({
                     label: `${room.id} - ${room.roomNumber || 'N/A'}`,
                     value: room.id,
-                }));
-                setRoomOptions(roomOpts);
-            } else {
-                setRoomOptions([]);
-            }
+                }))
+                : [];
+            setRoomOptions(roomOpts);
         } catch (error) {
             console.error('Error loading rooms:', error);
             setRoomOptions([]);
         } finally {
             setRoomsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchOptions();
-    }, []);
+        fetchBoardingHouseOptions();
+    }, [fetchBoardingHouseOptions]);
 
     useEffect(() => {
         loadRoomsForBoardingHouse(boardingHouseFilter);
         setRoomFilter(null);
-    }, [boardingHouseFilter]);
-
-    const fetchOptions = async () => {
-        try {
-            const boardingHouseResponse = await getAllBoardingHousesNoPaged();
-            if (boardingHouseResponse && Array.isArray(boardingHouseResponse)) {
-                const boardingHouses = boardingHouseResponse.map((bh) => ({
-                    label: bh.name,
-                    value: bh.id,
-                }));
-                setBoardingHouseOptions(boardingHouses);
-            }
-
-            const tenantResponse = await getAllTenantNoPaged();
-            if (tenantResponse && Array.isArray(tenantResponse)) {
-                setTenantCatalog(tenantResponse);
-            }
-
-        } catch (error) {
-            console.error('Error fetching options:', error);
-        }
-    };
+    }, [boardingHouseFilter, loadRoomsForBoardingHouse]);
 
     const handleFilterContracts = useCallback(async () => {
         setLoading(true);
         try {
             const params = {
-                page: currentPage - 1,
-                pageSize: currentPageSize,
+                page: pagination.current - 1,
+                pageSize: pagination.pageSize,
             };
 
-            if (debouncedSearchTerm) {
-                params.search = debouncedSearchTerm;
-            }
-
-            if (dateRange && dateRange.length === 2) {
+            if (debouncedSearchTerm) params.search = debouncedSearchTerm;
+            if (dateRange?.length === 2) {
                 params.startDate = dateRange[0].format('YYYY-MM-DD');
                 params.endDate = dateRange[1].format('YYYY-MM-DD');
             }
-
-            if (statusFilter !== 'ALL') {
-                params.status = statusFilter;
-            }
-
-            // New params
-            if (boardingHouseFilter) {
-                params.boardingHouseId = boardingHouseFilter;
-            }
-
-            if (roomFilter) {
-                params.roomId = roomFilter;
-            }
+            if (statusFilter !== 'ALL') params.status = statusFilter;
+            if (boardingHouseFilter) params.boardingHouseId = boardingHouseFilter;
+            if (roomFilter) params.roomId = roomFilter;
 
             const response = await filterContracts(params);
 
             if (response && Array.isArray(response.content)) {
                 setContractSource(response.content);
-                setPagination({
-                    current: currentPage,
-                    pageSize: currentPageSize,
-                    total: response.totalElements,
-                });
+                setPaginationTotal(response.totalElements || 0);
             } else {
                 setContractSource([]);
+                setPaginationTotal(0);
             }
         } catch (error) {
             console.error('Error filtering contracts:', error);
             message.error(`Lỗi khi lọc hợp đồng: ${error.response?.data?.message || error.message}`);
             setContractSource([]);
+            setPaginationTotal(0);
         } finally {
             setLoading(false);
         }
     }, [
-        currentPage,
-        currentPageSize,
+        pagination.current,
+        pagination.pageSize,
         debouncedSearchTerm,
         dateRange,
         statusFilter,
         boardingHouseFilter,
         roomFilter,
+        setPaginationTotal,
     ]);
 
     useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-    }, [debouncedSearchTerm, dateRange, statusFilter, boardingHouseFilter, roomFilter]);
-
-    useEffect(() => {
-        handleFilterContracts();
-    }, [handleFilterContracts]);
-
-    const loadAllRoomsAvailability = async () => {
-        try {
-            const rooms = await getAllRoomAvailable();
-            if (rooms && Array.isArray(rooms)) {
-                setRoomCatalog(rooms);
+        const filtersChanged = lastFilterFingerprintRef.current !== filterFingerprint;
+        if (filtersChanged) {
+            lastFilterFingerprintRef.current = filterFingerprint;
+            if (pagination.current !== 1) {
+                resetPagination();
+                return;
             }
-        } catch (error) {
-            console.error("Error loading all rooms:", error);
-            setRoomCatalog([]);
-        }
-    };
-
-    const buildFallbackRoomFromContract = (contract) => ({
-        id: contract.roomId,
-        roomNumber: contract.roomNumber,
-        boardingHouseName: contract.boardingHouseName,
-        price: contract.rentPrice,
-        floorNumber: null,
-        maxOccupants: null,
-    });
-
-    const buildFallbackTenantFromContract = (contract) => ({
-        id: contract.tenantId,
-        fullName: contract.tenantFullName || contract.tenantName,
-        phoneNumber: null,
-        email: null,
-        identityNumber: null,
-        occupation: null,
-    });
-
-    const ensureEditorEntities = (contract) => {
-        if (!contract) {
-            return;
         }
 
-        setRoomCatalog(prev => prev.some((item) => item.id === contract.roomId)
-            ? prev
-            : [...prev, buildFallbackRoomFromContract(contract)]);
-        setTenantCatalog(prev => prev.some((item) => item.id === contract.tenantId)
-            ? prev
-            : [...prev, buildFallbackTenantFromContract(contract)]);
-    };
+        handleFilterContracts();
+    }, [filterFingerprint, pagination.current, pagination.pageSize, handleFilterContracts, resetPagination]);
 
-    const handleAddContract = async () => {
+    const handleAddContract = () => {
         navigate(`${contractBasePath}/create-contract`);
     };
 
-    const handleCallCreateContract = async (formData) => {
-        setEditorSubmitting(true);
-        try {
-            await createContract(formData);
-            await handleFilterContracts();
-            setIsModalOpen(false);
-            form.resetFields();
-        } catch (error) {
-            message.error(
-                `Lỗi khi tạo hợp đồng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        } finally {
-            setEditorSubmitting(false);
-        }
+    const handleEditContract = (record) => {
+        if (!record?.id) return;
+        navigate(`${contractBasePath}/${record.id}/edit`);
     };
 
-    const handleEditContract = async (record) => {
-        setSelectedContract(record);
-        setModalMode('edit');
-        await loadAllRoomsAvailability();
-        ensureEditorEntities(record);
-        const formValues = {
-            ...record,
-            startDate: record.startDate ? dayjs(record.startDate) : null,
-            endDate: record.endDate ? dayjs(record.endDate) : null,
-            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
-            paymentCycleMonths: record.paymentCycleMonths || 1,
-        };
-        form.setFieldsValue(formValues);
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateContract = async (formData) => {
-        setEditorSubmitting(true);
-        try {
-            await updateContract(selectedContract.id, formData);
-            await handleFilterContracts();
-            setIsModalOpen(false);
-            form.resetFields();
-        } catch (error) {
-            message.error(
-                `Lỗi khi cập nhật hợp đồng: ${
-                    error.response?.data?.message || error.message
-                }`,
-            );
-        } finally {
-            setEditorSubmitting(false);
-        }
+    const handleViewContract = (record) => {
+        if (!record?.id) return;
+        navigate(`${contractBasePath}/${record.id}`);
     };
 
     const handleDeleteContract = (record) => {
+        if (!record?.id) return;
+
         Modal.confirm({
             title: 'Xóa hợp đồng',
             content: `Bạn có chắc muốn xóa hợp đồng ${record.contractCode || ''} của phòng ${record.roomNumber || ''}?`,
@@ -505,64 +401,19 @@ function Contract() {
     };
 
     const handleUploadContract = (record) => {
+        if (!record?.id) return;
         setSelectedContractForUpload(record);
         setIsUploadModalOpen(true);
     };
 
-    const handleFormSubmit = async (formData) => {
-        const submitData = {
-            ...formData,
-            startDate: formData.startDate ? formData.startDate.format('YYYY-MM-DD') : null,
-            endDate: formData.endDate ? formData.endDate.format('YYYY-MM-DD') : null,
-            depositReceivedAt: formData.depositReceivedAt ? formData.depositReceivedAt.format('YYYY-MM-DD') : null,
-        };
-
-        if (modalMode === 'create') {
-            await handleCallCreateContract(submitData);
-        } else if (modalMode === 'edit') {
-            await handleCallUpdateContract(submitData);
+    const handleBackfillFoundation = async () => {
+        setBackfilling(true);
+        try {
+            await backfillContractFoundation();
+            await handleFilterContracts();
+        } finally {
+            setBackfilling(false);
         }
-    };
-
-    const handleTableChange = (pagination) => {
-        setPagination(prev => ({
-            ...prev,
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-        }));
-    };
-
-    const handleViewContract = async (record) => {
-        setSelectedContract(record);
-        setModalMode('view');
-        await loadAllRoomsAvailability();
-        ensureEditorEntities(record);
-        form.setFieldsValue({
-            ...record,
-            startDate: record.startDate ? dayjs(record.startDate) : null,
-            endDate: record.endDate ? dayjs(record.endDate) : null,
-            depositReceivedAt: record.depositReceivedAt ? dayjs(record.depositReceivedAt) : null,
-            paymentCycleMonths: record.paymentCycleMonths || 1,
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleEditorClose = () => {
-        setIsModalOpen(false);
-        setSelectedContract(null);
-        form.resetFields();
-    };
-
-    const handlePaginationChange = (page, pageSize) => {
-        setPagination(prev => ({
-            ...prev,
-            current: page,
-            pageSize,
-        }));
-    };
-
-    const handleViewModeChange = (value) => {
-        setViewMode(value);
     };
 
     return (
@@ -591,11 +442,11 @@ function Contract() {
                             value: statusFilter,
                             onChange: setStatusFilter,
                             options: [
-                                { value: 'ALL', label: 'Tất cả' },
-                                { value: 'ACTIVE', label: 'Đang hiệu lực' },
-                                { value: 'PENDING', label: 'Sắp hiệu lực' },
-                                { value: 'EXPIRED', label: 'Đã hết hạn' },
-                                { value: 'CANCELLED', label: 'Đã hủy' },
+                                {value: 'ALL', label: 'Tất cả'},
+                                {value: 'ACTIVE', label: 'Đang hiệu lực'},
+                                {value: 'PENDING', label: 'Sắp hiệu lực'},
+                                {value: 'EXPIRED', label: 'Đã hết hạn'},
+                                {value: 'CANCELLED', label: 'Đã hủy'},
                             ],
                         },
                         {
@@ -605,7 +456,6 @@ function Contract() {
                             value: boardingHouseFilter,
                             onChange: setBoardingHouseFilter,
                             options: boardingHouseOptions,
-                            loading: roomsLoading,
                             allowClear: true,
                         },
                         {
@@ -624,34 +474,17 @@ function Contract() {
                     gridTemplate="230px 270px 1fr 1fr 1fr auto"
                 />
 
-                {/* Nội dung */}
                 <div className={cx('contract-container')}>
                     <div className={cx('pagination-wrapper')}>
                         <div className={cx('left-actions')}>
                             <div className={cx('view-mode-toggle')}>
                                 <Segmented
                                     options={[
-                                        {
-                                            label: (
-                                                <>
-                                                    <TableOutlined/>
-                                                    Bảng
-                                                </>
-                                            ),
-                                            value: 'table',
-                                        },
-                                        {
-                                            label: (
-                                                <>
-                                                    <AppstoreOutlined/>
-                                                    Thẻ
-                                                </>
-                                            ),
-                                            value: 'card',
-                                        },
+                                        {label: (<><TableOutlined/>Bảng</>), value: 'table'},
+                                        {label: (<><AppstoreOutlined/>Thẻ</>), value: 'card'},
                                     ]}
                                     value={viewMode}
-                                    onChange={handleViewModeChange}
+                                    onChange={setViewMode}
                                 />
                             </div>
                             <SmartButton
@@ -661,18 +494,24 @@ function Contract() {
                                 onClick={handleAddContract}
                             />
                             <SmartButton
+                                title={backfilling ? 'Đang backfill...' : 'Backfill'}
+                                icon={<SyncOutlined/>}
+                                type="default"
+                                onClick={handleBackfillFoundation}
+                                disabled={backfilling}
+                            />
+                            <SmartButton
                                 title="Excel"
                                 icon={<CloudUploadOutlined/>}
                                 onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
                             />
                         </div>
-                        <Pagination
+                        <AppPagination
                             current={pagination.current}
                             pageSize={pagination.pageSize}
                             total={pagination.total}
                             onChange={handlePaginationChange}
-                            showSizeChanger
-                            showTotal={(total) => `Tổng ${total} hợp đồng`}
+                            showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} hợp đồng`}
                             pageSizeOptions={['10', '20', '30']}
                         />
                     </div>
@@ -683,93 +522,36 @@ function Contract() {
                             dataSources={contractSource}
                             loading={loading}
                             pagination={false}
-                            onTableChange={handleTableChange}
+                            emptyDescription="Không có hợp đồng nào"
                         />
                     ) : (
-                        <>
-                            <Spin spinning={loading}>
-                                {contractSource.length === 0 ? (
-                                    <Empty description="Không có hợp đồng nào phù hợp với bộ lọc"/>
-                                ) : (
-                                    <Row gutter={[16, 16]} className={cx('card-grid')}>
-                                        {contractSource.map((contract) => (
-                                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={contract.id}>
-                                                <ContractCard
-                                                    contract={contract}
-                                                    onView={() => handleViewContract(contract)}
-                                                    onEdit={() => handleEditContract(contract)}
-                                                    onDelete={() => handleDeleteContract(contract)}
-                                                />
-                                            </Col>
-                                        ))}
-                                    </Row>
-                                )}
-                            </Spin>
-                            {/* Pagination bottom for card view */}
-                            <div className={cx('pagination-wrapper')}>
-                                <div className={cx('left-actions')}>
-                                    <div className={cx('view-mode-toggle')}>
-                                        <Segmented
-                                            options={[
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <TableOutlined/>
-                                                            Bảng
-                                                        </>
-                                                    ),
-                                                    value: 'table',
-                                                },
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <AppstoreOutlined/>
-                                                            Thẻ
-                                                        </>
-                                                    ),
-                                                    value: 'card',
-                                                },
-                                            ]}
-                                            value={viewMode}
-                                            onChange={handleViewModeChange}
-                                        />
-                                    </div>
-                                </div>
-                                <Pagination
-                                    current={pagination.current}
-                                    pageSize={pagination.pageSize}
-                                    total={pagination.total}
-                                    onChange={handlePaginationChange}
-                                    showSizeChanger
-                                    showQuickJumper
-                                    pageSizeOptions={['10', '20', '30']}
-                                />
-                            </div>
-                        </>
+                        <Spin spinning={loading}>
+                            {contractSource.length === 0 ? (
+                                <Empty description="Không có hợp đồng nào phù hợp với bộ lọc"/>
+                            ) : (
+                                <Row gutter={[16, 16]} className={cx('card-grid')}>
+                                    {contractSource.map((contract) => (
+                                        <Col xs={24} sm={24} md={12} lg={8} xl={6} key={contract.id}>
+                                            <ContractCard
+                                                contract={contract}
+                                                onView={() => handleViewContract(contract)}
+                                                onEdit={() => handleEditContract(contract)}
+                                                onDelete={() => handleDeleteContract(contract)}
+                                            />
+                                        </Col>
+                                    ))}
+                                </Row>
+                            )}
+                        </Spin>
                     )}
                 </div>
-
-                {/*<ContractEditor*/}
-                {/*    open={isModalOpen && modalMode !== 'delete'}*/}
-                {/*    mode={modalMode}*/}
-                {/*    form={form}*/}
-                {/*    onClose={handleEditorClose}*/}
-                {/*    onSubmit={handleFormSubmit}*/}
-                {/*    onEditRequest={() => setModalMode('edit')}*/}
-                {/*    submitting={editorSubmitting}*/}
-                {/*    roomCatalog={roomCatalog}*/}
-                {/*    tenantCatalog={tenantCatalog}*/}
-                {/*    selectedContract={selectedContract}*/}
-                {/*/>*/}
 
                 <ContractFileUploadModal
                     isOpen={isUploadModalOpen}
                     onClose={() => setIsUploadModalOpen(false)}
                     contractId={selectedContractForUpload?.id}
                     tenantName={selectedContractForUpload?.tenantFullName || 'N/A'}
-                    onSuccess={() => {
-                        handleFilterContracts();
-                    }}
+                    onSuccess={() => handleFilterContracts()}
                 />
 
                 <ContractFileListModal
@@ -783,3 +565,4 @@ function Contract() {
 }
 
 export default Contract;
+

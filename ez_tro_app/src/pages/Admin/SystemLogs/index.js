@@ -753,8 +753,16 @@ function SystemLogs() {
                     {viewMode === 'table' ? (
                         <Table
                             columns={columns}
-                            dataSource={filteredLogs}
+                            dataSource={Array.isArray(filteredLogs) ? filteredLogs : []}
                             rowKey="id"
+                            locale={{
+                                emptyText: (
+                                    <Empty
+                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                        description="Không có dữ liệu"
+                                    />
+                                ),
+                            }}
                             pagination={{
                                 pageSize: 10,
                                 showSizeChanger: true,

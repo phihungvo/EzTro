@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,12 @@ public interface MeterReadingRepository
     List<MeterReading> findByRoomIdAndPeriodMonthAndPeriodYear(Integer roomId, Integer month, Integer year);
 
     List<MeterReading> findByRoomId(Integer roomId);
+
+    Optional<MeterReading> findTopByRoomIdAndUtilityIdAndReadingDateBeforeOrderByReadingDateDescIdDesc(
+            Integer roomId, Integer utilityId, Date readingDate);
+
+    Optional<MeterReading> findTopByRoomIdAndUtilityIdAndReadingDateLessThanEqualOrderByReadingDateDescIdDesc(
+            Integer roomId, Integer utilityId, Date readingDate);
 
     @Query(
             """

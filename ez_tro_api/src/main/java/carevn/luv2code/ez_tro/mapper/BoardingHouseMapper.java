@@ -8,6 +8,7 @@ import carevn.luv2code.ez_tro.entity.BoardingHouse;
 
 @Mapper(componentModel = "spring")
 public interface BoardingHouseMapper {
+    @Mapping(source = "owner.id", target = "ownerId")
     @Mapping(source = "owner.fullName", target = "ownerName")
     @Mapping(source = "owner.email", target = "ownerEmail")
     BoardingHouseResponse toResponse(BoardingHouse entity);

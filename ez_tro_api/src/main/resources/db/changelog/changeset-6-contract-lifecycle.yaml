@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6-contract-lifecycle-01
+      author: codex
+      changes:
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: auto_renew
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: contracts
+            indexName: idx_contracts_auto_renew_end_date
+            columns:
+              - column:
+                  name: auto_renew
+              - column:
+                  name: end_date
+              - column:
+                  name: status

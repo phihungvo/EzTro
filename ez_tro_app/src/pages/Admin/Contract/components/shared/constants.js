@@ -6,8 +6,12 @@ export const PAYMENT_METHOD_OPTIONS = [
 ];
 
 export const INITIAL_STATE = {
+    contractCode:         '',
     boardingHouseId:      '',
     roomId:               '',
+    status:               '',
+    tenantMode:           'EXISTING',
+    tenantId:             '',
     tenantFullName:       '',
     tenantPhoneNumber:    '',
     tenantEmail:          '',
@@ -18,6 +22,7 @@ export const INITIAL_STATE = {
     startDate:            '',
     endDate:              '',
     isOpenEnded:          false,
+    autoRenew:            false,
     rentPrice:            '',
     deposit:              '',
     depositMonths:        '2',
@@ -26,6 +31,17 @@ export const INITIAL_STATE = {
     paymentCycleMonths:   1,
     monthlyPaymentDay:    '',
     note:                 '',
+};
+
+export const EMPTY_TENANT_FIELDS = {
+    tenantId:             '',
+    tenantFullName:       '',
+    tenantPhoneNumber:    '',
+    tenantEmail:          '',
+    tenantPassword:       '',
+    tenantIdentityNumber: '',
+    tenantDateOfBirth:    '',
+    tenantOccupation:     '',
 };
 
 export const DEFAULT_SERVICES = [

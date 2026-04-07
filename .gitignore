@@ -36,3 +36,7 @@ docs/ARCHITECTURE.md
 
 # Task
 tasks/*.md
+task/*.md
+
+# Docs
+docs/*.md

@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -28,9 +29,11 @@ public class ContractRequest {
     ContractTenantRequest tenant;
 
     @NotNull(message = "startDate is required")
-    Date startDate;
+    LocalDate startDate;
 
-    Date endDate;
+    LocalDate endDate;
+
+    Boolean autoRenew;
 
     BigDecimal deposit;
 

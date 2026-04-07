@@ -1,9 +1,15 @@
 import cardStyles from "../../Section.module.scss";
 import styles from "./RentSection.module.scss";
-import { fmt, PAYMENT_HISTORY } from "../data.js";
+import { fmt } from "../data.js";
 
 export default function RentSection({ state, onRoomPriceChange, onIssueDateChange }) {
   const daysInMonth = new Date(state.year, state.month, 0).getDate();
+  const currentVersion = state.contractVersion;
+  const billingCycleLabel = {
+    DAILY: "Theo ngày",
+    WEEKLY: "Theo tuần",
+    MONTHLY: "Theo tháng",
+  }[currentVersion?.billingCycle] || "Theo tháng";
 
   return (
     <div className={cardStyles.card}>
@@ -57,41 +63,59 @@ export default function RentSection({ state, onRoomPriceChange, onIssueDateChang
 
         <div className={cardStyles.sep} />
         <div className={cardStyles.fieldGroup}>
-          <label className={cardStyles.label}>Lịch sử thanh toán gần đây</label>
+          <label className={cardStyles.label}>Version hợp đồng hiện hành</label>
           <div className={styles.historyList}>
-            {PAYMENT_HISTORY.map((h, i) => (
-              <div
-                key={i}
-                className={styles.historyItem}
-                style={{ borderBottom: i < PAYMENT_HISTORY.length - 1 ? "1px solid var(--border)" : "none" }}
-              >
-                <span
-                  className={styles.historyDot}
-                  style={{
-                    background: h.ok ? "var(--green)" : "var(--red)",
-                    boxShadow: `0 0 5px ${h.ok ? "var(--green)" : "var(--red)"}`,
-                  }}
-                />
-                <div>
-                  <div className={styles.historyMeta}>
-                    Tháng {h.period} ·{" "}
-                    {h.ok ? `Thanh toán ngày ${h.date}` : h.date}
+            {currentVersion ? (
+              <>
+                <div className={styles.historyItem}>
+                  <span
+                    className={styles.historyDot}
+                    style={{ background: "var(--cyan)", boxShadow: "0 0 5px var(--cyan)" }}
+                  />
+                  <div>
+                    <div className={styles.historyMeta}>
+                      Version #{currentVersion.versionNumber} · {billingCycleLabel}
+                    </div>
+                    <div className={styles.historyDesc}>
+                      Hiệu lực từ {currentVersion.effectiveFrom || "N/A"}
+                      {currentVersion.effectiveTo ? ` đến ${currentVersion.effectiveTo}` : " đến vô thời hạn"}
+                    </div>
+                    <div className={styles.historyAmount} style={{ color: "var(--cyan)" }}>
+                      Giá thuê {fmt(currentVersion.price || 0)} ₫
+                    </div>
                   </div>
-                  <div className={styles.historyDesc}>{h.desc}</div>
-                  <div
-                    className={styles.historyAmount}
-                    style={{ color: h.ok ? "var(--green)" : "var(--red)" }}
-                  >
-                    {h.ok ? "+" : ""}
-                    {fmt(h.amount)} ₫
+                </div>
+                <div className={styles.historyItem}>
+                  <span
+                    className={styles.historyDot}
+                    style={{ background: "var(--amber)", boxShadow: "0 0 5px var(--amber)" }}
+                  />
+                  <div>
+                    <div className={styles.historyMeta}>
+                      Tiền cọc · Chu kỳ thanh toán
+                    </div>
+                    <div className={styles.historyDesc}>
+                      Cọc {fmt(currentVersion.depositAmount || 0)} ₫
+                    </div>
+                    <div className={styles.historyAmount} style={{ color: "var(--amber)" }}>
+                      Thu vào ngày {currentVersion.monthlyPaymentDay || "--"} · {billingCycleLabel}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={styles.historyItem}>
+                <div>
+                  <div className={styles.historyMeta}>Chưa có version hợp đồng</div>
+                  <div className={styles.historyDesc}>
+                    Hãy chạy backfill foundation hoặc chọn phòng có hợp đồng đã được migrate.
                   </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
-

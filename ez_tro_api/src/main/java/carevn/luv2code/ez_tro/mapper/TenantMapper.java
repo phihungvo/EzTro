@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
 import carevn.luv2code.ez_tro.dto.response.*;
 import carevn.luv2code.ez_tro.entity.Tenant;
@@ -20,7 +21,7 @@ public interface TenantMapper {
     @Mapping(source = "user.fullName", target = "fullName")
     @Mapping(source = "user.email", target = "email")
     @Mapping(source = "user.phoneNumber", target = "phoneNumber")
-    @Mapping(source = "user.address", target = "permanentAddress")
+    @Mapping(source = "permanentAddress", target = "permanentAddress")
     @Mapping(target = "issueDate", source = "issueDate")
     @Mapping(target = "issuePlace", source = "issuePlace")
     @Mapping(target = "vehicleInfo", source = "vehicleInfo")
@@ -56,4 +57,11 @@ public interface TenantMapper {
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "contracts", ignore = true)
     Tenant toEntity(TenantRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "vehicleInfo", ignore = true)
+    @Mapping(target = "contracts", ignore = true)
+    Tenant toEntity(TenantCreateRequest request);
 }

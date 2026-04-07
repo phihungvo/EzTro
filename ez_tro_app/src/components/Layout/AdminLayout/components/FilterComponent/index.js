@@ -38,6 +38,7 @@ const FilterComponent = ({
                         onChange={field.onChange}
                         value={field.value}
                         className={cx('date-picker')}
+                        popupClassName={cx('filter-picker-dropdown')}
                         style={{ width: '100%' }}
                         disabledDate={field.disabledDate}
                     />
@@ -50,7 +51,8 @@ const FilterComponent = ({
                         placeholder={field.placeholder || 'Chọn...'}
                         value={field.value}
                         onChange={field.onChange}
-                        className={cx(`${field.name}-select`)}
+                        className={cx('filter-select', `${field.name}-select`)}
+                        popupClassName={cx('filter-select-dropdown')}
                         allowClear={field.allowClear}
                         options={field.options}
                         loading={field.loading}

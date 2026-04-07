@@ -16,23 +16,25 @@ import Contract from "~/pages/Admin/Contract";
 import Bill from "src/pages/Admin/Bill";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
-import UserManagement from "~/pages/Admin/User/UserManagement";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import UserLayout from "~/components/Layout/UserLayout";
-import UserDashboard from "~/pages/User/HomeDashboard";
-import Owner from "~/pages/Admin/Owner";
 import Revenue from "~/pages/Admin/Revenue";
-import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
 import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
-import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
 import React from "react";
 import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
+import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
+import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
+import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
+import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
+import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
+import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -70,18 +72,32 @@ const AppRoutes = () => {
                         <SharedLayout>
                             <Routes>
                                 <Route path="dashboard" element={<AdminDashboard />} />
+                                <Route path="notifications" element={<NotificationCenter />} />
+                                <Route path="notifications/announcements" element={<AnnouncementCenter />} />
+                                <Route path="boarding-houses" element={<BoardingHouses />} />
+                                <Route path="boarding-houses/create" element={<BoardingHouseCreatorPage />} />
+                                <Route path="boarding-houses/:id/edit" element={<BoardingHouseCreatorPage />} />
                                 <Route path="buildings" element={<Building />} />
                                 <Route path="rooms" element={<Room />} />
+                                <Route path="rooms/create-room" element={<RoomCreatorPage />} />
+                                <Route path="rooms/:id/edit" element={<RoomCreatorPage />} />
                                 <Route path="tenants" element={<Tenant />} />
+                                <Route path="tenants/create-tenant" element={<TenantCreatorPage />} />
+                                <Route path="tenants/:id/edit" element={<TenantCreatorPage />} />
                                 <Route path="tenants/:id" element={<TenantDetail />} />
                                 <Route path="contracts" element={<Contract />} />
                                 <Route path="contracts/create-contract" element={<ContractCreatorPage />} />
+                                <Route path="contracts/:id" element={<ContractDetailPage />} />
+                                <Route path="contracts/:id/edit" element={<ContractCreatorPage />} />
                                 <Route path="bills" element={<Bill />} />
                                 <Route path="bills/create-bill" element={<BillCreator />} />
+                                <Route path="utilities" element={<UtilityManagement />} />
                                 <Route path="revenues" element={<Revenue />} />
                                 <Route path="appointments" element={<Appointment />} />
                                 <Route path="assets" element={<Asset />} />
+                                <Route path="assets/create" element={<PropertyAssetCreatorPage />} />
                                 <Route path="expenses" element={<OperatingCostTracker />} />
+                                <Route path="incidents" element={<IncidentReport />} />
                                 <Route path="admin-payment-management" element={<AdminPaymentManagement/>}/>
                                 <Route path="owner-subscription" element={<OwnerSubscriptionPage/>}/>
                             </Routes>
@@ -95,11 +111,7 @@ const AppRoutes = () => {
                 path="/user/*"
                 element={
                     <PrivateRoute allowedRoles={["USER"]}>
-                        <UserLayout>
-                            <Routes>
-                                <Route path="dashboard" element={<UserDashboard />} />
-                            </Routes>
-                        </UserLayout>
+                        <UserLayout />
                     </PrivateRoute>
                 }
             />

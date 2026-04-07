@@ -1,19 +1,25 @@
 import styles from '../FinanceSection/FinanceSection.module.scss';
 
 export default function ServiceTable({
-                                         services, onToggle, onPatch, onAdd, onRemove, formatVND,
+                                         services, onToggle, onPatch, onAdd, onRemove, formatVND, editable = true,
                                      }) {
     return (
         <>
             <div className={styles.serviceTableHeader}>
                 <span>Bảng dịch vụ &amp; tiện ích</span>
-                <button
-                    className={`${styles.btn} ${styles.btnGhost}`}
-                    style={{ fontSize: 12, padding: '5px 10px' }}
-                    onClick={onAdd}
-                >
-                    ＋ Thêm dịch vụ
-                </button>
+                {editable ? (
+                    <button
+                        className={`${styles.btn} ${styles.btnGhost}`}
+                        style={{ fontSize: 12, padding: '5px 10px' }}
+                        onClick={onAdd}
+                    >
+                        ＋ Thêm dịch vụ
+                    </button>
+                ) : (
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        Chỉnh sửa dịch vụ tại màn dịch vụ/phòng
+                    </span>
+                )}
             </div>
 
             <div className={styles.tableWrap}>
@@ -37,6 +43,7 @@ export default function ServiceTable({
                                 <td className={styles.tdCenter}>
                                     <button
                                         className={`${styles.serviceToggle} ${svc.on ? styles.on : ''}`}
+                                        disabled={!editable}
                                         onClick={() => onToggle(svc.id)}
                                     />
                                 </td>
@@ -44,6 +51,7 @@ export default function ServiceTable({
                                     <input
                                         className={styles.tableInput}
                                         value={svc.name}
+                                        readOnly={!editable}
                                         onChange={(e) => onPatch(svc.id, 'name', e.target.value)}
                                     />
                                 </td>
@@ -51,6 +59,7 @@ export default function ServiceTable({
                                     <select
                                         className={styles.tableSelect}
                                         value={svc.unit}
+                                        disabled={!editable}
                                         onChange={(e) => {
                                             const isMeter = e.target.value === 'kWh' || e.target.value === 'm³';
                                             onPatch(svc.id, 'unit', e.target.value);
@@ -68,6 +77,7 @@ export default function ServiceTable({
                                         className={styles.tableInput}
                                         type="number"
                                         value={svc.price}
+                                        readOnly={!editable}
                                         onChange={(e) => onPatch(svc.id, 'price', Number(e.target.value))}
                                     />
                                 </td>
@@ -85,6 +95,7 @@ export default function ServiceTable({
                                             className={styles.tableInput}
                                             type="number"
                                             value={svc.qty}
+                                            readOnly={!editable}
                                             onChange={(e) => onPatch(svc.id, 'qty', Number(e.target.value))}
                                         />
                                     )}
@@ -108,10 +119,10 @@ export default function ServiceTable({
                                 <td>
                                     <button
                                         className={styles.btnIcon}
-                                        disabled={svc.isSystem}
+                                        disabled={!editable || svc.isSystem}
                                         onClick={() => onRemove(svc.id)}
                                         title={svc.isSystem ? 'Dịch vụ mặc định của khu trọ' : 'Xóa dịch vụ'}
-                                        style={svc.isSystem ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                                        style={!editable || svc.isSystem ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
                                     >
                                         ✕
                                     </button>

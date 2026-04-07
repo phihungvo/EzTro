@@ -12,15 +12,31 @@ import lombok.*;
 public class NotificationResponse {
     Integer id;
 
+    Integer eventId;
+
     String title;
 
     String message;
 
     String type;
 
+    String eventKey;
+
+    String category;
+
+    String priority;
+
+    String channel;
+
+    String actionUrl;
+
+    String actionLabel;
+
+    String recipientRole;
+
     Object data;
 
-    boolean isRead;
+    boolean read;
 
     LocalDateTime createdAt;
 }

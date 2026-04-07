@@ -13,6 +13,11 @@ import carevn.luv2code.ez_tro.service.admin.MeterReadingPeriodService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý kỳ ghi chỉ số (meter reading period).
+ *
+ * <p>Kỳ ghi chỉ số giúp khóa/đóng dữ liệu theo tháng/năm để tránh chỉnh sửa sau khi chốt.
+ */
 @RestController
 @RequestMapping("/api/meter-periods")
 @RequiredArgsConstructor
@@ -20,6 +25,12 @@ public class MeterReadingPeriodController {
 
     private final MeterReadingPeriodService periodService;
 
+    /**
+     * Tạo mới kỳ ghi chỉ số.
+     *
+     * @param request payload tạo kỳ (month/year/start/end)
+     * @return response chứa kỳ vừa tạo
+     */
     @PostMapping
     public ApiResponse<MeterPeriodResponse> create(@Valid @RequestBody MeterPeriodRequest request) {
         return ApiResponse.<MeterPeriodResponse>builder()
@@ -29,6 +40,11 @@ public class MeterReadingPeriodController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tất cả kỳ ghi chỉ số.
+     *
+     * @return response chứa danh sách period
+     */
     @GetMapping
     public ApiResponse<List<MeterReadingPeriod>> getAll() {
         return ApiResponse.<List<MeterReadingPeriod>>builder()
@@ -38,6 +54,12 @@ public class MeterReadingPeriodController {
                 .build();
     }
 
+    /**
+     * Xác nhận kỳ ghi chỉ số (từ DRAFT -> CONFIRMED).
+     *
+     * @param id id period
+     * @return response chứa period sau khi confirm
+     */
     @PostMapping("/{id}/confirm")
     public ApiResponse<MeterPeriodResponse> confirm(@PathVariable Integer id) {
         return ApiResponse.<MeterPeriodResponse>builder()
@@ -47,6 +69,12 @@ public class MeterReadingPeriodController {
                 .build();
     }
 
+    /**
+     * Khóa kỳ ghi chỉ số (từ CONFIRMED -> LOCKED).
+     *
+     * @param id id period
+     * @return response chứa period sau khi lock
+     */
     @PostMapping("/{id}/lock")
     public ApiResponse<MeterPeriodResponse> lock(@PathVariable Integer id) {
         return ApiResponse.<MeterPeriodResponse>builder()

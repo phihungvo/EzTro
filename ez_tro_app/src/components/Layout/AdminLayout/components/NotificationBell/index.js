@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import {BellOutlined, ClockCircleOutlined} from '@ant-design/icons';
-import {Badge, Dropdown, List, Button, Empty, Spin, message} from 'antd';
+import {BellOutlined, ClockCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
+import {Badge, Dropdown, List, Button, Empty, message} from 'antd';
 import {Client} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import styles from './NotificationBell.module.scss';
@@ -8,7 +8,10 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import {Howl} from 'howler';
-import {getMyNotifications, markAllAsRead, markAsRead} from "~/service/admin/notification-service";
+import {useNavigate} from 'react-router-dom';
+import {getMyNotifications, getUnreadCount, markAllAsRead, markAsRead} from "~/service/admin/notification-service";
+import {useAuth} from "~/routes/AuthContext";
+import {normalizeApiBaseUrl} from '~/utils/normalizeBaseUrl';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -16,12 +19,17 @@ dayjs.locale('vi');
 const PAGE_SIZE = 10;
 const MAX_NOTIFICATIONS = 100;
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/sfx/preview/mixkit-software-interface-notification-2577.mp3';
+const apiBaseUrl = normalizeApiBaseUrl(process.env.REACT_APP_API_URL);
+const defaultWsUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.replace(/\/api$/, '/ws') : '/ws';
+const WS_URL = process.env.REACT_APP_WS_URL || defaultWsUrl;
 
 const sound = typeof window !== 'undefined'
     ? new Howl({src: [NOTIFICATION_SOUND], volume: 0.4})
     : null;
 
 export default function NotificationBell() {
+    const {user} = useAuth();
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -34,28 +42,70 @@ export default function NotificationBell() {
 
     const playSound = () => sound?.play();
 
+    const normalizeNotification = useCallback((notification) => ({
+        ...notification,
+        isRead: Boolean(notification?.read ?? notification?.isRead),
+        category: notification?.category || 'SYSTEM',
+        priority: notification?.priority || 'MEDIUM',
+    }), []);
+
+    const mergeNotifications = useCallback((items, incoming) => {
+        const map = new Map(items.map(item => [item.id, item]));
+        incoming.forEach(item => {
+            map.set(item.id, {...map.get(item.id), ...item});
+        });
+        const merged = Array.from(map.values());
+        merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return merged.slice(0, MAX_NOTIFICATIONS);
+    }, []);
+
     const loadNotifications = useCallback(async (pageNum = 0, append = false) => {
         if (!token) return;
         try {
             append ? setLoadingMore(true) : setLoading(true);
-            const data = await getMyNotifications(pageNum, PAGE_SIZE);
+            const [data, unread] = await Promise.all([
+                getMyNotifications(pageNum, PAGE_SIZE),
+                pageNum === 0 ? getUnreadCount() : Promise.resolve(null),
+            ]);
 
-            const newNotis = (data.content || []).map(n => ({...n, isRead: !!n.read}));
+            const newNotis = (data.content || []).map(normalizeNotification);
 
             setHasMore(!data.last);
+            if (!append) {
+                setPage(0);
+            }
             setNotifications(prev => {
-                if (append) return [...prev, ...newNotis].slice(0, MAX_NOTIFICATIONS);
+                if (append) return mergeNotifications(prev, newNotis);
                 return newNotis;
             });
 
-            if (!append) {
-                setUnreadCount(newNotis.filter(n => !n.isRead).length);
+            if (pageNum === 0) {
+                setUnreadCount(unread || 0);
             }
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [token]);
+    }, [token, normalizeNotification, mergeNotifications]);
+
+    const handleNavigate = useCallback((notification) => {
+        if (!notification?.actionUrl) {
+            return;
+        }
+        navigate(notification.actionUrl);
+    }, [navigate]);
+
+    const handleOpenCenter = useCallback(() => {
+        if (user?.role === 'ADMIN') {
+            navigate('/admin/notifications');
+            return;
+        }
+        if (user?.role === 'OWNER') {
+            navigate('/owner/notifications');
+            return;
+        }
+        navigate('/user/dashboard?tab=notifications');
+    }, [navigate, user?.role]);
 
     const handleMarkAsRead = async (id) => {
         const success = await markAsRead(id);
@@ -63,6 +113,14 @@ export default function NotificationBell() {
             setNotifications(prev => prev.map(n => n.id === id ? {...n, isRead: true} : n));
             setUnreadCount(c => Math.max(0, c - 1));
         }
+    };
+
+    const handleNotificationClick = async (notification) => {
+        if (!notification) return;
+        if (!notification.isRead) {
+            await handleMarkAsRead(notification.id);
+        }
+        handleNavigate(notification);
     };
 
     const handleMarkAllAsRead = async () => {
@@ -81,40 +139,40 @@ export default function NotificationBell() {
         }
 
         const client = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+            webSocketFactory: () => new SockJS(WS_URL),
             connectHeaders: {Authorization: `Bearer ${token}`},
             reconnectDelay: 5000,
             heartbeatIncoming: 10000,
             heartbeatOutgoing: 10000,
             onConnect: () => {
                 setConnecting(false);
-                console.log('WebSocket connected');
+                loadNotifications(0, false);
 
                 const handleNewNotification = (msg) => {
                     try {
-                        const noti = JSON.parse(msg.body);
-                        if (noti.isRead) return;
+                        const noti = normalizeNotification(JSON.parse(msg.body));
 
                         setNotifications(prev => {
-                            if (prev.some(n => n.id === noti.id)) return prev;
+                            if (prev.some(n => n.id === noti.id)) {
+                                return mergeNotifications(prev, [noti]);
+                            }
                             playSound();
-                            return [noti, ...prev].slice(0, MAX_NOTIFICATIONS);
+                            return mergeNotifications(prev, [noti]);
                         });
-                        setUnreadCount(c => c + 1);
-                        message.info(noti.title, 5);
-                    } catch (e) { /* ignore */
+                        if (!noti.isRead) {
+                            setUnreadCount(c => c + 1);
+                        }
+                        message.open({
+                            type: 'info',
+                            content: noti.title || 'Bạn có thông báo mới',
+                            duration: 4,
+                        });
+                    } catch (e) {
+                        console.error('Invalid notification payload', e);
                     }
                 };
 
                 client.subscribe('/user/queue/notifications', handleNewNotification);
-                client.subscribe('/topic/notifications', (msg) => {
-                    const noti = JSON.parse(msg.body);
-                    setNotifications(prev => [noti, ...prev].slice(0, MAX_NOTIFICATIONS));
-                    if (!noti.isRead) {
-                        setUnreadCount(c => c + 1);
-                        playSound();
-                    }
-                });
             },
             onStompError: () => setConnecting(true),
             onWebSocketClose: () => setConnecting(true),
@@ -124,7 +182,7 @@ export default function NotificationBell() {
         client.activate();
 
         return () => client.deactivate();
-    }, [token]);
+    }, [token, loadNotifications, mergeNotifications, normalizeNotification]);
 
     useEffect(() => {
         if (token) loadNotifications(0, false);
@@ -136,11 +194,16 @@ export default function NotificationBell() {
         <div className={styles.dropdown}>
             <div className={styles.header}>
                 <h3>Thông báo</h3>
-                {unreadCount > 0 && (
-                    <Button type="text" size="small" onClick={handleMarkAllAsRead}>
-                        Đánh dấu tất cả đã đọc
+                <div className={styles.headerActions}>
+                    <Button type="text" size="small" onClick={handleOpenCenter}>
+                        Xem tất cả
                     </Button>
-                )}
+                    {unreadCount > 0 && (
+                        <Button type="text" size="small" onClick={handleMarkAllAsRead}>
+                            Đánh dấu tất cả đã đọc
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className={styles.listContainer}>
@@ -151,17 +214,29 @@ export default function NotificationBell() {
                     renderItem={(item) => (
                         <List.Item
                             className={`${styles.item} ${!item.isRead ? styles.unread : ''}`}
-                            onClick={() => !item.isRead && handleMarkAsRead(item.id)}
+                            onClick={() => handleNotificationClick(item)}
                         >
-                            {!item.isRead}
                             <List.Item.Meta
-                                title={<div className={styles.title}>{item.title}</div>}
+                                title={
+                                    <div className={styles.titleRow}>
+                                        <div className={styles.notiTitle}>{item.title}</div>
+                                        <span className={`${styles.categoryBadge} ${styles[item.category?.toLowerCase()] || ''}`}>
+                                            {item.category}
+                                        </span>
+                                    </div>
+                                }
                                 description={
                                     <div>
                                         <div className={styles.message}>{item.message}</div>
                                         <div className={styles.time}>
                                             <ClockCircleOutlined className={styles.clockIcon}/>
                                             <span>{formatTime(item.createdAt)}</span>
+                                            {item.actionUrl && (
+                                                <span className={styles.actionHint}>
+                                                    <InfoCircleOutlined />
+                                                    {item.actionLabel || 'Mở'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 }

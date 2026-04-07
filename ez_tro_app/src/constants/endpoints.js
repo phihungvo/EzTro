@@ -1,4 +1,6 @@
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+import {normalizeApiBaseUrl} from '~/utils/normalizeBaseUrl';
+
+const BASE_URL = normalizeApiBaseUrl(process.env.REACT_APP_API_URL);
 
 const API_ENDPOINTS = {
     AUTH: {
@@ -23,7 +25,16 @@ const API_ENDPOINTS = {
         GET_MY_NOTIFICATIONS: `${BASE_URL}/notifications/me`,
         MARK_AS_READ: (id) => `${BASE_URL}/notifications/read/${id}`,
         MARK_ALL_AS_READ: `${BASE_URL}/notifications/read-all`,
+        BULK_MARK_AS_READ: `${BASE_URL}/notifications/bulk/read`,
+        ARCHIVE: (id) => `${BASE_URL}/notifications/archive/${id}`,
+        BULK_ARCHIVE: `${BASE_URL}/notifications/bulk/archive`,
+        ANNOUNCEMENT_PREVIEW: `${BASE_URL}/notifications/announcements/preview`,
+        ANNOUNCEMENT_SEND: `${BASE_URL}/notifications/announcements`,
+        DELIVERY_LOGS: `${BASE_URL}/notifications/delivery-logs`,
+        PROCESS_PENDING_DELIVERY_LOGS: `${BASE_URL}/notifications/delivery-logs/process-pending`,
         UNREAD_COUNT: `${BASE_URL}/notifications/unread-count`,
+        GET_MY_PREFERENCES: `${BASE_URL}/notifications/preferences/me`,
+        UPDATE_MY_PREFERENCES: `${BASE_URL}/notifications/preferences/me`,
     },
     USER: {
         GET_ALL: `${BASE_URL}/user/getAll`,
@@ -73,6 +84,7 @@ const API_ENDPOINTS = {
         BY_BOARDING_HOUSE: (boardingHouseId) => `${BASE_URL}/rooms/by-boarding-house/${boardingHouseId}`,
         AVAILABLE_BY_BOARDING_HOUSE:(boardingHouseId) => `${BASE_URL}/rooms/${boardingHouseId}/available`,
         GET_ALL_AVAILABLE: `${BASE_URL}/rooms/available`,
+        GET_BY_ID: (roomId) => `${BASE_URL}/rooms/${roomId}`,
         CREATE: `${BASE_URL}/rooms`,
         UPDATE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
         DELETE: (roomId) => `${BASE_URL}/rooms/${roomId}`,
@@ -81,6 +93,7 @@ const API_ENDPOINTS = {
     },
     TENANTS: {
         CREATE: `${BASE_URL}/tenants`,
+        UPDATE: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
         GET_ALL: `${BASE_URL}/tenants/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/tenants`,
         DETAIL: (tenantId) => `${BASE_URL}/tenants/${tenantId}`,
@@ -90,6 +103,7 @@ const API_ENDPOINTS = {
     BOARDING_HOUSE: {
         GET_ALL: `${BASE_URL}/boarding-houses/paged`,
         GET_ALL_NO_PAGING: `${BASE_URL}/boarding-houses`,
+        DETAIL: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         CREATE: `${BASE_URL}/boarding-houses`,
         UPDATE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
         DELETE: (boardingHouseId) => `${BASE_URL}/boarding-houses/${boardingHouseId}`,
@@ -99,10 +113,37 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/contracts/paged`,
         GET_ACTIVE: `${BASE_URL}/contracts/active`,
         FILTER: `${BASE_URL}/contracts/filter`,
+        DETAIL: (contractId) => `${BASE_URL}/contracts/${contractId}`,
+        CURRENT_VERSION: (contractId) => `${BASE_URL}/contracts/${contractId}/current-version`,
+        SNAPSHOT: (contractId) => `${BASE_URL}/contracts/${contractId}/snapshot`,
+        AMENDMENTS: (contractId) => `${BASE_URL}/contracts/${contractId}/amendments`,
+        REVISE_AMENDMENT: (contractId, amendmentId) =>
+            `${BASE_URL}/contracts/${contractId}/amendments/${amendmentId}/revise`,
+        BILLING_RULES: (contractId) => `${BASE_URL}/contracts/${contractId}/billing-rules`,
+        REVISE_BILLING_RULE: (contractId, billingRuleId) =>
+            `${BASE_URL}/contracts/${contractId}/billing-rules/${billingRuleId}/revise`,
+        DEACTIVATE_BILLING_RULE: (contractId, billingRuleId) =>
+            `${BASE_URL}/contracts/${contractId}/billing-rules/${billingRuleId}/deactivate`,
+        DEPOSIT_TRANSACTIONS: (contractId) => `${BASE_URL}/contracts/${contractId}/deposit-transactions`,
+        FINALIZE_SETTLEMENT: (contractId) => `${BASE_URL}/contracts/${contractId}/settlement/finalize`,
+        TERMINATE: (contractId) => `${BASE_URL}/contracts/${contractId}/terminate`,
+        RENEW: (contractId) => `${BASE_URL}/contracts/${contractId}/renew`,
+        MARK_VIOLATED: (contractId) => `${BASE_URL}/contracts/${contractId}/mark-violated`,
+        TRANSFER_ROOM: (contractId) => `${BASE_URL}/contracts/${contractId}/transfer-room`,
+        FOUNDATION_BACKFILL: `${BASE_URL}/contracts/foundation/backfill`,
         GET_FILES: (contractId) => `${BASE_URL}/contracts/files/${contractId}`,
         CREATE: `${BASE_URL}/contracts`,
         UPDATE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
         DELETE: (contractId) => `${BASE_URL}/contracts/${contractId}`,
+    },
+    PROPERTY_ASSET: {
+        GET_ALL: `${BASE_URL}/property-assets`,
+        FILTER: `${BASE_URL}/property-assets/filter`,
+        DETAIL: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        CREATE: `${BASE_URL}/property-assets`,
+        UPDATE: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        DELETE: (assetId) => `${BASE_URL}/property-assets/${assetId}`,
+        BY_ROOM: (roomId) => `${BASE_URL}/property-assets/room/${roomId}`,
     },
     AMENITY: {
         GET_ALL: `${BASE_URL}/amenities/paged`,
@@ -114,6 +155,32 @@ const API_ENDPOINTS = {
         GET_ALL: `${BASE_URL}/bills`,
         CREATE: `${BASE_URL}/bills`,
         FILTER: `${BASE_URL}/bills/filter`,
+        DETAIL: (billId) => `${BASE_URL}/bills/${billId}/detail`,
+        DOCUMENT: (billId) => `${BASE_URL}/bills/${billId}/document`,
+        RECEIPT: (billId) => `${BASE_URL}/bills/${billId}/receipt`,
+        SEND: (billId) => `${BASE_URL}/bills/${billId}/send`,
+        UPDATE: (billId) => `${BASE_URL}/bills/${billId}`,
+        DELETE: (billId) => `${BASE_URL}/bills/${billId}`,
+        CANCEL: (billId) => `${BASE_URL}/bills/${billId}/cancel`,
+    },
+    BILLING: {
+        PREVIEW: `${BASE_URL}/billing/preview`,
+        FINALIZE: `${BASE_URL}/billing/finalize`,
+    },
+    BILLING_AUDIT: {
+        GET_ALL: `${BASE_URL}/billing-audit`,
+    },
+    PAYMENT: {
+        RECEIVE: `${BASE_URL}/payments`,
+        DETAIL: (paymentId) => `${BASE_URL}/payments/${paymentId}`,
+        CONFIRM: (paymentId) => `${BASE_URL}/payments/${paymentId}/confirm`,
+        ALLOCATE: (paymentId) => `${BASE_URL}/payments/${paymentId}/allocate`,
+        REVERSE: (paymentId) => `${BASE_URL}/payments/${paymentId}/reverse`,
+    },
+    RECONCILIATION: {
+        CONTRACT: (contractId) => `${BASE_URL}/reconciliation/contracts/${contractId}`,
+        AGING: `${BASE_URL}/reconciliation/aging`,
+        CREDIT_LEDGER: `${BASE_URL}/reconciliation/credit-ledger`,
     },
     UTILITY: {
         GET_ALL: `${BASE_URL}/utilities/paged`,
@@ -136,8 +203,8 @@ const API_ENDPOINTS = {
     INCIDENT_REPORT: {
         GET_ALL: `${BASE_URL}/incident-reports/paged`,
         CREATE: `${BASE_URL}/incident-reports`,
-        UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
-        DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+        UPDATE: (incidentId) => `${BASE_URL}/incident-reports/${incidentId}`,
+        DELETE: (incidentId) => `${BASE_URL}/incident-reports/${incidentId}`,
     },
     PERIOD: {
         GET_ALL: `${BASE_URL}/meter-periods`,
@@ -159,15 +226,31 @@ const API_ENDPOINTS = {
     },
     MY_ROOM: {
         GET_ROOM_INFO: `${BASE_URL}/user/room/current`,
+        GET_CURRENT_CONTRACT: `${BASE_URL}/user/room/current-contract`,
     },
     MY_BILL: {
         GET_ALL: `${BASE_URL}/user/bills/paged`,
+        DETAIL: (billId) => `${BASE_URL}/user/bills/${billId}`,
+        DOCUMENT: (billId) => `${BASE_URL}/user/bills/${billId}/document`,
+        RECEIPT: (billId) => `${BASE_URL}/user/bills/${billId}/receipt`,
+        UPLOAD_PROOF: (billId) => `${BASE_URL}/user/bills/${billId}/proof-file`,
+        SUBMIT_PAYMENT: (billId) => `${BASE_URL}/user/bills/${billId}/payments`,
     },
     MY_INCIDENT_REPORT: {
         GET_ALL: `${BASE_URL}/user/incident-reports`,
         CREATE: `${BASE_URL}/user/incident-reports`,
         UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
         DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+    },
+    USER_PROFILE: {
+        GET_ME: `${BASE_URL}/user/profile/me`,
+        UPDATE_ME: `${BASE_URL}/user/profile/me`,
+        CHANGE_PASSWORD: `${BASE_URL}/user/profile/me/change-password`,
+    },
+    USER_UTILITIES: {
+        CURRENT_PERIOD: `${BASE_URL}/user/utilities/meter-readings/current-period`,
+        HISTORY: `${BASE_URL}/user/utilities/meter-readings/history`,
+        PERIOD: (month, year) => `${BASE_URL}/user/utilities/meter-readings/period/${month}/${year}`,
     }
 };
 

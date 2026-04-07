@@ -17,6 +17,7 @@ public interface MeterReadingMapper {
 
     @Mapping(target = "roomNumber", source = "room.roomNumber")
     @Mapping(target = "utilityName", source = "utility.name")
+    @Mapping(target = "utilityUnit", source = "utility.unit")
     MeterReadingResponse toResponse(MeterReading entity);
 
     List<MeterReadingResponse> toResponseList(List<MeterReading> entities);

@@ -4,7 +4,7 @@ import apiClient from '~/service/api/api';
 export const getAllUtilities = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.UTILITY.GET_ALL, {
-            params: { page, pageSize },
+            params: { page, size: pageSize },
         });
 
         return response.data.result;
@@ -52,6 +52,8 @@ export const updateUtility = async (utilityId, formData) => {
         return response.data;
     } catch (error) {
         console.error('Error when updating utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi cập nhật tiện ích');
+        throw error;
     }
 };
 
@@ -63,5 +65,7 @@ export const deleteUtility = async (utilityId) => {
         return response.data;
     } catch (error) {
         console.error('Error when deleting utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi xóa tiện ích');
+        throw error;
     }
 };

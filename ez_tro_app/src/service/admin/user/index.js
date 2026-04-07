@@ -30,7 +30,10 @@ export const googleLogin = async (idToken) => {
 
 export const logout = async () => {
     try {
-        await apiClient.post('/auth/logout');
+        const token = localStorage.getItem('token');
+        if (token) {
+            await axiosInstance.post('/auth/logout', {token});
+        }
     } catch (error) {
         console.error('Logout error:', error);
     } finally {
@@ -41,8 +44,8 @@ export const logout = async () => {
 
 export const refreshToken = async () => {
     try {
-        const response = await apiClient.post('/auth/refresh');
-        return response.data.result.token;
+        const response = await axiosInstance.post('/auth/refresh');
+        return response.data?.result?.token;
     } catch (error) {
         message.error(error.response?.data?.message || 'Lỗi làm mới token');
         throw error;
@@ -51,12 +54,12 @@ export const refreshToken = async () => {
 
 export const register = async (username, email, password) => {
     try {
-        const response = await apiClient.post('/auth/register', {
-            username,
-            email,
-            password,
-        });
-        return response.data.token;
+        const payload =
+            typeof username === 'object' && username !== null
+                ? username
+                : {username, email, password};
+        const response = await axiosInstance.post('/auth/register', payload);
+        return response.data?.result?.token;
     } catch (error) {
         message.error(error.response?.data?.message || 'Đăng ký thất bại');
         throw error;

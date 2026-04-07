@@ -589,6 +589,15 @@ function Revenue() {
                         icon={<CloudUploadOutlined />}
                         onClick={() => message.info('Xuất Excel sắp có!')}
                     />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetRevenues(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -599,36 +608,22 @@ function Revenue() {
                         columns={columns}
                         dataSources={revenueSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {revenueSource.map((revenue) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={revenue.id}>
-                                    <RevenueCard
-                                        revenue={revenue}
-                                        onView={() => handleViewRevenue(revenue)}
-                                        renderStatusTag={renderStatusTag}
-                                        formatCurrency={formatCurrency}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetRevenues(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {revenueSource.map((revenue) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={revenue.id}>
+                                <RevenueCard
+                                    revenue={revenue}
+                                    onView={() => handleViewRevenue(revenue)}
+                                    renderStatusTag={renderStatusTag}
+                                    formatCurrency={formatCurrency}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

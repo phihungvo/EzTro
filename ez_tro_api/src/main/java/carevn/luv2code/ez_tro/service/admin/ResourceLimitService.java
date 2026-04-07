@@ -1,5 +1,8 @@
 package carevn.luv2code.ez_tro.service.admin;
 
+/**
+ * Service contract kiểm tra giới hạn tài nguyên (quota) theo subscription của owner.
+ */
 public interface ResourceLimitService {
 
     void validateCanCreateBoardingHouse(Integer ownerId);

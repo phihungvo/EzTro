@@ -1,243 +1,1185 @@
-.payment-wrapper {
-  padding: 24px;
-  background: #f5f5f5;
+// ─────────────────────────────────────────────────────────
+// Design tokens — SaaS Premium Dark Slate
+// ─────────────────────────────────────────────────────────
+$bg:           #080c14;
+$surface-0:    #0d1120;
+$surface-1:    #111827;
+$surface-2:    #1a2236;
+$surface-3:    #212d42;
+$border-dim:   rgba(255,255,255,0.05);
+$border-base:  rgba(255,255,255,0.08);
+$border-hi:    rgba(255,255,255,0.14);
+
+$text-1:       #f0f4ff;
+$text-2:       #8a9bbf;
+$text-3:       #4e5f7c;
+
+$blue:         #4b8eff;
+$blue-dim:     rgba(75,142,255,0.12);
+$blue-glow:    rgba(75,142,255,0.25);
+$green:        #22c97a;
+$green-dim:    rgba(34,201,122,0.12);
+$amber:        #f0a443;
+$amber-dim:    rgba(240,164,67,0.12);
+$red:          #f25c5c;
+$red-dim:      rgba(242,92,92,0.1);
+$violet:       #a78bfa;
+$violet-dim:   rgba(167,139,250,0.12);
+$cyan:         #22d3ee;
+$cyan-dim:     rgba(34,211,238,0.1);
+
+$r-xs:  4px;
+$r-sm:  8px;
+$r-md:  12px;
+$r-lg:  16px;
+$r-xl:  20px;
+
+$font-display: 'Sora', 'Outfit', sans-serif;
+$font-body:    'DM Sans', 'Manrope', sans-serif;
+$font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+
+// ─────────────────────────────────────────────────────────
+// ANT DESIGN OVERRIDES — scoped
+// ─────────────────────────────────────────────────────────
+.wrapper {
+  padding: 0;
+  background: $bg;
   min-height: 100vh;
-}
+  font-family: $font-body;
+  color: $text-1;
 
-.page-header {
-  margin-bottom: 24px;
-
-  .page-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: #262626;
-    margin: 0 0 8px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    :global(.anticon) {
-      color: #722ed1;
-    }
-  }
-
-  .page-description {
-    font-size: 14px;
-    color: #8c8c8c;
-    margin: 0;
-  }
-}
-
-/* Statistics */
-.statistics-row {
-  margin-bottom: 24px;
-
-  .stat-card {
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    border: none;
-
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-
-    &.primary {
-      border-left: 4px solid #722ed1;
-    }
-
-    &.success {
-      border-left: 4px solid #52c41a;
-    }
-
-    &.warning {
-      border-left: 4px solid #fa8c16;
-    }
-
-    &.danger {
-      border-left: 4px solid #ff4d4f;
-    }
-
-    :global(.ant-card-body) {
-      padding: 20px;
-    }
-
-    :global(.ant-statistic-title) {
-      font-size: 14px;
-      color: #8c8c8c;
-      margin-bottom: 8px;
-    }
-
-    .stat-growth {
-      margin-top: 12px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-
-      &.up {
-        color: #52c41a;
-      }
-
-      &.down {
-        color: #ff4d4f;
-      }
-    }
-
-    .stat-detail {
-      margin-top: 12px;
-      font-size: 13px;
-      color: #8c8c8c;
-    }
-  }
-}
-
-/* Filters */
-.filter-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  :global(.ant-card-body) {
-    padding: 20px;
-  }
-
-  .filter-space {
-    width: 100%;
-
-    :global(.ant-space-item) {
-      flex-wrap: wrap;
-    }
-  }
-}
-
-/* Table */
-.table-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  :global(.ant-card-body) {
-    padding: 0;
-  }
-
+  // Table
   :global(.ant-table) {
-    border-radius: 12px;
+    background: $surface-2 !important;
+    color: $text-1 !important;
+    font-family: $font-body !important;
   }
 
-  .transaction-code {
-    font-family: 'Courier New', monospace;
-    font-weight: 700;
-    color: #722ed1;
+  :global(.ant-table-thead > tr > th) {
+    background: $surface-2 !important;
+    color: $text-3 !important;
+    border-bottom: 1px solid $border-base !important;
+    border-top: none !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.09em !important;
+    text-transform: uppercase !important;
+    padding: 9px 16px !important;
+    white-space: nowrap;
+  }
+
+  :global(.ant-table-tbody > tr > td) {
+    background: transparent !important;
+    color: $text-1 !important;
+    border-bottom: 1px solid $border-dim !important;
+    padding: 11px 16px !important;
+    transition: background 0.12s;
     font-size: 13px;
   }
 
-  .customer-info {
-    .customer-name {
-      font-weight: 600;
-      color: #262626;
-      margin-bottom: 4px;
-    }
-
-    .customer-contact {
-      font-size: 12px;
-      color: #8c8c8c;
-    }
+  :global(.ant-table-tbody > tr:hover > td) {
+    background: $surface-2 !important;
   }
 
-  .amount {
-    font-weight: 700;
-    color: #262626;
+  :global(.ant-table-row-selected > td) {
+    background: $blue-dim !important;
+  }
+
+  // Card overrides
+  :global(.ant-card) {
+    background: $surface-1 !important;
+    border: 1px solid $border-base !important;
+    border-radius: $r-lg !important;
+  }
+
+  :global(.ant-card-head) {
+    background: $surface-1 !important;
+    border-bottom: 1px solid $border-dim !important;
+    min-height: 52px !important;
+    padding: 0 20px !important;
+  }
+
+  :global(.ant-card-head-title) {
+    color: $text-1 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em;
+    padding: 14px 0 !important;
+  }
+
+  :global(.ant-card-extra) {
+    padding: 14px 0 !important;
+  }
+
+  :global(.ant-card-body) {
+    background: $surface-1 !important;
+    border-radius: 0 0 $r-lg $r-lg !important;
+  }
+
+  // Form
+  :global(.ant-form-item-label > label) {
+    color: $text-2 !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  :global(.ant-form-item) {
+    margin-bottom: 14px !important;
+  }
+
+  // Inputs
+  :global(.ant-input),
+  :global(.ant-input-number),
+  :global(.ant-input-number-input),
+  :global(.ant-picker),
+  :global(.ant-select-selector),
+  :global(.ant-input-affix-wrapper) {
+    background: $surface-2 !important;
+    border: 1px solid $border-base !important;
+    border-radius: $r-sm !important;
+    color: $text-1 !important;
+    font-size: 13px !important;
+    font-family: $font-body !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  :global(.ant-input:focus),
+  :global(.ant-input-focused),
+  :global(.ant-input-number-focused),
+  :global(.ant-picker-focused),
+  :global(.ant-select-focused .ant-select-selector) {
+    border-color: $blue !important;
+    box-shadow: 0 0 0 3px $blue-glow !important;
+  }
+
+  :global(.ant-input::placeholder),
+  :global(.ant-input-number-input::placeholder) {
+    color: $text-3 !important;
+  }
+
+  :global(.ant-select-arrow),
+  :global(.ant-picker-suffix) {
+    color: $text-3 !important;
+  }
+
+  :global(.ant-input-number-handler-wrap) {
+    background: $surface-3 !important;
+    border-left-color: $border-base !important;
+  }
+
+  :global(.ant-input-number-handler) {
+    color: $text-2 !important;
+  }
+
+  :global(.ant-input-clear-icon) {
+    color: $text-3 !important;
+  }
+
+  // Select dropdown
+  :global(.ant-select-dropdown) {
+    background: $surface-2 !important;
+    border: 1px solid $border-hi !important;
+    border-radius: $r-md !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+    padding: 6px !important;
+  }
+
+  :global(.ant-select-item) {
+    color: $text-2 !important;
+    border-radius: $r-xs !important;
+    font-size: 13px !important;
+  }
+
+  :global(.ant-select-item-option-active) {
+    background: $surface-3 !important;
+    color: $text-1 !important;
+  }
+
+  :global(.ant-select-item-option-selected) {
+    background: $blue-dim !important;
+    color: $blue !important;
+    font-weight: 600 !important;
+  }
+
+  // Picker panel
+  :global(.ant-picker-panel-container) {
+    background: $surface-2 !important;
+    border: 1px solid $border-hi !important;
+    border-radius: $r-md !important;
+  }
+
+  :global(.ant-picker-content th),
+  :global(.ant-picker-cell) {
+    color: $text-3 !important;
+  }
+
+  :global(.ant-picker-cell-in-view) {
+    color: $text-1 !important;
+  }
+
+  :global(.ant-picker-cell-selected .ant-picker-cell-inner) {
+    background: $blue !important;
+    border-radius: $r-sm !important;
+  }
+
+  :global(.ant-picker-header-view button),
+  :global(.ant-picker-header button) {
+    color: $text-2 !important;
+  }
+
+  // Descriptions
+  :global(.ant-descriptions-bordered .ant-descriptions-item-label) {
+    background: $surface-2 !important;
+    color: $text-3 !important;
+    border-color: $border-dim !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  :global(.ant-descriptions-bordered .ant-descriptions-item-content) {
+    background: transparent !important;
+    color: $text-1 !important;
+    border-color: $border-dim !important;
+    font-size: 13px !important;
+  }
+
+  :global(.ant-descriptions-bordered .ant-descriptions-row) {
+    border-color: $border-dim !important;
+  }
+
+  :global(.ant-descriptions-bordered) {
+    border: 1px solid $border-dim !important;
+    border-radius: $r-sm !important;
+    overflow: hidden;
+  }
+
+  // Pagination
+  :global(.ant-pagination-item),
+  :global(.ant-pagination-prev .ant-pagination-item-link),
+  :global(.ant-pagination-next .ant-pagination-item-link) {
+    background: $surface-2 !important;
+    border-color: $border-base !important;
+    color: $text-2 !important;
+    border-radius: $r-xs !important;
+  }
+
+  :global(.ant-pagination-item-active) {
+    background: $blue-dim !important;
+    border-color: $blue !important;
+    a { color: $blue !important; }
+  }
+
+  :global(.ant-pagination-options .ant-select-selector) {
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+
+  // Misc
+  :global(.ant-empty-description) { color: $text-3 !important; }
+  :global(.ant-spin-dot-item)     { background: $blue !important; }
+
+  :global(*::-webkit-scrollbar) { width: 4px; height: 4px; }
+  :global(*::-webkit-scrollbar-track) { background: transparent; }
+  :global(*::-webkit-scrollbar-thumb) {
+    background: $surface-3;
+    border-radius: 4px;
+    &:hover { background: $border-hi; }
+  }
+
+  // TextArea
+  :global(.ant-input[aria-multiline="true"]),
+  :global(textarea.ant-input) {
+    background: $surface-2 !important;
+    border-color: $border-base !important;
+    color: $text-1 !important;
+    resize: vertical;
+  }
+
+  // Modal
+  :global(.ant-modal-content) {
+    background: $surface-1 !important;
+    border: 1px solid $border-hi !important;
+    border-radius: $r-lg !important;
+  }
+
+  :global(.ant-modal-header) {
+    background: $surface-1 !important;
+    border-bottom: 1px solid $border-dim !important;
+  }
+
+  :global(.ant-modal-title) { color: $text-1 !important; }
+  :global(.ant-modal-close-x) { color: $text-2 !important; }
+}
+
+// ─────────────────────────────────────────────────────────
+// Layout shell
+// ─────────────────────────────────────────────────────────
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba($surface-0, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid $border-dim;
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.brandIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: $r-sm;
+  background: linear-gradient(135deg, $blue 0%, #6e44ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba($blue, 0.4);
+
+  :global(.anticon) {
+    color: #fff;
     font-size: 15px;
   }
 }
 
-/* Detail Modal */
-.detail-content {
-  :global(.ant-descriptions-item-label) {
-    font-weight: 600;
-    background: #fafafa;
+.brandName {
+  font-family: $font-display;
+  font-size: 15px;
+  font-weight: 700;
+  color: $text-1;
+  letter-spacing: -0.02em;
+}
+
+.brandSep {
+  width: 1px;
+  height: 22px;
+  background: $border-base;
+}
+
+.pageTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: $text-2;
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contractSelector {
+  :global(.ant-select-selector) {
+    min-width: 300px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: $surface-2 !important;
+    border-color: $border-base !important;
+    border-radius: $r-sm !important;
+    font-size: 13px !important;
   }
 
-  .amount-large {
-    font-size: 20px;
-    font-weight: 700;
-    color: #722ed1;
+  :global(.ant-select-selection-placeholder),
+  :global(.ant-select-selection-item) {
+    color: $text-1 !important;
+    line-height: 36px !important;
   }
 }
 
-/* Confirm Info */
-.confirm-info {
-  background: #f0f0f0;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+.content {
+  flex: 1;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-  p {
-    margin: 8px 0;
+// ─────────────────────────────────────────────────────────
+// KPI Strip
+// ─────────────────────────────────────────────────────────
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.kpiCard {
+  background: $surface-1;
+  border: 1px solid $border-base;
+  border-radius: $r-lg;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top right, var(--kpi-glow) 0%, transparent 65%);
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  &:hover {
+    border-color: var(--kpi-color);
+    transform: translateY(-1px);
+  }
+}
+
+.kpiIconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: $r-md;
+  background: var(--kpi-bg);
+  border: 1px solid var(--kpi-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  :global(.anticon) {
+    font-size: 17px;
+    color: var(--kpi-color);
+  }
+}
+
+.kpiInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.kpiLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $text-3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.kpiValue {
+  font-family: $font-display;
+  font-size: 20px;
+  font-weight: 800;
+  color: $text-1;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// KPI color variants
+.kpiBlue   { --kpi-color: #{$blue};   --kpi-bg: #{$blue-dim};   --kpi-border: rgba(75,142,255,0.2);   --kpi-glow: rgba(75,142,255,0.08);   }
+.kpiGreen  { --kpi-color: #{$green};  --kpi-bg: #{$green-dim};  --kpi-border: rgba(34,201,122,0.2);   --kpi-glow: rgba(34,201,122,0.07);   }
+.kpiAmber  { --kpi-color: #{$amber};  --kpi-bg: #{$amber-dim};  --kpi-border: rgba(240,164,67,0.2);   --kpi-glow: rgba(240,164,67,0.07);   }
+.kpiViolet { --kpi-color: #{$violet}; --kpi-bg: #{$violet-dim}; --kpi-border: rgba(167,139,250,0.2);  --kpi-glow: rgba(167,139,250,0.07);  }
+
+// ─────────────────────────────────────────────────────────
+// Main grid
+// ─────────────────────────────────────────────────────────
+.mainGrid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+// ─────────────────────────────────────────────────────────
+// Card base
+// ─────────────────────────────────────────────────────────
+.card {
+  background: $surface-1;
+  border: 1px solid $border-base;
+  border-radius: $r-lg;
+  overflow: hidden;
+}
+
+.cardHead {
+  padding: 14px 20px;
+  border-bottom: 1px solid $border-dim;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: $text-1;
+
+  :global(.anticon) {
+    color: $blue;
     font-size: 14px;
-
-    strong {
-      color: #595959;
-    }
-  }
-
-  .amount-large {
-    font-size: 18px;
-    font-weight: 700;
-    color: #722ed1;
   }
 }
 
-/* Responsive */
+.cardBadge {
+  font-size: 11px;
+  color: $text-3;
+  background: $surface-2;
+  border: 1px solid $border-base;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.cardBody {
+  padding: 20px;
+}
+
+.cardBodyZero {
+  padding: 0;
+}
+
+// ─────────────────────────────────────────────────────────
+// Contract info strip
+// ─────────────────────────────────────────────────────────
+.contractStrip {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr 1px 1fr;
+  background: $surface-2;
+  border: 1px solid $border-dim;
+  border-radius: $r-md;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.contractStripItem {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.contractStripDivider {
+  background: $border-dim;
+  width: 1px;
+}
+
+.contractStripLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: $text-3;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.contractStripValue {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $text-1;
+
+  &--accent {
+    color: $blue;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Receive form — full width button
+// ─────────────────────────────────────────────────────────
+.btnReceive {
+  width: 100%;
+  height: 40px !important;
+  background: linear-gradient(135deg, $blue 0%, #6e44ff 100%) !important;
+  border: none !important;
+  border-radius: $r-sm !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 16px rgba($blue, 0.35) !important;
+  transition: opacity 0.15s, transform 0.15s !important;
+
+  &:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 24px rgba($blue, 0.45) !important;
+  }
+
+  &:disabled {
+    opacity: 0.4 !important;
+    transform: none !important;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Debt aging & overdue inline panels
+// ─────────────────────────────────────────────────────────
+.miniPanel {
+  margin-top: 14px;
+  border-radius: $r-md;
+  border: 1px solid $border-dim;
+  overflow: hidden;
+}
+
+.miniPanelHead {
+  padding: 9px 14px;
+  background: $surface-2;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $text-3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  :global(.anticon) { font-size: 12px; }
+}
+
+.miniPanelHead--amber { :global(.anticon) { color: $amber; } }
+.miniPanelHead--red   { :global(.anticon) { color: $red; } border-bottom: 1px solid rgba($red,0.12); }
+
+.miniPanel--red {
+  border-color: rgba($red, 0.18);
+  background: rgba($red, 0.03);
+
+  .miniPanelHead { background: rgba($red, 0.07); }
+}
+
+.agingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid $border-dim;
+
+  &:last-child { border-bottom: none; }
+}
+
+.agingLabel  { color: $text-2; }
+.agingAmount { font-weight: 700; color: $amber; }
+.agingCount  { font-size: 11px; color: $text-3; margin-top: 1px; text-align: right; }
+
+.overdueRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba($red, 0.1);
+
+  &:last-child { border-bottom: none; }
+}
+
+.overdueCode   { font-weight: 600; color: $text-1; }
+.overdueDays   { font-size: 10.5px; color: $red; margin-top: 1px; }
+.overdueAmount { font-weight: 700; color: $red; }
+
+// ─────────────────────────────────────────────────────────
+// Payment list — toolbar + summary + table
+// ─────────────────────────────────────────────────────────
+.paymentToolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid $border-dim;
+  flex-wrap: wrap;
+
+  :global(.ant-input-affix-wrapper),
+  :global(.ant-input) {
+    flex: 1;
+    min-width: 200px;
+    height: 34px !important;
+  }
+
+  :global(.ant-select) {
+    width: 190px;
+
+    .ant-select-selector {
+      height: 34px !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      line-height: 34px !important;
+    }
+  }
+}
+
+.summaryStrip {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid $border-dim;
+  overflow-x: auto;
+}
+
+.summaryCell {
+  flex: 1;
+  min-width: 130px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-right: 1px solid $border-dim;
+
+  &:last-child { border-right: none; }
+}
+
+.summaryCellLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $text-3;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.summaryCellValue {
+  font-family: $font-display;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+
+  &--amber  { color: $amber; }
+  &--blue   { color: $blue; }
+  &--violet { color: $violet; }
+}
+
+// Payment id / ref cells
+.payId {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-weight: 700;
+  color: $blue;
+}
+
+.payRef {
+  font-size: 11px;
+  color: $text-3;
+  margin-top: 1px;
+}
+
+.amtPrimary { font-weight: 700; color: $text-1; font-size: 13px; }
+.amtSub     { color: $text-3; font-size: 12px; }
+.amtWarn    { color: $amber; font-weight: 700; font-size: 13px; }
+
+.selectedRow td {
+  background: rgba($blue, 0.07) !important;
+  border-left: 2px solid $blue !important;
+}
+
+// ─────────────────────────────────────────────────────────
+// Status tags
+// ─────────────────────────────────────────────────────────
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+// ─────────────────────────────────────────────────────────
+// Buttons
+// ─────────────────────────────────────────────────────────
+.btn {
+  border-radius: $r-xs !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all 0.15s !important;
+  cursor: pointer;
+  border: none;
+}
+
+.btnPrimary {
+  @extend .btn;
+  background: $blue !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba($blue, 0.3) !important;
+
+  &:hover { background: lighten($blue, 6%) !important; }
+  &:disabled { opacity: 0.4 !important; }
+}
+
+.btnGhost {
+  @extend .btn;
+  background: transparent !important;
+  border: 1px solid $border-base !important;
+  color: $text-2 !important;
+
+  &:hover { border-color: $border-hi !important; color: $text-1 !important; }
+  &:disabled { opacity: 0.35 !important; }
+}
+
+.btnAccent {
+  @extend .btn;
+  background: $blue-dim !important;
+  border: 1px solid rgba($blue, 0.25) !important;
+  color: $blue !important;
+
+  &:hover { background: rgba($blue, 0.2) !important; }
+  &:disabled { opacity: 0.35 !important; }
+}
+
+.btnDanger {
+  @extend .btn;
+  background: $red-dim !important;
+  border: 1px solid rgba($red, 0.3) !important;
+  color: $red !important;
+
+  &:hover { background: rgba($red, 0.18) !important; }
+  &:disabled { opacity: 0.35 !important; }
+}
+
+.btnSm {
+  height: 28px !important;
+  font-size: 11.5px !important;
+  padding: 0 10px !important;
+}
+
+// ─────────────────────────────────────────────────────────
+// Allocation workspace
+// ─────────────────────────────────────────────────────────
+.allocationGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 14px;
+  align-items: start;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  color: $text-3;
+  gap: 10px;
+  text-align: center;
+
+  :global(.anticon) {
+    font-size: 28px;
+    color: $surface-3;
+  }
+
+  span {
+    font-size: 13px;
+    max-width: 240px;
+    line-height: 1.5;
+  }
+}
+
+.paymentBanner {
+  padding: 12px 16px;
+  border-radius: $r-md;
+  border: 1px solid;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.paymentBanner--pending {
+  background: $amber-dim;
+  border-color: rgba($amber, 0.3);
+}
+
+.paymentBanner--normal {
+  background: $blue-dim;
+  border-color: rgba($blue, 0.25);
+}
+
+.paymentBannerIcon {
+  font-size: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.paymentBanner--pending .paymentBannerIcon { color: $amber; }
+.paymentBanner--normal .paymentBannerIcon  { color: $blue; }
+
+.paymentBannerBody {}
+
+.paymentBannerTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: $text-1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.paymentBannerDesc {
+  font-size: 12px;
+  color: $text-2;
+}
+
+.allocationMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: $surface-2;
+  border-radius: $r-md;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: $text-2;
+}
+
+.allocationMetaValue      { font-weight: 700; color: $text-1; }
+.allocationMetaValue--ok  { color: $green; }
+.allocationMetaValue--warn { color: $amber; }
+
+.actionBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid $border-dim;
+}
+
+// ─────────────────────────────────────────────────────────
+// Payment detail card
+// ─────────────────────────────────────────────────────────
+.detailMonoId {
+  font-family: $font-mono;
+  font-size: 13px;
+  color: $blue;
+  font-weight: 700;
+}
+
+.detailAmtLg   { font-weight: 800; color: $text-1; font-size: 15px; font-family: $font-display; }
+.detailAlloc   { color: $green; font-weight: 700; }
+.detailUnalloc { color: $amber; font-weight: 700; }
+
+.allocHistory {
+  margin-top: 16px;
+}
+
+.allocHistoryTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: $text-3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.allocHistoryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid $border-dim;
+  font-size: 12.5px;
+
+  &:last-child { border-bottom: none; }
+}
+
+.allocBillId   { color: $text-1; font-weight: 600; }
+.allocTypeMeta { font-size: 11px; color: $text-3; margin-left: 6px; }
+.allocAmt      { font-weight: 700; color: $green; }
+
+.allocEmpty {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: $text-3;
+}
+
+// ─────────────────────────────────────────────────────────
+// Bottom grid — credit + audit
+// ─────────────────────────────────────────────────────────
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.creditRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid $border-dim;
+  font-size: 12.5px;
+
+  &:last-child { border-bottom: none; }
+}
+
+.creditType  { font-weight: 600; color: $text-1; }
+.creditBill  { font-size: 11px; color: $text-3; }
+.creditDate  { font-size: 11px; color: $text-3; }
+.creditPos   { font-weight: 700; color: $green; }
+.creditNeg   { font-weight: 700; color: $red; }
+.creditBal   { font-size: 12px; color: $text-2;
+  strong { color: $violet; }
+}
+
+.auditItem {
+  padding: 10px 0;
+  border-bottom: 1px solid $border-dim;
+
+  &:last-child { border-bottom: none; }
+}
+
+.auditOp  { font-weight: 700; color: $text-1; font-size: 12.5px; }
+.auditMeta { font-size: 11px; color: $text-3; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px; }
+.auditSep  { color: $surface-3; }
+
+// ─────────────────────────────────────────────────────────
+// Empty full page
+// ─────────────────────────────────────────────────────────
+.fullEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: $text-3;
+  padding: 80px 24px;
+
+  :global(.anticon) {
+    font-size: 40px;
+    color: $surface-3;
+  }
+
+  p { font-size: 14px; margin: 0; }
+}
+
+// ─────────────────────────────────────────────────────────
+// Responsive
+// ─────────────────────────────────────────────────────────
+@media (max-width: 1280px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .allocationGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .payment-wrapper {
+  .topBar {
+    padding: 0 16px;
+    height: auto;
+    flex-wrap: wrap;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    gap: 10px;
+  }
+
+  .contractSelector :global(.ant-select-selector) {
+    min-width: 100% !important;
+  }
+
+  .topBarRight {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .content {
     padding: 16px;
+    gap: 14px;
   }
 
-  .statistics-row {
-    :global(.ant-col) {
-      margin-bottom: 16px;
-    }
+  .kpiStrip {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
-  .filter-space {
+  .kpiValue {
+    font-size: 16px;
+  }
+
+  .paymentToolbar {
+    padding: 12px 14px;
+  }
+
+  .summaryStrip {
+    overflow-x: auto;
+  }
+
+  .summaryCell {
+    min-width: 120px;
+  }
+
+  .actionBar {
     flex-direction: column;
-    align-items: stretch !important;
 
-    :global(.ant-space-item) {
-      width: 100% !important;
-
-      > * {
-        width: 100% !important;
-      }
-    }
-  }
-
-  .table-card {
-    :global(.ant-table) {
-      font-size: 12px;
-    }
+    button { width: 100%; }
   }
 }
 
-/* Custom scrollbar */
-:global {
-  .ant-table-body::-webkit-scrollbar {
-    height: 8px;
+@media (max-width: 480px) {
+  .kpiStrip {
+    grid-template-columns: 1fr;
   }
 
-  .ant-table-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+  .contractStrip {
+    grid-template-columns: 1fr;
   }
 
-  .ant-table-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+  .contractStripDivider {
+    width: 100%;
+    height: 1px;
+  }
+}
 
-    &:hover {
-      background: #555;
-    }
+// ─────────────────────────────────────────────────────────
+// Responsive table wrapper
+// ─────────────────────────────────────────────────────────
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  :global(.ant-table-wrapper) {
+    min-width: 600px;
   }
 }

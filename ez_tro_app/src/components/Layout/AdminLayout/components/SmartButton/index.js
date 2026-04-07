@@ -1,5 +1,9 @@
 import React from 'react';
 import { Button, Tooltip } from 'antd';
+import classNames from 'classnames/bind';
+import styles from './SmartButton.module.scss';
+
+const cx = classNames.bind(styles);
 
 function SmartButton({
                          size = 'middle',          // large | middle | small
@@ -16,6 +20,13 @@ function SmartButton({
                          style = {},
                          ...rest
                      }) {
+    const normalizedTitle = String(title).toLowerCase();
+    const isExcelButton = normalizedTitle.includes('excel') || normalizedTitle.includes('xuất');
+    const buttonClassName = cx('smartButton', {
+        primary: type === 'primary',
+        excel: isExcelButton,
+    }, className);
+
     const button = (
         <Button
             size={size}
@@ -24,10 +35,10 @@ function SmartButton({
             onClick={onClick}
             disabled={disabled}
             loading={loading}
-            className={className}
+            className={buttonClassName}
             style={{
-                width: buttonWidth,
-                height: buttonHeight,
+                '--smart-button-width': typeof buttonWidth === 'number' ? `${buttonWidth}px` : buttonWidth,
+                '--smart-button-height': typeof buttonHeight === 'number' ? `${buttonHeight}px` : buttonHeight,
                 ...style
             }}
             {...rest}

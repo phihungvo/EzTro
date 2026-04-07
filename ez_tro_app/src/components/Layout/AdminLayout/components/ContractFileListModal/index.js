@@ -1,25 +1,27 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {Modal, List, Empty, Spin, message} from 'antd';
 import {FileTextOutlined, EyeOutlined, DownloadOutlined, DeleteOutlined} from '@ant-design/icons';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import styles from './ContractFileListModal.module.scss';
 import {getContractFiles, getPresignedUrl, deleteContractFile} from '~/service/admin/contract';
 
+const bytesToSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
 const ContractFileListModal = ({isOpen, onClose, contract}) => {
     const [fileList, setFileList] = useState([]);
     const [loadingFiles, setLoadingFiles] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
     const [pageSize] = useState(10);
+    const [totalFiles, setTotalFiles] = useState(0);
 
-    useEffect(() => {
-        if (isOpen && contract?.id) {
-            fetchFiles(currentPage);
-        } else {
-            setFileList([]);
-        }
-    }, [isOpen, contract?.id, currentPage]);
-
-    const fetchFiles = async (page = 0) => {
+    const fetchFiles = useCallback(async (page = 0) => {
+        if (!contract?.id) return;
         setLoadingFiles(true);
         setFileList([]);
 
@@ -35,25 +37,30 @@ const ContractFileListModal = ({isOpen, onClose, contract}) => {
                     uploadedAt: file.uploadDate ? new Date(file.uploadDate).getTime() : null,
                 }));
                 setFileList(formattedFiles);
+                setTotalFiles(Number(response.totalElements || 0));
 
             } else {
                 setFileList([]);
+                setTotalFiles(0);
             }
         } catch (error) {
             message.error(`Lỗi khi tải danh sách file: ${error.message || 'Unknown error'}`);
             setFileList([]);
+            setTotalFiles(0);
         } finally {
             setLoadingFiles(false);
         }
-    };
+    }, [contract?.id, pageSize]);
 
-    const bytesToSize = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    useEffect(() => {
+        if (isOpen && contract?.id) {
+            setCurrentPage(0);
+            fetchFiles(0);
+        } else {
+            setFileList([]);
+            setTotalFiles(0);
+        }
+    }, [isOpen, contract?.id, fetchFiles]);
 
     const handleViewOrDownloadFile = async (file, action = 'view') => {
         try {
@@ -165,8 +172,12 @@ const ContractFileListModal = ({isOpen, onClose, contract}) => {
                     pagination={{
                         current: currentPage + 1,
                         pageSize,
-                        total: fileList.length * (currentPage + 1),
-                        onChange: (page) => setCurrentPage(page - 1),
+                        total: totalFiles,
+                        onChange: (page) => {
+                            const nextPage = page - 1;
+                            setCurrentPage(nextPage);
+                            fetchFiles(nextPage);
+                        },
                         showSizeChanger: false,
                     }}
                     renderItem={(file) => (

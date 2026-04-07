@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { message } from 'antd';
+import { normalizeApiBaseUrl } from '~/utils/normalizeBaseUrl';
 
 const axiosInstance = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || '/api',
+    baseURL: normalizeApiBaseUrl(process.env.REACT_APP_API_URL),
     timeout: 10000,
     withCredentials: true,
 });
@@ -21,6 +22,20 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
+        const rawText = error?.request?.responseText;
+        if (
+            !error?.response &&
+            typeof rawText === 'string' &&
+            rawText.trim().startsWith('<')
+        ) {
+            const url = `${error?.config?.baseURL || ''}${error?.config?.url || ''}`;
+            console.error('API returned HTML instead of JSON:', {
+                url,
+                snippet: rawText.trim().slice(0, 200),
+            });
+            message.error('API trả về HTML thay vì JSON. Kiểm tra cấu hình proxy/REACT_APP_API_URL hoặc backend.');
+        }
+
         const originalRequest = error.config;
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;

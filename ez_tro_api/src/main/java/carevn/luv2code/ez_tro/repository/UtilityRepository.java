@@ -15,6 +15,10 @@ import carevn.luv2code.ez_tro.entity.Utility;
 @Repository
 public interface UtilityRepository extends JpaRepository<Utility, Integer> {
 
+    List<Utility> findByBoardingHouse_Owner_Id(Integer ownerId);
+
+    Page<Utility> findByBoardingHouse_Owner_Id(Integer ownerId, Pageable pageable);
+
     List<Utility> findByBoardingHouseId(Integer boardingHouseId);
 
     List<Utility> findByBoardingHouseIdAndIsActiveTrue(Integer boardingHouseId);

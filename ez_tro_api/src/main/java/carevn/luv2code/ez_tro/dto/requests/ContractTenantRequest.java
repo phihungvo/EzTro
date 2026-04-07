@@ -22,7 +22,6 @@ public class ContractTenantRequest {
     @Email(message = "Tenant email is invalid")
     String email;
 
-    @NotBlank(message = "Tenant password is required")
     String password;
 
     @NotBlank(message = "Tenant identity number is required")

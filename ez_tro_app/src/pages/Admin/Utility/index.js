@@ -20,7 +20,7 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
 import {getAllUtilities, createUtility, updateUtility, deleteUtility} from '~/service/admin/utility';
-import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
 
@@ -237,13 +237,13 @@ function Utility() {
         try {
             await createUtility(formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi tạo tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -258,13 +258,13 @@ function Utility() {
         try {
             await updateUtility(selectedUtility.id, formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi cập nhật tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -278,20 +278,18 @@ function Utility() {
     const handleCallDeleteUtility = async () => {
         await deleteUtility(selectedUtility.id);
         handleGetUtilities();
-        setIsModalOpen(false);
     };
 
-    const handleFormSubmit = (formData) => {
+    const handleFormSubmit = async (formData) => {
         formData.isActive = formData.isActive === 'Yes';
 
         if (modalMode === 'create') {
-            handleCallCreateUtility(formData);
+            await handleCallCreateUtility(formData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateUtility(formData);
+            await handleCallUpdateUtility(formData);
         } else if (modalMode === 'delete') {
-            handleCallDeleteUtility();
+            await handleCallDeleteUtility();
         }
-        setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
@@ -336,6 +334,15 @@ function Utility() {
                     <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddUtility} />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -346,37 +353,22 @@ function Utility() {
                         columns={columns}
                         dataSources={utilitySource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {utilitySource.map((utility) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
-                                    <UtilityCard
-                                        utility={utility}
-                                        onView={() => handleViewUtility(utility)}
-                                        onEdit={() => handleEditUtility(utility)}
-                                        onDelete={() => handleDeleteUtility(utility)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {utilitySource.map((utility) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
+                                <UtilityCard
+                                    utility={utility}
+                                    onView={() => handleViewUtility(utility)}
+                                    onEdit={() => handleEditUtility(utility)}
+                                    onDelete={() => handleDeleteUtility(utility)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

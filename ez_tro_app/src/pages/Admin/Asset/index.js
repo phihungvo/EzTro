@@ -1,6 +1,7 @@
 // src/pages/Admin/Asset/Asset.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import classNames from 'classnames/bind';
+import {useLocation, useNavigate} from 'react-router-dom';
 import styles from './Asset.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import AssetCard from '~/components/Layout/AdminLayout/components/AssetCard';
@@ -11,7 +12,6 @@ import {
     TableOutlined,
     AppstoreOutlined,
     ToolOutlined,
-    HistoryOutlined,
     ExclamationCircleOutlined,
     CheckCircleOutlined,
     WarningOutlined,
@@ -20,9 +20,12 @@ import {
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
-import { Form, message, Row, Col, Pagination, Segmented, Tag, Card, Statistic, Input, Select, InputNumber, DatePicker, Timeline, Tabs } from 'antd';
+import { Form, message, Row, Col, Pagination, Segmented, Tag, Card, Statistic, InputNumber, DatePicker, Timeline, Tabs } from 'antd';
 import dayjs from 'dayjs';
 import useDebounce from '~/hooks/useDebounce';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {filterPropertyAssets, getPropertyAssetDetail} from '~/service/admin/property-asset';
+import {getAllRoomNoPaged} from '~/service/admin/room';
 
 const cx = classNames.bind(styles);
 
@@ -309,7 +312,11 @@ const mockRooms = [
 ];
 
 function Asset() {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [assetSource, setAssetSource] = useState([]);
+    const [boardingHouses, setBoardingHouses] = useState([]);
+    const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
@@ -325,6 +332,7 @@ function Asset() {
     // Filter states
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 500);
+    const [boardingHouseFilter, setBoardingHouseFilter] = useState('ALL');
     const [categoryFilter, setCategoryFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [conditionFilter, setConditionFilter] = useState('ALL');
@@ -339,6 +347,11 @@ function Asset() {
         brokenAssets: 0,
         storedAssets: 0,
     });
+
+    const roomOptions = useMemo(() => rooms.map((room) => ({
+        value: room.id,
+        label: `${room.roomNumber}${room.buildingName ? ` - ${room.buildingName}` : ''}${room.boardingHouseName ? ` - ${room.boardingHouseName}` : ''}`,
+    })), [rooms]);
 
     const renderStatusTag = (status) => {
         const map = {
@@ -415,7 +428,9 @@ function Asset() {
             align: 'center',
             render: (_, record) => (
                 <span style={{ fontWeight: 500 }}>
-                    {record.roomNumber} - {record.buildingName}
+                    {record.roomNumber
+                        ? `${record.roomNumber}${record.buildingName ? ` - ${record.buildingName}` : ''}`
+                        : `Lưu kho${record.boardingHouseName ? ` - ${record.boardingHouseName}` : ''}`}
                 </span>
             ),
         },
@@ -435,7 +450,7 @@ function Asset() {
             align: 'right',
             render: (value) => (
                 <span style={{ fontWeight: 'bold', color: '#1890ff' }}>
-                    {formatCurrency(value)}
+                    {formatCurrency(value || 0)}
                 </span>
             ),
         },
@@ -588,85 +603,95 @@ function Asset() {
         },
     ];
 
-    useEffect(() => {
-        handleGetAssets();
-    }, [pagination.current, pagination.pageSize]);
-
-    useEffect(() => {
-        setPagination(prev => ({ ...prev, current: 1 }));
-        handleGetAssets();
-    }, [debouncedSearch, categoryFilter, statusFilter, conditionFilter, roomFilter]);
-
-    const handleGetAssets = async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const handleGetAssets = useCallback(async (page = pagination.current, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            setTimeout(() => {
-                let filtered = [...mockAssets];
+            const result = await filterPropertyAssets({
+                search: debouncedSearch || undefined,
+                category: categoryFilter,
+                status: statusFilter,
+                condition: conditionFilter,
+                roomId: roomFilter !== 'ALL' ? roomFilter : undefined,
+                boardingHouseId: boardingHouseFilter !== 'ALL' ? boardingHouseFilter : undefined,
+                page: Math.max(page - 1, 0),
+                pageSize,
+            });
 
-                if (debouncedSearch) {
-                    filtered = filtered.filter(a =>
-                        a.assetCode.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                        a.assetName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                        a.serialNumber?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                        a.assignedTo?.toLowerCase().includes(debouncedSearch.toLowerCase())
-                    );
-                }
+            const content = Array.isArray(result?.content) ? result.content : [];
 
-                if (categoryFilter !== 'ALL') {
-                    filtered = filtered.filter(a => a.category === categoryFilter);
-                }
-
-                if (statusFilter !== 'ALL') {
-                    filtered = filtered.filter(a => a.status === statusFilter);
-                }
-
-                if (conditionFilter !== 'ALL') {
-                    filtered = filtered.filter(a => a.condition === conditionFilter);
-                }
-
-                if (roomFilter !== 'ALL') {
-                    filtered = filtered.filter(a => a.roomId === roomFilter);
-                }
-
-                // Calculate statistics
-                const stats = {
-                    totalAssets: filtered.length,
-                    totalValue: filtered.reduce((sum, a) => sum + a.currentValue, 0),
-                    activeAssets: filtered.filter(a => a.status === 'ACTIVE').length,
-                    needMaintenance: filtered.filter(a =>
-                        a.nextMaintenanceDate && dayjs(a.nextMaintenanceDate).diff(dayjs(), 'days') < 30
-                    ).length,
-                    brokenAssets: filtered.filter(a => a.status === 'BROKEN').length,
-                    storedAssets: filtered.filter(a => a.status === 'STORED').length,
-                };
-                setStatistics(stats);
-
-                setAssetSource(filtered);
-                setPagination({
-                    current: page,
-                    pageSize,
-                    total: filtered.length,
-                });
-                setLoading(false);
-            }, 500);
+            setAssetSource(content);
+            setStatistics({
+                totalAssets: result?.totalElements ?? content.length,
+                totalValue: content.reduce((sum, asset) => sum + Number(asset.currentValue || 0), 0),
+                activeAssets: content.filter((asset) => asset.status === 'ACTIVE').length,
+                needMaintenance: content.filter((asset) =>
+                    asset.nextMaintenanceDate && dayjs(asset.nextMaintenanceDate).diff(dayjs(), 'days') < 30
+                ).length,
+                brokenAssets: content.filter((asset) => asset.status === 'BROKEN').length,
+                storedAssets: content.filter((asset) => asset.status === 'STORED').length,
+            });
+            setPagination({
+                current: page,
+                pageSize,
+                total: result?.totalElements ?? content.length,
+            });
         } catch (error) {
             message.error(error.response?.data?.message || error.message);
             setAssetSource([]);
+            setStatistics({
+                totalAssets: 0,
+                totalValue: 0,
+                activeAssets: 0,
+                needMaintenance: 0,
+                brokenAssets: 0,
+                storedAssets: 0,
+            });
             setLoading(false);
+            return;
+        }
+        setLoading(false);
+    }, [boardingHouseFilter, categoryFilter, conditionFilter, debouncedSearch, pagination.current, pagination.pageSize, roomFilter, statusFilter]);
+
+    useEffect(() => {
+        const loadFilterOptions = async () => {
+            try {
+                const [boardingHouseData, roomData] = await Promise.all([
+                    getAllBoardingHousesNoPaged(),
+                    getAllRoomNoPaged(),
+                ]);
+                setBoardingHouses(Array.isArray(boardingHouseData) ? boardingHouseData : []);
+                setRooms(Array.isArray(roomData) ? roomData : []);
+            } catch {
+                setBoardingHouses([]);
+                setRooms([]);
+            }
+        };
+
+        loadFilterOptions();
+    }, []);
+
+    useEffect(() => {
+        handleGetAssets(pagination.current, pagination.pageSize);
+    }, [handleGetAssets, pagination.current, pagination.pageSize]);
+
+    useEffect(() => {
+        setPagination((prev) => ({...prev, current: 1}));
+    }, [boardingHouseFilter, debouncedSearch, categoryFilter, statusFilter, conditionFilter, roomFilter]);
+
+    const handleViewAsset = async (record) => {
+        try {
+            const detail = await getPropertyAssetDetail(record.id);
+            setSelectedAsset(detail || record);
+            setModalMode('view');
+            setIsModalOpen(true);
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Không thể tải chi tiết tài sản');
         }
     };
 
-    const handleViewAsset = (record) => {
-        setSelectedAsset(record);
-        setModalMode('view');
-        setIsModalOpen(true);
-    };
-
     const handleAddAsset = () => {
-        setSelectedAsset(null);
-        setModalMode('add');
-        form.resetFields();
-        setIsModalOpen(true);
+        const basePath = location.pathname.startsWith('/admin') ? '/admin/assets' : '/owner/assets';
+        navigate(`${basePath}/create`);
     };
 
     const handleFormSubmit = async (formData) => {
@@ -699,6 +724,7 @@ function Asset() {
 
     const handleReset = () => {
         setSearch('');
+        setBoardingHouseFilter('ALL');
         setCategoryFilter('ALL');
         setStatusFilter('ALL');
         setConditionFilter('ALL');
@@ -901,14 +927,15 @@ function Asset() {
                     children: (
                         <div style={{ padding: '16px 0' }}>
                             <Timeline
-                                items={selectedAsset.history.map((item, index) => {
+                                items={(selectedAsset.histories || []).map((item) => {
                                     const actionMap = {
                                         INSTALL: { color: 'green', text: 'Lắp đặt' },
                                         MAINTENANCE: { color: 'blue', text: 'Bảo trì' },
                                         REPORT: { color: 'orange', text: 'Báo cáo sự cố' },
-                                        REPAIR: { color: 'red', text: 'Sửa chữa' },
                                         MOVE: { color: 'purple', text: 'Di chuyển' },
                                         PURCHASE: { color: 'cyan', text: 'Mua mới' },
+                                        UPDATE: { color: 'gold', text: 'Cập nhật' },
+                                        DISPOSAL: { color: 'red', text: 'Thanh lý' },
                                     };
                                     const { color, text } = actionMap[item.action] || { color: 'gray', text: item.action };
 
@@ -919,7 +946,7 @@ function Asset() {
                                                 <div style={{ marginBottom: '8px' }}>
                                                     <Tag color={color}>{text}</Tag>
                                                     <span style={{ marginLeft: '8px', color: '#595959' }}>
-                                                        {dayjs(item.date).format('DD/MM/YYYY HH:mm')}
+                                                        {dayjs(item.actionDate).format('DD/MM/YYYY HH:mm')}
                                                     </span>
                                                 </div>
                                                 <div style={{ marginBottom: '4px', fontWeight: 500 }}>
@@ -1007,12 +1034,24 @@ function Asset() {
                 fields={[
                     {
                         type: 'search',
+                        name: 'search',
                         value: search,
                         onChange: setSearch,
                         placeholder: 'Tìm mã tài sản, tên, serial, người dùng...'
                     },
                     {
                         type: 'select',
+                        name: 'boarding-house',
+                        value: boardingHouseFilter,
+                        onChange: setBoardingHouseFilter,
+                        options: [
+                            { value: 'ALL', label: 'Tất cả khu trọ' },
+                            ...boardingHouses.map((house) => ({ value: house.id, label: house.name })),
+                        ]
+                    },
+                    {
+                        type: 'select',
+                        name: 'category',
                         value: categoryFilter,
                         onChange: setCategoryFilter,
                         options: [
@@ -1027,16 +1066,17 @@ function Asset() {
                     },
                     {
                         type: 'select',
+                        name: 'room',
                         value: roomFilter,
                         onChange: setRoomFilter,
                         options: [
                             { value: 'ALL', label: 'Tất cả phòng' },
-                            ...mockRooms.map(r => ({ value: r.id, label: r.name })),
-                            { value: null, label: 'Lưu kho' }
+                            ...roomOptions,
                         ]
                     },
                     {
                         type: 'select',
+                        name: 'status',
                         value: statusFilter,
                         onChange: setStatusFilter,
                         options: [
@@ -1050,6 +1090,7 @@ function Asset() {
                     },
                     {
                         type: 'select',
+                        name: 'condition',
                         value: conditionFilter,
                         onChange: setConditionFilter,
                         options: [
@@ -1062,7 +1103,7 @@ function Asset() {
                     }
                 ]}
                 onReset={handleReset}
-                gridTemplate="minmax(200px, 1fr) minmax(150px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(150px, 1fr) 80px"
+                gridTemplate="minmax(220px, 1.5fr) minmax(180px, 1fr) minmax(160px, 1fr) minmax(180px, 1fr) minmax(170px, 1fr) minmax(160px, 1fr) 80px"
             />
 
             {/* Header */}
@@ -1094,6 +1135,17 @@ function Asset() {
                         onClick={() => message.info('Xuất Excel sắp có!')}
                     />
                 </div>
+                <div className={cx('pagination-wrapper')}>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => setPagination((prev) => ({...prev, current: page, pageSize}))}
+                    />
+                </div>
             </div>
 
             {/* Content */}
@@ -1103,38 +1155,24 @@ function Asset() {
                         columns={columns}
                         dataSources={assetSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {assetSource.map((asset) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={asset.id}>
-                                    <AssetCard
-                                        asset={asset}
-                                        onView={() => handleViewAsset(asset)}
-                                        renderStatusTag={renderStatusTag}
-                                        renderConditionTag={renderConditionTag}
-                                        renderCategoryTag={renderCategoryTag}
-                                        formatCurrency={formatCurrency}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetAssets(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {assetSource.map((asset) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={asset.id}>
+                                <AssetCard
+                                    asset={asset}
+                                    onView={() => handleViewAsset(asset)}
+                                    renderStatusTag={renderStatusTag}
+                                    renderConditionTag={renderConditionTag}
+                                    renderCategoryTag={renderCategoryTag}
+                                    formatCurrency={formatCurrency}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

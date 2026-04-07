@@ -5,15 +5,79 @@ import styles from './TenantSection.module.scss';
 
 export default function TenantSection({
                                           state, patch,
-                                          extraRows, onAddExtra, onRemoveExtra, onPatchExtra,
+                                          availableTenants,
+                                          loadingTenants,
+                                          extraRows, onAddExtra, onRemoveExtra, onPatchExtra, isEditMode,
+                                          onSelectTenant,
+                                          onTenantModeChange,
                                       }) {
+    const isUsingExistingTenant = !isEditMode && state.tenantMode === 'EXISTING';
+    const isCreateTenantMode = !isEditMode && state.tenantMode === 'NEW';
+    const isTenantReadOnly = isEditMode || isUsingExistingTenant;
+    const hasAvailableTenants = availableTenants.length > 0;
+
     return (
         <SectionCard
             icon="👤"
             iconColor="gold"
             title="Thông tin người thuê"
-            desc="Chỉ xử lý người thuê chính khi tạo hợp đồng"
+            desc={isEditMode
+                ? "Thông tin người thuê chỉ xem tại màn cập nhật hợp đồng"
+                : "Ưu tiên chọn người thuê đã có sẵn của tài khoản hiện tại, chỉ tạo mới khi cần"}
         >
+            {!isEditMode && (
+                <div className={styles.modeSwitch}>
+                    <button
+                        type="button"
+                        className={`${styles.modeButton} ${isUsingExistingTenant ? styles.active : ''}`}
+                        onClick={() => onTenantModeChange('EXISTING')}
+                        disabled={!hasAvailableTenants}
+                    >
+                        Chọn người thuê có sẵn
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`${styles.modeButton} ${isCreateTenantMode ? styles.active : ''}`}
+                        onClick={() => onTenantModeChange('NEW')}
+                    >
+                        Tạo người thuê mới
+                    </button>
+                </div>
+            )}
+
+            {!isEditMode && isUsingExistingTenant && (
+                <div className={styles.selectionCard}>
+                    <Field
+                        label="Danh sách người thuê"
+                        required
+                        hint={loadingTenants
+                            ? 'Đang tải danh sách người thuê...'
+                            : 'Danh sách đang ưu tiên các tenant thuộc chủ trọ hiện tại và chưa có hợp đồng hiệu lực'}
+                    >
+                        <select
+                            className={sharedStyles.select}
+                            value={state.tenantId}
+                            onChange={(e) => onSelectTenant(e.target.value)}
+                            disabled={loadingTenants || !hasAvailableTenants}
+                        >
+                            <option value="">Chọn người thuê đã có sẵn</option>
+                            {availableTenants.map((tenant) => (
+                                <option key={tenant.id} value={tenant.id}>
+                                    {tenant.fullName} - {tenant.phoneNumber || 'Chưa có SĐT'} - {tenant.identityNumber || 'Chưa có CCCD'}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+
+                    {!hasAvailableTenants && !loadingTenants && (
+                        <div className={styles.selectionHint}>
+                            Chưa có người thuê phù hợp để dùng lại. Bạn có thể chuyển sang tạo người thuê mới.
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className={styles.tenantList}>
                 <div className={styles.tenantRow}>
                     <div className={styles.tenantBadge}>Người đại diện</div>
@@ -24,6 +88,7 @@ export default function TenantSection({
                             type="text"
                             placeholder="Nguyễn Văn A"
                             value={state.tenantFullName}
+                            readOnly={isTenantReadOnly}
                             onChange={(e) => patch({ tenantFullName: e.target.value })}
                         />
                     </Field>
@@ -34,6 +99,7 @@ export default function TenantSection({
                             type="tel"
                             placeholder="0901 234 567"
                             value={state.tenantPhoneNumber}
+                            readOnly={isTenantReadOnly}
                             onChange={(e) => patch({ tenantPhoneNumber: e.target.value })}
                         />
                     </Field>
@@ -44,6 +110,7 @@ export default function TenantSection({
                             type="text"
                             placeholder="012345678910"
                             value={state.tenantIdentityNumber}
+                            readOnly={isTenantReadOnly}
                             onChange={(e) => patch({ tenantIdentityNumber: e.target.value })}
                         />
                     </Field>
@@ -53,6 +120,8 @@ export default function TenantSection({
                             className={sharedStyles.input}
                             type="date"
                             value={state.tenantDateOfBirth}
+                            readOnly={isTenantReadOnly}
+                            disabled={isTenantReadOnly}
                             onChange={(e) => patch({ tenantDateOfBirth: e.target.value })}
                         />
                     </Field>
@@ -60,7 +129,7 @@ export default function TenantSection({
                     <div />
                 </div>
 
-                {extraRows.map((row, idx) => (
+                {isCreateTenantMode && extraRows.map((row, idx) => (
                     <div key={row.id} className={styles.tenantRow}>
                         <div className={`${styles.tenantBadge} ${styles.extra}`}>
                             Người ở cùng #{idx + 1}
@@ -119,9 +188,11 @@ export default function TenantSection({
                 ))}
             </div>
 
-            <button className={styles.addTenantBtn} onClick={onAddExtra}>
-                ＋ Thêm người ở cùng
-            </button>
+            {isCreateTenantMode && (
+                <button className={styles.addTenantBtn} onClick={onAddExtra}>
+                    ＋ Thêm người ở cùng
+                </button>
+            )}
 
             <div className={sharedStyles.sectionDivider} />
 
@@ -131,17 +202,32 @@ export default function TenantSection({
                         className={sharedStyles.input}
                         type="email"
                         value={state.tenantEmail}
+                        readOnly={isTenantReadOnly}
                         onChange={(e) => patch({ tenantEmail: e.target.value })}
                         placeholder="email@example.com"
                     />
                 </Field>
-                <Field label="Mật khẩu đăng nhập" required>
+                <Field
+                    label="Mật khẩu đăng nhập"
+                    required={isCreateTenantMode}
+                    hint={isEditMode
+                        ? "Không chỉnh sửa từ màn cập nhật hợp đồng"
+                        : isUsingExistingTenant
+                            ? "Người thuê đã có tài khoản, không cần nhập lại mật khẩu"
+                            : null}
+                >
                     <input
                         className={sharedStyles.input}
                         type="text"
                         value={state.tenantPassword}
+                        readOnly={isTenantReadOnly}
+                        disabled={isTenantReadOnly}
                         onChange={(e) => patch({ tenantPassword: e.target.value })}
-                        placeholder="Tối thiểu 6 ký tự"
+                        placeholder={isEditMode
+                            ? 'Chỉnh sửa tại màn người thuê nếu cần đổi mật khẩu'
+                            : isUsingExistingTenant
+                                ? 'Đang dùng lại tài khoản người thuê đã có'
+                                : 'Tối thiểu 6 ký tự'}
                     />
                 </Field>
                 <Field label="Nghề nghiệp">
@@ -149,6 +235,7 @@ export default function TenantSection({
                         className={sharedStyles.input}
                         type="text"
                         value={state.tenantOccupation}
+                        readOnly={isTenantReadOnly}
                         onChange={(e) => patch({ tenantOccupation: e.target.value })}
                         placeholder="Nhân viên văn phòng"
                     />

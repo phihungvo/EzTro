@@ -1,6 +1,9 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +24,16 @@ import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.service.admin.MeterReadingService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý nghiệp vụ ghi chỉ số (meter readings) cho phòng theo kỳ.
+ *
+ * <p>Luồng chính:
+ * <ul>
+ *   <li>Tạo mới hoặc upsert chỉ số theo (roomId, utilityId, periodMonth, periodYear).</li>
+ *   <li>Tự resolve period (tạo DRAFT nếu chưa có), chặn sửa khi period LOCKED.</li>
+ *   <li>Tự tính previousIndex từ kỳ gần nhất nếu không có dữ liệu trước đó.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class MeterReadingServiceImpl implements MeterReadingService {
@@ -32,6 +45,12 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     private final MeterReadingMapper meterReadingMapper;
     private final AuthorizationService authorizationService;
 
+    /**
+     * Tạo mới meter reading cho một phòng/utility/kỳ.
+     *
+     * @param request payload ghi chỉ số
+     * @return meter reading DTO sau khi tạo
+     */
     @Override
     @Transactional
     public MeterReadingResponse create(MeterReadingRequest request) {
@@ -57,6 +76,12 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         return meterReadingMapper.toResponse(meterReadingRepository.save(reading));
     }
 
+    /**
+     * Upsert meter reading: update nếu đã tồn tại, create nếu chưa.
+     *
+     * @param request payload ghi chỉ số
+     * @return meter reading DTO sau khi lưu
+     */
     @Override
     @Transactional
     public MeterReadingResponse upsert(MeterReadingRequest request) {
@@ -67,6 +92,14 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         return meterReadingMapper.toResponse(meterReadingRepository.save(reading));
     }
 
+    /**
+     * Lấy danh sách meter readings theo phòng và kỳ (tháng/năm).
+     *
+     * @param roomId id phòng
+     * @param month tháng
+     * @param year năm
+     * @return danh sách meter reading DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<MeterReadingResponse> getByRoomAndPeriod(Integer roomId, Integer month, Integer year) {
@@ -76,6 +109,12 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         return meterReadingMapper.toResponseList(readings);
     }
 
+    /**
+     * Lấy lịch sử meter readings theo phòng.
+     *
+     * @param roomId id phòng
+     * @return danh sách meter reading DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public List<MeterReadingResponse> getHistoryByRoom(Integer roomId) {
@@ -83,6 +122,12 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         return meterReadingMapper.toResponseList(meterReadingRepository.findByRoomId(roomId));
     }
 
+    /**
+     * Tạo hàng loạt meter readings (gọi lần lượt {@link #create(MeterReadingRequest)}).
+     *
+     * @param requests danh sách request
+     * @return danh sách meter reading DTO
+     */
     @Override
     public List<MeterReadingResponse> batchCreate(List<MeterReadingRequest> requests) {
         return requests.stream().map(this::create).collect(Collectors.toList());
@@ -142,7 +187,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         reading.setPeriod(period);
         reading.setPeriodMonth(request.getPeriodMonth());
         reading.setPeriodYear(request.getPeriodYear());
-        reading.setReadingDate(request.getReadingDate() != null ? request.getReadingDate() : new Date());
+        reading.setReadingDate(resolveReadingDate(request));
         reading.setPreviousIndex(previous);
         reading.setCurrentIndex(request.getCurrentIndex());
         reading.setConsumption(consumption);
@@ -150,5 +195,14 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         reading.setAmount(amount);
         reading.setNote(request.getNote());
         return reading;
+    }
+
+    private Date resolveReadingDate(MeterReadingRequest request) {
+        if (request.getReadingDate() != null) {
+            return request.getReadingDate();
+        }
+        LocalDate defaultReadingDate =
+                YearMonth.of(request.getPeriodYear(), request.getPeriodMonth()).atEndOfMonth();
+        return Date.from(defaultReadingDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 }

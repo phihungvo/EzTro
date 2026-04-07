@@ -22,6 +22,8 @@ public class MeterReadingResponse {
 
     String utilityName;
 
+    String utilityUnit;
+
     Integer periodMonth;
 
     Integer periodYear;

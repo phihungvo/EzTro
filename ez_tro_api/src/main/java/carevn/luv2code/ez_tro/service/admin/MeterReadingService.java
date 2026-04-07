@@ -5,6 +5,9 @@ import java.util.List;
 import carevn.luv2code.ez_tro.dto.requests.MeterReadingRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterReadingResponse;
 
+/**
+ * Service contract ghi chỉ số điện/nước (meter readings) theo phòng/kỳ.
+ */
 public interface MeterReadingService {
 
     MeterReadingResponse create(MeterReadingRequest request);

@@ -1,0 +1,133 @@
+databaseChangeLog:
+  - changeSet:
+      id: 22-notification-delivery-outbox-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: notification_delivery_logs
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: VARCHAR(100)
+              - column:
+                  name: destination
+                  type: VARCHAR(255)
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload_json
+                  type: LONGTEXT
+              - column:
+                  name: attempt_count
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_attempts
+                  type: INT
+                  defaultValueNumeric: 3
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_attempt_at
+                  type: DATETIME
+              - column:
+                  name: next_retry_at
+                  type: DATETIME
+              - column:
+                  name: provider_message_id
+                  type: VARCHAR(255)
+              - column:
+                  name: last_error
+                  type: LONGTEXT
+              - column:
+                  name: last_response_json
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: notification_delivery_logs
+            baseColumnNames: event_id
+            referencedTableName: notification_events
+            referencedColumnNames: id
+            constraintName: fk_notification_delivery_logs_event
+        - addForeignKeyConstraint:
+            baseTableName: notification_delivery_logs
+            baseColumnNames: recipient_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_notification_delivery_logs_recipient
+        - addUniqueConstraint:
+            tableName: notification_delivery_logs
+            columnNames: event_id,recipient_id,channel
+            constraintName: uk_notification_delivery_logs_event_recipient_channel
+        - createIndex:
+            tableName: notification_delivery_logs
+            indexName: idx_notification_delivery_logs_status_retry
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: next_retry_at
+        - createIndex:
+            tableName: notification_delivery_logs
+            indexName: idx_notification_delivery_logs_event_channel
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: channel
+        - createIndex:
+            tableName: notification_delivery_logs
+            indexName: idx_notification_delivery_logs_recipient_created
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: created_at
