@@ -17,7 +17,6 @@ public interface ContractBillingRuleRepository extends JpaRepository<ContractBil
     /**
      * Truy vấn theo by contract id and is active true and effective from less than equal.
      */
-
     List<ContractBillingRule> findByContractIdAndIsActiveTrueAndEffectiveFromLessThanEqual(
             Integer contractId, LocalDate asOfDate);
 }

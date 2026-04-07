@@ -27,9 +27,24 @@ const sound = typeof window !== 'undefined'
     ? new Howl({src: [NOTIFICATION_SOUND], volume: 0.4})
     : null;
 
+// Hook để detect screen size
+function useIsMobile(breakpoint = 480) {
+    const [isMobile, setIsMobile] = useState(
+        typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
+    );
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= breakpoint);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, [breakpoint]);
+    return isMobile;
+}
+
 export default function NotificationBell() {
     const {user} = useAuth();
     const navigate = useNavigate();
+    const isMobile = useIsMobile(480);
+
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -71,17 +86,14 @@ export default function NotificationBell() {
             const newNotis = (data.content || []).map(normalizeNotification);
 
             setHasMore(!data.last);
-            if (!append) {
-                setPage(0);
-            }
+            if (!append) setPage(0);
+
             setNotifications(prev => {
                 if (append) return mergeNotifications(prev, newNotis);
                 return newNotis;
             });
 
-            if (pageNum === 0) {
-                setUnreadCount(unread || 0);
-            }
+            if (pageNum === 0) setUnreadCount(unread || 0);
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -89,21 +101,13 @@ export default function NotificationBell() {
     }, [token, normalizeNotification, mergeNotifications]);
 
     const handleNavigate = useCallback((notification) => {
-        if (!notification?.actionUrl) {
-            return;
-        }
+        if (!notification?.actionUrl) return;
         navigate(notification.actionUrl);
     }, [navigate]);
 
     const handleOpenCenter = useCallback(() => {
-        if (user?.role === 'ADMIN') {
-            navigate('/admin/notifications');
-            return;
-        }
-        if (user?.role === 'OWNER') {
-            navigate('/owner/notifications');
-            return;
-        }
+        if (user?.role === 'ADMIN')  return navigate('/admin/notifications');
+        if (user?.role === 'OWNER')  return navigate('/owner/notifications');
         navigate('/user/dashboard?tab=notifications');
     }, [navigate, user?.role]);
 
@@ -117,9 +121,7 @@ export default function NotificationBell() {
 
     const handleNotificationClick = async (notification) => {
         if (!notification) return;
-        if (!notification.isRead) {
-            await handleMarkAsRead(notification.id);
-        }
+        if (!notification.isRead) await handleMarkAsRead(notification.id);
         handleNavigate(notification);
     };
 
@@ -133,10 +135,7 @@ export default function NotificationBell() {
 
     // WebSocket
     useEffect(() => {
-        if (!token) {
-            setConnecting(false);
-            return;
-        }
+        if (!token) { setConnecting(false); return; }
 
         const client = new Client({
             webSocketFactory: () => new SockJS(WS_URL),
@@ -151,17 +150,9 @@ export default function NotificationBell() {
                 const handleNewNotification = (msg) => {
                     try {
                         const noti = normalizeNotification(JSON.parse(msg.body));
-
-                        setNotifications(prev => {
-                            if (prev.some(n => n.id === noti.id)) {
-                                return mergeNotifications(prev, [noti]);
-                            }
-                            playSound();
-                            return mergeNotifications(prev, [noti]);
-                        });
-                        if (!noti.isRead) {
-                            setUnreadCount(c => c + 1);
-                        }
+                        setNotifications(prev => mergeNotifications(prev, [noti]));
+                        if (!noti.isRead) setUnreadCount(c => c + 1);
+                        playSound();
                         message.open({
                             type: 'info',
                             content: noti.title || 'Bạn có thông báo mới',
@@ -180,7 +171,6 @@ export default function NotificationBell() {
 
         clientRef.current = client;
         client.activate();
-
         return () => client.deactivate();
     }, [token, loadNotifications, mergeNotifications, normalizeNotification]);
 
@@ -192,6 +182,7 @@ export default function NotificationBell() {
 
     const menu = (
         <div className={styles.dropdown}>
+            {/* ── Header ── */}
             <div className={styles.header}>
                 <h3>Thông báo</h3>
                 <div className={styles.headerActions}>
@@ -200,17 +191,23 @@ export default function NotificationBell() {
                     </Button>
                     {unreadCount > 0 && (
                         <Button type="text" size="small" onClick={handleMarkAllAsRead}>
-                            Đánh dấu tất cả đã đọc
+                            Đánh dấu đã đọc
                         </Button>
                     )}
                 </div>
             </div>
 
+            {/* ── List ── */}
             <div className={styles.listContainer}>
                 <List
                     dataSource={notifications}
                     loading={loading}
-                    locale={{emptyText: <Empty description="Chưa có thông báo"/>}}
+                    locale={{emptyText: (
+                            <Empty
+                                description="Chưa có thông báo"
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            />
+                        )}}
                     renderItem={(item) => (
                         <List.Item
                             className={`${styles.item} ${!item.isRead ? styles.unread : ''}`}
@@ -233,7 +230,7 @@ export default function NotificationBell() {
                                             <span>{formatTime(item.createdAt)}</span>
                                             {item.actionUrl && (
                                                 <span className={styles.actionHint}>
-                                                    <InfoCircleOutlined />
+                                                    <InfoCircleOutlined/>
                                                     {item.actionLabel || 'Mở'}
                                                 </span>
                                             )}
@@ -256,7 +253,7 @@ export default function NotificationBell() {
                                 loadNotifications(next, true);
                             }}
                         >
-                            Xem thêm
+                            Xem thêm thông báo
                         </Button>
                     </div>
                 )}
@@ -265,12 +262,32 @@ export default function NotificationBell() {
     );
 
     return (
-        <Dropdown overlay={menu} trigger={['click']} placement="bottomRight">
+        <Dropdown
+            overlay={menu}
+            trigger={['click']}
+            // Mobile: hiện từ dưới lên; Desktop: dropdown bình thường
+            placement={isMobile ? 'bottomCenter' : 'bottomRight'}
+            // Trên mobile cho phép scroll body khi dropdown mở
+            getPopupContainer={(trigger) =>
+                isMobile ? document.body : trigger.parentElement
+            }
+            overlayStyle={isMobile ? {
+                position: 'fixed',
+                bottom: 'auto',
+                left: '50%',
+                transform: 'translateX(-50%)',
+            } : {}}
+        >
             <div className={styles.bellWrapper}>
-                <Badge count={unreadCount} size="small">
+                <Badge count={unreadCount} size="small" offset={[-2, 2]}>
                     <BellOutlined className={styles.bell}/>
                 </Badge>
-                {connecting && <span className={styles.connectingDot} title="Đang kết nối..."/>}
+                {connecting && (
+                    <span
+                        className={styles.connectingDot}
+                        title="Đang kết nối WebSocket..."
+                    />
+                )}
             </div>
         </Dropdown>
     );

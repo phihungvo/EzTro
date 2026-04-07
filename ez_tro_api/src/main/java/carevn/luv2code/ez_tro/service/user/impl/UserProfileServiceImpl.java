@@ -109,7 +109,6 @@ public class UserProfileServiceImpl implements UserProfileService {
         return tenantMapper.toDetailResponse(saved);
     }
 
-
     @Override
     public void changeMyPassword(Integer userId, UserChangePasswordRequest request) {
 

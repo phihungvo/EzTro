@@ -12,7 +12,7 @@ import BillsCard from "~/components/Layout/UserLayout/components/BillsCard";
 import ServicesCard from "~/components/Layout/UserLayout/components/ServicesCard";
 
 import { getMyBills, getSummaryInfo } from "src/service/user/dashboard";
-import { getMyRoomInfo } from "~/service/user/my-room";
+import { getMyRoomInfo, getMyCurrentContract } from "~/service/user/my-room";
 import { getMyIncidentReports } from "~/service/user/incident-report";
 import {
     getMyMeterReadingsCurrentPeriod,
@@ -66,21 +66,19 @@ const Dashboard = () => {
     const [currentReadings, setCurrentReadings] = useState([]);
     const [historyReadings, setHistoryReadings] = useState([]);
     const [noticeItems, setNoticeItems] = useState([]);
+    const [contractData, setContractData] = useState(null);
+    const [contractLoading, setContractLoading] = useState(true);
 
     const formatCurrencyCompact = (value) => `${(Number(value || 0) / 1_000_000).toFixed(1)} tr`;
-    const parseDate = (value) => {
-        if (!value) {
-            return null;
-        }
-        const date = new Date(`${value}T00:00:00`);
-        return Number.isNaN(date.getTime()) ? null : date;
+    const parseDate = (dateArr) => {
+        if (!Array.isArray(dateArr)) return null;
+        const [year, month, day] = dateArr;
+        return new Date(year, month - 1, day); // ⚠️ month - 1
     };
-    const formatDate = (value) => {
-        const date = parseDate(value);
-        if (!date) {
-            return "—";
-        }
-        return date.toLocaleDateString("vi-VN");
+
+    const formatDate = (dateArr) => {
+        const date = parseDate(dateArr);
+        return date ? date.toLocaleDateString('vi-VN') : '--';
     };
 
     const fetchDashboardData = useCallback(async () => {
@@ -120,6 +118,28 @@ const Dashboard = () => {
             }
         };
         loadRoom();
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+        const loadContract = async () => {
+            try {
+                const data = await getMyCurrentContract();
+                if (active) {
+                    setContractData(data || null);
+                }
+            } catch (error) {
+                console.error("Failed to load contract for dashboard", error);
+            } finally {
+                if (active) {
+                    setContractLoading(false);
+                }
+            }
+        };
+        loadContract();
         return () => {
             active = false;
         };
@@ -221,10 +241,10 @@ const Dashboard = () => {
     const bannerSubText = unpaidCount > 0
         ? `Bạn có ${unpaidCount} hoá đơn chưa thanh toán${outstandingAmount > 0 ? ` · Còn nợ ${(outstandingAmount / 1_000_000).toFixed(1)} triệu` : ""}`
         : summary?.latestBillDueDate
-            ? `Hợp đồng còn hiệu lực · Kỳ gần nhất đến hạn: ${formatDate(summary.latestBillDueDate)}`
+            ? `Hợp đồng còn hiệu lực · Kỳ gần nhất đến hạn: ${formatDate(summary.contractStartDate)}`
             : "Hợp đồng còn hiệu lực";
-    const contractStartDate = parseDate(summary?.contractStartDate);
-    const contractEndDate = parseDate(summary?.contractEndDate);
+    const contractStartDate = parseDate(contractData?.startDate);
+    const contractEndDate = parseDate(contractData?.endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const totalContractDays = contractStartDate && contractEndDate
@@ -248,9 +268,38 @@ const Dashboard = () => {
         )
         : 0;
 
+    const daysLeft = contractEndDate
+        ? Math.ceil((contractEndDate - today) / (1000 * 60 * 60 * 24))
+        : null;
+
+    const contractStatus = useMemo(() => {
+        if (contractLoading) {
+            return { label: "Đang tải...", tone: "muted" };
+        }
+
+        if (!contractStartDate || !contractEndDate) {
+            return { label: "Chưa có hợp đồng", tone: "muted" };
+        }
+
+        if (contractData?.isLiving === false) {
+            return { label: "Đã hết hạn", tone: "expired" };
+        }
+
+        if (daysLeft != null) {
+            if (daysLeft < 0) {
+                return { label: "Đã hết hạn", tone: "expired" };
+            }
+            if (daysLeft <= 30) {
+                return { label: "Sắp hết hạn", tone: "warning" };
+            }
+        }
+
+        return { label: "Đang hiệu lực", tone: "active" };
+    }, [contractLoading, contractStartDate, contractEndDate, contractData?.isLiving, daysLeft]);
+
     const heroRoomLabel = roomInfo?.roomNumber ? `Phòng ${roomInfo.roomNumber}` : bannerRoomLabel;
     const heroRoomSubtitle = roomInfo
-        ? `Tòa ${roomInfo.buildingName || "—"} · Tầng ${roomInfo.floor ?? "—"}`
+        ? `${roomInfo.boardingHouseName || "—"} · Tòa ${roomInfo.buildingName || "—"} · Tầng ${roomInfo.floor ?? "—"}`
         : "Đang tải thông tin phòng";
 
     const roomHighlights = useMemo(() => {
@@ -341,9 +390,6 @@ const Dashboard = () => {
                 <div className={cx("bannerDecor")}>🏠</div>
             </div>
 
-            {/* ── Stats (from API) ── */}
-            {summary && <StatsGrid stats={statsData} />}
-
             {/* ── Main grid: Room info + Contract ── */}
             <div className={cx("mainGrid")}>
 
@@ -402,29 +448,38 @@ const Dashboard = () => {
                         </div>
                         <div className={cx("cardBody")}>
                             <div className={cx("contractBox")}>
-                                <div className={cx("contractLive")}>
-                                    <span className={cx("liveDot")} />
-                                    Đang hiệu lực
+                                <div className={cx("contractStatusRow")}>
+                                    <div className={cx("contractLive", contractStatus.tone)}>
+                                        <span className={cx("liveDot", contractStatus.tone)} />
+                                        {contractStatus.label}
+                                    </div>
+                                    {contractData?.contractCode && (
+                                        <div className={cx("contractCode")}>Mã: {contractData.contractCode}</div>
+                                    )}
                                 </div>
                                 <div className={cx("contractDates")}>
                                     <div className={cx("contractDateItem")}>
                                         <div className={cx("contractDateLabel")}>Ngày bắt đầu</div>
                                         <div className={cx("contractDateValue")}>
-                                            {summary?.contractStartDate ? formatDate(summary.contractStartDate) : "—"}
+                                            {formatDate(contractData?.startDate)}
                                         </div>
                                     </div>
                                     <span className={cx("contractArrow")}>→</span>
                                     <div className={cx("contractDateItem")}>
                                         <div className={cx("contractDateLabel")}>Ngày kết thúc</div>
                                         <div className={cx("contractDateValue")}>
-                                            {summary?.contractEndDate ? formatDate(summary.contractEndDate) : "—"}
+                                            {contractEndDate ? formatDate(contractData?.endDate || summary?.contractEndDate) : "—"}
                                         </div>
                                     </div>
                                 </div>
                                 <div className={cx("contractDivider")} />
                                 <div className={cx("progressLabel")}>
                                     <span>Tiến độ hợp đồng</span>
-                                    <span>{contractProgressPercent}% — còn {monthsLeft} tháng</span>
+                                    <span>
+                                        {contractStartDate && contractEndDate
+                                            ? `${contractProgressPercent}% — còn ${Math.max(0, daysLeft ?? 0)} ngày`
+                                            : "Chưa có dữ liệu"}
+                                    </span>
                                 </div>
                                 <div className={cx("progressBarWrap")}>
                                     <div
@@ -526,7 +581,7 @@ const Dashboard = () => {
                                                     {meta.label}
                                                 </span>
                                                 <span className={cx("requestDate")}>
-                                                    {formatTimestamp(incident.createdAt)}
+                                                    {formatDate(incident.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
@@ -607,7 +662,7 @@ const Dashboard = () => {
                                     </div>
                                     <div className={cx("noticeTitle")}>{notice.title}</div>
                                     <div className={cx("noticeDesc")}>{notice.message || "Không có nội dung"}</div>
-                                    <div className={cx("noticeTime")}>{formatTimestamp(notice.createdAt)}</div>
+                                    <div className={cx("noticeTime")}>{formatDate(notice.createdAt)}</div>
                                 </div>
                             ))
                         ) : (
