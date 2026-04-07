@@ -12,6 +12,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TenantRoomInfoResponse {
+    String boardingHouseName;
+
     String roomNumber;
 
     String buildingName;

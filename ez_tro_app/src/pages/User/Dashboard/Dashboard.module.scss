@@ -371,6 +371,13 @@ $glow: rgba(201, 168, 76, 0.12);
   margin-bottom: 14px;
 }
 
+.contractStatusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
 .contractLive {
   display: flex;
   align-items: center;
@@ -381,6 +388,20 @@ $glow: rgba(201, 168, 76, 0.12);
   margin-bottom: 14px;
 }
 
+.contractLive.warning {
+  color: #f5c542;
+}
+
+.contractLive.expired {
+  color: #f06464;
+}
+
+.contractCode {
+  font-size: 12px;
+  color: $muted;
+  font-weight: 500;
+}
+
 .liveDot {
   width: 7px;
   height: 7px;
@@ -388,6 +409,14 @@ $glow: rgba(201, 168, 76, 0.12);
   border-radius: 50%;
   animation: pulse 2s infinite;
   flex-shrink: 0;
+}
+
+.liveDot.warning {
+  background: #f5c542;
+}
+
+.liveDot.expired {
+  background: #f06464;
 }
 
 .contractDates {

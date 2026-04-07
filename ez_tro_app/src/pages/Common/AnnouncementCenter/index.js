@@ -2,25 +2,19 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {
     ApartmentOutlined,
     BellOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    CloseCircleOutlined,
     EyeOutlined,
     HomeOutlined,
     NotificationOutlined,
+    ReloadOutlined,
     SendOutlined,
-    TeamOutlined
+    TeamOutlined,
+    ThunderboltOutlined,
+    WarningOutlined,
 } from "@ant-design/icons";
-import {
-    Alert,
-    Button,
-    Card,
-    Form,
-    Input,
-    List,
-    Select,
-    Space,
-    Tag,
-    Typography,
-    message
-} from "antd";
+import {Alert, Button, Form, Input, List, Select, Space, Tag, Typography, message} from "antd";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -28,7 +22,7 @@ import {
     getNotificationDeliveryLogs,
     previewAnnouncement,
     processPendingNotificationDeliveries,
-    sendAnnouncement
+    sendAnnouncement,
 } from "~/service/admin/notification-service";
 import {useNavigate} from "react-router-dom";
 import styles from "./AnnouncementCenter.module.scss";
@@ -48,11 +42,11 @@ dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
 const categoryOptions = [
-    { label: "Hệ thống", value: "SYSTEM" },
-    { label: "Vận hành", value: "OPERATIONS" },
-    { label: "Sự cố", value: "INCIDENT" },
-    { label: "Thanh toán", value: "BILLING" },
-    { label: "Khuyến mãi", value: "MARKETING" },
+    {label: "Hệ thống", value: "SYSTEM"},
+    {label: "Vận hành", value: "OPERATIONS"},
+    {label: "Sự cố", value: "INCIDENT"},
+    {label: "Thanh toán", value: "BILLING"},
+    {label: "Khuyến mãi", value: "MARKETING"},
 ];
 
 const deliveryChannelOptions = [
@@ -63,17 +57,17 @@ const deliveryChannelOptions = [
 ];
 
 const priorityOptions = [
-    { label: "Thấp", value: "LOW" },
-    { label: "Trung bình", value: "MEDIUM" },
-    { label: "Cao", value: "HIGH" },
+    {label: "Thấp", value: "LOW"},
+    {label: "Trung bình", value: "MEDIUM"},
+    {label: "Cao", value: "HIGH"},
 ];
 
 const deliveryStatusOptions = [
-    { label: "Tất cả trạng thái", value: "" },
-    { label: "Đang chờ gửi", value: "QUEUED" },
-    { label: "Đã gửi", value: "SENT" },
-    { label: "Gửi thất bại", value: "FAILED" },
-    { label: "Bỏ qua", value: "SKIPPED" },
+    {label: "Tất cả trạng thái", value: ""},
+    {label: "Đang chờ gửi", value: "QUEUED"},
+    {label: "Đã gửi", value: "SENT"},
+    {label: "Gửi thất bại", value: "FAILED"},
+    {label: "Bỏ qua", value: "SKIPPED"},
 ];
 
 const ownerTargetOptions = [
@@ -92,6 +86,13 @@ const adminTargetOptions = [
     {label: "Theo phòng", value: "ROOM"},
     {label: "Chọn người thuê cụ thể", value: "TENANT_LIST"},
 ];
+
+const statusConfig: Record<string, { icon: React.ReactNode; className: string; label: string }> = {
+    SENT: {icon: <CheckCircleOutlined />, className: styles.statusSent, label: "Đã gửi"},
+    FAILED: {icon: <CloseCircleOutlined />, className: styles.statusFailed, label: "Thất bại"},
+    SKIPPED: {icon: <WarningOutlined />, className: styles.statusSkipped, label: "Bỏ qua"},
+    QUEUED: {icon: <ClockCircleOutlined />, className: styles.statusQueued, label: "Đang chờ"},
+};
 
 const AnnouncementCenter = () => {
     const {user} = useAuth();
@@ -119,7 +120,6 @@ const AnnouncementCenter = () => {
 
     useEffect(() => {
         let active = true;
-
         const loadOptions = async () => {
             try {
                 const [boardingHouseData, buildingData, roomData, tenantData, ownerData] = await Promise.all([
@@ -129,24 +129,18 @@ const AnnouncementCenter = () => {
                     getAllTenantNoPaged(),
                     isAdmin ? getAllOwners({page: 0, pageSize: MAX_OWNER_OPTIONS}) : Promise.resolve([]),
                 ]);
-
                 if (!active) return;
-
                 setBoardingHouses(boardingHouseData || []);
                 setBuildings(buildingData?.content || []);
                 setRooms(roomData || []);
                 setTenants(tenantData || []);
                 setOwners(ownerData?.content || []);
             } catch (error) {
-                console.error("Failed to load announcement options", error);
                 message.error("Không thể tải dữ liệu phạm vi gửi thông báo");
             } finally {
-                if (active) {
-                    setLoadingOptions(false);
-                }
+                if (active) setLoadingOptions(false);
             }
         };
-
         loadOptions();
         return () => {
             active = false;
@@ -163,7 +157,6 @@ const AnnouncementCenter = () => {
             });
             setDeliveryLogs(response?.content || []);
         } catch (error) {
-            console.error("Failed to load notification delivery logs", error);
             message.error(error?.response?.data?.message || "Không thể tải delivery logs");
         } finally {
             setDeliveryLoading(false);
@@ -179,63 +172,43 @@ const AnnouncementCenter = () => {
     const targetSelectOptions = useMemo(() => {
         switch (selectedTargetType) {
             case "BOARDING_HOUSE":
-                return boardingHouses.map(item => ({
-                    label: item.name || `Khu trọ #${item.id}`,
-                    value: item.id
-                }));
+                return boardingHouses.map((item) => ({label: item.name || `Khu trọ #${item.id}`, value: item.id}));
             case "BUILDING":
-                return buildings.map(item => ({
-                    label: item.name || `Tòa nhà #${item.id}`,
-                    value: item.id
-                }));
+                return buildings.map((item) => ({label: item.name || `Tòa nhà #${item.id}`, value: item.id}));
             case "ROOM":
-                return rooms.map(item => ({
-                    label: item.roomNumber
-                        ? `Phòng ${item.roomNumber}${item.buildingName ? ` - ${item.buildingName}` : ""}`
-                        : `Phòng #${item.id}`,
-                    value: item.id
+                return rooms.map((item) => ({
+                    label: item.roomNumber ? `Phòng ${item.roomNumber}${item.buildingName ? ` — ${item.buildingName}` : ""}` : `Phòng #${item.id}`,
+                    value: item.id,
                 }));
             case "TENANT_LIST":
-                return tenants.map(item => ({
-                    label: item.fullName || item.name || item.email || `Tenant #${item.id}`,
-                    value: item.id
-                }));
+                return tenants.map((item) => ({label: item.fullName || item.name || item.email || `Tenant #${item.id}`, value: item.id}));
             case "ALL_TENANTS_OF_OWNER":
-                return isAdmin
-                    ? owners.map(item => ({
-                        label: item.fullName || item.email || `Owner #${item.id}`,
-                        value: item.id
-                    }))
-                    : [];
+                return isAdmin ? owners.map((item) => ({label: item.fullName || item.email || `Owner #${item.id}`, value: item.id})) : [];
             default:
                 return [];
         }
     }, [selectedTargetType, boardingHouses, buildings, rooms, tenants, owners, isAdmin]);
 
-    const needsTargetSelect = useMemo(() => (
-        selectedTargetType && selectedTargetType !== "ALL_SYSTEM" && !(selectedTargetType === "ALL_TENANTS_OF_OWNER" && !isAdmin)
-    ), [selectedTargetType, isAdmin]);
+    const needsTargetSelect = useMemo(
+        () => selectedTargetType && selectedTargetType !== "ALL_SYSTEM" && !(selectedTargetType === "ALL_TENANTS_OF_OWNER" && !isAdmin),
+        [selectedTargetType, isAdmin]
+    );
 
     const previewTargetLabel = useMemo(() => {
-        if (!preview?.targetType) {
-            return null;
-        }
-        const target = targetOptions.find((item) => item.value === preview.targetType);
-        return target?.label || preview.targetType;
+        if (!preview?.targetType) return null;
+        return targetOptions.find((item) => item.value === preview.targetType)?.label || preview.targetType;
     }, [preview?.targetType, targetOptions]);
 
     const summaryAlert = useMemo(() => {
         switch (selectedTargetType) {
             case "ALL_SYSTEM":
-                return "Admin sẽ gửi tới toàn bộ user trong hệ thống. Chỉ dùng cho thông báo thật sự quan trọng.";
+                return "Gửi tới toàn bộ người dùng trong hệ thống. Chỉ dùng cho thông báo thật sự quan trọng.";
             case "ALL_TENANTS_OF_OWNER":
-                return isAdmin
-                    ? "Admin chọn một chủ trọ để gửi tới toàn bộ người thuê đang hoạt động thuộc chủ trọ đó."
-                    : "Chủ trọ sẽ gửi tới toàn bộ người thuê đang hoạt động thuộc dữ liệu của mình.";
+                return isAdmin ? "Chọn chủ trọ để gửi tới toàn bộ người thuê đang hoạt động thuộc chủ trọ đó." : "Gửi tới toàn bộ người thuê đang hoạt động thuộc dữ liệu của bạn.";
             case "BOARDING_HOUSE":
-                return "Gửi theo một hoặc nhiều khu trọ.";
+                return "Gửi theo một hoặc nhiều khu trọ đã chọn.";
             case "BUILDING":
-                return "Gửi theo một hoặc nhiều tòa nhà.";
+                return "Gửi theo một hoặc nhiều tòa nhà đã chọn.";
             case "ROOM":
                 return "Gửi theo một hoặc nhiều phòng cụ thể.";
             case "TENANT_LIST":
@@ -264,7 +237,6 @@ const AnnouncementCenter = () => {
             const result = await previewAnnouncement(payload);
             setPreview(result);
         } catch (error) {
-            console.error("Preview announcement failed", error);
             message.error(error?.response?.data?.message || "Không thể preview người nhận");
         } finally {
             setPreviewLoading(false);
@@ -281,7 +253,6 @@ const AnnouncementCenter = () => {
             form.resetFields(["title", "message"]);
             loadDeliveryLogs();
         } catch (error) {
-            console.error("Send announcement failed", error);
             message.error(error?.response?.data?.message || "Gửi thông báo thất bại");
         } finally {
             setSending(false);
@@ -295,7 +266,6 @@ const AnnouncementCenter = () => {
             message.success(`Đã xử lý ${processed || 0} delivery log trong hàng đợi`);
             loadDeliveryLogs();
         } catch (error) {
-            console.error("Process pending notification deliveries failed", error);
             message.error(error?.response?.data?.message || "Không thể xử lý hàng đợi delivery");
         } finally {
             setProcessingQueue(false);
@@ -303,239 +273,237 @@ const AnnouncementCenter = () => {
     };
 
     return (
-        <div className={styles.wrapper}>
-            <Card className={styles.heroCard} bordered={false}>
-                <div className={styles.heroTop}>
-                    <div>
-                        <Typography.Title level={3} className={styles.heroTitle}>
-                            <NotificationOutlined /> Trung tâm gửi announcement
-                        </Typography.Title>
-                        <Typography.Paragraph className={styles.heroDesc}>
-                            Gửi thông báo vận hành tới người thuê theo phạm vi thực tế của hệ thống: chủ trọ cụ thể, khu trọ,
-                            tòa nhà, phòng hoặc danh sách người thuê chỉ định.
-                        </Typography.Paragraph>
+        <div className={styles.root}>
+            {/* ── HEADER ── */}
+            <header className={styles.header}>
+                <div className={styles.headerLeft}>
+                    <div className={styles.headerIcon}>
+                        <NotificationOutlined />
                     </div>
-                    <Space wrap>
-                        <Button icon={<BellOutlined />} onClick={() => navigate(notificationPath)}>
-                            Về Notification Center
-                        </Button>
-                    </Space>
+                    <div>
+                        <h1 className={styles.headerTitle}>Announcement Center</h1>
+                        <p className={styles.headerSub}>Gửi thông báo vận hành tới người thuê theo phạm vi hệ thống</p>
+                    </div>
                 </div>
-            </Card>
+                <button className={styles.navBtn} onClick={() => navigate(notificationPath)}>
+                    <BellOutlined />
+                    <span>Notification Center</span>
+                </button>
+            </header>
 
-            <div className={styles.grid}>
-                <Card className={styles.formCard} bordered={false} loading={loadingOptions}>
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        initialValues={{
-                            targetType: isAdmin ? "ALL_SYSTEM" : "ALL_TENANTS_OF_OWNER",
-                            category: "SYSTEM",
-                            priority: "MEDIUM",
-                        }}
-                    >
-                        <Alert
-                            type="info"
-                            showIcon
-                            className={styles.scopeAlert}
-                            message="Quy tắc gửi thông báo"
-                            description={summaryAlert}
-                        />
+            {/* ── COMPOSE + PREVIEW ── */}
+            <div className={styles.composeGrid}>
+                {/* Form */}
+                <section className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <span className={styles.panelLabel}>Soạn thông báo</span>
+                    </div>
 
-                        <Form.Item
-                            label="Phạm vi gửi"
-                            name="targetType"
-                            rules={[{required: true, message: "Chọn phạm vi gửi"}]}
+                    {loadingOptions ? (
+                        <div className={styles.skeleton}>
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className={styles.skeletonLine} style={{width: i % 2 === 0 ? "60%" : "100%"}} />
+                            ))}
+                        </div>
+                    ) : (
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            className={styles.form}
+                            initialValues={{
+                                targetType: isAdmin ? "ALL_SYSTEM" : "ALL_TENANTS_OF_OWNER",
+                                category: "SYSTEM",
+                                priority: "MEDIUM",
+                            }}
                         >
-                            <Select
-                                options={targetOptions}
-                                onChange={() => {
-                                    form.setFieldValue("targetIds", undefined);
-                                    setPreview(null);
-                                }}
-                            />
-                        </Form.Item>
+                            <div className={styles.scopeHint}>
+                                <ThunderboltOutlined className={styles.scopeIcon} />
+                                <span>{summaryAlert}</span>
+                            </div>
 
-                        {needsTargetSelect && (
-                            <Form.Item
-                                label={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? "Chọn chủ trọ" : "Chọn đối tượng"}
-                                name="targetIds"
-                                rules={[{required: true, message: "Chọn ít nhất một đối tượng"}]}
-                            >
+                            <Form.Item label="Phạm vi gửi" name="targetType" rules={[{required: true, message: "Chọn phạm vi gửi"}]}>
                                 <Select
-                                    mode={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? undefined : "multiple"}
-                                    options={targetSelectOptions}
-                                    placeholder="Chọn phạm vi cụ thể"
-                                    showSearch
-                                    optionFilterProp="label"
+                                    options={targetOptions}
+                                    className={styles.select}
+                                    onChange={() => {
+                                        form.setFieldValue("targetIds", undefined);
+                                        setPreview(null);
+                                    }}
                                 />
                             </Form.Item>
+
+                            {needsTargetSelect && (
+                                <Form.Item
+                                    label={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? "Chọn chủ trọ" : "Chọn đối tượng"}
+                                    name="targetIds"
+                                    rules={[{required: true, message: "Chọn ít nhất một đối tượng"}]}
+                                >
+                                    <Select
+                                        mode={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? undefined : "multiple"}
+                                        options={targetSelectOptions}
+                                        placeholder="Nhập để tìm kiếm..."
+                                        showSearch
+                                        optionFilterProp="label"
+                                        className={styles.select}
+                                    />
+                                </Form.Item>
+                            )}
+
+                            <div className={styles.rowTwo}>
+                                <Form.Item label="Danh mục" name="category">
+                                    <Select options={categoryOptions} className={styles.select} />
+                                </Form.Item>
+                                <Form.Item label="Mức độ ưu tiên" name="priority">
+                                    <Select options={priorityOptions} className={styles.select} />
+                                </Form.Item>
+                            </div>
+
+                            <Form.Item label="Tiêu đề" name="title" rules={[{required: true, message: "Nhập tiêu đề thông báo"}]}>
+                                <Input placeholder="Ví dụ: Bảo trì hệ thống điện khu A tối nay" maxLength={255} className={styles.input} />
+                            </Form.Item>
+
+                            <Form.Item label="Nội dung" name="message" rules={[{required: true, message: "Nhập nội dung thông báo"}]}>
+                                <TextArea rows={5} placeholder="Nhập nội dung chi tiết..." maxLength={2000} className={styles.textarea} />
+                            </Form.Item>
+
+                            <div className={styles.formActions}>
+                                <button type="button" className={styles.btnGhost} onClick={handlePreview} disabled={previewLoading}>
+                                    <EyeOutlined />
+                                    {previewLoading ? "Đang tải..." : "Preview"}
+                                </button>
+                                <button type="button" className={styles.btnPrimary} onClick={handleSend} disabled={sending}>
+                                    <SendOutlined />
+                                    {sending ? "Đang gửi..." : "Gửi thông báo"}
+                                </button>
+                            </div>
+                        </Form>
+                    )}
+                </section>
+
+                {/* Preview */}
+                <section className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <span className={styles.panelLabel}>
+                            <TeamOutlined /> Preview người nhận
+                        </span>
+                        {preview && (
+                            <div className={styles.recipientBadges}>
+                                <span className={styles.badge}>{previewTargetLabel || preview.targetType}</span>
+                                <span className={`${styles.badge} ${styles.badgeGreen}`}>{preview.recipientCount} người</span>
+                            </div>
                         )}
+                    </div>
 
-                        <div className={styles.inlineFields}>
-                            <Form.Item label="Danh mục" name="category" className={styles.inlineItem}>
-                                <Select options={categoryOptions} />
-                            </Form.Item>
-                            <Form.Item label="Mức độ ưu tiên" name="priority" className={styles.inlineItem}>
-                                <Select options={priorityOptions} />
-                            </Form.Item>
-                        </div>
-
-                        <Form.Item
-                            label="Tiêu đề"
-                            name="title"
-                            rules={[{required: true, message: "Nhập tiêu đề thông báo"}]}
-                        >
-                            <Input placeholder="Ví dụ: Bảo trì hệ thống điện khu A tối nay" maxLength={255} />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Nội dung"
-                            name="message"
-                            rules={[{required: true, message: "Nhập nội dung thông báo"}]}
-                        >
-                            <TextArea rows={6} placeholder="Nhập nội dung chi tiết gửi tới người thuê..." maxLength={2000} />
-                        </Form.Item>
-
-                        <Space wrap>
-                            <Button icon={<EyeOutlined />} onClick={handlePreview} loading={previewLoading}>
-                                Preview người nhận
-                            </Button>
-                            <Button type="primary" icon={<SendOutlined />} onClick={handleSend} loading={sending}>
-                                Gửi thông báo
-                            </Button>
-                        </Space>
-                    </Form>
-                </Card>
-
-                <Card className={styles.previewCard} bordered={false}>
-                    <Typography.Title level={4} className={styles.previewTitle}>
-                        <TeamOutlined /> Preview người nhận
-                    </Typography.Title>
-
-                    {!preview && (
-                        <Alert
-                            type="info"
-                            showIcon
-                            message="Chưa có preview"
-                            description="Chọn phạm vi, nhập nội dung rồi bấm Preview để xem số lượng người nhận trước khi gửi."
-                        />
-                    )}
-
-                    {preview && (
-                        <div className={styles.previewContent}>
-                            <div className={styles.previewSummary}>
-                                <Tag color="blue">{previewTargetLabel || preview.targetType}</Tag>
-                                <Tag color="green">{preview.recipientCount} người nhận</Tag>
+                    {!preview ? (
+                        <div className={styles.emptyPreview}>
+                            <div className={styles.emptyIcon}>
+                                <TeamOutlined />
                             </div>
-
-                            <Alert
-                                type="success"
-                                showIcon
-                                message="Preview đã sẵn sàng"
-                                description="Danh sách dưới đây hiển thị tối đa 50 người nhận đầu tiên để kiểm tra trước khi gửi."
-                            />
-
-                            <div className={styles.recipientList}>
-                                {(preview.recipients || []).slice(0, 50).map((recipient) => (
-                                    <div key={recipient.userId} className={styles.recipientItem}>
-                                        <div>
-                                            <Typography.Text strong>{recipient.fullName || recipient.email}</Typography.Text>
-                                            <Typography.Paragraph className={styles.recipientMeta}>
-                                                {recipient.email || "Không có email"}
-                                            </Typography.Paragraph>
-                                        </div>
-                                        <Space wrap>
-                                            {preview.targetType === "BOARDING_HOUSE" && <ApartmentOutlined />}
-                                            {preview.targetType === "ROOM" && <HomeOutlined />}
-                                            <Tag>{recipient.role}</Tag>
-                                        </Space>
+                            <p className={styles.emptyTitle}>Chưa có dữ liệu preview</p>
+                            <p className={styles.emptySub}>Chọn phạm vi, nhập nội dung rồi bấm Preview để xem danh sách người nhận.</p>
+                        </div>
+                    ) : (
+                        <div className={styles.recipientList}>
+                            {(preview.recipients || []).slice(0, 50).map((recipient) => (
+                                <div key={recipient.userId} className={styles.recipientItem}>
+                                    <div className={styles.recipientAvatar}>{(recipient.fullName || recipient.email || "?")[0].toUpperCase()}</div>
+                                    <div className={styles.recipientInfo}>
+                                        <span className={styles.recipientName}>{recipient.fullName || recipient.email}</span>
+                                        <span className={styles.recipientEmail}>{recipient.email || "Không có email"}</span>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className={styles.recipientMeta}>
+                                        {preview.targetType === "BOARDING_HOUSE" && <ApartmentOutlined />}
+                                        {preview.targetType === "ROOM" && <HomeOutlined />}
+                                        <span className={styles.roleTag}>{recipient.role}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
-                </Card>
+                </section>
             </div>
 
-            <Card className={styles.auditCard} bordered={false}>
-                <div className={styles.auditHeader}>
+            {/* ── DELIVERY AUDIT ── */}
+            <section className={styles.auditSection}>
+                <div className={styles.auditTop}>
                     <div>
-                        <Typography.Title level={4} className={styles.previewTitle}>
-                            <BellOutlined /> Delivery audit
-                        </Typography.Title>
-                        <Typography.Paragraph className={styles.auditDesc}>
-                            Theo dõi các bản ghi gửi `EMAIL`, `SMS`, `ZALO`, kiểm tra bản ghi fail/skip và xử lý lại hàng đợi.
-                        </Typography.Paragraph>
+                        <h2 className={styles.auditTitle}>
+                            <BellOutlined /> Delivery Audit
+                        </h2>
+                        <p className={styles.auditDesc}>Theo dõi EMAIL · SMS · ZALO — kiểm tra bản ghi fail/skip và xử lý lại hàng đợi.</p>
                     </div>
-                    <Space wrap>
-                        <Button onClick={loadDeliveryLogs} loading={deliveryLoading}>
+                    <div className={styles.auditTopActions}>
+                        <button className={styles.btnGhost} onClick={loadDeliveryLogs} disabled={deliveryLoading}>
+                            <ReloadOutlined className={deliveryLoading ? styles.spin : ""} />
                             Tải lại
-                        </Button>
-                        <Button type="primary" onClick={handleProcessQueue} loading={processingQueue}>
-                            Xử lý pending queue
-                        </Button>
-                    </Space>
+                        </button>
+                        <button className={styles.btnAccent} onClick={handleProcessQueue} disabled={processingQueue}>
+                            <ThunderboltOutlined />
+                            {processingQueue ? "Đang xử lý..." : "Xử lý pending"}
+                        </button>
+                    </div>
                 </div>
 
                 <div className={styles.auditFilters}>
-                    <Select
-                        value={deliveryChannel}
-                        options={deliveryChannelOptions}
-                        onChange={setDeliveryChannel}
-                        className={styles.auditSelect}
-                    />
-                    <Select
-                        value={deliveryStatus}
-                        options={deliveryStatusOptions}
-                        onChange={setDeliveryStatus}
-                        className={styles.auditSelect}
-                    />
+                    <Select value={deliveryChannel} options={deliveryChannelOptions} onChange={setDeliveryChannel} className={styles.filterSelect} placeholder="Channel" />
+                    <Select value={deliveryStatus} options={deliveryStatusOptions} onChange={setDeliveryStatus} className={styles.filterSelect} placeholder="Trạng thái" />
                     <Input
                         value={deliveryKeyword}
-                        onChange={(event) => setDeliveryKeyword(event.target.value)}
-                        placeholder="Tìm theo event, người nhận, destination"
+                        onChange={(e) => setDeliveryKeyword(e.target.value)}
+                        placeholder="Tìm theo event, người nhận, destination..."
+                        className={styles.filterInput}
+                        allowClear
                     />
                 </div>
 
-                <List
-                    loading={deliveryLoading}
-                    dataSource={deliveryLogs}
-                    locale={{emptyText: "Chưa có delivery log phù hợp"}}
-                    renderItem={(item) => (
-                        <List.Item className={styles.auditItem}>
-                            <div className={styles.auditItemBody}>
-                                <div className={styles.auditItemHeader}>
-                                    <Space wrap>
-                                        <Typography.Text strong>{item.title}</Typography.Text>
-                                        <Tag color="blue">{item.channel}</Tag>
-                                        <Tag color={item.status === "FAILED" ? "red" : item.status === "SKIPPED" ? "gold" : "green"}>
-                                            {item.status}
-                                        </Tag>
-                                    </Space>
-                                    <Typography.Text type="secondary">
-                                        {item.lastAttemptAt ? dayjs(item.lastAttemptAt).fromNow() : dayjs(item.createdAt).fromNow()}
-                                    </Typography.Text>
-                                </div>
-
-                                <Typography.Paragraph className={styles.auditMeta}>
-                                    {item.recipientName || item.recipientEmail || `User #${item.recipientId}`} - {item.destination || "Không có destination"}
-                                </Typography.Paragraph>
-                                <Typography.Paragraph className={styles.auditSubMeta}>
-                                    Event: {item.eventKey || "SYSTEM"} | Attempts: {item.attemptCount}/{item.maxAttempts} | Provider: {item.provider || "N/A"}
-                                </Typography.Paragraph>
-                                {item.lastError && (
-                                    <Alert
-                                        type={item.status === "FAILED" ? "error" : "warning"}
-                                        showIcon
-                                        message={item.lastError}
-                                    />
-                                )}
+                {deliveryLoading ? (
+                    <div className={styles.auditGrid}>
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className={styles.auditSkeleton}>
+                                <div className={styles.skeletonLine} style={{width: "40%", marginBottom: 8}} />
+                                <div className={styles.skeletonLine} style={{width: "70%", marginBottom: 6}} />
+                                <div className={styles.skeletonLine} style={{width: "55%"}} />
                             </div>
-                        </List.Item>
-                    )}
-                />
-            </Card>
+                        ))}
+                    </div>
+                ) : deliveryLogs.length === 0 ? (
+                    <div className={styles.emptyAudit}>
+                        <BellOutlined className={styles.emptyAuditIcon} />
+                        <p>Chưa có delivery log phù hợp</p>
+                    </div>
+                ) : (
+                    <div className={styles.auditGrid}>
+                        {deliveryLogs.map((item, idx) => {
+                            const cfg = statusConfig[item.status] || statusConfig["QUEUED"];
+                            return (
+                                <div key={idx} className={`${styles.auditCard} ${cfg.className}`}>
+                                    <div className={styles.auditCardTop}>
+                                        <div className={styles.auditCardTitleRow}>
+                                            <span className={styles.auditCardTitle}>{item.title}</span>
+                                            <span className={`${styles.auditStatusBadge} ${cfg.className}`}>
+                                                {cfg.icon} {cfg.label}
+                                            </span>
+                                        </div>
+                                        <span className={styles.auditTime}>
+                                            {item.lastAttemptAt ? dayjs(item.lastAttemptAt).fromNow() : dayjs(item.createdAt).fromNow()}
+                                        </span>
+                                    </div>
+                                    <div className={styles.auditCardMeta}>
+                                        <span className={styles.auditChannel}>{item.channel}</span>
+                                        <span>{item.recipientName || item.recipientEmail || `User #${item.recipientId}`}</span>
+                                        <span className={styles.auditDot}>·</span>
+                                        <span>{item.destination || "No destination"}</span>
+                                    </div>
+                                    <div className={styles.auditCardSub}>
+                                        Event: <b>{item.eventKey || "SYSTEM"}</b> · Attempts: <b>{item.attemptCount}/{item.maxAttempts}</b> · Provider: <b>{item.provider || "N/A"}</b>
+                                    </div>
+                                    {item.lastError && <div className={styles.auditError}>{item.lastError}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
         </div>
     );
 };

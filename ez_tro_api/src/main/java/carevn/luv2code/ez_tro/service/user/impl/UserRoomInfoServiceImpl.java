@@ -45,6 +45,7 @@ public class UserRoomInfoServiceImpl implements UserRoomInfoService {
 
         return TenantRoomInfoResponse.builder()
                 .roomNumber(room.getRoomNumber())
+                .boardingHouseName(room.getBoardingHouse().getName())
                 .buildingName(room.getBuilding().getName())
                 .floor(room.getFloorNumber())
                 .area(room.getArea())
