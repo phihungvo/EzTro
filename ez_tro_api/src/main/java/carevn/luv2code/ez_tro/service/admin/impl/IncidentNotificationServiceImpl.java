@@ -222,7 +222,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param statusChanged tham số statusChanged
      * @return kết quả kiểu String
      */
-
     private String resolveStatusEventKey(IncidentStatus status, boolean statusChanged) {
         if (!statusChanged) {
             return "INCIDENT_UPDATED_BY_BACKOFFICE";
@@ -242,7 +241,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param extra  tham số extra
      * @return kết quả kiểu
      */
-
     private Map<String, Object> buildPayload(IncidentReport report, Map<String, Object> extra) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("incidentId", report.getId());
@@ -268,7 +266,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param prefix tham số prefix
      * @return kết quả kiểu String
      */
-
     private String buildOwnerMessage(IncidentReport report, String prefix) {
         return prefix + ": #" + report.getId() + " - " + report.getTitle() + " (" + resolveRoomLabel(report) + ")";
     }
@@ -280,7 +277,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param prefix tham số prefix
      * @return kết quả kiểu String
      */
-
     private String buildTenantMessage(IncidentReport report, String prefix) {
         return prefix + ": #" + report.getId() + " - " + report.getTitle() + " (" + resolveRoomLabel(report) + ")";
     }
@@ -291,7 +287,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param report tham số report
      * @return kết quả kiểu String
      */
-
     private String resolveRoomLabel(IncidentReport report) {
         if (report.getRoom() == null) {
             return "không rõ phòng";
@@ -309,7 +304,6 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
      * @param report tham số report
      * @return kết quả kiểu User
      */
-
     private User resolveOwner(IncidentReport report) {
         if (report == null || report.getRoom() == null || report.getRoom().getBoardingHouse() == null) {
             return null;

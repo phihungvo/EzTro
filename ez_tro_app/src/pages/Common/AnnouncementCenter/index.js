@@ -48,17 +48,11 @@ dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
 const categoryOptions = [
-    {label: "System", value: "SYSTEM"},
-    {label: "Operations", value: "OPERATIONS"},
-    {label: "Incident", value: "INCIDENT"},
-    {label: "Billing", value: "BILLING"},
-    {label: "Marketing", value: "MARKETING"},
-];
-
-const priorityOptions = [
-    {label: "Low", value: "LOW"},
-    {label: "Medium", value: "MEDIUM"},
-    {label: "High", value: "HIGH"},
+    { label: "Hệ thống", value: "SYSTEM" },
+    { label: "Vận hành", value: "OPERATIONS" },
+    { label: "Sự cố", value: "INCIDENT" },
+    { label: "Thanh toán", value: "BILLING" },
+    { label: "Khuyến mãi", value: "MARKETING" },
 ];
 
 const deliveryChannelOptions = [
@@ -68,29 +62,35 @@ const deliveryChannelOptions = [
     {label: "Zalo", value: "ZALO"},
 ];
 
+const priorityOptions = [
+    { label: "Thấp", value: "LOW" },
+    { label: "Trung bình", value: "MEDIUM" },
+    { label: "Cao", value: "HIGH" },
+];
+
 const deliveryStatusOptions = [
-    {label: "Tất cả trạng thái", value: ""},
-    {label: "Queued", value: "QUEUED"},
-    {label: "Sent", value: "SENT"},
-    {label: "Failed", value: "FAILED"},
-    {label: "Skipped", value: "SKIPPED"},
+    { label: "Tất cả trạng thái", value: "" },
+    { label: "Đang chờ gửi", value: "QUEUED" },
+    { label: "Đã gửi", value: "SENT" },
+    { label: "Gửi thất bại", value: "FAILED" },
+    { label: "Bỏ qua", value: "SKIPPED" },
 ];
 
 const ownerTargetOptions = [
-    {label: "Tất cả tenant của tôi", value: "ALL_TENANTS_OF_OWNER"},
+    {label: "Tất cả người thuê của tôi", value: "ALL_TENANTS_OF_OWNER"},
     {label: "Theo khu trọ", value: "BOARDING_HOUSE"},
     {label: "Theo tòa nhà", value: "BUILDING"},
     {label: "Theo phòng", value: "ROOM"},
-    {label: "Chọn tenant cụ thể", value: "TENANT_LIST"},
+    {label: "Chọn người thuê cụ thể", value: "TENANT_LIST"},
 ];
 
 const adminTargetOptions = [
     {label: "Toàn hệ thống", value: "ALL_SYSTEM"},
-    {label: "Tenant theo owner", value: "ALL_TENANTS_OF_OWNER"},
+    {label: "Người thuê theo chủ trọ", value: "ALL_TENANTS_OF_OWNER"},
     {label: "Theo khu trọ", value: "BOARDING_HOUSE"},
     {label: "Theo tòa nhà", value: "BUILDING"},
     {label: "Theo phòng", value: "ROOM"},
-    {label: "Chọn tenant cụ thể", value: "TENANT_LIST"},
+    {label: "Chọn người thuê cụ thể", value: "TENANT_LIST"},
 ];
 
 const AnnouncementCenter = () => {
@@ -230,8 +230,8 @@ const AnnouncementCenter = () => {
                 return "Admin sẽ gửi tới toàn bộ user trong hệ thống. Chỉ dùng cho thông báo thật sự quan trọng.";
             case "ALL_TENANTS_OF_OWNER":
                 return isAdmin
-                    ? "Admin chọn một owner để gửi tới toàn bộ tenant đang hoạt động thuộc owner đó."
-                    : "Owner sẽ gửi tới toàn bộ tenant đang hoạt động thuộc dữ liệu của mình.";
+                    ? "Admin chọn một chủ trọ để gửi tới toàn bộ người thuê đang hoạt động thuộc chủ trọ đó."
+                    : "Chủ trọ sẽ gửi tới toàn bộ người thuê đang hoạt động thuộc dữ liệu của mình.";
             case "BOARDING_HOUSE":
                 return "Gửi theo một hoặc nhiều khu trọ.";
             case "BUILDING":
@@ -239,7 +239,7 @@ const AnnouncementCenter = () => {
             case "ROOM":
                 return "Gửi theo một hoặc nhiều phòng cụ thể.";
             case "TENANT_LIST":
-                return "Gửi trực tiếp tới danh sách tenant đã chọn.";
+                return "Gửi trực tiếp tới danh sách người thuê đã chọn.";
             default:
                 return "Chọn phạm vi gửi phù hợp trước khi preview hoặc gửi thông báo.";
         }
@@ -311,8 +311,8 @@ const AnnouncementCenter = () => {
                             <NotificationOutlined /> Trung tâm gửi announcement
                         </Typography.Title>
                         <Typography.Paragraph className={styles.heroDesc}>
-                            Gửi thông báo vận hành tới tenant theo phạm vi thực tế của hệ thống: owner cụ thể, khu trọ,
-                            tòa nhà, phòng hoặc danh sách tenant chỉ định.
+                            Gửi thông báo vận hành tới người thuê theo phạm vi thực tế của hệ thống: chủ trọ cụ thể, khu trọ,
+                            tòa nhà, phòng hoặc danh sách người thuê chỉ định.
                         </Typography.Paragraph>
                     </div>
                     <Space wrap>
@@ -338,7 +338,7 @@ const AnnouncementCenter = () => {
                             type="info"
                             showIcon
                             className={styles.scopeAlert}
-                            message="Quy tắc gửi announcement"
+                            message="Quy tắc gửi thông báo"
                             description={summaryAlert}
                         />
 
@@ -358,7 +358,7 @@ const AnnouncementCenter = () => {
 
                         {needsTargetSelect && (
                             <Form.Item
-                                label={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? "Chọn owner" : "Chọn đối tượng"}
+                                label={selectedTargetType === "ALL_TENANTS_OF_OWNER" ? "Chọn chủ trọ" : "Chọn đối tượng"}
                                 name="targetIds"
                                 rules={[{required: true, message: "Chọn ít nhất một đối tượng"}]}
                             >
@@ -373,10 +373,10 @@ const AnnouncementCenter = () => {
                         )}
 
                         <div className={styles.inlineFields}>
-                            <Form.Item label="Category" name="category" className={styles.inlineItem}>
+                            <Form.Item label="Danh mục" name="category" className={styles.inlineItem}>
                                 <Select options={categoryOptions} />
                             </Form.Item>
-                            <Form.Item label="Priority" name="priority" className={styles.inlineItem}>
+                            <Form.Item label="Mức độ ưu tiên" name="priority" className={styles.inlineItem}>
                                 <Select options={priorityOptions} />
                             </Form.Item>
                         </div>
@@ -394,7 +394,7 @@ const AnnouncementCenter = () => {
                             name="message"
                             rules={[{required: true, message: "Nhập nội dung thông báo"}]}
                         >
-                            <TextArea rows={6} placeholder="Nhập nội dung chi tiết gửi tới tenant..." maxLength={2000} />
+                            <TextArea rows={6} placeholder="Nhập nội dung chi tiết gửi tới người thuê..." maxLength={2000} />
                         </Form.Item>
 
                         <Space wrap>

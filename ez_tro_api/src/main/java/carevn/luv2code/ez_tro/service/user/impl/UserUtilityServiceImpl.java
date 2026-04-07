@@ -43,27 +43,27 @@ public class UserUtilityServiceImpl implements UserUtilityService {
     /**
      * Lấy thông tin my meter reading history.
      */
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<MeterReadingResponse> getMyMeterReadingHistory(Integer userId, int limit) {
-//        Contract contract = resolveActiveContract(userId);
-//        /**
-//         * Thực thi if.
-//         * @param null tham số null
-//         * @return kết quả kiểu
-//         */
-//        if (contract == null || contract.getRoom() == null || contract.getRoom().getId() == null) {
-//            return List.of();
-//        }
-//
-//        int safeLimit = Math.max(1, Math.min(limit, 60));
-//        return meterReadingMapper
-//                .toResponseList(meterReadingRepository.findByRoomIdOrderByPeriodYearDescPeriodMonthDescIdDesc(
-//                        contract.getRoom().getId()))
-//                .stream()
-//                .limit(safeLimit)
-//                .toList();
-//    }
+    //    @Override
+    //    @Transactional(readOnly = true)
+    //    public List<MeterReadingResponse> getMyMeterReadingHistory(Integer userId, int limit) {
+    //        Contract contract = resolveActiveContract(userId);
+    //        /**
+    //         * Thực thi if.
+    //         * @param null tham số null
+    //         * @return kết quả kiểu
+    //         */
+    //        if (contract == null || contract.getRoom() == null || contract.getRoom().getId() == null) {
+    //            return List.of();
+    //        }
+    //
+    //        int safeLimit = Math.max(1, Math.min(limit, 60));
+    //        return meterReadingMapper
+    //                .toResponseList(meterReadingRepository.findByRoomIdOrderByPeriodYearDescPeriodMonthDescIdDesc(
+    //                        contract.getRoom().getId()))
+    //                .stream()
+    //                .limit(safeLimit)
+    //                .toList();
+    //    }
 
     private Contract resolveActiveContract(Integer userId) {
         return contractRepository
