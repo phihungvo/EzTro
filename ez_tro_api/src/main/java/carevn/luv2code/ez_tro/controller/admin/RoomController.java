@@ -96,10 +96,9 @@ public class RoomController {
     }
 
     /**
-     * Lấy danh sách phòng phân trang (theo role hiện tại).
-     *
-     * @param pageable tham số phân trang/sort
-     * @return page phòng
+     * Lấy thông tin all rooms paged.
+     * @param pageable tham số pageable
+     * @return kết quả kiểu ResponseEntity<Page<RoomResponse>>
      */
     @GetMapping("/paged")
     public ResponseEntity<Page<RoomResponse>> getAllRoomsPaged(Pageable pageable) {

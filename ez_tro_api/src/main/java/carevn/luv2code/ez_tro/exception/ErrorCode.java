@@ -13,6 +13,7 @@ public enum ErrorCode {
     USER_EXISTED(1001, "User existed", HttpStatus.BAD_GATEWAY),
     USERNAME_INVALID(1002, "Username must be at least {min} characters", HttpStatus.BAD_GATEWAY),
     PASSWORD_INVALID(1003, "Password must be at least {min} characters", HttpStatus.BAD_GATEWAY),
+    CURRENT_PASSWORD_INCORRECT(1105, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(1004, "User not found", HttpStatus.NOT_FOUND),
     USER_HAS_BEEN_DELETED(1005, "User has been deleted", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1006, "User not existed", HttpStatus.NOT_FOUND),
