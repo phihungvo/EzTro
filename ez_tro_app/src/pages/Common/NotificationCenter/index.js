@@ -9,7 +9,7 @@ import {
     NotificationOutlined,
     SearchOutlined
 } from "@ant-design/icons";
-import {Button, Card, Checkbox, Empty, Input, List, Select, Space, Tag, Typography, message} from "antd";
+import {Button, Card, Checkbox, DatePicker, Empty, Input, List, Select, Space, Tag, Typography, message} from "antd";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -52,6 +52,22 @@ const CATEGORY_OPTIONS = [
     {label: "System", value: "SYSTEM"},
 ];
 
+const PRIORITY_OPTIONS = [
+    {label: "Tất cả độ ưu tiên", value: ""},
+    {label: "Khẩn cấp", value: "CRITICAL"},
+    {label: "Cao", value: "HIGH"},
+    {label: "Trung bình", value: "MEDIUM"},
+    {label: "Thấp", value: "LOW"},
+];
+
+const CHANNEL_OPTIONS = [
+    {label: "Tất cả kênh", value: ""},
+    {label: "In-app", value: "IN_APP"},
+    {label: "Email", value: "EMAIL"},
+    {label: "SMS", value: "SMS"},
+    {label: "Zalo", value: "ZALO"},
+];
+
 const categoryColorMap = {
     BILLING: "gold",
     PAYMENT: "green",
@@ -78,6 +94,8 @@ const normalizeNotification = (notification) => ({
     priority: notification?.priority || "MEDIUM",
 });
 
+const {RangePicker} = DatePicker;
+
 const NotificationCenter = ({embedded = false}) => {
     const navigate = useNavigate();
     const {user} = useAuth();
@@ -89,8 +107,11 @@ const NotificationCenter = ({embedded = false}) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [status, setStatus] = useState("ALL");
     const [category, setCategory] = useState("");
+    const [priority, setPriority] = useState("");
+    const [channel, setChannel] = useState("");
     const [keywordInput, setKeywordInput] = useState("");
     const [keyword, setKeyword] = useState("");
+    const [dateRange, setDateRange] = useState(null);
     const [preferences, setPreferences] = useState(null);
     const [preferencesLoading, setPreferencesLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -100,13 +121,21 @@ const NotificationCenter = ({embedded = false}) => {
         : user?.role === "OWNER"
             ? "/owner/notifications/announcements"
             : null;
-    const showPreferences = user?.role === "ADMIN" || user?.role === "OWNER";
+    const showPreferences = Boolean(user);
 
-    const filters = useMemo(() => ({
-        status,
-        category,
-        keyword,
-    }), [status, category, keyword]);
+    const filters = useMemo(() => {
+        const rangeStart = dateRange?.[0];
+        const rangeEnd = dateRange?.[1];
+        return {
+            status,
+            category,
+            keyword,
+            ...(priority ? {priority} : {}),
+            ...(channel ? {channel} : {}),
+            ...(rangeStart ? {from: rangeStart.startOf("day").format("YYYY-MM-DD")} : {}),
+            ...(rangeEnd ? {to: rangeEnd.endOf("day").format("YYYY-MM-DD")} : {}),
+        };
+    }, [status, category, keyword, priority, channel, dateRange]);
 
     const loadNotifications = useCallback(async (pageNum = 0, append = false) => {
         try {
@@ -301,6 +330,25 @@ const NotificationCenter = ({embedded = false}) => {
                         options={CATEGORY_OPTIONS}
                         className={styles.select}
                     />
+                    <Select
+                        value={priority}
+                        onChange={setPriority}
+                        options={PRIORITY_OPTIONS}
+                        className={styles.select}
+                    />
+                    <Select
+                        value={channel}
+                        onChange={setChannel}
+                        options={CHANNEL_OPTIONS}
+                        className={styles.select}
+                    />
+                    <RangePicker
+                        value={dateRange}
+                        onChange={(dates) => setDateRange(dates)}
+                        allowClear
+                        format="DD/MM/YYYY"
+                        className={styles.rangePicker}
+                    />
                     <Input
                         value={keywordInput}
                         onChange={(event) => setKeywordInput(event.target.value)}
@@ -309,7 +357,11 @@ const NotificationCenter = ({embedded = false}) => {
                         className={styles.searchInput}
                         onPressEnter={() => setKeyword(keywordInput.trim())}
                     />
-                    <Button icon={<FilterOutlined />} onClick={() => setKeyword(keywordInput.trim())}>
+                    <Button
+                        icon={<FilterOutlined />}
+                        onClick={() => setKeyword(keywordInput.trim())}
+                        className={styles.filterButton}
+                    >
                         Lọc
                     </Button>
                 </div>

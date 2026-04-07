@@ -241,6 +241,16 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/user/incident-reports`,
         UPDATE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
         DELETE: (incidentId) => `${BASE_URL}/user/incident-reports/${incidentId}`,
+    },
+    USER_PROFILE: {
+        GET_ME: `${BASE_URL}/user/profile/me`,
+        UPDATE_ME: `${BASE_URL}/user/profile/me`,
+        CHANGE_PASSWORD: `${BASE_URL}/user/profile/me/change-password`,
+    },
+    USER_UTILITIES: {
+        CURRENT_PERIOD: `${BASE_URL}/user/utilities/meter-readings/current-period`,
+        HISTORY: `${BASE_URL}/user/utilities/meter-readings/history`,
+        PERIOD: (month, year) => `${BASE_URL}/user/utilities/meter-readings/period/${month}/${year}`,
     }
 };
 

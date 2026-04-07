@@ -32,16 +32,31 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
     @Override
     public void notifyTenantCreated(IncidentReport report) {
         User owner = resolveOwner(report);
-        if (owner == null) {
-            return;
+        if (owner != null && owner.getId() != null) {
+            notificationService.sendToUser(
+                    owner.getId(),
+                    "Có báo cáo sự cố mới",
+                    buildOwnerMessage(report, "Người thuê vừa gửi một báo cáo sự cố mới"),
+                    "OWNER_INCIDENT_CREATED",
+                    buildPayload(report, Map.of("source", "TENANT_CREATE")));
         }
 
-        notificationService.sendToUser(
-                owner.getId(),
-                "Có báo cáo sự cố mới",
-                buildOwnerMessage(report, "Người thuê vừa gửi một báo cáo sự cố mới"),
-                "OWNER_INCIDENT_CREATED",
-                buildPayload(report, Map.of("source", "TENANT_CREATE")));
+        User tenantUser = resolveTenantUser(report);
+
+        if (tenantUser != null && tenantUser.getId() != null) {
+            notificationService.sendToUser(
+                    tenantUser.getId(),
+                    "Đã gửi báo cáo sự cố",
+                    buildTenantMessage(report, "Yêu cầu sự cố của bạn đã được hệ thống ghi nhận"),
+                    "TENANT_INCIDENT_RECEIVED",
+                    buildPayload(
+                            report,
+                            Map.of(
+                                    "source",
+                                    "TENANT_CREATE_ACK",
+                                    "dedupeKey",
+                                    "tenant-incident-received-" + report.getId())));
+        }
     }
 
     @Override
@@ -89,6 +104,12 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 buildPayload(report, Map.of("source", "BACKOFFICE_CREATE")));
     }
 
+    /**
+     * Thực thi notify backoffice updated.
+     *
+     * @param report         tham số report
+     * @param previousStatus tham số previousStatus
+     */
     @Override
     public void notifyBackofficeUpdated(IncidentReport report, IncidentStatus previousStatus) {
         User tenantUser = resolveTenantUser(report);
@@ -115,6 +136,11 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
         notificationService.sendToUser(tenantUser.getId(), title, message, eventKey, buildPayload(report, extra));
     }
 
+    /**
+     * Thực thi notify backoffice deleted.
+     *
+     * @param report tham số report
+     */
     @Override
     public void notifyBackofficeDeleted(IncidentReport report) {
         User tenantUser = resolveTenantUser(report);
@@ -130,6 +156,11 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 buildPayload(report, Map.of("source", "BACKOFFICE_DELETE")));
     }
 
+    /**
+     * Gửi sla escalations.
+     *
+     * @return kết quả kiểu int
+     */
     @Override
     public int sendSlaEscalations() {
         List<IncidentReport> overdueByExpectedDate =
@@ -184,6 +215,14 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
         return processed;
     }
 
+    /**
+     * Thực thi resolve status event key.
+     *
+     * @param status        tham số status
+     * @param statusChanged tham số statusChanged
+     * @return kết quả kiểu String
+     */
+
     private String resolveStatusEventKey(IncidentStatus status, boolean statusChanged) {
         if (!statusChanged) {
             return "INCIDENT_UPDATED_BY_BACKOFFICE";
@@ -195,6 +234,14 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
             case PENDING -> "INCIDENT_REOPENED";
         };
     }
+
+    /**
+     * Xây dựng payload.
+     *
+     * @param report tham số report
+     * @param extra  tham số extra
+     * @return kết quả kiểu
+     */
 
     private Map<String, Object> buildPayload(IncidentReport report, Map<String, Object> extra) {
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -214,13 +261,36 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
         return payload;
     }
 
+    /**
+     * Xây dựng owner message.
+     *
+     * @param report tham số report
+     * @param prefix tham số prefix
+     * @return kết quả kiểu String
+     */
+
     private String buildOwnerMessage(IncidentReport report, String prefix) {
         return prefix + ": #" + report.getId() + " - " + report.getTitle() + " (" + resolveRoomLabel(report) + ")";
     }
 
+    /**
+     * Xây dựng tenant message.
+     *
+     * @param report tham số report
+     * @param prefix tham số prefix
+     * @return kết quả kiểu String
+     */
+
     private String buildTenantMessage(IncidentReport report, String prefix) {
         return prefix + ": #" + report.getId() + " - " + report.getTitle() + " (" + resolveRoomLabel(report) + ")";
     }
+
+    /**
+     * Thực thi resolve room label.
+     *
+     * @param report tham số report
+     * @return kết quả kiểu String
+     */
 
     private String resolveRoomLabel(IncidentReport report) {
         if (report.getRoom() == null) {
@@ -232,6 +302,13 @@ public class IncidentNotificationServiceImpl implements IncidentNotificationServ
                 : null;
         return buildingName != null ? roomNumber + " - " + buildingName : roomNumber;
     }
+
+    /**
+     * Thực thi resolve owner.
+     *
+     * @param report tham số report
+     * @return kết quả kiểu User
+     */
 
     private User resolveOwner(IncidentReport report) {
         if (report == null || report.getRoom() == null || report.getRoom().getBoardingHouse() == null) {

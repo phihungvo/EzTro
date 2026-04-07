@@ -61,16 +61,18 @@
 
 .filterBar {
   display: grid;
-  grid-template-columns: 160px 180px minmax(220px, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
+  align-items: flex-end;
 }
 
 .select,
 .searchInput {
+  width: 100%;
+}
+
+.rangePicker,
+.filterButton {
   width: 100%;
 }
 

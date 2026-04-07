@@ -16,17 +16,12 @@ import Contract from "~/pages/Admin/Contract";
 import Bill from "src/pages/Admin/Bill";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
-import UserManagement from "~/pages/Admin/User/UserManagement";
 import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import UserLayout from "~/components/Layout/UserLayout";
-import UserDashboard from "~/pages/User/HomeDashboard";
-import Owner from "~/pages/Admin/Owner";
 import Revenue from "~/pages/Admin/Revenue";
-import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
 import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
-import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
@@ -116,11 +111,7 @@ const AppRoutes = () => {
                 path="/user/*"
                 element={
                     <PrivateRoute allowedRoles={["USER"]}>
-                        <UserLayout>
-                            <Routes>
-                                <Route path="dashboard" element={<UserDashboard />} />
-                            </Routes>
-                        </UserLayout>
+                        <UserLayout />
                     </PrivateRoute>
                 }
             />
