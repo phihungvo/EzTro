@@ -112,7 +112,7 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
     List<Bill> findByRoomAndPeriod(
             @Param("roomId") Integer roomId, @Param("month") Integer month, @Param("year") Integer year);
 
-    // Tìm bill gần nhất trước tháng/năm chỉ định (lấy chỉ số cũ)
+    // Tìm bill gần nhất trước tháng/năm chỉ định (lấy chỉ số cũ) helloooooo
     @Query("SELECT b FROM Bill b " + "WHERE b.room.id = :roomId "
             + "AND b.dueDate < :endOfPeriod "
             + "ORDER BY b.dueDate DESC")
