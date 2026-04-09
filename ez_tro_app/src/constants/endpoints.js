@@ -182,6 +182,7 @@ const API_ENDPOINTS = {
         CONFIRM: (paymentId) => `${BASE_URL}/payments/${paymentId}/confirm`,
         ALLOCATE: (paymentId) => `${BASE_URL}/payments/${paymentId}/allocate`,
         REVERSE: (paymentId) => `${BASE_URL}/payments/${paymentId}/reverse`,
+        ALLOCATIONS: (paymentId) => `${BASE_URL}/payments/${paymentId}/allocations`,
     },
     RECONCILIATION: {
         CONTRACT: (contractId) => `${BASE_URL}/reconciliation/contracts/${contractId}`,

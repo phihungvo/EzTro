@@ -1,77 +1,73 @@
-import API_ENDPOINTS from "~/constants/endpoints";
-import apiClient from "~/service/api/api";
-
-const buildIdempotencyKey = (prefix) => {
-    const randomPart =
-        (typeof window !== "undefined" && window.crypto?.randomUUID?.()) ||
-        `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    return `${prefix}-${randomPart}`;
-};
-
-export const receivePayment = async (payload) => {
-    try {
-        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.RECEIVE, payload);
-        return response.data.result;
-    } catch (error) {
-        console.error("Error when receiving payment: ", error);
-        throw error;
-    }
-};
+import API_ENDPOINTS from '~/constants/endpoints';
+import apiClient from '~/service/api/api';
+import {message} from 'antd';
 
 export const listPayments = async (params = {}) => {
     try {
-        const response = await apiClient.get(API_ENDPOINTS.PAYMENT.RECEIVE, { params });
-        return response.data.result;
+        const res = await apiClient.get(API_ENDPOINTS.PAYMENT.RECEIVE, {params});
+        return res.data.result;
     } catch (error) {
-        console.error("Error when listing payments: ", error);
+        message.error(error.response?.data?.message || 'Lỗi tải danh sách thanh toán');
         throw error;
     }
 };
 
 export const getPaymentById = async (paymentId) => {
     try {
-        const response = await apiClient.get(API_ENDPOINTS.PAYMENT.DETAIL(paymentId));
-        return response.data.result;
+        const res = await apiClient.get(API_ENDPOINTS.PAYMENT.DETAIL(paymentId));
+        return res.data.result;
     } catch (error) {
-        console.error("Error when fetching payment detail: ", error);
+        message.error(error.response?.data?.message || 'Không lấy được chi tiết thanh toán');
         throw error;
     }
 };
 
-export const confirmPayment = async (paymentId, payload = {}) => {
+export const receivePayment = async (payload) => {
     try {
-        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId), payload);
-        return response.data.result;
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.RECEIVE, payload);
+        return res.data.result;
     } catch (error) {
-        console.error("Error when confirming payment: ", error);
+        message.error(error.response?.data?.message || 'Ghi nhận thanh toán thất bại');
         throw error;
     }
 };
 
-export const allocatePayment = async (paymentId, payload = null) => {
+export const confirmPayment = async (paymentId, payload) => {
     try {
-        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.ALLOCATE(paymentId), payload, {
-            headers: {
-                "Idempotency-Key": buildIdempotencyKey(`allocate-${paymentId}`),
-            },
-        });
-        return response.data.result;
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId), payload);
+        return res.data.result;
     } catch (error) {
-        console.error("Error when allocating payment: ", error);
+        message.error(error.response?.data?.message || 'Xác nhận thanh toán thất bại');
         throw error;
     }
 };
 
-export const reversePayment = async (paymentId, payload = {}) => {
+export const allocatePayment = async (paymentId, payload) => {
     try {
-        const response = await apiClient.post(API_ENDPOINTS.PAYMENT.REVERSE(paymentId), payload, {
-            headers: {
-                "Idempotency-Key": buildIdempotencyKey(`reverse-${paymentId}`),
-            },
-        });
-        return response.data.result;
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.ALLOCATE(paymentId), payload);
+        return res.data.result;
     } catch (error) {
-        console.error("Error when reversing payment: ", error);
+        message.error(error.response?.data?.message || 'Phân bổ thanh toán thất bại');
+        throw error;
+    }
+};
+
+export const reversePayment = async (paymentId, payload) => {
+    try {
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.REVERSE(paymentId), payload);
+        return res.data.result;
+    } catch (error) {
+        message.error(error.response?.data?.message || 'Đảo ngược thanh toán thất bại');
+        throw error;
+    }
+};
+
+export const getPaymentAllocations = async (paymentId) => {
+    try {
+        const res = await apiClient.get(API_ENDPOINTS.PAYMENT.ALLOCATIONS(paymentId));
+        return res.data.result;
+    } catch (error) {
+        message.error(error.response?.data?.message || 'Lỗi tải phân bổ thanh toán');
         throw error;
     }
 };
