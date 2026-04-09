@@ -628,14 +628,14 @@ function AdminPaymentManagement() {
             title: "Thao tác",
             key: "actions",
             fixed: "right",
-            width: 130,
+            width: 165,
             render: (_, r) => {
                 const canA = !["REVERSED", "FAILED"].includes(r.status) && Number(r.unallocatedAmount || 0) > 0;
                 return (
                     <Space size={6} wrap>
                         <Tooltip title="Chọn thanh toán này để xem và phân bổ">
                             <Button
-                                size="medium"
+                                size="large"
                                 className={cx("btnGhost", "btnSm")}
                                 icon={<ArrowRightOutlined/>}
                                 onClick={() => setSelectedPaymentId(r.id)}
@@ -645,7 +645,7 @@ function AdminPaymentManagement() {
                         </Tooltip>
                         <Tooltip title="Xem chi tiết phân bổ">
                             <Button
-                                size="medium"
+                                size="large"
                                 className={cx("btnGhost", "btnSm")}
                                 icon={<AuditOutlined/>}
                                 onClick={() => openAllocationModal(r.id)}
@@ -656,7 +656,7 @@ function AdminPaymentManagement() {
                         {r.status === "PENDING" && (
                             <Tooltip title="Xác nhận khoản thanh toán">
                                 <Button
-                                    size="medium"
+                                    size="large"
                                     className={cx("btnPrimary", "btnSm")}
                                     onClick={() => handleConfirm(r.id)}
                                 >
@@ -666,7 +666,7 @@ function AdminPaymentManagement() {
                         )}
                         <Tooltip title="Tự động phân bổ theo thứ tự ưu tiên">
                             <Button
-                                size="medium"
+                                size="large"
                                 className={cx(canA ? "btnAccent" : "btnGhost", "btnSm")}
                                 disabled={!canA}
                                 icon={<ThunderboltOutlined/>}
