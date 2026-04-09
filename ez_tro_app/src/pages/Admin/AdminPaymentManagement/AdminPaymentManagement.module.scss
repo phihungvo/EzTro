@@ -85,6 +85,32 @@ $font-mono:    'JetBrains Mono', 'Fira Code', monospace;
     background: $blue-dim !important;
   }
 
+  // Trong .wrapper — sticky columns background fix
+  :global(.ant-table-cell-fix-left),
+  :global(.ant-table-cell-fix-right) {
+    background: $surface-1 !important;
+  }
+
+  :global(.ant-table-thead > tr > .ant-table-cell-fix-left),
+  :global(.ant-table-thead > tr > .ant-table-cell-fix-right) {
+    background: $surface-2 !important;
+  }
+
+  :global(.ant-table-tbody > tr > .ant-table-cell-fix-left),
+  :global(.ant-table-tbody > tr > .ant-table-cell-fix-right) {
+    background: $surface-1 !important;
+  }
+
+  :global(.ant-table-tbody > tr:hover > .ant-table-cell-fix-left),
+  :global(.ant-table-tbody > tr:hover > .ant-table-cell-fix-right) {
+    background: $surface-2 !important;
+  }
+
+  :global(.ant-table-row-selected > .ant-table-cell-fix-left),
+  :global(.ant-table-row-selected > .ant-table-cell-fix-right) {
+    background: $blue-dim !important;
+  }
+
   // Card overrides
   :global(.ant-card) {
     background: $surface-1 !important;

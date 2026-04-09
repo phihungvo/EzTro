@@ -11,6 +11,7 @@ import carevn.luv2code.ez_tro.dto.requests.PaymentReceiveRequest;
 import carevn.luv2code.ez_tro.dto.requests.PaymentReverseRequest;
 import carevn.luv2code.ez_tro.dto.response.CreditLedgerReportResponse;
 import carevn.luv2code.ez_tro.dto.response.DebtAgingReportResponse;
+import carevn.luv2code.ez_tro.dto.response.PaymentAllocationSummaryResponse;
 import carevn.luv2code.ez_tro.dto.response.PaymentListItemResponse;
 import carevn.luv2code.ez_tro.dto.response.PaymentResponse;
 import carevn.luv2code.ez_tro.dto.response.ReconciliationReportResponse;
@@ -31,6 +32,8 @@ public interface PaymentAllocationService {
     PaymentResponse reversePayment(Integer paymentId, PaymentReverseRequest request);
 
     PaymentResponse getPayment(Integer paymentId);
+
+    PaymentAllocationSummaryResponse getPaymentAllocations(Integer paymentId);
 
     Page<PaymentListItemResponse> filterPayments(
             String search,

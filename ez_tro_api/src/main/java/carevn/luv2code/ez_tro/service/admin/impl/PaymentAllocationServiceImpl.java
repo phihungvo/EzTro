@@ -518,6 +518,34 @@ public class PaymentAllocationServiceImpl implements PaymentAllocationService {
 
     @Override
     @Transactional(readOnly = true)
+    public carevn.luv2code.ez_tro.dto.response.PaymentAllocationSummaryResponse getPaymentAllocations(
+            Integer paymentId) {
+        Payment payment =
+                paymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+        validateContractAccess(payment.getContract());
+
+        BigDecimal allocated = nullToZero(paymentAllocationRepository.sumAllocatedByPaymentId(paymentId));
+        BigDecimal unallocated = nullToZero(payment.getAmount()).subtract(allocated);
+        if (unallocated.signum() < 0) {
+            unallocated = BigDecimal.ZERO;
+        }
+
+        List<PaymentAllocationResponse> allocations =
+                paymentAllocationRepository.findByPaymentIdOrderByCreatedAtAsc(paymentId).stream()
+                        .map(this::toAllocationResponse)
+                        .toList();
+
+        return carevn.luv2code.ez_tro.dto.response.PaymentAllocationSummaryResponse.builder()
+                .paymentId(paymentId)
+                .totalAmount(payment.getAmount())
+                .allocatedAmount(allocated)
+                .unallocatedAmount(unallocated)
+                .allocations(allocations)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<PaymentListItemResponse> filterPayments(
             String search,
             String status,

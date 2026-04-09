@@ -139,4 +139,18 @@ public class PaymentController {
                 .result(response)
                 .build();
     }
+
+    /**
+     * Xem chi tiết phân bổ của một payment: các allocations + tổng đã dùng/chưa dùng.
+     */
+    @GetMapping("/{id}/allocations")
+    public ApiResponse<carevn.luv2code.ez_tro.dto.response.PaymentAllocationSummaryResponse> getAllocations(
+            @PathVariable Integer id) {
+        var response = paymentAllocationService.getPaymentAllocations(id);
+        return ApiResponse.<carevn.luv2code.ez_tro.dto.response.PaymentAllocationSummaryResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get payment allocations successfully")
+                .result(response)
+                .build();
+    }
 }
