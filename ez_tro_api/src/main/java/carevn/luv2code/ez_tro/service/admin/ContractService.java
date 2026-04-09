@@ -96,4 +96,6 @@ public interface ContractService {
     ContractRoomTransferResponse transferRoom(Integer contractId, ContractRoomTransferRequest request);
 
     int processAutoRenewals(LocalDate today);
+
+    ContractDetailResponse updateAutoRenew(Integer contractId, boolean autoRenew);
 }
