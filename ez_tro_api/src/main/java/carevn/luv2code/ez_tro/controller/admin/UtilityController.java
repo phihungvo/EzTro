@@ -59,6 +59,24 @@ public class UtilityController {
     }
 
     /**
+     * Bật/tắt (active) tiện ích.
+     *
+     * @param id id utility
+     * @param active trạng thái mong muốn
+     * @return response chứa utility sau cập nhật
+     */
+    @PatchMapping("/{id}/status")
+    public ApiResponse<UtilityResponse> updateStatus(
+            @PathVariable Integer id, @RequestParam(defaultValue = "true") boolean active) {
+        UtilityResponse response = utilityService.updateStatus(id, active);
+        return ApiResponse.<UtilityResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message(active ? "Đã bật tiện ích" : "Đã vô hiệu hóa tiện ích")
+                .result(response)
+                .build();
+    }
+
+    /**
      * Xóa utility theo id.
      *
      * @param id id utility

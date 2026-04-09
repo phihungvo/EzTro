@@ -28,4 +28,6 @@ public interface UtilityService {
     Page<UtilityResponse> getActiveByBoardingHouse(Integer boardingHouseId, int page, int size);
 
     List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId);
+
+    UtilityResponse updateStatus(Integer id, boolean active);
 }

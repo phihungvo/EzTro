@@ -45,3 +45,5 @@ databaseChangeLog:
       file: db/changelog/changeset-22-notification-delivery-outbox.yaml
   - include:
       file: db/changelog/changeset-23-notification-hardening.yaml
+  - include:
+      file: db/changelog/changeset-24-utility-multi-boarding.yaml

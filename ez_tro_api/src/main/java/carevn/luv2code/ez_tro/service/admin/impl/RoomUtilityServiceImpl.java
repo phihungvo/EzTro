@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import carevn.luv2code.ez_tro.dto.requests.RoomUtilityRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomUtilityResponse;
+import carevn.luv2code.ez_tro.entity.BoardingHouse;
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.entity.RoomUtility;
 import carevn.luv2code.ez_tro.entity.RoomUtilityId;
@@ -56,6 +57,7 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
                 .findById(request.getUtilityId())
                 .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
         validateUtilityAccess(utility);
+        validateUtilityActive(utility);
         validateUtilityBelongsToRoomBoardingHouse(room, utility);
 
         RoomUtilityId id = new RoomUtilityId(request.getRoomId(), request.getUtilityId());
@@ -91,6 +93,7 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
                 .findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_UTILITY_NOT_FOUND));
         validateRoomUtilityAccess(roomUtility);
+        validateUtilityActive(roomUtility.getUtility());
 
         roomUtilityMapper.toEntity(roomUtility, request);
 
@@ -231,26 +234,50 @@ public class RoomUtilityServiceImpl implements RoomUtilityService {
 
     private void validateUtilityAccess(Utility utility) {
         User currentUser = getCurrentUserOrThrow();
-        if (utility.getBoardingHouse() == null) {
-            if (!SecurityUtils.isAdmin()) {
-                throw new AppException(ErrorCode.ACCESS_DENIED);
-            }
+        if (SecurityUtils.isAdmin()) {
             return;
         }
 
-        if (!SecurityUtils.isAdmin()
-                && !utility.getBoardingHouse().getOwner().getId().equals(currentUser.getId())) {
+        Integer ownerId = utility.getOwner() != null ? utility.getOwner().getId() : null;
+        boolean accessible = ownerId != null && ownerId.equals(currentUser.getId());
+
+        if (!accessible
+                && utility.getBoardingHouses() != null
+                && !utility.getBoardingHouses().isEmpty()) {
+            accessible = utility.getBoardingHouses().stream()
+                    .anyMatch(house ->
+                            house.getOwner() != null && house.getOwner().getId().equals(currentUser.getId()));
+        }
+
+        if (!accessible) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
     }
 
+    private void validateUtilityActive(Utility utility) {
+        if (utility.getIsActive() != null && !utility.getIsActive()) {
+            throw new AppException(ErrorCode.UTILITY_INACTIVE);
+        }
+    }
+
     private void validateUtilityBelongsToRoomBoardingHouse(Room room, Utility utility) {
-        if (utility.getBoardingHouse() == null
-                || !utility.getBoardingHouse()
-                        .getId()
-                        .equals(room.getBoardingHouse().getId())) {
+        if (!utilityMatchesBoardingHouse(utility, room.getBoardingHouse())) {
             throw new AppException(ErrorCode.UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE);
         }
+    }
+
+    private boolean utilityMatchesBoardingHouse(Utility utility, BoardingHouse boardingHouse) {
+        if (utility.getBoardingHouses() == null || utility.getBoardingHouses().isEmpty()) {
+            return utility.getOwner() != null
+                    && boardingHouse != null
+                    && boardingHouse.getOwner() != null
+                    && utility.getOwner()
+                            .getId()
+                            .equals(boardingHouse.getOwner().getId());
+        }
+
+        return utility.getBoardingHouses().stream()
+                .anyMatch(house -> house.getId().equals(boardingHouse.getId()));
     }
 
     private void validateRequestIdentity(Integer roomId, Integer utilityId, RoomUtilityRequest request) {

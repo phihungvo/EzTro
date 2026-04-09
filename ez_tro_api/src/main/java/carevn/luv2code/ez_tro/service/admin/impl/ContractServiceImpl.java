@@ -889,12 +889,11 @@ public class ContractServiceImpl implements ContractService {
         Utility utility = utilityRepository
                 .findById(request.getUtilityId())
                 .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
+        if (utility.getIsActive() != null && !utility.getIsActive()) {
+            throw new AppException(ErrorCode.UTILITY_INACTIVE);
+        }
         // Đảm bảo utility thuộc cùng boarding house với phòng của hợp đồng (tránh "lấy nhầm" utility nơi khác).
-        Integer utilityBoardingHouseId = utility.getBoardingHouse() == null
-                ? null
-                : utility.getBoardingHouse().getId();
-        Integer contractBoardingHouseId = contract.getRoom().getBoardingHouse().getId();
-        if (utilityBoardingHouseId != null && !utilityBoardingHouseId.equals(contractBoardingHouseId)) {
+        if (!utilityAppliesToBoardingHouse(utility, contract.getRoom().getBoardingHouse())) {
             throw new AppException(ErrorCode.UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE);
         }
 
@@ -2685,10 +2684,10 @@ public class ContractServiceImpl implements ContractService {
             Utility utility = utilityRepository
                     .findById(utilityRequest.getUtilityId())
                     .orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
-            Integer utilityBoardingHouseId = utility.getBoardingHouse() == null
-                    ? null
-                    : utility.getBoardingHouse().getId();
-            if (utilityBoardingHouseId != null && !utilityBoardingHouseId.equals(boardingHouse.getId())) {
+            if (utility.getIsActive() != null && !utility.getIsActive()) {
+                throw new AppException(ErrorCode.UTILITY_INACTIVE);
+            }
+            if (!utilityAppliesToBoardingHouse(utility, boardingHouse)) {
                 throw new AppException(ErrorCode.ACCESS_DENIED);
             }
             utility.setName(utilityRequest.getName());
@@ -2710,9 +2709,24 @@ public class ContractServiceImpl implements ContractService {
                 .unitPrice(utilityRequest.getUnitPrice())
                 .unit(utilityRequest.getUnit())
                 .isActive(true)
-                .boardingHouse(managedBoardingHouse)
+                .owner(managedBoardingHouse.getOwner())
+                .boardingHouses(Set.of(managedBoardingHouse))
                 .build();
         return utilityRepository.save(utility);
+    }
+
+    private boolean utilityAppliesToBoardingHouse(Utility utility, BoardingHouse boardingHouse) {
+        if (utility.getBoardingHouses() == null || utility.getBoardingHouses().isEmpty()) {
+            return utility.getOwner() != null
+                    && boardingHouse != null
+                    && boardingHouse.getOwner() != null
+                    && utility.getOwner()
+                            .getId()
+                            .equals(boardingHouse.getOwner().getId());
+        }
+
+        return utility.getBoardingHouses().stream()
+                .anyMatch(house -> house.getId().equals(boardingHouse.getId()));
     }
 
     private Integer resolveQuantity(ContractUtilityRequest utilityRequest) {

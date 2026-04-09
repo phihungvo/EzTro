@@ -120,6 +120,7 @@ public enum ErrorCode {
     ROOM_DELETE_NOT_ALLOWED(1091, "Không thể xóa phòng vì đã có dữ liệu vận hành", HttpStatus.BAD_REQUEST),
     BOARDING_HOUSE_DELETE_NOT_ALLOWED(1093, "Không thể xóa nhà trọ vì đã có dữ liệu liên quan", HttpStatus.BAD_REQUEST),
     BUILDING_DELETE_NOT_ALLOWED(1094, "Không thể xóa tòa nhà vì đã có phòng", HttpStatus.BAD_REQUEST),
+    UTILITY_INACTIVE(1092, "Tiện ích đã bị vô hiệu hóa", HttpStatus.BAD_REQUEST),
     UTILITY_NOT_BELONG_TO_ROOM_BOARDING_HOUSE(1095, "Tiện ích không thuộc nhà trọ của phòng", HttpStatus.CONFLICT),
     ROOM_UTILITY_REQUEST_ID_MISMATCH(
             1096, "ID yêu cầu tiện ích phòng không khớp với đường dẫn", HttpStatus.BAD_REQUEST),
