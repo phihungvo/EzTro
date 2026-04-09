@@ -195,6 +195,7 @@ const API_ENDPOINTS = {
         CREATE: `${BASE_URL}/utilities`,
         UPDATE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
         DELETE: (utilityId) => `${BASE_URL}/utilities/${utilityId}`,
+        TOGGLE_STATUS: (utilityId, active = true) => `${BASE_URL}/utilities/${utilityId}/status?active=${active}`,
     },
     ROOM_UTILITY: {
         GET_ALL: `${BASE_URL}/room-utilities/all-paged`,

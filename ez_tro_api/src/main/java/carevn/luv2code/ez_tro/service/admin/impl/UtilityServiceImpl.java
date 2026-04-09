@@ -1,6 +1,9 @@
 package carevn.luv2code.ez_tro.service.admin.impl;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -48,9 +51,10 @@ public class UtilityServiceImpl implements UtilityService {
     public UtilityResponse create(UtilityRequest request) {
         Utility utility = utilityMapper.toEntity(request);
 
-        BoardingHouse house = getBoardingHouseOrThrow(request.getBoardingHouseId());
-        validateBoardingHouseAccess(house);
-        utility.setBoardingHouse(house);
+        User currentUser = getCurrentUserOrThrow();
+        utility.setOwner(currentUser);
+
+        utility.setBoardingHouses(resolveBoardingHouses(request.getBoardingHouseIds()));
 
         utility.setType(ServiceType.valueOf(request.getType()));
 
@@ -70,14 +74,17 @@ public class UtilityServiceImpl implements UtilityService {
         Utility utility =
                 utilityRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
         validateUtilityAccess(utility);
+        User currentUser = getCurrentUserOrThrow();
+        utility.setOwner(utility.getOwner() != null ? utility.getOwner() : currentUser);
 
         utilityMapper.toEntity(utility, request);
 
-        if (request.getBoardingHouseId() != null) {
-            BoardingHouse house = getBoardingHouseOrThrow(request.getBoardingHouseId());
-            validateBoardingHouseAccess(house);
-            utility.setBoardingHouse(house);
+        if (utility.getBoardingHouses() == null) {
+            utility.setBoardingHouses(new HashSet<>());
+        } else {
+            utility.getBoardingHouses().clear();
         }
+        utility.getBoardingHouses().addAll(resolveBoardingHouses(request.getBoardingHouseIds()));
 
         utility.setType(ServiceType.valueOf(request.getType()));
 
@@ -124,7 +131,7 @@ public class UtilityServiceImpl implements UtilityService {
         User currentUser = getCurrentUserOrThrow();
         List<Utility> utilities = SecurityUtils.isAdmin()
                 ? utilityRepository.findAll()
-                : utilityRepository.findByBoardingHouse_Owner_Id(currentUser.getId());
+                : utilityRepository.findByOwner_Id(currentUser.getId());
 
         return utilities.stream().map(utilityMapper::toResponse).toList();
     }
@@ -143,7 +150,7 @@ public class UtilityServiceImpl implements UtilityService {
         User currentUser = getCurrentUserOrThrow();
         Page<Utility> utilities = SecurityUtils.isAdmin()
                 ? utilityRepository.findAll(pageable)
-                : utilityRepository.findByBoardingHouse_Owner_Id(currentUser.getId(), pageable);
+                : utilityRepository.findByOwner_Id(currentUser.getId(), pageable);
         return utilities.map(utilityMapper::toResponse);
     }
 
@@ -158,7 +165,7 @@ public class UtilityServiceImpl implements UtilityService {
     public List<UtilityResponse> getByBoardingHouse(Integer boardingHouseId) {
         BoardingHouse house = getBoardingHouseOrThrow(boardingHouseId);
         validateBoardingHouseAccess(house);
-        return utilityRepository.findByBoardingHouseId(boardingHouseId).stream()
+        return utilityRepository.findByOwnerAndBoardingHouse(house.getOwner().getId(), boardingHouseId).stream()
                 .map(utilityMapper::toResponse)
                 .toList();
     }
@@ -192,9 +199,21 @@ public class UtilityServiceImpl implements UtilityService {
     public List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId) {
         BoardingHouse house = getBoardingHouseOrThrow(boardingHouseId);
         validateBoardingHouseAccess(house);
-        return utilityRepository.findAllByBoardingHouseId(boardingHouseId).stream()
+        return utilityRepository
+                .findByOwnerAndBoardingHouseActive(house.getOwner().getId(), boardingHouseId)
+                .stream()
                 .map(utilityMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public UtilityResponse updateStatus(Integer id, boolean active) {
+        Utility utility =
+                utilityRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.UTILITY_NOT_FOUND));
+        validateUtilityAccess(utility);
+        utility.setIsActive(active);
+        utility = utilityRepository.save(utility);
+        return utilityMapper.toResponse(utility);
     }
 
     private BoardingHouse getBoardingHouseOrThrow(Integer boardingHouseId) {
@@ -207,6 +226,17 @@ public class UtilityServiceImpl implements UtilityService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
     }
 
+    private Set<BoardingHouse> resolveBoardingHouses(List<Integer> boardingHouseIds) {
+        if (boardingHouseIds == null || boardingHouseIds.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        return boardingHouseIds.stream()
+                .map(this::getBoardingHouseOrThrow)
+                .peek(this::validateBoardingHouseAccess)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
     private void validateBoardingHouseAccess(BoardingHouse boardingHouse) {
         User currentUser = getCurrentUserOrThrow();
         if (!SecurityUtils.isAdmin() && !boardingHouse.getOwner().getId().equals(currentUser.getId())) {
@@ -215,14 +245,26 @@ public class UtilityServiceImpl implements UtilityService {
     }
 
     private void validateUtilityAccess(Utility utility) {
-        if (utility.getBoardingHouse() == null) {
-            if (!SecurityUtils.isAdmin()) {
-                throw new AppException(ErrorCode.ACCESS_DENIED);
-            }
+        if (SecurityUtils.isAdmin()) {
             return;
         }
 
-        validateBoardingHouseAccess(utility.getBoardingHouse());
+        User currentUser = getCurrentUserOrThrow();
+        Integer ownerId = utility.getOwner() != null ? utility.getOwner().getId() : null;
+
+        boolean accessible = ownerId != null && ownerId.equals(currentUser.getId());
+
+        if (!accessible
+                && utility.getBoardingHouses() != null
+                && !utility.getBoardingHouses().isEmpty()) {
+            accessible = utility.getBoardingHouses().stream()
+                    .anyMatch(house ->
+                            house.getOwner() != null && house.getOwner().getId().equals(currentUser.getId()));
+        }
+
+        if (!accessible) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
     }
 
     private User getCurrentUserOrThrow() {

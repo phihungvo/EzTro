@@ -1113,14 +1113,30 @@ public class RoomServiceImpl implements RoomService {
             throw new AppException(ErrorCode.UTILITY_NOT_FOUND);
         }
 
-        boolean hasInvalidUtility = utilities.stream()
-                .anyMatch(utility -> utility.getBoardingHouse() == null
-                        || !utility.getBoardingHouse().getId().equals(boardingHouse.getId()));
+        boolean hasInvalidUtility = utilities.stream().anyMatch(utility -> {
+            if (utility.getIsActive() != null && !utility.getIsActive()) {
+                return true;
+            }
+            return !utilityBelongsToBoardingHouse(utility, boardingHouse);
+        });
         if (hasInvalidUtility) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
         return utilities;
+    }
+
+    private boolean utilityBelongsToBoardingHouse(Utility utility, BoardingHouse boardingHouse) {
+        if (utility.getBoardingHouses() == null || utility.getBoardingHouses().isEmpty()) {
+            return utility.getOwner() != null
+                    && boardingHouse.getOwner() != null
+                    && utility.getOwner()
+                            .getId()
+                            .equals(boardingHouse.getOwner().getId());
+        }
+
+        return utility.getBoardingHouses().stream()
+                .anyMatch(house -> house.getId().equals(boardingHouse.getId()));
     }
 
     private Contract getActiveContract(Room room) {

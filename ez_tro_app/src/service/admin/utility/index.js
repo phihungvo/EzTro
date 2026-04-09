@@ -69,3 +69,16 @@ export const deleteUtility = async (utilityId) => {
         throw error;
     }
 };
+
+export const toggleUtilityStatus = async (utilityId, active) => {
+    try {
+        const response = await apiClient.patch(
+            API_ENDPOINTS.UTILITY.TOGGLE_STATUS(utilityId, active));
+        message.success(active ? 'Đã bật tiện ích' : 'Đã vô hiệu hóa tiện ích');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when toggling utility status: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi thay đổi trạng thái tiện ích');
+        throw error;
+    }
+};

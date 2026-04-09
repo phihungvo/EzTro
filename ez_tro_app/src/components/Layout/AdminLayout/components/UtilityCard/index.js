@@ -11,11 +11,12 @@ import {
     AppstoreOutlined,
     EditOutlined,
     DeleteOutlined,
+    PoweroffOutlined,
 } from '@ant-design/icons';
 
 const cx = classNames.bind(cardStyles);
 
-const UtilityCard = ({ utility, onEdit, onDelete }) => {
+const UtilityCard = ({ utility, onEdit, onDelete, onToggle }) => {
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', {
             style: 'decimal',
@@ -43,6 +44,10 @@ const UtilityCard = ({ utility, onEdit, onDelete }) => {
         };
         return classes[type] || 'electric';
     };
+
+    const boardingHouseLabel = (utility.boardingHouseNames && utility.boardingHouseNames.length > 0)
+        ? utility.boardingHouseNames.join(', ')
+        : 'Dùng chung (tất cả nhà trọ của bạn)';
 
     return (
         <div className={cx('utility-card', { 'inactive': !utility.isActive })}>
@@ -83,9 +88,9 @@ const UtilityCard = ({ utility, onEdit, onDelete }) => {
                 {/* Nhà trọ */}
                 <div className={cx('info-row')}>
                     <span className={cx('info-label')}>Nhà trọ:</span>
-                    <Tooltip title={utility.boardingHouseName}>
+                    <Tooltip title={boardingHouseLabel}>
                         <span className={cx('info-value')}>
-                            {utility.boardingHouseName}
+                            {boardingHouseLabel}
                         </span>
                     </Tooltip>
                 </div>
@@ -107,6 +112,13 @@ const UtilityCard = ({ utility, onEdit, onDelete }) => {
                 >
                     <DeleteOutlined />
                     Xóa
+                </button>
+                <button
+                    className={cx('action-button', utility.isActive ? 'disable' : 'enable')}
+                    onClick={() => onToggle(utility)}
+                >
+                    <PoweroffOutlined />
+                    {utility.isActive ? 'Vô hiệu' : 'Kích hoạt'}
                 </button>
             </div>
         </div>

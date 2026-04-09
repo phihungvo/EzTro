@@ -15,31 +15,73 @@ import carevn.luv2code.ez_tro.entity.Utility;
 @Repository
 public interface UtilityRepository extends JpaRepository<Utility, Integer> {
 
-    List<Utility> findByBoardingHouse_Owner_Id(Integer ownerId);
+    List<Utility> findByOwner_Id(Integer ownerId);
 
-    Page<Utility> findByBoardingHouse_Owner_Id(Integer ownerId, Pageable pageable);
+    Page<Utility> findByOwner_Id(Integer ownerId, Pageable pageable);
 
-    List<Utility> findByBoardingHouseId(Integer boardingHouseId);
+    @Query(
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE u.owner.id = :ownerId
+			AND (bh.id = :boardingHouseId OR bh IS NULL)
+			""")
+    List<Utility> findByOwnerAndBoardingHouse(
+            @Param("ownerId") Integer ownerId, @Param("boardingHouseId") Integer boardingHouseId);
 
-    List<Utility> findByBoardingHouseIdAndIsActiveTrue(Integer boardingHouseId);
+    @Query(
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE u.owner.id = :ownerId
+			AND (bh.id = :boardingHouseId OR bh IS NULL)
+			AND u.isActive = true
+			""")
+    List<Utility> findByOwnerAndBoardingHouseActive(
+            @Param("ownerId") Integer ownerId, @Param("boardingHouseId") Integer boardingHouseId);
 
     //    @Query("SELECT u FROM Utility u WHERE u.isActive = true")
     //    Page<Utility> findActive(Pageable pageable);
 
     Page<Utility> findByIsActiveTrue(Pageable pageable);
 
-    @Query("SELECT u FROM Utility u WHERE u.boardingHouse.id = :boardingHouseId AND u.isActive = true")
+    @Query(
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE (bh.id = :boardingHouseId OR bh IS NULL)
+			AND u.isActive = true
+			""")
     List<Utility> findAllByBoardingHouseId(Integer boardingHouseId);
 
     // === Tìm theo tên + boarding house (dùng để tính tiền điện nước) ===
     @Query(
-            "SELECT u FROM Utility u WHERE u.name = :name AND u.boardingHouse.id = :boardingHouseId AND u.isActive = true")
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE u.name = :name
+			AND (bh.id = :boardingHouseId OR bh IS NULL)
+			AND u.isActive = true
+			""")
     Optional<Utility> findByNameAndBoardingHouseId(
             @Param("name") String name, @Param("boardingHouseId") Integer boardingHouseId);
 
     // === Tìm active theo boarding house + phân trang ===
+    @Query(
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE (bh.id = :boardingHouseId OR bh IS NULL)
+			AND u.isActive = true
+			""")
     Page<Utility> findByBoardingHouseIdAndIsActiveTrue(Integer boardingHouseId, Pageable pageable);
 
-    @Query("SELECT u FROM Utility u WHERE u.boardingHouse.id = :boardingHouseId AND u.isActive = true")
+    @Query(
+            """
+			SELECT DISTINCT u FROM Utility u
+			LEFT JOIN u.boardingHouses bh
+			WHERE (bh.id = :boardingHouseId OR bh IS NULL)
+			AND u.isActive = true
+			""")
     Page<Utility> findActiveByBoardingHouseId(@Param("boardingHouseId") Integer boardingHouseId, Pageable pageable);
 }

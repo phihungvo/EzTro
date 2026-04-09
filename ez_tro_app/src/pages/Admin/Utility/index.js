@@ -10,6 +10,7 @@ import {
     CloudUploadOutlined,
     EditOutlined,
     DeleteOutlined,
+    PoweroffOutlined,
     TableOutlined,
     AppstoreOutlined,
     CheckOutlined,
@@ -19,7 +20,7 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
-import {getAllUtilities, createUtility, updateUtility, deleteUtility} from '~/service/admin/utility';
+import {getAllUtilities, createUtility, updateUtility, deleteUtility, toggleUtilityStatus} from '~/service/admin/utility';
 import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
@@ -83,10 +84,14 @@ function Utility() {
         },
         {
             title: 'Nhà trọ áp dụng',
-            dataIndex: 'boardingHouseName',
-            key: 'boardingHouseName',
+            dataIndex: 'boardingHouseNames',
+            key: 'boardingHouseNames',
             align: 'center',
             width: 250,
+            render: (_, record) =>
+                (record.boardingHouseNames && record.boardingHouseNames.length > 0)
+                    ? record.boardingHouseNames.join(', ')
+                    : 'Dùng chung (tất cả nhà trọ của bạn)',
         },
         {
             title: 'Khu tòa/Block',
@@ -127,6 +132,13 @@ function Utility() {
                         onClick={() => handleDeleteUtility(record)}
                         style={{ marginLeft: '8px' }}
                     />
+                    <SmartButton
+                        type={record.isActive ? 'default' : 'primary'}
+                        icon={<PoweroffOutlined />}
+                        buttonWidth={40}
+                        onClick={() => handleToggleUtility(record)}
+                        style={{ marginLeft: '8px' }}
+                    />
                 </>
             ),
         },
@@ -142,9 +154,12 @@ function Utility() {
         },
         {
             label: 'Áp dụng cho nhà trọ',
-            name: 'boardingHouseId',
+            name: 'boardingHouseIds',
             type: 'select',
-            options: boardingHouseOptionSource
+            multiple: true,
+            allowClear: true,
+            placeholder: 'Chọn một hoặc nhiều nhà trọ (bỏ trống = dùng chung)',
+            options: boardingHouseOptionSource,
         },
         {
             label: 'Đơn vị tính',
@@ -230,6 +245,10 @@ function Utility() {
         setModalMode('create');
         setSelectedUtility(null);
         form.resetFields();
+        form.setFieldsValue({
+            boardingHouseIds: [],
+            isActive: 'Yes',
+        });
         setIsModalOpen(true);
     };
 
@@ -250,7 +269,11 @@ function Utility() {
     const handleEditUtility = (record) => {
         setSelectedUtility(record);
         setModalMode('edit');
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            ...record,
+            boardingHouseIds: record.boardingHouseIds || [],
+            isActive: record.isActive ? 'Yes' : 'No',
+        });
         setIsModalOpen(true);
     };
 
@@ -280,8 +303,18 @@ function Utility() {
         handleGetUtilities();
     };
 
+    const handleToggleUtility = async (record) => {
+        try {
+            await toggleUtilityStatus(record.id, !record.isActive);
+            handleGetUtilities(pagination.current, pagination.pageSize);
+        } catch (error) {
+            // message handled in service
+        }
+    };
+
     const handleFormSubmit = async (formData) => {
-        formData.isActive = formData.isActive === 'Yes';
+        formData.isActive = formData.isActive === 'Yes' || formData.isActive === true;
+        formData.boardingHouseIds = formData.boardingHouseIds || [];
 
         if (modalMode === 'create') {
             await handleCallCreateUtility(formData);
@@ -312,7 +345,11 @@ function Utility() {
     const handleViewUtility = (record) => {
         setSelectedUtility(record);
         setModalMode('view');
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            ...record,
+            boardingHouseIds: record.boardingHouseIds || [],
+            isActive: record.isActive ? 'Yes' : 'No',
+        });
         setIsModalOpen(true);
     };
 
@@ -365,6 +402,7 @@ function Utility() {
                                     onView={() => handleViewUtility(utility)}
                                     onEdit={() => handleEditUtility(utility)}
                                     onDelete={() => handleDeleteUtility(utility)}
+                                    onToggle={() => handleToggleUtility(utility)}
                                 />
                             </Col>
                         ))}

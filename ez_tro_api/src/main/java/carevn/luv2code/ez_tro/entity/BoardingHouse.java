@@ -2,7 +2,9 @@ package carevn.luv2code.ez_tro.entity;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -79,7 +81,7 @@ public class BoardingHouse {
     @ToString.Exclude
     List<Building> buildings;
 
-    @OneToMany(mappedBy = "boardingHouse", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(mappedBy = "boardingHouses")
     @ToString.Exclude
-    List<Utility> utilities;
+    Set<Utility> utilities = new HashSet<>();
 }
