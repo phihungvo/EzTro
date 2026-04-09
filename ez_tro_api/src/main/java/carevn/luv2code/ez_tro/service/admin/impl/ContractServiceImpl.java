@@ -1392,6 +1392,23 @@ public class ContractServiceImpl implements ContractService {
         return renewedCount;
     }
 
+    @Override
+    @Transactional
+    public ContractDetailResponse updateAutoRenew(Integer contractId, boolean autoRenew) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+        validateContractAccess(contract);
+
+        Boolean current = contract.getAutoRenew();
+        if (current == null || current.booleanValue() != autoRenew) {
+            contract.setAutoRenew(autoRenew);
+            contract.setUpdatedAt(new Date());
+            contractRepository.saveAndFlush(contract);
+        }
+        return toDetailResponse(contract);
+    }
+
     /**
      * Chuyển phòng cho tenant: kết thúc hợp đồng ở phòng cũ và tạo hợp đồng mới ở phòng đích.
      *

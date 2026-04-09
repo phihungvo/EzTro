@@ -48,9 +48,8 @@ import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
 import SystemLogs from "~/pages/Admin/SystemLogs";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
-import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
-import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
+import BillingPenaltyConfig from "~/pages/Admin/BillingPenaltyConfig";
 import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
 import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
 import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
@@ -202,6 +201,13 @@ const adminMenuConfig = [
                 title: "Quản lý gói dịch vụ",
                 icon: <CreditCardOutlined/>,
                 path: "/admin/subscription-plan",
+            },
+            {
+                key: "billing-penalty",
+                label: "Phí phạt trễ hạn",
+                title: "Cấu hình phí phạt hóa đơn",
+                icon: <SettingOutlined/>,
+                path: "/admin/billing-penalty",
             },
             {
                 key: "payment-management",
@@ -379,12 +385,12 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
                         <Route path="/subscription-plan" element={<SubscriptionPlan/>}/>
+                        <Route path="/billing-penalty" element={<BillingPenaltyConfig/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
                         <Route path="/system-log" element={<SystemLogs/>}/>
                         <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>
 
-                        {/* Add other routes as needed */}
-                        <Route path="/" element={<Dashboard/>}/> // Default route
+                        <Route path="/" element={<Dashboard/>}/>
                     </Routes>
                 </div>
             </div>

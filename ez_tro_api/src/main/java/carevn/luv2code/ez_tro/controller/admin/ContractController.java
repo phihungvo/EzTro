@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import carevn.luv2code.ez_tro.dto.FileDTO;
+import carevn.luv2code.ez_tro.dto.requests.AutoRenewRequest;
 import carevn.luv2code.ez_tro.dto.requests.BillRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractAmendmentCreateRequest;
 import carevn.luv2code.ez_tro.dto.requests.ContractBillingRuleCreateRequest;
@@ -265,6 +266,20 @@ public class ContractController {
         return ApiResponse.<ContractBillingRuleSummaryResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Deactivate contract billing rule successfully")
+                .result(response)
+                .build();
+    }
+
+    /**
+     * Bật/tắt auto-renew cho hợp đồng (owner/admin).
+     */
+    @PatchMapping("/{id}/auto-renew")
+    public ApiResponse<ContractDetailResponse> updateAutoRenew(
+            @PathVariable Integer id, @Valid @RequestBody AutoRenewRequest request) {
+        ContractDetailResponse response = contractService.updateAutoRenew(id, request.getAutoRenew());
+        return ApiResponse.<ContractDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cập nhật auto-renew cho hợp đồng thành công")
                 .result(response)
                 .build();
     }

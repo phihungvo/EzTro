@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +42,7 @@ import carevn.luv2code.ez_tro.repository.BillLineRepository;
 import carevn.luv2code.ez_tro.repository.BillRepository;
 import carevn.luv2code.ez_tro.repository.ContractRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
+import carevn.luv2code.ez_tro.service.admin.BillingOperationLogService;
 import carevn.luv2code.ez_tro.service.admin.BillingOrchestratorService;
 import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
 import carevn.luv2code.ez_tro.service.admin.NotificationService;
@@ -83,6 +85,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
     private final InvoiceBalanceCalculator invoiceBalanceCalculator;
     private final PaymentAllocationService paymentAllocationService;
     private final ObservabilityMetricsService observabilityMetricsService;
+    private final BillingOperationLogService billingOperationLogService;
 
     @Value("${app.billing.penalty.grace-days:0}")
     private int penaltyGraceDays;
@@ -92,6 +95,18 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
     @Value("${app.billing.penalty.percent-fee:0}")
     private BigDecimal penaltyPercentFee;
+
+    @Value("${app.billing.penalty.daily-amount:50000}")
+    private BigDecimal penaltyDailyAmount;
+
+    @Value("${app.billing.penalty.daily-threshold-days:3}")
+    private int penaltyDailyThresholdDays;
+
+    @Value("${app.billing.penalty.percent-threshold-days:10}")
+    private int penaltyPercentThresholdDays;
+
+    @Value("${app.billing.penalty.percent-rate:0}")
+    private BigDecimal penaltyPercentRate;
 
     private record PeriodResolution(
             LocalDate billingPeriodStart,
@@ -237,16 +252,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
     public int applyLatePenalties(LocalDate asOfDate) {
         LocalDate today = resolveAsOfDate(asOfDate);
 
-        if (penaltyFixedFee == null) {
-            penaltyFixedFee = BigDecimal.ZERO;
-        }
-        if (penaltyPercentFee == null) {
-            penaltyPercentFee = BigDecimal.ZERO;
-        }
-
-        if (penaltyFixedFee.signum() <= 0 && penaltyPercentFee.signum() <= 0) {
-            return 0;
-        }
+        normalizePenaltyConfig();
 
         LocalDate cutoff = today.minusDays(Math.max(0, penaltyGraceDays));
         List<Bill> overdueBills = billRepository.findByStatusNotAndDueDateBefore(BillStatus.PAID, cutoff);
@@ -254,6 +260,9 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         int applied = 0;
         for (Bill bill : overdueBills) {
             try {
+                if (!isOwnedByCurrentUser(bill)) {
+                    continue;
+                }
                 if (bill.getStatus() == BillStatus.CANCELLED) {
                     // Không áp dụng phạt cho hóa đơn đã hủy.
                     continue;
@@ -261,46 +270,27 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 if (bill.getAmount() == null || bill.getAmount().signum() <= 0) {
                     continue;
                 }
-
-                LocalDate start = bill.getBillingPeriodStart();
-                LocalDate end = bill.getBillingPeriodEnd();
-                String lineKey = "PENALTY_" + Objects.toString(start, "") + "_" + Objects.toString(end, "");
-                if (billLineRepository.existsByBillIdAndLineKey(bill.getId(), lineKey)) {
+                int overdueDays =
+                        bill.getDueDate() == null ? 0 : (int) ChronoUnit.DAYS.between(bill.getDueDate(), today);
+                if (overdueDays <= Math.max(penaltyGraceDays, 0)) {
                     continue;
                 }
 
-                BigDecimal outstanding =
-                        invoiceBalanceCalculator.calculate(bill).getOutstandingAmount();
-                if (outstanding == null || outstanding.signum() <= 0) {
+                Map<String, Object> before = billingOperationLogService.snapshotBill(bill);
+
+                int added = applyDailyPenalties(bill, today);
+                added += applyPercentPenalty(bill, overdueDays);
+                if (added == 0) {
                     continue;
                 }
-                BigDecimal percentFee = outstanding.multiply(penaltyPercentFee);
-                BigDecimal penalty = penaltyFixedFee.add(percentFee).setScale(2, RoundingMode.HALF_UP);
-                if (penalty.signum() <= 0) {
-                    continue;
-                }
-
-                BillLine line = BillLine.builder()
-                        .bill(bill)
-                        .lineType(BillLineType.PENALTY)
-                        .lineKey(lineKey)
-                        .description("Phạt trễ hạn")
-                        .quantity(BigDecimal.ONE)
-                        .unitPrice(penalty)
-                        .amount(penalty)
-                        .metadataJson("{\"graceDays\":" + penaltyGraceDays + "}")
-                        .build();
-
-                billLineRepository.save(line);
-                bill.setAmount(bill.getAmount().add(penalty));
-                billRepository.save(bill);
                 applied++;
+
                 Tenant tenant = bill.getTenant();
                 if (tenant != null && tenant.getUser() != null) {
                     notificationService.sendToUser(
                             tenant.getUser().getId(),
                             "Hoá đơn quá hạn",
-                            "Phòng " + bill.getRoom().getRoomNumber() + " bị phạt trễ hạn " + penalty + "đ",
+                            "Phòng " + bill.getRoom().getRoomNumber() + " bị phạt trễ hạn",
                             "TENANT_BILL_PENALIZED",
                             Map.of(
                                     "billId",
@@ -309,12 +299,8 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                                     bill.getContract() != null
                                             ? bill.getContract().getId()
                                             : null,
-                                    "penalty",
-                                    penalty,
-                                    "outstanding",
-                                    outstanding,
                                     "dedupeKey",
-                                    "tenant-bill-penalized-" + bill.getId() + "-" + lineKey));
+                                    "tenant-bill-penalized-" + bill.getId()));
                 }
 
                 User owner = resolveOwner(bill);
@@ -322,8 +308,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                     notificationService.sendToUser(
                             owner.getId(),
                             "Hóa đơn quá hạn",
-                            "Phòng " + bill.getRoom().getRoomNumber() + " đang quá hạn và bị áp phí phạt " + penalty
-                                    + "đ.",
+                            "Phòng " + bill.getRoom().getRoomNumber() + " đang quá hạn và bị áp phí phạt.",
                             "OWNER_BILL_OVERDUE",
                             Map.of(
                                     "billId",
@@ -332,12 +317,19 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                                     bill.getContract() != null
                                             ? bill.getContract().getId()
                                             : null,
-                                    "penalty",
-                                    penalty,
-                                    "outstanding",
-                                    outstanding,
                                     "dedupeKey",
-                                    "owner-bill-overdue-" + bill.getId() + "-" + lineKey));
+                                    "owner-bill-overdue-" + bill.getId()));
+                }
+
+                Map<String, Object> after = billingOperationLogService.snapshotBill(bill);
+                if (!Objects.equals(before, after)) {
+                    billingOperationLogService.logBillOperation(
+                            carevn.luv2code.ez_tro.enums.BillingOperationType.BILL_UPDATE,
+                            bill.getContract(),
+                            bill.getId(),
+                            before,
+                            after,
+                            Map.of("reason", "late_penalty"));
                 }
             } catch (Exception e) {
                 observabilityMetricsService.incrementBillingFailure(
@@ -347,6 +339,108 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
         }
 
         return applied;
+    }
+
+    private void normalizePenaltyConfig() {
+        if (penaltyFixedFee == null) {
+            penaltyFixedFee = BigDecimal.ZERO;
+        }
+        if (penaltyPercentFee == null) {
+            penaltyPercentFee = BigDecimal.ZERO;
+        }
+        if (penaltyDailyAmount == null) {
+            penaltyDailyAmount = BigDecimal.ZERO;
+        }
+        if (penaltyPercentRate == null) {
+            penaltyPercentRate = BigDecimal.ZERO;
+        }
+    }
+
+    private int applyDailyPenalties(Bill bill, LocalDate today) {
+        if (penaltyDailyAmount.signum() <= 0 || bill.getDueDate() == null) {
+            return 0;
+        }
+
+        int applied = 0;
+        LocalDate startDay =
+                bill.getDueDate().plusDays(Math.max(Math.max(penaltyGraceDays, 0), penaltyDailyThresholdDays) + 1L);
+        for (LocalDate d = startDay; !d.isAfter(today); d = d.plusDays(1)) {
+            String lineKey = "PENALTY_DAY_" + d.format(BASIC_DATE);
+            if (billLineRepository.existsByBillIdAndLineKey(bill.getId(), lineKey)) {
+                continue;
+            }
+            BillLine line = BillLine.builder()
+                    .bill(bill)
+                    .lineType(BillLineType.PENALTY)
+                    .lineKey(lineKey)
+                    .description("Phạt trễ hạn ngày " + d)
+                    .quantity(BigDecimal.ONE)
+                    .unitPrice(penaltyDailyAmount)
+                    .amount(penaltyDailyAmount)
+                    .metadataJson("{\"day\":\"" + d + "\"}")
+                    .build();
+
+            billLineRepository.save(line);
+            bill.setAmount(bill.getAmount().add(penaltyDailyAmount));
+            applied++;
+        }
+        if (applied > 0) {
+            billRepository.save(bill);
+        }
+        return applied;
+    }
+
+    private int applyPercentPenalty(Bill bill, int overdueDays) {
+        BigDecimal effectivePercent = penaltyPercentRate.signum() > 0 ? penaltyPercentRate : penaltyPercentFee;
+
+        if (effectivePercent.signum() <= 0 || overdueDays <= penaltyPercentThresholdDays) {
+            return 0;
+        }
+
+        String percentKey = "PENALTY_PERCENT_" + penaltyPercentThresholdDays;
+        if (billLineRepository.existsByBillIdAndLineKey(bill.getId(), percentKey)) {
+            return 0;
+        }
+
+        BigDecimal outstanding = invoiceBalanceCalculator.calculate(bill).getOutstandingAmount();
+        if (outstanding == null || outstanding.signum() <= 0) {
+            return 0;
+        }
+
+        BigDecimal penalty = outstanding.multiply(effectivePercent).setScale(2, RoundingMode.HALF_UP);
+        if (penalty.signum() <= 0) {
+            return 0;
+        }
+
+        BillLine line = BillLine.builder()
+                .bill(bill)
+                .lineType(BillLineType.PENALTY)
+                .lineKey(percentKey)
+                .description("Phạt trễ hạn theo % số dư")
+                .quantity(BigDecimal.ONE)
+                .unitPrice(penalty)
+                .amount(penalty)
+                .metadataJson("{\"percentThresholdDays\":" + penaltyPercentThresholdDays + "}")
+                .build();
+
+        billLineRepository.save(line);
+        bill.setAmount(bill.getAmount().add(penalty));
+        billRepository.save(bill);
+        return 1;
+    }
+
+    private boolean isOwnedByCurrentUser(Bill bill) {
+        SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
+        if (!safe.isPresent() || safe.isAdmin()) {
+            return true;
+        }
+
+        Integer ownerId = bill.getRoom() != null
+                        && bill.getRoom().getBoardingHouse() != null
+                        && bill.getRoom().getBoardingHouse().getOwner() != null
+                ? bill.getRoom().getBoardingHouse().getOwner().getId()
+                : null;
+        return ownerId != null && ownerId.equals(safe.getId());
     }
 
     // Dùng chung để thống nhất cách lấy ngày "as of" (null -> hôm nay).

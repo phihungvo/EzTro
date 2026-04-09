@@ -115,6 +115,14 @@ app:
     notification:
       reminder-days: ${BILLING_REMINDER_DAYS:3,1}
       reminder-cron: ${BILLING_REMINDER_CRON:0 30 8 * * ?}
+    penalty:
+      grace-days: ${BILLING_PENALTY_GRACE_DAYS:0}
+      fixed-fee: ${BILLING_PENALTY_FIXED_FEE:0}
+      percent-fee: ${BILLING_PENALTY_PERCENT_FEE:0}
+      daily-amount: ${BILLING_PENALTY_DAILY_AMOUNT:50000}
+      daily-threshold-days: ${BILLING_PENALTY_DAILY_THRESHOLD_DAYS:3}
+      percent-threshold-days: ${BILLING_PENALTY_PERCENT_THRESHOLD_DAYS:10}
+      percent-rate: ${BILLING_PENALTY_PERCENT_RATE:0.0}
   notifications:
     delivery:
       max-attempts: ${NOTIFICATION_DELIVERY_MAX_ATTEMPTS:3}

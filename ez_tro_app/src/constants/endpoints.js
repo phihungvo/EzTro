@@ -167,6 +167,12 @@ const API_ENDPOINTS = {
         PREVIEW: `${BASE_URL}/billing/preview`,
         FINALIZE: `${BASE_URL}/billing/finalize`,
     },
+    SYSTEM_CONFIG: {
+        LIST: `${BASE_URL}/system-configs`,
+        BY_KEY: (key) => `${BASE_URL}/system-configs/key/${key}`,
+        UPDATE: (id) => `${BASE_URL}/system-configs/${id}`,
+        CREATE: `${BASE_URL}/system-configs`,
+    },
     BILLING_AUDIT: {
         GET_ALL: `${BASE_URL}/billing-audit`,
     },
