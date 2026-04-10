@@ -25,6 +25,12 @@ public class BillingDiscrepancyAlertService {
 
     private final NotificationService notificationService;
 
+    /**
+     * Kiểm tra tỷ lệ công nợ trên tổng hóa đơn và gửi cảnh báo nếu vượt ngưỡng.
+     *
+     * @param contract hợp đồng cần kiểm tra
+     * @param report   báo cáo đối chiếu chứa thông tin công nợ và tổng hóa đơn
+     */
     public void checkAndAlert(Contract contract, ReconciliationReportResponse report) {
         if (contract == null || report == null) {
             return;

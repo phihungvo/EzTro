@@ -558,6 +558,9 @@ public class BillServiceImpl implements BillService {
         }
     }
 
+    /**
+     * Cập nhật trạng thái hóa đơn sau khi thay đổi dueDate để tránh giữ trạng thái OVERDUE sai.
+     */
     private void refreshStatusAfterDueDateChange(Bill bill) {
         if (bill == null || bill.getStatus() == null) {
             return;
@@ -585,6 +588,10 @@ public class BillServiceImpl implements BillService {
         }
     }
 
+    /**
+     * Ưu tiên cập nhật publicNote/internalNote/paymentInstructions nếu có trong request, nếu không thì giữ nguyên.
+     * Lưu ý: không cho phép xóa ghi chú bằng cách gửi chuỗi rỗng; phải gửi null để giữ nguyên, hoặc chuỗi có nội dung để cập nhật.
+     */
     private String resolvePublicNoteForUpdate(Bill bill, BillRequest request) {
         if (request == null) {
             return null;
@@ -595,6 +602,10 @@ public class BillServiceImpl implements BillService {
         return bill.getPublicNote();
     }
 
+    /**
+     * Ưu tiên cập nhật publicNote/internalNote/paymentInstructions nếu có trong request, nếu không thì giữ nguyên.
+     * Lưu ý: không cho phép xóa ghi chú bằng cách gửi chuỗi rỗng; phải gửi null để giữ nguyên, hoặc chuỗi có nội dung để cập nhật.
+     */
     private String resolveInternalNoteForUpdate(Bill bill, BillRequest request) {
         if (request == null) {
             return null;

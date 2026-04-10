@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import carevn.luv2code.ez_tro.constants.AppConstants;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -220,13 +221,13 @@ public class ContractServiceImpl implements ContractService {
                         "roomNumber", room.getRoomNumber(),
                         "tenantId", tenant.getId(),
                         "startDate",
-                                request.getStartDate() != null
-                                        ? request.getStartDate().toString()
-                                        : null,
+                        request.getStartDate() != null
+                                ? request.getStartDate().toString()
+                                : null,
                         "endDate",
-                                request.getEndDate() != null
-                                        ? request.getEndDate().toString()
-                                        : null)));
+                        request.getEndDate() != null
+                                ? request.getEndDate().toString()
+                                : null)));
 
         notifyOwnerLifecycleEvent(
                 contract,
@@ -242,13 +243,13 @@ public class ContractServiceImpl implements ContractService {
                         "roomNumber", room.getRoomNumber(),
                         "tenantId", tenant.getId(),
                         "startDate",
-                                request.getStartDate() != null
-                                        ? request.getStartDate().toString()
-                                        : null,
+                        request.getStartDate() != null
+                                ? request.getStartDate().toString()
+                                : null,
                         "endDate",
-                                request.getEndDate() != null
-                                        ? request.getEndDate().toString()
-                                        : null,
+                        request.getEndDate() != null
+                                ? request.getEndDate().toString()
+                                : null,
                         "dedupeKey", "owner-contract-created-" + contract.getId())));
         return contractMapper.toResponse(contract);
     }
@@ -266,7 +267,7 @@ public class ContractServiceImpl implements ContractService {
      * Nếu các điều khoản tài chính thay đổi (giá thuê/cọc/kỳ thanh toán...) thì tạo {@link ContractVersion} mới
      * thay vì ghi đè lịch sử. Root contract vẫn được update để phản ánh "trạng thái hiện tại" phục vụ tương thích UI cũ.
      *
-     * @param id id hợp đồng cần cập nhật
+     * @param id      id hợp đồng cần cập nhật
      * @param request dữ liệu hợp đồng mới
      * @return DTO hợp đồng sau khi cập nhật
      */
@@ -480,7 +481,7 @@ public class ContractServiceImpl implements ContractService {
      *
      * <p>Chữ ký nhận {@code Object} để tương thích interface/flow legacy; thực tế mong đợi kiểu {@link BillRequest}.
      *
-     * @param contractId id hợp đồng
+     * @param contractId     id hợp đồng
      * @param billRequestObj payload tạo bill (cast về {@link BillRequest})
      * @return bill vừa tạo
      */
@@ -512,14 +513,14 @@ public class ContractServiceImpl implements ContractService {
      *   <li>{@code startDate}/{@code endDate} được truyền dạng String và parse sang {@link LocalDate} (ISO).</li>
      * </ul>
      *
-     * @param search chuỗi tìm kiếm (có thể null)
-     * @param startDate ngày bắt đầu (yyyy-MM-dd)
-     * @param endDate ngày kết thúc (yyyy-MM-dd)
-     * @param status trạng thái hợp đồng (ALL để bỏ lọc)
+     * @param search          chuỗi tìm kiếm (có thể null)
+     * @param startDate       ngày bắt đầu (yyyy-MM-dd)
+     * @param endDate         ngày kết thúc (yyyy-MM-dd)
+     * @param status          trạng thái hợp đồng (ALL để bỏ lọc)
      * @param boardingHouseId lọc theo nhà trọ
-     * @param roomId lọc theo phòng
-     * @param page số trang (0-based)
-     * @param size kích thước trang
+     * @param roomId          lọc theo phòng
+     * @param page            số trang (0-based)
+     * @param size            kích thước trang
      * @return page hợp đồng thỏa điều kiện
      */
     @Override
@@ -616,8 +617,8 @@ public class ContractServiceImpl implements ContractService {
         List<BoardingHouse> boardingHouses = boardingHouseRepository.findAll().stream()
                 .filter(bh -> safe.isAdmin()
                         || (safe.getId() != null
-                                && bh.getOwner() != null
-                                && safe.getId().equals(bh.getOwner().getId())))
+                        && bh.getOwner() != null
+                        && safe.getId().equals(bh.getOwner().getId())))
                 .toList();
 
         for (BoardingHouse boardingHouse : boardingHouses) {
@@ -630,14 +631,14 @@ public class ContractServiceImpl implements ContractService {
         List<Contract> contracts = contractRepository.findAll().stream()
                 .filter(contract -> safe.isAdmin()
                         || (safe.getId() != null
-                                && contract.getRoom() != null
-                                && contract.getRoom().getBoardingHouse() != null
-                                && contract.getRoom().getBoardingHouse().getOwner() != null
-                                && safe.getId()
-                                        .equals(contract.getRoom()
-                                                .getBoardingHouse()
-                                                .getOwner()
-                                                .getId())))
+                        && contract.getRoom() != null
+                        && contract.getRoom().getBoardingHouse() != null
+                        && contract.getRoom().getBoardingHouse().getOwner() != null
+                        && safe.getId()
+                        .equals(contract.getRoom()
+                                .getBoardingHouse()
+                                .getOwner()
+                                .getId())))
                 .toList();
 
         for (Contract contract : contracts) {
@@ -679,7 +680,7 @@ public class ContractServiceImpl implements ContractService {
      * Lấy version điều khoản đang hiệu lực tại một thời điểm.
      *
      * @param contractId id hợp đồng
-     * @param asOfDate ngày tra cứu (null -> mặc định "hôm nay")
+     * @param asOfDate   ngày tra cứu (null -> mặc định "hôm nay")
      * @return version summary
      */
     @Override
@@ -696,7 +697,7 @@ public class ContractServiceImpl implements ContractService {
      * Lấy snapshot hợp đồng tại một thời điểm (hợp đồng + version + rule + ledger...).
      *
      * @param contractId id hợp đồng
-     * @param asOfDate ngày tra cứu (null -> mặc định "hôm nay")
+     * @param asOfDate   ngày tra cứu (null -> mặc định "hôm nay")
      * @return snapshot response
      */
     @Override
@@ -716,7 +717,7 @@ public class ContractServiceImpl implements ContractService {
      * thì sẽ tự tạo {@link ContractVersion} mới để phản ánh thay đổi theo timeline.
      *
      * @param contractId id hợp đồng
-     * @param request payload amendment
+     * @param request    payload amendment
      * @return amendment summary sau khi tạo
      */
     @Override
@@ -757,8 +758,8 @@ public class ContractServiceImpl implements ContractService {
                 "Hợp đồng " + contract.getContractCode()
                         + " vừa được cập nhật phụ lục ("
                         + (request.getAmendmentType() != null
-                                ? request.getAmendmentType().name()
-                                : "UNKNOWN")
+                        ? request.getAmendmentType().name()
+                        : "UNKNOWN")
                         + ")"
                         + (request.getEffectiveFrom() != null ? " từ ngày " + request.getEffectiveFrom() : "")
                         + (request.getEffectiveTo() != null ? " đến " + request.getEffectiveTo() : "")
@@ -769,17 +770,17 @@ public class ContractServiceImpl implements ContractService {
                         "contractCode", contract.getContractCode(),
                         "amendmentId", savedAmendment.getId(),
                         "amendmentType",
-                                request.getAmendmentType() != null
-                                        ? request.getAmendmentType().name()
-                                        : null,
+                        request.getAmendmentType() != null
+                                ? request.getAmendmentType().name()
+                                : null,
                         "effectiveFrom",
-                                request.getEffectiveFrom() != null
-                                        ? request.getEffectiveFrom().toString()
-                                        : null,
+                        request.getEffectiveFrom() != null
+                                ? request.getEffectiveFrom().toString()
+                                : null,
                         "effectiveTo",
-                                request.getEffectiveTo() != null
-                                        ? request.getEffectiveTo().toString()
-                                        : null,
+                        request.getEffectiveTo() != null
+                                ? request.getEffectiveTo().toString()
+                                : null,
                         "note", request.getNote())));
 
         notifyOwnerLifecycleEvent(
@@ -821,9 +822,9 @@ public class ContractServiceImpl implements ContractService {
      *
      * <p>Cách làm này giữ được lịch sử (không update đè).
      *
-     * @param contractId id hợp đồng
+     * @param contractId  id hợp đồng
      * @param amendmentId id amendment cần revise
-     * @param request amendment mới (effectiveFrom phải > effectiveFrom cũ)
+     * @param request     amendment mới (effectiveFrom phải > effectiveFrom cũ)
      * @return amendment summary của record mới tạo
      */
     @Override
@@ -871,7 +872,7 @@ public class ContractServiceImpl implements ContractService {
      * Tạo billing rule cho hợp đồng (quy tắc tính phí theo utility) theo khoảng thời gian hiệu lực.
      *
      * @param contractId id hợp đồng
-     * @param request payload billing rule
+     * @param request    payload billing rule
      * @return rule summary sau khi tạo
      */
     @Override
@@ -915,9 +916,9 @@ public class ContractServiceImpl implements ContractService {
     /**
      * Revise billing rule bằng cách deactivate rule cũ và tạo rule mới.
      *
-     * @param contractId id hợp đồng
+     * @param contractId    id hợp đồng
      * @param billingRuleId id billing rule cần revise
-     * @param request payload rule mới (effectiveFrom phải > effectiveFrom của rule cũ)
+     * @param request       payload rule mới (effectiveFrom phải > effectiveFrom của rule cũ)
      * @return rule summary của record mới tạo
      */
     @Override
@@ -962,7 +963,7 @@ public class ContractServiceImpl implements ContractService {
     /**
      * Deactivate billing rule (tắt hiệu lực).
      *
-     * @param contractId id hợp đồng
+     * @param contractId    id hợp đồng
      * @param billingRuleId id billing rule
      * @return rule summary sau khi deactivate
      */
@@ -999,7 +1000,7 @@ public class ContractServiceImpl implements ContractService {
      * </ul>
      *
      * @param contractId id hợp đồng
-     * @param request payload giao dịch
+     * @param request    payload giao dịch
      * @return giao dịch sau khi tạo
      */
     @Override
@@ -1142,6 +1143,7 @@ public class ContractServiceImpl implements ContractService {
                         .build();
                 depositTransactionRepository.save(deduction);
 
+                // Tạo payment để allocate vào các bill (đơn giản hóa flow, thay vì tạo allocation trực tiếp từ transaction).
                 Payment settlementPayment = paymentRepository.save(Payment.builder()
                         .organization(contract.getOrganization())
                         .contract(contract)
@@ -1157,6 +1159,7 @@ public class ContractServiceImpl implements ContractService {
                         .createdBy(currentUser)
                         .build());
 
+                // Tạo allocation từ payment vào các bill dựa trên outstanding thực tế (có thể có bill đã mark PAID nhưng vẫn còn outstanding do lỗi trước đó).
                 List<PaymentAllocation> settlementAllocations = new ArrayList<>();
                 for (carevn.luv2code.ez_tro.entity.Bill bill : bills) {
                     BigDecimal outstanding = outstandingByBillId.getOrDefault(bill.getId(), BigDecimal.ZERO);
@@ -1175,7 +1178,7 @@ public class ContractServiceImpl implements ContractService {
                 }
                 if (!settlementAllocations.isEmpty()) {
                     paymentAllocationRepository.saveAll(settlementAllocations);
-                    settlementPayment.setStatus(PaymentStatus.FULLY_ALLOCATED);
+                    settlementPayment.setStatus(PaymentStatus.FULLY_ALLOCATED); // Cập nhật trạng thái payment nếu đã allocate hết vào bill.
                     paymentRepository.save(settlementPayment);
                 }
                 billRepository.saveAll(bills);
@@ -1197,6 +1200,7 @@ public class ContractServiceImpl implements ContractService {
                 depositTransactionRepository.save(refund);
             }
 
+            // Đóng hợp đồng sau khi đã xử lý xong phần tài chính. Nếu endDate chưa có hoặc đang ở tương lai thì cập nhật về ngày hôm nay.
             ContractStatus previousStatus = contract.getStatus();
             contract.setStatus(ContractStatus.CANCELLED);
             if (contract.getEndDate() == null || contract.getEndDate().isAfter(LocalDate.now())) {
@@ -1218,7 +1222,7 @@ public class ContractServiceImpl implements ContractService {
      * Việc quyết toán/hoàn cọc vẫn đi theo flow settlement riêng.
      *
      * @param contractId id hợp đồng
-     * @param request payload chấm dứt (terminationDate, note...)
+     * @param request    payload chấm dứt (terminationDate, note...)
      * @return chi tiết hợp đồng sau khi chấm dứt
      */
     @Override
@@ -1275,7 +1279,7 @@ public class ContractServiceImpl implements ContractService {
      * Gia hạn hợp đồng (renew).
      *
      * @param contractId id hợp đồng
-     * @param request payload gia hạn
+     * @param request    payload gia hạn
      * @return chi tiết hợp đồng sau gia hạn
      */
     @Override
@@ -1296,7 +1300,7 @@ public class ContractServiceImpl implements ContractService {
      * <p>Hàm này ghi nhận vào note + state transition để phục vụ audit/timeline và gửi thông báo cho tenant.
      *
      * @param contractId id hợp đồng
-     * @param request payload vi phạm (reason, evidence)
+     * @param request    payload vi phạm (reason, evidence)
      * @return chi tiết hợp đồng sau khi đánh dấu
      */
     @Override
@@ -1419,7 +1423,7 @@ public class ContractServiceImpl implements ContractService {
      * </ul>
      *
      * @param contractId id hợp đồng nguồn
-     * @param request payload chuyển phòng
+     * @param request    payload chuyển phòng
      * @return thông tin hợp đồng mới tạo và số tiền cọc đã chuyển (nếu có)
      */
     @Override
@@ -1556,8 +1560,8 @@ public class ContractServiceImpl implements ContractService {
                     "Bạn đã được chuyển phòng",
                     "Bạn đã được chuyển từ phòng "
                             + (sourceContract.getRoom() != null
-                                    ? sourceContract.getRoom().getRoomNumber()
-                                    : "cũ")
+                            ? sourceContract.getRoom().getRoomNumber()
+                            : "cũ")
                             + " sang phòng "
                             + (targetRoom.getRoomNumber() != null ? targetRoom.getRoomNumber() : "mới")
                             + " vào ngày " + request.getTransferDate()
@@ -1569,19 +1573,19 @@ public class ContractServiceImpl implements ContractService {
                             "sourceContractId", sourceContract.getId(),
                             "sourceContractCode", sourceContract.getContractCode(),
                             "transferDate",
-                                    request.getTransferDate() != null
-                                            ? request.getTransferDate().toString()
-                                            : null,
+                            request.getTransferDate() != null
+                                    ? request.getTransferDate().toString()
+                                    : null,
                             "targetRoomId", targetRoom.getId(),
                             "targetRoomNumber", targetRoom.getRoomNumber(),
                             "previousRoomId",
-                                    sourceContract.getRoom() != null
-                                            ? sourceContract.getRoom().getId()
-                                            : null,
+                            sourceContract.getRoom() != null
+                                    ? sourceContract.getRoom().getId()
+                                    : null,
                             "previousRoomNumber",
-                                    sourceContract.getRoom() != null
-                                            ? sourceContract.getRoom().getRoomNumber()
-                                            : null,
+                            sourceContract.getRoom() != null
+                                    ? sourceContract.getRoom().getRoomNumber()
+                                    : null,
                             "transferredDepositAmount", transferredDepositAmount)));
 
             notifyOwnerLifecycleEvent(
@@ -1589,8 +1593,8 @@ public class ContractServiceImpl implements ContractService {
                     "Đã chuyển phòng cho tenant",
                     "Admin đã chuyển tenant từ phòng "
                             + (sourceContract.getRoom() != null
-                                    ? sourceContract.getRoom().getRoomNumber()
-                                    : "cũ")
+                            ? sourceContract.getRoom().getRoomNumber()
+                            : "cũ")
                             + " sang phòng " + (targetRoom.getRoomNumber() != null ? targetRoom.getRoomNumber() : "mới")
                             + " vào ngày " + request.getTransferDate() + ".",
                     "OWNER_CONTRACT_TRANSFERRED",
@@ -1600,15 +1604,15 @@ public class ContractServiceImpl implements ContractService {
                             "sourceContractId", sourceContract.getId(),
                             "sourceContractCode", sourceContract.getContractCode(),
                             "transferDate",
-                                    request.getTransferDate() != null
-                                            ? request.getTransferDate().toString()
-                                            : null,
+                            request.getTransferDate() != null
+                                    ? request.getTransferDate().toString()
+                                    : null,
                             "targetRoomId", targetRoom.getId(),
                             "targetRoomNumber", targetRoom.getRoomNumber(),
                             "transferredDepositAmount", transferredDepositAmount,
                             "dedupeKey",
-                                    "owner-contract-transferred-" + sourceContract.getId() + "-" + targetRoom.getId()
-                                            + "-" + request.getTransferDate())));
+                            "owner-contract-transferred-" + sourceContract.getId() + "-" + targetRoom.getId()
+                                    + "-" + request.getTransferDate())));
 
             return ContractRoomTransferResponse.builder()
                     .sourceContractId(sourceContract.getId())
@@ -1650,8 +1654,8 @@ public class ContractServiceImpl implements ContractService {
         ContractVersion effectiveVersion = snapshot.getCurrentVersion() == null
                 ? latestVersion
                 : contractVersionRepository
-                        .findById(snapshot.getCurrentVersion().getId())
-                        .orElse(latestVersion);
+                .findById(snapshot.getCurrentVersion().getId())
+                .orElse(latestVersion);
 
         BigDecimal nextRentPrice = request.getNewRentPrice() != null
                 ? request.getNewRentPrice()
@@ -1662,8 +1666,8 @@ public class ContractServiceImpl implements ContractService {
         Integer nextPaymentCycleMonths = request.getPaymentCycleMonths() != null
                 ? request.getPaymentCycleMonths()
                 : effectiveVersion == null
-                        ? contract.getPaymentCycleMonths()
-                        : effectiveVersion.getPaymentCycleMonths();
+                ? contract.getPaymentCycleMonths()
+                : effectiveVersion.getPaymentCycleMonths();
         Integer nextMonthlyPaymentDay = request.getMonthlyPaymentDay() != null
                 ? request.getMonthlyPaymentDay()
                 : effectiveVersion == null ? contract.getMonthlyPaymentDay() : effectiveVersion.getMonthlyPaymentDay();
@@ -1799,6 +1803,13 @@ public class ContractServiceImpl implements ContractService {
                 .build();
     }
 
+    /**
+     * Tính trạng thái lifecycle dựa trên status request + ngày bắt đầu/kết thúc.
+     * - Nếu request CANCELLED => trả về CANCELLED.
+     * - Nếu startDate ở tương lai => PENDING.
+     * - Nếu endDate đã qua => EXPIRED.
+     * - Ngược lại => ACTIVE.
+     */
     private ContractStatus resolveLifecycleStatus(
             ContractStatus requestedStatus, LocalDate startDate, LocalDate endDate) {
         if (requestedStatus == ContractStatus.CANCELLED) {
@@ -1817,6 +1828,10 @@ public class ContractServiceImpl implements ContractService {
         return ContractStatus.ACTIVE;
     }
 
+    /**
+     * Tạo version v1 cho hợp đồng mới tạo (giá, cọc, billing cycle...).
+     * Chỉ chạy khi create contract, không dùng cho legacy import.
+     */
     private void seedInitialVersion(Contract contract, ContractRequest request) {
         ContractVersion version = ContractVersion.builder()
                 .organization(contract.getOrganization())
@@ -1835,6 +1850,9 @@ public class ContractServiceImpl implements ContractService {
         contractVersionRepository.save(version);
     }
 
+    /**
+     * Trường hợp migrate dữ liệu cũ: seed version dựa trên fields hiện tại của contract.
+     */
     private void seedVersionFromLegacyContract(Contract contract) {
         ContractVersion version = ContractVersion.builder()
                 .organization(contract.getOrganization())
@@ -1958,6 +1976,12 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /**
+     * Tạo version khởi tạo cho hợp đồng phòng đích khi chuyển phòng.
+     *
+     * <p>Giữ nguyên điều khoản từ version đang hiệu lực của hợp đồng nguồn (nếu có)
+     * và cập nhật giá/cọc theo payload chuyển phòng.
+     */
     private void createTransferredVersion(
             Contract targetContract,
             ContractVersion effectiveVersion,
@@ -1969,7 +1993,7 @@ public class ContractServiceImpl implements ContractService {
                 .contract(targetContract)
                 .versionNumber(1)
                 .price(nextRentPrice)
-                .depositAmount(nextDepositAmount)
+                .depositAmount(nextDepositAmount) // Thông thường khi chuyển phòng sẽ không đổi cọc, nhưng vẫn cho phép override nếu có nhu cầu.
                 .billingCycle(
                         effectiveVersion == null
                                 ? resolveBillingCycle(targetContract.getPaymentCycleMonths())
@@ -1984,6 +2008,7 @@ public class ContractServiceImpl implements ContractService {
         contractVersionRepository.save(version);
     }
 
+    /** Tạo hóa đơn prorate cho tháng chấm dứt hợp đồng (nếu kỳ bị cắt ngắn). */
     private void createTerminationProrationBill(Contract contract, LocalDate terminationDate) {
         LocalDate periodStart = terminationDate.withDayOfMonth(1);
         LocalDate periodEnd = terminationDate;
@@ -1999,6 +2024,7 @@ public class ContractServiceImpl implements ContractService {
                 "Tính tiền theo số ngày thực ở đến ngày chấm dứt");
     }
 
+    /** Khi chuyển phòng: tạo hóa đơn tính theo tỷ lệ (prorate) cho cả phòng cũ và phòng mới trong tháng chuyển. */
     private void createTransferProrationBills(
             Contract sourceContract, Contract targetContract, LocalDate transferDate) {
         LocalDate monthStart = transferDate.withDayOfMonth(1);
@@ -2021,7 +2047,7 @@ public class ContractServiceImpl implements ContractService {
         }
 
         LocalDate targetEnd = targetContract.getEndDate() != null
-                        && targetContract.getEndDate().isBefore(monthEnd)
+                && targetContract.getEndDate().isBefore(monthEnd)
                 ? targetContract.getEndDate()
                 : monthEnd;
         if (!targetEnd.isBefore(transferDate)) {
@@ -2035,6 +2061,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Helper tạo bill prorate nếu chưa có bill trong tháng và kỳ bị rút ngắn. */
     private void createProratedBillIfNeeded(
             Contract contract,
             LocalDate periodStart,
@@ -2062,7 +2089,7 @@ public class ContractServiceImpl implements ContractService {
         // Lấy snapshot tại periodStart để lấy đúng "giá thuê đang hiệu lực" (hỗ trợ contract versioning).
         ContractSnapshotResponse snapshot = contractSnapshotService.getSnapshot(contract.getId(), periodStart);
         BigDecimal monthlyPrice = snapshot.getCurrentVersion() != null
-                        && snapshot.getCurrentVersion().getPrice() != null
+                && snapshot.getCurrentVersion().getPrice() != null
                 ? snapshot.getCurrentVersion().getPrice()
                 : contract.getRentPrice();
         BigDecimal proratedAmount = calculateProratedRent(monthlyPrice, periodStart, periodEnd);
@@ -2079,7 +2106,7 @@ public class ContractServiceImpl implements ContractService {
         if (bill == null) {
             bill = Bill.builder()
                     .billTitle(title)
-                    .billCode("BILL-" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()))
+                    .billCode(AppConstants.BILL_CODE_PREFIX + new SimpleDateFormat(CODE_TIMESTAMP_FORMAT).format(new Date()))
                     .contract(contract)
                     .room(contract.getRoom())
                     .tenant(contract.getTenant())
@@ -2110,6 +2137,7 @@ public class ContractServiceImpl implements ContractService {
         billRepository.save(bill);
     }
 
+    /** Tính tiền thuê prorate theo số ngày sử dụng trong tháng (làm tròn 2 chữ số). */
     private BigDecimal calculateProratedRent(BigDecimal monthlyPrice, LocalDate periodStart, LocalDate periodEnd) {
         if (monthlyPrice == null || monthlyPrice.signum() <= 0) {
             return BigDecimal.ZERO;
@@ -2124,12 +2152,14 @@ public class ContractServiceImpl implements ContractService {
                 .setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
+    /** Kiểm tra trong tháng của dueDate đã tồn tại bill nào của contract hay chưa. */
     private boolean hasAnyBillInMonth(Integer contractId, LocalDate dueDate) {
         return billRepository.findByContractId(contractId).stream()
                 .anyMatch(bill -> bill.getDueDate() != null
                         && YearMonth.from(bill.getDueDate()).equals(YearMonth.from(dueDate)));
     }
 
+    /** Build nội dung ghi chú chi tiết cách tính prorate. */
     private String buildProrationNote(
             String prefix,
             BigDecimal monthlyPrice,
@@ -2149,12 +2179,14 @@ public class ContractServiceImpl implements ContractService {
                 + proratedAmount;
     }
 
+    /** Sinh reference string duy nhất cho payment settlement từ cọc. */
     private String buildSettlementPaymentReference(Integer contractId, Date occurredAt) {
         String timestamp =
                 new SimpleDateFormat("yyyyMMddHHmmssSSS").format(occurredAt != null ? occurredAt : new Date());
         return "SETTLEMENT-DEPOSIT-" + contractId + "-" + timestamp;
     }
 
+    /** Import utility của phòng thành billing rule mặc định cho contract (case migrate). */
     private void seedBillingRulesFromRoomUtilities(Contract contract) {
         List<RoomUtility> roomUtilities = roomUtilityRepository
                 .findActiveByRoomId(contract.getRoom().getId())
@@ -2162,8 +2194,8 @@ public class ContractServiceImpl implements ContractService {
                 .filter(roomUtility -> roomUtility.getUtility() != null)
                 .filter(roomUtility -> roomUtility.getStartDate() == null
                         || !roomUtility
-                                .getStartDate()
-                                .isAfter(contract.getEndDate() == null ? LocalDate.MAX : contract.getEndDate()))
+                        .getStartDate()
+                        .isAfter(contract.getEndDate() == null ? LocalDate.MAX : contract.getEndDate()))
                 .toList();
 
         for (RoomUtility roomUtility : roomUtilities) {
@@ -2183,6 +2215,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Import số tiền cọc từ hợp đồng legacy thành transaction COLLECT. */
     private void seedDepositLedgerFromLegacyContract(Contract contract) {
         if (contract.getDeposit() == null || contract.getDeposit().signum() <= 0) {
             return;
@@ -2205,6 +2238,7 @@ public class ContractServiceImpl implements ContractService {
         depositTransactionRepository.save(depositTransaction);
     }
 
+    /** Validate ngày hiệu lực từ/đến (to phải >= from, from bắt buộc). */
     private void validateEffectiveDates(LocalDate effectiveFrom, LocalDate effectiveTo) {
         if (effectiveFrom == null) {
             throw new AppException(ErrorCode.CONTRACT_START_DATE_REQUIRED);
@@ -2214,6 +2248,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Đảm bảo khoảng hiệu lực nằm trong khoảng hợp đồng gốc. */
     private void validateEffectiveWithinContract(Contract contract, LocalDate effectiveFrom, LocalDate effectiveTo) {
         if (contract == null || effectiveFrom == null) {
             return;
@@ -2236,6 +2271,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Validate payload amendment theo type (price/payment term/dataJson). */
     private void validateAmendmentPayload(ContractAmendmentCreateRequest request) {
         if (request == null || request.getAmendmentType() == null) {
             return;
@@ -2272,6 +2308,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Chặn amendment cùng loại bị chồng lấn hiệu lực với amendment khác. */
     private void validateAmendmentConflicts(
             Integer contractId, ContractAmendmentCreateRequest request, Integer ignoreAmendmentId) {
         if (contractId == null || request == null || request.getAmendmentType() == null) {
@@ -2300,6 +2337,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Chặn billing rule cùng utility bị overlap khoảng hiệu lực. */
     private void validateBillingRuleConflicts(
             Integer contractId, ContractBillingRuleCreateRequest request, Integer ignoreBillingRuleId) {
         if (contractId == null || request == null || request.getUtilityId() == null) {
@@ -2331,6 +2369,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Kiểm tra hai khoảng ngày có giao nhau (cho phép open-ended bằng null). */
     private boolean datesOverlap(LocalDate fromA, LocalDate toA, LocalDate fromB, LocalDate toB) {
         if (fromA == null || fromB == null) {
             return false;
@@ -2341,6 +2380,7 @@ public class ContractServiceImpl implements ContractService {
         return aEndsAfterBStarts && bEndsAfterAStarts;
     }
 
+    /** Xác định transaction cọc có phải chiều trừ (debit) để enforce số dư và yêu cầu lý do. */
     private boolean isDepositDebitTransaction(DepositTransactionType transactionType) {
         if (transactionType == null) {
             return false;
@@ -2352,6 +2392,9 @@ public class ContractServiceImpl implements ContractService {
         };
     }
 
+    /**
+     * Tìm version liền kề trước/sau theo effectiveFrom để set effectiveTo tránh overlap.
+     */
     private VersionNeighbors resolveVersionNeighbors(Integer contractId, LocalDate effectiveFrom) {
         if (contractId == null || effectiveFrom == null) {
             return new VersionNeighbors(null, null);
@@ -2386,8 +2429,10 @@ public class ContractServiceImpl implements ContractService {
         return new VersionNeighbors(previousVersion, nextEffectiveFrom);
     }
 
-    private record VersionNeighbors(ContractVersion previousVersion, LocalDate nextEffectiveFrom) {}
+    private record VersionNeighbors(ContractVersion previousVersion, LocalDate nextEffectiveFrom) {
+    }
 
+    /** Ghép prefix revision vào note (giữ nguyên note cũ nếu có). */
     private String buildRevisionNote(String note, String prefix) {
         if (note == null || note.isBlank()) {
             return prefix;
@@ -2395,6 +2440,7 @@ public class ContractServiceImpl implements ContractService {
         return prefix + " | " + note;
     }
 
+    /** Append thêm note (bỏ qua nếu extraNote rỗng). */
     private String appendNote(String currentNote, String extraNote) {
         if (extraNote == null || extraNote.isBlank()) {
             return currentNote;
@@ -2405,6 +2451,10 @@ public class ContractServiceImpl implements ContractService {
         return currentNote + " | " + extraNote;
     }
 
+    /**
+     * Khi update contract legacy: nếu thay đổi điều khoản tài chính thì tạo version mới từ hôm nay (hoặc startDate),
+     * cap effectiveTo để tránh trùng version kế tiếp.
+     */
     private void bootstrapLegacyVersion(Contract contract, ContractRequest request, boolean financialTermsChanged) {
         ContractVersion latestVersion = contractVersionRepository
                 .findTopByContractIdOrderByVersionNumberDesc(contract.getId())
@@ -2471,6 +2521,7 @@ public class ContractServiceImpl implements ContractService {
         observabilityMetricsService.incrementContractVersionChanged(contract, "update");
     }
 
+    /** Kiểm tra các field giá/cọc/kỳ thanh toán/start/end có thay đổi so với contract hiện tại không. */
     private boolean hasFinancialTermsChanged(Contract contract, ContractRequest request) {
         return !Objects.equals(contract.getDeposit(), request.getDeposit())
                 || !Objects.equals(contract.getRentPrice(), request.getRentPrice())
@@ -2480,6 +2531,7 @@ public class ContractServiceImpl implements ContractService {
                 || !Objects.equals(contract.getEndDate(), request.getEndDate());
     }
 
+    /** Map số tháng chu kỳ thanh toán về enum BillingCycle. */
     private BillingCycle resolveBillingCycle(Integer paymentCycleMonths) {
         if (paymentCycleMonths == null || paymentCycleMonths <= 1) {
             return BillingCycle.MONTHLY;
@@ -2487,11 +2539,13 @@ public class ContractServiceImpl implements ContractService {
         return BillingCycle.MONTHLY;
     }
 
+    /** Ghi lại transition status ở cấp ContractStatus (helper map sang lifecycle state). */
     private void recordStateTransition(
             Contract contract, ContractStatus fromStatus, ContractStatus toStatus, String reason) {
         recordLifecycleTransition(contract, mapLifecycleState(fromStatus), mapLifecycleState(toStatus), reason, null);
     }
 
+    /** Lưu log chuyển trạng thái lifecycle, kèm metadata/audit. */
     private void recordLifecycleTransition(
             Contract contract,
             ContractLifecycleState fromState,
@@ -2512,6 +2566,7 @@ public class ContractServiceImpl implements ContractService {
         contractStateTransitionRepository.save(transition);
     }
 
+    /** Map ContractStatus sang ContractLifecycleState phục vụ thống nhất log/state machine. */
     private ContractLifecycleState mapLifecycleState(ContractStatus status) {
         if (status == null) {
             return null;
@@ -2525,6 +2580,9 @@ public class ContractServiceImpl implements ContractService {
         };
     }
 
+    /**
+     * Đồng bộ trạng thái phòng (AVAILABLE/OCCUPIED) dựa trên hợp đồng active hiệu lực tại thời điểm hiện tại.
+     */
     private void syncRoomOccupancyStatus(Room room) {
         if (Boolean.TRUE.equals(room.getIsDeleted())) {
             return;
@@ -2545,10 +2603,16 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Convert java.util.Date về LocalDate theo system timezone. */
     private LocalDate toLocalDate(Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
+    /**
+     * Resolve tenant khi tạo hợp đồng:
+     * - Nếu có tenantId: load + validate quyền.
+     * - Nếu truyền payload tenant: validate email duy nhất, password bắt buộc, tạo user + tenant mới.
+     */
     private Tenant resolveTenant(ContractRequest request, Integer ownerId) {
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository
@@ -2599,6 +2663,9 @@ public class ContractServiceImpl implements ContractService {
         return tenantRepository.save(tenant);
     }
 
+    /**
+     * Resolve tenant khi update contract: ưu tiên tenantId mới; nếu không, update thông tin tenant hiện tại từ payload.
+     */
     private Tenant resolveTenantForUpdate(Contract contract, ContractRequest request) {
         if (request.getTenantId() != null) {
             return tenantRepository
@@ -2642,6 +2709,11 @@ public class ContractServiceImpl implements ContractService {
         return tenantRepository.save(existingTenant);
     }
 
+    /**
+     * Đồng bộ danh sách utility gắn với phòng dựa trên payload contract (create/update).
+     * - Thêm mới/ cập nhật quantity/usage/start-end.
+     * - Xóa những utility không còn trong payload.
+     */
     private void syncRoomUtilities(Room room, ContractRequest request) {
         List<ContractUtilityRequest> requestedUtilities =
                 request.getUtilities() == null ? List.of() : request.getUtilities();
@@ -2679,6 +2751,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Load/validate hoặc tạo mới utility gắn với boarding house theo yêu cầu contract. */
     private Utility resolveUtility(BoardingHouse boardingHouse, ContractUtilityRequest utilityRequest) {
         if (utilityRequest.getUtilityId() != null) {
             Utility utility = utilityRepository
@@ -2715,29 +2788,33 @@ public class ContractServiceImpl implements ContractService {
         return utilityRepository.save(utility);
     }
 
+    /** Utility chỉ hợp lệ nếu thuộc owner hoặc thuộc danh sách boarding house cụ thể. */
     private boolean utilityAppliesToBoardingHouse(Utility utility, BoardingHouse boardingHouse) {
         if (utility.getBoardingHouses() == null || utility.getBoardingHouses().isEmpty()) {
             return utility.getOwner() != null
                     && boardingHouse != null
                     && boardingHouse.getOwner() != null
                     && utility.getOwner()
-                            .getId()
-                            .equals(boardingHouse.getOwner().getId());
+                    .getId()
+                    .equals(boardingHouse.getOwner().getId());
         }
 
         return utility.getBoardingHouses().stream()
                 .anyMatch(house -> house.getId().equals(boardingHouse.getId()));
     }
 
+    /** Nếu quantity null thì mặc định 1. */
     private Integer resolveQuantity(ContractUtilityRequest utilityRequest) {
         Integer quantity = utilityRequest.getQuantity();
         return quantity == null || quantity < 1 ? 1 : quantity;
     }
 
+    /** Kiểm tra quyền trên contract thông qua quyền phòng. */
     private void validateContractAccess(Contract contract) {
         validateRoomAccess(contract.getRoom());
     }
 
+    /** Chặn các thao tác lifecycle không hợp lệ theo trạng thái hiện tại. */
     private void ensureLifecycleActionAllowed(Contract contract, String action) {
         ContractStatus status = contract.getStatus();
 
@@ -2760,6 +2837,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Lấy state lifecycle mới nhất từ transition log; fallback status hiện tại. */
     private ContractLifecycleState resolveLatestLifecycleState(Contract contract) {
         return contractStateTransitionRepository.findByContractIdOrderByChangedAtDesc(contract.getId()).stream()
                 .findFirst()
@@ -2767,6 +2845,7 @@ public class ContractServiceImpl implements ContractService {
                 .orElse(mapLifecycleState(contract.getStatus()));
     }
 
+    /** Thực thi action detail với idempotency guard (Idempotency-Key từ request). */
     private ContractDetailResponse executeIdempotentDetailOperation(
             Contract contract, ContractOperationType operationType, Supplier<ContractDetailResponse> action) {
         IdempotentOperationGuard guard = beginIdempotentOperation(contract, operationType);
@@ -2786,6 +2865,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Idempotent cho luồng transfer-room, lưu/đọc resultJson nếu đã chạy trước đó. */
     private ContractRoomTransferResponse executeIdempotentTransferOperation(
             Contract contract, Supplier<ContractRoomTransferResponse> action) {
         IdempotentOperationGuard guard = beginIdempotentOperation(contract, ContractOperationType.TRANSFER_ROOM);
@@ -2809,6 +2889,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Tạo/đọc operation log theo Idempotency-Key để phòng duplicate. */
     private IdempotentOperationGuard beginIdempotentOperation(Contract contract, ContractOperationType operationType) {
         String idempotencyKey = RequestAuditUtils.getCurrentIdempotencyKey();
         if (idempotencyKey == null) {
@@ -2846,6 +2927,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /** Nếu log đã COMPLETED thì replay, nếu đang PROCESSING thì chặn thao tác trùng. */
     private IdempotentOperationGuard buildGuardFromExistingLog(ContractOperationLog operationLog) {
         if (operationLog.getStatus() == ContractOperationStatus.COMPLETED) {
             return new IdempotentOperationGuard(operationLog, true);
@@ -2853,6 +2935,7 @@ public class ContractServiceImpl implements ContractService {
         throw new AppException(ErrorCode.CONTRACT_OPERATION_ALREADY_PROCESSING);
     }
 
+    /** Tìm operation log theo (contractId, type, idempotencyKey). */
     private ContractOperationLog findOperationLog(
             Integer contractId, ContractOperationType operationType, String idempotencyKey) {
         return contractOperationLogRepository
@@ -2860,6 +2943,7 @@ public class ContractServiceImpl implements ContractService {
                 .orElse(null);
     }
 
+    /** Đánh dấu operation log COMPLETED, lưu actor/result/metadata. */
     private void completeOperationLog(ContractOperationLog operationLog, String resultJson) {
         if (operationLog == null) {
             return;
@@ -2876,6 +2960,7 @@ public class ContractServiceImpl implements ContractService {
         contractOperationLogRepository.save(operationLog);
     }
 
+    /** Helper to json hoặc null nếu metadata rỗng. */
     private String buildMetadataJson(Map<String, Object> metadata) {
         if (metadata == null || metadata.isEmpty()) {
             return null;
@@ -2883,6 +2968,7 @@ public class ContractServiceImpl implements ContractService {
         return gson.toJson(metadata);
     }
 
+    /** Chuẩn hóa metadata audit (reason, requestId, actor, details...). */
     private String buildAuditMetadataJson(String reason, String metadataJson, User currentUser) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("reasonCode", reason);
@@ -2937,6 +3023,11 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /**
+     * Tenant lifecycle notification: chỉ gửi cho tenant liên quan hợp đồng.
+     * Dùng cho các sự kiện quan trọng (tạo/renew/terminate/transfer...) để tenant nắm thông tin kịp thời.
+     * Không gửi nếu tenant/user thiếu thông tin id hợp lệ.
+     */
     private void notifyTenantLifecycleEvent(
             Contract contract, String title, String message, String type, Map<String, Object> data) {
         if (contract.getTenant() == null
@@ -2952,6 +3043,11 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /**
+     * Owner lifecycle notification: chỉ gửi cho owner.
+     * Lý do: owner có thể quản lý nhiều hợp đồng/tenant; không gom chung với luồng tenant để tránh spam nhầm.
+     * Bỏ qua khi actor hiện tại chính là owner (không tự gửi cho mình) hoặc thiếu thông tin owner.
+     */
     private void notifyOwnerLifecycleEvent(
             Contract contract, String title, String message, String type, Map<String, Object> data) {
         if (contract == null || contract.getRoom() == null || contract.getRoom().getBoardingHouse() == null) {
@@ -2981,6 +3077,10 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /**
+     * Đảm bảo current user có quyền thao tác tenant (admin hoặc owner của tenant).
+     * Ném AppException ACCESS_DENIED/UNAUTHENTICATED nếu không hợp lệ.
+     */
     private void validateTenantAccess(Tenant tenant) {
         User currentUser = SecurityUtils.getCurrentUser();
         if (currentUser == null) {
@@ -3004,19 +3104,19 @@ public class ContractServiceImpl implements ContractService {
         List<ContractUtilityDetailResponse> utilities = contract.getRoom().getRoomUtilities() == null
                 ? List.of()
                 : contract.getRoom().getRoomUtilities().stream()
-                        .filter(roomUtility -> roomUtility.getStartDate() != null)
-                        .filter(roomUtility -> roomUtility.getStartDate().equals(contract.getStartDate()))
-                        .map(roomUtility -> ContractUtilityDetailResponse.builder()
-                                .utilityId(roomUtility.getUtility().getId())
-                                .name(roomUtility.getUtility().getName())
-                                .type(roomUtility.getUtility().getType().name())
-                                .unitPrice(roomUtility.getUtility().getUnitPrice())
-                                .unit(roomUtility.getUtility().getUnit())
-                                .quantity(roomUtility.getQuantity())
-                                .usageAmount(roomUtility.getUsageAmount())
-                                .note(roomUtility.getNote())
-                                .build())
-                        .toList();
+                .filter(roomUtility -> roomUtility.getStartDate() != null)
+                .filter(roomUtility -> roomUtility.getStartDate().equals(contract.getStartDate()))
+                .map(roomUtility -> ContractUtilityDetailResponse.builder()
+                        .utilityId(roomUtility.getUtility().getId())
+                        .name(roomUtility.getUtility().getName())
+                        .type(roomUtility.getUtility().getType().name())
+                        .unitPrice(roomUtility.getUtility().getUnitPrice())
+                        .unit(roomUtility.getUtility().getUnit())
+                        .quantity(roomUtility.getQuantity())
+                        .usageAmount(roomUtility.getUsageAmount())
+                        .note(roomUtility.getNote())
+                        .build())
+                .toList();
 
         return ContractDetailResponse.builder()
                 .id(contract.getId())
@@ -3057,8 +3157,8 @@ public class ContractServiceImpl implements ContractService {
                         contract.getFiles() == null
                                 ? 0
                                 : (int) contract.getFiles().stream()
-                                        .filter(file -> !Boolean.TRUE.equals(file.isDeleted()))
-                                        .count())
+                                .filter(file -> !Boolean.TRUE.equals(file.isDeleted()))
+                                .count())
                 .createdAt(contract.getCreatedAt())
                 .updatedAt(contract.getUpdatedAt())
                 .utilities(utilities)
@@ -3148,18 +3248,18 @@ public class ContractServiceImpl implements ContractService {
                 ? null
                 : billingRule.getUtility().getId();
         Integer quantity = billingRule.getContract() != null
-                        && billingRule.getContract().getRoom() != null
-                        && billingRule.getContract().getRoom().getRoomUtilities() != null
+                && billingRule.getContract().getRoom() != null
+                && billingRule.getContract().getRoom().getRoomUtilities() != null
                 ? billingRule.getContract().getRoom().getRoomUtilities().stream()
-                        .filter(roomUtility -> roomUtility.getUtility() != null)
-                        .filter(roomUtility ->
-                                Objects.equals(roomUtility.getUtility().getId(), utilityId))
-                        .map(roomUtility -> {
-                            Integer configuredQuantity = roomUtility.getQuantity();
-                            return configuredQuantity == null || configuredQuantity < 1 ? 1 : configuredQuantity;
-                        })
-                        .findFirst()
-                        .orElse(1)
+                .filter(roomUtility -> roomUtility.getUtility() != null)
+                .filter(roomUtility ->
+                        Objects.equals(roomUtility.getUtility().getId(), utilityId))
+                .map(roomUtility -> {
+                    Integer configuredQuantity = roomUtility.getQuantity();
+                    return configuredQuantity == null || configuredQuantity < 1 ? 1 : configuredQuantity;
+                })
+                .findFirst()
+                .orElse(1)
                 : 1;
         return ContractBillingRuleSummaryResponse.builder()
                 .id(billingRule.getId())
