@@ -13,12 +13,21 @@ const Header = ({onNav}) => {
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', onScroll);
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
+
+    // Sync theme to body class
+    useEffect(() => {
+        const cls = 'theme-dark';
+        if (theme === 'dark') document.body.classList.add(cls);
+        else document.body.classList.remove(cls);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
 
     const handleNav = (target) => {
         const goLandingAndScroll = () => navigate('/', {state: {scrollTo: target}});
@@ -65,6 +74,13 @@ const Header = ({onNav}) => {
                     <a onClick={() => handleNav('faq')}>FAQ</a>
                 </div>
                 <div className={styles.navRight}>
+                    <button
+                        className={styles.themeToggle}
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        aria-label="Đổi chế độ sáng/tối"
+                    >
+                        {theme === 'dark' ? '☀' : '☾'}
+                    </button>
                     <button className={styles.btnGhost} type="button" onClick={() => navigate('/login')}>
                         Đăng nhập
                     </button>
