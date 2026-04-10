@@ -6,6 +6,8 @@ import { useAuth } from "./AuthContext";
 import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
 import Landing from "~/pages/General/Landing";
+import About from "~/pages/General/About";
+import Careers from "~/pages/General/Careers";
 
 import AdminDashboard from "~/pages/Admin/HomeDashboard";
 import Building from "~/pages/Admin/Building";
@@ -51,6 +53,8 @@ const AppRoutes = () => {
                             : <Landing />
                 }
             />
+            <Route path="/about" element={<About />} />
+            <Route path="/careers" element={<Careers />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
