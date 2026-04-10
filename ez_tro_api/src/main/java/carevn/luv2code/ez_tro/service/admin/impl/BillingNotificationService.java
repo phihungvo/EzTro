@@ -29,6 +29,9 @@ public class BillingNotificationService {
     @Value("${app.billing.notification.reminder-days:3,1}")
     private String reminderDaysConfig;
 
+    /**
+     * Gửi nhắc nhở cho các hóa đơn sắp đến hạn dựa trên cấu hình ngày nhắc nhở.
+     */
     public void sendUpcomingDueReminders() {
         List<Integer> daysList = parseReminderDays();
 

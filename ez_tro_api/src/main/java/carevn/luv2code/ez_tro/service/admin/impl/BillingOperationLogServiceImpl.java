@@ -41,6 +41,12 @@ public class BillingOperationLogServiceImpl implements BillingOperationLogServic
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final Gson gson = new Gson();
 
+    /**
+     * Tạo snapshot của bill để lưu vào log. Chỉ bao gồm các trường cơ bản và quan trọng, không bao gồm quan hệ phức tạp.
+     *
+     * @param bill đối tượng bill cần tạo snapshot
+     * @return map chứa dữ liệu snapshot của bill
+     */
     @Override
     public Map<String, Object> snapshotBill(Bill bill) {
         if (bill == null) {
@@ -84,6 +90,12 @@ public class BillingOperationLogServiceImpl implements BillingOperationLogServic
         return snapshot;
     }
 
+    /**
+     * Tạo snapshot của payment để lưu vào log. Bao gồm các trường cơ bản và quan trọng, cũng như thông tin về số tiền đã được phân bổ và chưa phân bổ.
+     *
+     * @param payment đối tượng payment cần tạo snapshot
+     * @return map chứa dữ liệu snapshot của payment
+     */
     @Override
     public Map<String, Object> snapshotPayment(Payment payment) {
         if (payment == null) {
@@ -198,6 +210,15 @@ public class BillingOperationLogServiceImpl implements BillingOperationLogServic
         return gson.toJson(payload);
     }
 
+    /**
+     * Xác định hợp đồng liên quan để kiểm tra quyền truy cập. Ưu tiên theo thứ tự: contractId > log đầu tiên > target (bill/payment).
+     *
+     * @param contractId id hợp đồng (nếu có)
+     * @param targetType loại đối tượng (bill hoặc payment)
+     * @param targetId   id của đối tượng
+     * @param logs       danh sách log đã truy vấn (có thể rỗng)
+     * @return hợp đồng liên quan hoặc null nếu không tìm thấy
+     */
     private Contract resolveContractForValidation(
             Integer contractId, BillingAuditTargetType targetType, Integer targetId, List<BillingOperationLog> logs) {
         if (contractId != null) {
