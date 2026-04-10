@@ -377,6 +377,10 @@ const Landing = () => {
         {from: 'bot', text: 'Gửi tin nhắn ở đây, chúng tôi phản hồi ngay hoặc qua email bạn cung cấp sau.'},
     ]);
     const [chatInput, setChatInput] = useState({message: ''});
+    const priceRefs = useRef([]);
+    const testiRefs = useRef([]);
+    const [activePrice, setActivePrice] = useState(0);
+    const [activeTesti, setActiveTesti] = useState(0);
 
     const scrollToSection = (id) => {
         document.getElementById(id)?.scrollIntoView({behavior: 'smooth'});
@@ -394,6 +398,38 @@ const Landing = () => {
         const onScroll = () => setShowTop(window.scrollY > 320);
         window.addEventListener('scroll', onScroll);
         return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    // Observe pricing cards for mobile scaling
+    useEffect(() => {
+        const root = document.getElementById('pricing-scroll');
+        if (!root) return;
+        const obs = new IntersectionObserver((entries) => {
+            let best = {idx: 0, ratio: 0};
+            entries.forEach((entry) => {
+                const idx = Number(entry.target.dataset.idx || 0);
+                if (entry.intersectionRatio > best.ratio) best = {idx, ratio: entry.intersectionRatio};
+            });
+            setActivePrice(best.idx);
+        }, {root, threshold: [0.4, 0.55, 0.7]});
+        priceRefs.current.forEach((el) => el && obs.observe(el));
+        return () => obs.disconnect();
+    }, []);
+
+    // Observe testimonial cards for mobile scaling
+    useEffect(() => {
+        const root = document.getElementById('testi-scroll');
+        if (!root) return;
+        const obs = new IntersectionObserver((entries) => {
+            let best = {idx: 0, ratio: 0};
+            entries.forEach((entry) => {
+                const idx = Number(entry.target.dataset.idx || 0);
+                if (entry.intersectionRatio > best.ratio) best = {idx, ratio: entry.intersectionRatio};
+            });
+            setActiveTesti(best.idx);
+        }, {root, threshold: [0.4, 0.55, 0.7]});
+        testiRefs.current.forEach((el) => el && obs.observe(el));
+        return () => obs.disconnect();
     }, []);
 
     const sendChat = () => {
@@ -504,6 +540,19 @@ const Landing = () => {
                             <span>✓</span> Không cần thẻ tín dụng &nbsp;·&nbsp;
                             <span>✓</span> Hủy bất cứ lúc nào
                         </p>
+                        <div className={styles.heroHighlights}>
+                            {[
+                                {icon: '⚡', text: 'Thiết lập trong 2 phút'},
+                                {icon: '📱', text: 'Tối ưu cho mobile'},
+                                {icon: '🧾', text: 'Hóa đơn, hợp đồng tự động'},
+                                {icon: '🤝', text: 'Onboarding & hỗ trợ 1-1'}
+                            ].map((h, i) => (
+                                <div key={i} className={styles.heroHighlightItem}>
+                                    <span>{h.icon}</span>
+                                    <p>{h.text}</p>
+                                </div>
+                            ))}
+                        </div>
 
                     </div>
 
@@ -906,9 +955,9 @@ const Landing = () => {
                                     <tbody>
                                     {sortedRows.map((row, i) => (
                                         <tr key={i}>
-                                            <td><span className={dotClass(row.dotClass, row.dotPulse)}
+                                            <td data-label="Phòng"><span className={dotClass(row.dotClass, row.dotPulse)}
                                                       style={{marginRight: 8}}/>{row.room}</td>
-                                            <td>
+                                            <td data-label="Người thuê">
                                                 <div className={styles.tenantCell}>
                                                     {row.avatar ? (
                                                         <div
@@ -932,11 +981,11 @@ const Landing = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>{row.price}</td>
-                                            <td><span className={tagClass(row.statusClass)}>{row.status}</span></td>
-                                            <td>{row.monthly}</td>
-                                            <td>{row.contract}</td>
-                                            <td>
+                                            <td data-label="Giá thuê">{row.price}</td>
+                                            <td data-label="Trạng thái"><span className={tagClass(row.statusClass)}>{row.status}</span></td>
+                                            <td data-label="Tháng này">{row.monthly}</td>
+                                            <td data-label="Hạn HĐ">{row.contract}</td>
+                                            <td data-label="Thao tác">
                                                 {row.action === 'detail' && <button className={styles.tableFilterBtn}
                                                                                     onClick={() => alert(`Xem chi tiết ${row.room}`)}>Chi
                                                     tiết</button>}
@@ -1000,9 +1049,13 @@ const Landing = () => {
                         </div>
                     </div>
                     <div ref={ref('pricing-grid')} className={cls('pricing-grid', styles.revealDelay2)}>
-                        <div className={styles.pricingGrid}>
+                        <div className={styles.pricingGrid} id="pricing-scroll">
                             {/* FREE */}
-                            <div className={styles.priceCard}>
+                            <div
+                                className={`${styles.priceCard} ${activePrice === 0 ? styles.priceCardActive : ''}`}
+                                ref={(el) => priceRefs.current[0] = el}
+                                data-idx={0}
+                            >
                                 <div className={styles.planIcon}>🌱</div>
                                 <div className={styles.planName}>Miễn phí</div>
                                 <div className={styles.planTagline}>Phù hợp để bắt đầu thử nghiệm</div>
@@ -1029,7 +1082,11 @@ const Landing = () => {
                                 </button>
                             </div>
                             {/* PRO */}
-                            <div className={`${styles.priceCard} ${styles.priceCardPopular}`}>
+                            <div
+                                className={`${styles.priceCard} ${styles.priceCardPopular} ${activePrice === 1 ? styles.priceCardActive : ''}`}
+                                ref={(el) => priceRefs.current[1] = el}
+                                data-idx={1}
+                            >
                                 <div className={styles.popularChip}>Phổ biến nhất</div>
                                 <div className={styles.planIcon}>🚀</div>
                                 <div className={styles.planName}>Chuyên nghiệp</div>
@@ -1052,7 +1109,11 @@ const Landing = () => {
                                 </button>
                             </div>
                             {/* ENTERPRISE */}
-                            <div className={styles.priceCard}>
+                            <div
+                                className={`${styles.priceCard} ${activePrice === 2 ? styles.priceCardActive : ''}`}
+                                ref={(el) => priceRefs.current[2] = el}
+                                data-idx={2}
+                            >
                                 <div className={styles.planIcon}>🏢</div>
                                 <div className={styles.planName}>Doanh nghiệp</div>
                                 <div className={styles.planTagline}>Cho chuỗi nhà trọ &amp; bất động sản lớn</div>
@@ -1093,9 +1154,14 @@ const Landing = () => {
                         <div className={styles.sectionH2}>Chủ trọ nói gì về <em>EzTro?</em></div>
                     </div>
                     <div ref={ref('t-grid')} className={cls('t-grid', styles.revealDelay1)}>
-                        <div className={styles.tGrid}>
+                        <div className={styles.tGrid} id="testi-scroll">
                             {TESTIMONIALS.map((t, i) => (
-                                <div key={i} className={styles.tCard}>
+                                <div
+                                    key={i}
+                                    className={`${styles.tCard} ${activeTesti === i ? styles.tCardActive : ''}`}
+                                    ref={(el) => testiRefs.current[i] = el}
+                                    data-idx={i}
+                                >
                                     <div className={styles.tStars}>{t.stars}</div>
                                     <p className={styles.tText}>{t.text}</p>
                                     <div className={styles.tAuthor}>

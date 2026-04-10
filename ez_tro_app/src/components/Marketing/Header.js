@@ -65,6 +65,14 @@ const Header = ({onNav}) => {
                     <div className={styles.logoMark}><LogoIcon/></div>
                     <span className={styles.logoText}>EZ<span>Tro</span></span>
                 </div>
+                <div
+                    className={styles.navMobileCta}
+                    onClick={() => handleNav('demo')}
+                    role="button"
+                    aria-label="Xem demo nhanh"
+                >
+                    ⚡ Demo 2 phút
+                </div>
                 <div className={styles.navLinks}>
                     <a className={navClass('home')} onClick={() => handleNav('features')}>Tính năng</a>
                     <a onClick={() => handleNav('pricing')}>Bảng giá</a>
@@ -101,6 +109,18 @@ const Header = ({onNav}) => {
                 <a onClick={() => handleNav('about')}>Về chúng tôi</a>
                 <a onClick={() => handleNav('careers')}>Tuyển dụng</a>
                 <a onClick={() => handleNav('faq')}>FAQ</a>
+                <div className={styles.navMobileActions}>
+                    <button
+                        className={styles.themeToggle}
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        aria-label="Đổi chế độ sáng/tối"
+                    >
+                        {theme === 'dark' ? '☀' : '☾'}
+                    </button>
+                    <button className={styles.btnGhost} type="button" onClick={() => navigate('/login')}>
+                        Đăng nhập
+                    </button>
+                </div>
                 <a style={{color: 'var(--green)', fontWeight: 600, padding: '12px 16px'}}
                    onClick={() => handleNav('pricing')}>Dùng thử miễn phí →</a>
             </div>
