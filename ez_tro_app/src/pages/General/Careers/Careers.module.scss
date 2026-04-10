@@ -16,9 +16,20 @@
   --radius-xl: 26px;
 }
 
+:global(body.theme-dark) {
+  --ink: #e5e7eb;
+  --ink-2: #cbd5e1;
+  --ink-3: #94a3b8;
+  --surface: #0b1220;
+  --surface-2: #0f172a;
+  --border: #1f2937;
+  --shadow-md: 0 12px 26px rgba(0,0,0,0.5);
+  --shadow-lg: 0 18px 40px rgba(0,0,0,0.55);
+}
+
 .page {
   font-family: 'Be Vietnam Pro', sans-serif;
-  background: #fafaf8;
+  background: var(--surface-2);
   color: var(--ink);
   line-height: 1.6;
 }
@@ -208,7 +219,7 @@
   padding: 18px;
   box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -315,7 +326,7 @@ input, select, textarea {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
-  background: #fff;
+  background: var(--surface);
   font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
@@ -335,7 +346,7 @@ textarea {
   border: 1.5px dashed var(--border);
   border-radius: 10px;
   padding: 10px 12px;
-  background: #fff;
+  background: var(--surface);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -373,6 +384,31 @@ textarea {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+:global(body.theme-dark) {
+  .hero,
+  .section,
+  .sectionAlt {
+    background: var(--surface-2);
+  }
+
+  .heroPanel,
+  .card,
+  .openingCard,
+  .ctaCard,
+  .modal,
+  .applyForm,
+  .modalForm {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .heroBg {
+    background: radial-gradient(circle at 20% 20%, rgba(22,163,127,0.16) 0, transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(37,99,235,0.15) 0, transparent 40%),
+    linear-gradient(135deg, #0f172a, #0b1220);
+  }
 }
 
 .modalOverlay {

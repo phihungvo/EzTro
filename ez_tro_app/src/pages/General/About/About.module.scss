@@ -19,9 +19,21 @@
   --radius-xl: 26px;
 }
 
+:global(body.theme-dark) {
+  --ink: #0e54e1;
+  --ink-2: #cbd5e1;
+  --ink-3: #94a3b8;
+  --surface: #0b1220;
+  --surface-2: #0f172a;
+  --surface-3: #111827;
+  --border: #1f2937;
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.55);
+}
+
 .aboutPage {
   font-family: 'Be Vietnam Pro', sans-serif;
-  background: #fafaf8;
+  background: var(--surface-2);
   color: var(--ink);
   line-height: 1.6;
 }
@@ -414,6 +426,35 @@
   border-radius: var(--radius-xl);
   padding: 28px;
   box-shadow: var(--shadow-lg);
+}
+
+:global(body.theme-dark) {
+  .hero,
+  .section,
+  .sectionAlt,
+  .quoteSection,
+  .finalCta {
+    background: var(--surface-2);
+  }
+
+  .heroPanel,
+  .statCard,
+  .milestone,
+  .valueCard,
+  .teamCard,
+  .finalCard {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .quoteSection {
+    background: linear-gradient(135deg, #0b3b2c, #0d7a5f);
+  }
+
+  .quoteCard {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+  }
 }
 
 .quoteText {

@@ -28,10 +28,28 @@
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
+:global(body.theme-dark) {
+  --ink: #e5e7eb;
+  --ink-2: #cbd5e1;
+  --ink-3: #94a3b8;
+  --ink-4: #6b7280;
+  --surface: #0b1220;
+  --surface-2: #0f172a;
+  --surface-3: #111827;
+  --border: #1f2937;
+  --border-2: #334155;
+  --green-light: #0f5135;
+  --blue-light: #1e293b;
+  --amber-light: #78350f;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 18px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.55);
+}
+
 // ── GLOBAL WRAPPER ──
 .landing {
   font-family: 'Be Vietnam Pro', sans-serif;
-  background: #fafaf8;
+  background: var(--surface-2);
   color: var(--ink);
   overflow-x: hidden;
   line-height: 1.6;
@@ -132,6 +150,10 @@
     border-bottom: 1px solid var(--border);
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
   }
+
+  :global(body.theme-dark) & {
+    background: rgba(15, 23, 42, 0.9);
+  }
 }
 
 .navLogo {
@@ -199,6 +221,26 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.themeToggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-2);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 .btnGhost {
@@ -313,6 +355,12 @@
   background:
           radial-gradient(ellipse 60% 50% at 70% 40%, rgba(22, 163, 127, 0.08) 0%, transparent 60%),
           radial-gradient(ellipse 40% 40% at 20% 80%, rgba(93, 202, 165, 0.06) 0%, transparent 50%);
+
+  :global(body.theme-dark) & {
+    background:
+            radial-gradient(ellipse 60% 50% at 70% 40%, rgba(22, 163, 127, 0.12) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 20% 80%, rgba(59, 130, 246, 0.12) 0%, transparent 50%);
+  }
 }
 
 .heroGrid {
@@ -322,7 +370,7 @@
           linear-gradient(var(--border) 1px, transparent 1px),
           linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 40px 40px;
-  opacity: 0.35;
+  opacity: 1.35;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 70%);
 }
 
@@ -768,6 +816,10 @@
   padding: 18px 0;
   overflow: hidden;
   position: relative;
+
+  :global(body.theme-dark) & {
+    background: #0f172a;
+  }
 }
 
 .statsBarInner {
@@ -840,7 +892,7 @@
 
 // ── SECTION COMMONS ──
 .section {
-  padding: 90px 0;
+  padding: 40px 0;
 }
 
 .sectionEyebrow {
@@ -878,7 +930,7 @@
 // ── FEATURES ──
 .featuresSection {
   background: var(--surface);
-  padding: 90px 0;
+  padding: 40px 0;
 }
 
 .featuresIntro {
@@ -1012,7 +1064,7 @@
 // ── ROLES ──
 .rolesSection {
   background: var(--surface-2);
-  padding: 90px 0;
+  padding-bottom: 30px;
 }
 
 .rolesTabs {
@@ -1064,13 +1116,17 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--surface-2);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
 .rfItem {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 18px;
@@ -1316,7 +1372,7 @@
 // ── DEMO TABLE ──
 .demoSection {
   background: white;
-  padding: 90px 0;
+  padding: 40px 0;
 }
 
 .demoWrapper {
@@ -1329,7 +1385,7 @@
 
 .demoTopbar {
   padding: 16px 24px;
-  background: white;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -1381,7 +1437,7 @@
   padding: 7px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: white;
+  background: var(--surface);
   font-size: 13px;
   color: var(--ink-2);
   font-family: inherit;
@@ -1520,7 +1576,7 @@
 
 .demoFooter {
   padding: 12px 20px;
-  background: white;
+  background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -1541,7 +1597,7 @@
   height: 32px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: white;
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1574,7 +1630,7 @@
 // ── PRICING ──
 .pricingSection {
   background: var(--surface-2);
-  padding: 90px 0;
+  //padding: 40px 0;
   text-align: center;
 }
 
@@ -1829,7 +1885,7 @@
 }
 
 .pricingFaq {
-  margin-top: 40px;
+  margin: 40px 0;
   text-align: center;
 
   p {
@@ -1846,7 +1902,6 @@
 // ── TESTIMONIALS ──
 .testimonialsSection {
   background: white;
-  padding: 90px 0;
 }
 
 .tGrid {
@@ -1934,7 +1989,7 @@
 // ── FAQ ──
 .faqSection {
   background: var(--surface-2);
-  padding: 90px 0;
+  padding: 40px 0;
 }
 
 .faqGrid {
@@ -2029,7 +2084,7 @@
 .finalCta {
   background: var(--ink);
   color: white;
-  padding: 100px 0;
+  padding: 50px 0;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -2053,7 +2108,7 @@
   font-size: clamp(32px, 5vw, 56px);
   font-weight: 700;
   line-height: 1.15;
-  margin-bottom: 20px;
+  padding: 20px 0;
   letter-spacing: -0.02em;
 
   em { color: var(--green-mid); font-style: italic; }
@@ -2115,7 +2170,7 @@
   display: flex;
   gap: 32px;
   justify-content: center;
-  margin-top: 40px;
+  padding: 25px;
   flex-wrap: wrap;
 }
 
@@ -2296,11 +2351,159 @@
   @media (max-width: 768px) {
     display: flex;
   }
+
+  :global(body.theme-dark) & {
+    background: rgba(17, 24, 39, 0.95);
+  }
+}
+
+/* ── DARK MODE OVERRIDES ── */
+:global(body.theme-dark) {
+  .heroVisualInner,
+  .dashCard,
+  .statCard,
+  .featuresSection,
+  .featCard,
+  .roleMockup,
+  .demoWrapper,
+  .priceCard,
+  .tCard,
+  .faqItem,
+  .finalCtaContent,
+  .contactCard,
+  .navMobile,
+  .logoPill,
+  .applyForm,
+  .modalForm,
+  .chatBox,
+  .quickForm,
+  .valueCard,
+  .teamCard,
+  .milestone,
+  .statCard,
+  .roleFeatures,
+  .roomRow,
+  .notifRow,
+  .panelFooter,
+  .mockupBody,
+  .mockupHeader,
+  .billRow,
+  .payCard,
+  .reqRow,
+  .demoTableWrap,
+  .mainTable,
+  .planFeatList li,
+  .pricingSection,
+  .section,
+  .featuresGrid,
+  .footer,
+  .footerBottom,
+  .footerDesc,
+  .tGrid,
+  .demoWrapper,
+  .dashboardPreview,
+  .dashHeader,
+  .dashRow {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--border);
+  }
+
+.browserBar,
+.mainTable thead,
+.priceCardPopular {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+  .heroGrid {
+    background-image:
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    opacity: 2.2;
+  }
+
+  .statCardLabel,
+  .dashSubtitle,
+  .dashDate,
+  .roomTenant,
+  .notifTime {
+    color: var(--ink-3);
+  }
+
+  .heroVisual {
+    filter: drop-shadow(0 12px 28px rgba(0,0,0,0.4));
+  }
+
+.mainTable th,
+.mainTable td {
+  border-color: var(--border);
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.mainTable thead {
+  background: var(--surface-2);
+}
+
+.demoSection,
+.featuresSection,
+.rolesSection,
+.pricingSection,
+.testimonialsSection,
+  .faqSection,
+  .finalCta,
+  .contactSection {
+    background: var(--surface-2);
+  }
+
+  .tag {
+    background: var(--surface-3);
+  }
+
+  .footer {
+    color: var(--ink);
+  }
+
+  input,
+  select,
+  textarea {
+    background: var(--surface-3);
+    border-color: var(--border);
+    color: var(--ink);
+  }
+
+  .rfItem,
+  .roleFeatures {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .searchBox input {
+    background: var(--surface-3);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .tCard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .tText {
+    color: var(--ink-3);
+  }
+
+  .tName {
+    color: var(--ink);
+  }
 }
 
 .contactSection {
   background: var(--surface);
-  padding: 80px 0;
+  padding-top: 80px;
 }
 
 .contactCard {
@@ -2323,7 +2526,7 @@
     border-radius: 10px;
     border: 1.5px solid var(--border-2);
     font-family: inherit;
-    background: #fff;
+    background: var(--surface);
 
     &:focus {
       outline: none;
@@ -2499,6 +2702,7 @@
   transition: opacity 0.7s ease, transform 0.7s ease;
 
   &Visible {
+    padding-top: 30px;
     opacity: 1;
     transform: translateY(0);
   }

@@ -402,7 +402,10 @@ const Landing = () => {
             from: 'user',
             text: chatInput.message.trim(),
         };
-        setChatMessages((prev) => [...prev, payload, {from: 'bot', text: 'Cảm ơn bạn! Team sẽ phản hồi trong vài phút.'}]);
+        setChatMessages((prev) => [...prev, payload, {
+            from: 'bot',
+            text: 'Cảm ơn bạn! Team sẽ phản hồi trong vài phút.'
+        }]);
         setChatInput({message: ''});
     };
 
@@ -502,36 +505,6 @@ const Landing = () => {
                             <span>✓</span> Hủy bất cứ lúc nào
                         </p>
 
-                        {/* Quick lead form */}
-                        <div className={styles.quickForm}>
-                            <div className={styles.quickFormTitle}>Đăng ký nhanh</div>
-                            <div className={styles.quickFormGrid}>
-                                <input
-                                    placeholder="Họ và tên"
-                                    value={lead.name}
-                                    onChange={(e) => setLead({...lead, name: e.target.value})}
-                                />
-                                <input
-                                    placeholder="Số điện thoại"
-                                    value={lead.phone}
-                                    onChange={(e) => setLead({...lead, phone: e.target.value})}
-                                />
-                                <input
-                                    placeholder="Email"
-                                    value={lead.email}
-                                    onChange={(e) => setLead({...lead, email: e.target.value})}
-                                />
-                                <button
-                                    className={styles.btnSolid}
-                                    onClick={() => {
-                                        alert('Cảm ơn bạn! Chúng tôi sẽ liên hệ trong 24h.');
-                                        setLead({name: '', phone: '', email: ''});
-                                    }}
-                                >
-                                    Gửi ngay
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Dashboard Preview */}
@@ -554,7 +527,8 @@ const Landing = () => {
                                 <div className={styles.dashHeader}>
                                     <div>
                                         <div className={styles.dashTitle}>Xin chào, anh Minh Tuấn 👋</div>
-                                        <div className={styles.dashSubtitle}>Nhà trọ Dream House Nguyễn Thị Minh Khai — Quận 3,
+                                        <div className={styles.dashSubtitle}>Nhà trọ Dream House Nguyễn Thị Minh Khai —
+                                            Quận 3,
                                             TP.HCM
                                         </div>
                                     </div>
@@ -693,18 +667,6 @@ const Landing = () => {
                             <span className={styles.statLabel}>{s.label}</span>
                         </div>
                     ))}
-                </div>
-            </div>
-
-            {/* ══ LOGOS ══ */}
-            <div className={styles.logoStrip}>
-                <div className={styles.container}>
-                    <div className={styles.logoStripInner}>
-                        <span className={styles.logoStripLabel}>Đối tác & cổng thanh toán:</span>
-                        {['VietQR', 'MoMo', 'ZaloPay', 'VNPay', 'SeABank', 'ACB'].map((name, i) => (
-                            <div key={i} className={styles.logoPill}>{name}</div>
-                        ))}
-                    </div>
                 </div>
             </div>
 
@@ -1126,7 +1088,7 @@ const Landing = () => {
             <section className={styles.testimonialsSection}>
                 <div className={styles.container}>
                     <div ref={ref('t-head')} className={cls('t-head')}
-                         style={{textAlign: 'center', maxWidth: 600, margin: '0 auto 56px'}}>
+                         style={{textAlign: 'center', maxWidth: 600, margin: '0 auto 30px'}}>
                         <div className={styles.sectionEyebrow}>Đánh giá từ người dùng</div>
                         <div className={styles.sectionH2}>Chủ trọ nói gì về <em>EzTro?</em></div>
                     </div>
@@ -1155,7 +1117,7 @@ const Landing = () => {
             <section className={styles.faqSection} id="faq">
                 <div className={styles.container}>
                     <div ref={ref('faq-head')} className={cls('faq-head')}
-                         style={{textAlign: 'center', maxWidth: 560, margin: '0 auto 56px'}}>
+                         style={{textAlign: 'center', maxWidth: 560, margin: '0 auto 30px'}}>
                         <div className={styles.sectionEyebrow}>FAQ</div>
                         <div className={styles.sectionH2}>Câu hỏi <em>thường gặp</em></div>
                     </div>
@@ -1239,7 +1201,8 @@ const Landing = () => {
                         <div>
                             <div className={styles.sectionEyebrow}>Liên hệ nhanh</div>
                             <div className={styles.sectionH2} style={{marginBottom: 8}}>Gửi tin nhắn cho chúng tôi</div>
-                            <p className={styles.sectionLead} style={{marginBottom: 16}}>Cần demo riêng hoặc câu hỏi về tính năng? Hãy để lại lời nhắn, đội ngũ sẽ phản hồi trong 24 giờ.</p>
+                            <p className={styles.sectionLead} style={{marginBottom: 16}}>Cần demo riêng hoặc câu hỏi về
+                                tính năng? Hãy để lại lời nhắn, đội ngũ sẽ phản hồi trong 24 giờ.</p>
                         </div>
                         <div className={styles.contactForm}>
                             <input
@@ -1272,6 +1235,12 @@ const Landing = () => {
                     </div>
                 </div>
             </section>
+            <div ref={ref('pricing-faq')} className={cls('pricing-faq')}>
+                <div className={styles.pricingFaq}>
+                    <p>Còn băn khoăn? <a href="#faq">Xem câu hỏi thường gặp</a> hoặc <a href="#">chat với chúng
+                        tôi</a> ngay bây giờ.</p>
+                </div>
+            </div>
 
             <Footer/>
 
@@ -1306,7 +1275,8 @@ const Landing = () => {
                         </div>
                         <div className={styles.chatBody}>
                             {chatMessages.map((m, i) => (
-                                <div key={i} className={`${styles.chatBubble} ${m.from === 'user' ? styles.chatUser : styles.chatBot}`}>
+                                <div key={i}
+                                     className={`${styles.chatBubble} ${m.from === 'user' ? styles.chatUser : styles.chatBot}`}>
                                     {m.text}
                                 </div>
                             ))}
