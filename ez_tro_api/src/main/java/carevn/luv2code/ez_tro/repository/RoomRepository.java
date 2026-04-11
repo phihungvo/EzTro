@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import carevn.luv2code.ez_tro.entity.Room;
 import carevn.luv2code.ez_tro.enums.RoomStatus;
+import carevn.luv2code.ez_tro.repository.projection.BoardingHouseOccupancyProjection;
 
 public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecificationExecutor<Room> {
     List<Room> findAllByBoardingHouse_IdIn(List<Integer> boardingHouseIds);
@@ -29,6 +30,53 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
 
     @Query("SELECT COUNT(r) FROM Room r WHERE r.boardingHouse.owner.id = :ownerId")
     long countByBoardingHouse_Owner_Id(@Param("ownerId") Integer ownerId);
+
+    @Query(
+            """
+			SELECT COUNT(r)
+			FROM Room r
+			WHERE r.boardingHouse.owner.id = :ownerId
+			AND r.boardingHouse.id = :boardingHouseId
+			""")
+    long countByOwnerIdAndBoardingHouseId(
+            @Param("ownerId") Integer ownerId, @Param("boardingHouseId") Integer boardingHouseId);
+
+    @Query(
+            """
+			SELECT COUNT(r)
+			FROM Room r
+			WHERE r.boardingHouse.owner.id = :ownerId
+			AND r.status = :status
+			""")
+    long countByOwnerIdAndStatus(@Param("ownerId") Integer ownerId, @Param("status") RoomStatus status);
+
+    @Query(
+            """
+			SELECT COUNT(r)
+			FROM Room r
+			WHERE r.boardingHouse.owner.id = :ownerId
+			AND r.boardingHouse.id = :boardingHouseId
+			AND r.status = :status
+			""")
+    long countByOwnerAndBoardingHouseAndStatus(
+            @Param("ownerId") Integer ownerId,
+            @Param("boardingHouseId") Integer boardingHouseId,
+            @Param("status") RoomStatus status);
+
+    @Query(
+            """
+			SELECT r.boardingHouse.id AS boardingHouseId,
+				r.boardingHouse.name AS boardingHouseName,
+				COUNT(r) AS totalRooms,
+				SUM(CASE WHEN r.status = carevn.luv2code.ez_tro.enums.RoomStatus.OCCUPIED THEN 1 ELSE 0 END) AS occupiedRooms
+			FROM Room r
+			WHERE r.boardingHouse.owner.id = :ownerId
+			AND (:boardingHouseId IS NULL OR r.boardingHouse.id = :boardingHouseId)
+			GROUP BY r.boardingHouse.id, r.boardingHouse.name
+			ORDER BY r.boardingHouse.name ASC
+			""")
+    List<BoardingHouseOccupancyProjection> aggregateOccupancyByHouse(
+            @Param("ownerId") Integer ownerId, @Param("boardingHouseId") Integer boardingHouseId);
 
     @Query(
             """

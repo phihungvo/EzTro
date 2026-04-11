@@ -15,4 +15,7 @@ public interface BoardingHouseRepository
 
     @Query("SELECT COUNT(bh) FROM BoardingHouse bh WHERE bh.owner.id = :ownerId")
     long countByOwnerId(@Param("ownerId") Integer ownerId);
+
+    @Query("SELECT bh FROM BoardingHouse bh WHERE bh.owner.id = :ownerId")
+    java.util.List<BoardingHouse> findByOwnerId(@Param("ownerId") Integer ownerId);
 }

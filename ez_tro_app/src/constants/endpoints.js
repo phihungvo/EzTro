@@ -226,6 +226,9 @@ const API_ENDPOINTS = {
         MY_LIMIT: `${BASE_URL}/subscriptions/my-limits`,
         CREATE: `${BASE_URL}/subscriptions/plans`,
     },
+    OWNER_DASHBOARD: {
+        SUMMARY: `${BASE_URL}/owner/dashboard/summary`,
+    },
 
     // FOR USER ROLE
     DASHBOARD: {

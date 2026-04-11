@@ -153,6 +153,76 @@ public interface BillRepository extends JpaRepository<Bill, Integer>, JpaSpecifi
 
     List<Bill> findByStatusInAndDueDate(List<BillStatus> statuses, LocalDate dueDate);
 
+    @Query(
+            value =
+                    """
+					SELECT SUM(b.amount - COALESCE(pa.sumAllocated,0))
+					FROM bills b
+					JOIN contracts c ON b.contract_id = c.id
+					JOIN rooms r ON c.room_id = r.id
+					JOIN boarding_houses bh ON r.boarding_house_id = bh.id
+					LEFT JOIN (
+						SELECT bill_id, SUM(amount) AS sumAllocated
+						FROM payment_allocations
+						GROUP BY bill_id
+					) pa ON pa.bill_id = b.id
+					WHERE bh.owner_id = :ownerId
+					AND (:boardingHouseId IS NULL OR bh.id = :boardingHouseId)
+					AND b.due_date >= :start AND b.due_date < :end
+					AND b.status <> 'CANCELLED'
+					""",
+            nativeQuery = true)
+    java.math.BigDecimal sumOutstandingByOwnerAndRange(
+            @Param("ownerId") Integer ownerId,
+            @Param("boardingHouseId") Integer boardingHouseId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
+    @Query(
+            value =
+                    """
+					SELECT SUM(b.amount - COALESCE(pa.sumAllocated,0))
+					FROM bills b
+					JOIN contracts c ON b.contract_id = c.id
+					JOIN rooms r ON c.room_id = r.id
+					JOIN boarding_houses bh ON r.boarding_house_id = bh.id
+					LEFT JOIN (
+						SELECT bill_id, SUM(amount) AS sumAllocated
+						FROM payment_allocations
+						GROUP BY bill_id
+					) pa ON pa.bill_id = b.id
+					WHERE bh.owner_id = :ownerId
+					AND (:boardingHouseId IS NULL OR bh.id = :boardingHouseId)
+					AND b.due_date >= :start AND b.due_date < :end
+					AND b.status = 'OVERDUE'
+					""",
+            nativeQuery = true)
+    java.math.BigDecimal sumOverdueByOwnerAndRange(
+            @Param("ownerId") Integer ownerId,
+            @Param("boardingHouseId") Integer boardingHouseId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
+    @Query(
+            value =
+                    """
+					SELECT COUNT(*)
+					FROM bills b
+					JOIN contracts c ON b.contract_id = c.id
+					JOIN rooms r ON c.room_id = r.id
+					JOIN boarding_houses bh ON r.boarding_house_id = bh.id
+					WHERE bh.owner_id = :ownerId
+					AND (:boardingHouseId IS NULL OR bh.id = :boardingHouseId)
+					AND b.due_date >= :start AND b.due_date < :end
+					AND b.status = 'OVERDUE'
+					""",
+            nativeQuery = true)
+    long countOverdueBillsByOwnerAndRange(
+            @Param("ownerId") Integer ownerId,
+            @Param("boardingHouseId") Integer boardingHouseId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
     List<Bill> findByStatus(BillStatus status);
 
     // Tìm bill theo contract và tháng/năm (nếu cần)

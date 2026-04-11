@@ -45,6 +45,19 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     @Query(
             """
+			SELECT COUNT(c)
+			FROM Contract c
+			WHERE c.room.boardingHouse.owner.id = :ownerId
+			AND c.room.boardingHouse.id = :boardingHouseId
+			AND c.status = :status
+			""")
+    long countByOwnerIdAndBoardingHouseIdAndStatus(
+            @Param("ownerId") Integer ownerId,
+            @Param("boardingHouseId") Integer boardingHouseId,
+            @Param("status") ContractStatus status);
+
+    @Query(
+            """
 		SELECT c FROM Contract c
 		WHERE c.status = :status
 		AND c.startDate <= :today
