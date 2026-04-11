@@ -10,3 +10,8 @@ export const getEmployeeByDepartment = async () => {
         return null;
     }
 };
+
+export const getOwnerDashboardSummary = async (params = {}) => {
+    const response = await apiClient.get(API_ENDPOINTS.OWNER_DASHBOARD.SUMMARY, {params});
+    return response.data.result;
+};
