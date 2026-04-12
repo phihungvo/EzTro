@@ -1,6 +1,7 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useMemo} from 'react';
 import classNames from 'classnames/bind';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {Col, ConfigProvider, Empty, Row, Segmented, Spin} from 'antd';
+import {message} from 'antd';
 import {
     AppstoreOutlined,
     CloudUploadOutlined,
@@ -10,8 +11,6 @@ import {
     SearchOutlined,
     TableOutlined,
 } from '@ant-design/icons';
-import {Col, ConfigProvider, Empty, message, Row, Segmented, Spin} from 'antd';
-
 import styles from '~/pages/Admin/BoardingHouse/BoardingHouse.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import BoardingHousesCard from '~/components/Layout/AdminLayout/components/BoardingHousesCard';
@@ -19,118 +18,34 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
-import {deleteBoardingHouse, getAllBoardingHouses} from '~/service/admin/boarding_house';
-import {useOwnerQuota} from '~/hooks/useOwnerQuota';
-import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
-import {useAuth} from '~/routes/AuthContext';
-import usePagination from '~/hooks/usePagination';
+import {useBoardingHousePage} from '~/pages/Admin/BoardingHouse/useBoardingHousePage';
 
 const cx = classNames.bind(styles);
 
-const resolveBasePath = (pathname) =>
-    pathname.startsWith('/admin') ? '/admin/boarding-houses' : '/owner/boarding-houses';
-
 function BoardingHouses() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const basePath = resolveBasePath(location.pathname);
-
-    const [boardingHouses, setBoardingHouses] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [selectedBoardingHouse, setSelectedBoardingHouse] = useState(null);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [viewMode, setViewMode] = useState('table');
-    const [searchTerm, setSearchTerm] = useState('');
     const {
+        loading,
+        deleting,
         pagination,
-        handleChange: handlePaginationChange,
-        setTotal: setPaginationTotal,
-    } = usePagination({initialPageSize: 10});
-    const currentPage = pagination.current;
-    const currentPageSize = pagination.pageSize;
+        total,
+        viewMode,
+        searchTerm,
+        modal,
+        filteredBoardingHouses,
+        isAddDisabled,
+        addButtonText,
+        handleAddBoardingHouse,
+        handleEditBoardingHouse,
+        handleOpenDelete,
+        handleCloseModal,
+        submitDelete,
+        handlePaginationChange,
+        handleTableChange,
+        changeViewMode,
+        changeSearchTerm,
+    } = useBoardingHousePage();
 
-    const {data: quota} = useOwnerQuota();
-    const invalidateQuota = useInvalidateQuota();
-    const {user} = useAuth();
-    const isOwner = user?.isOwner || user?.role === 'OWNER';
-
-    const current = quota?.currentBoardingHouses ?? 0;
-    const max = quota?.maxBoardingHouses ?? 0;
-    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
-    const isAddDisabled = isOwner && max > 0 && current >= max;
-
-    const fetchBoardingHouses = useCallback(async (page, pageSize) => {
-        setLoading(true);
-        try {
-            const response = await getAllBoardingHouses({page: page - 1, pageSize});
-            if (response?.content) {
-                setBoardingHouses(response.content);
-                setPaginationTotal(response.totalElements || 0);
-                return;
-            }
-
-            setBoardingHouses([]);
-            setPaginationTotal(0);
-        } catch (error) {
-            message.error(error?.response?.data?.message || 'Không thể tải danh sách khu trọ');
-            setBoardingHouses([]);
-            setPaginationTotal(0);
-        } finally {
-            setLoading(false);
-        }
-    }, [setPaginationTotal]);
-
-    useEffect(() => {
-        fetchBoardingHouses(currentPage, currentPageSize);
-    }, [currentPage, currentPageSize, fetchBoardingHouses]);
-
-    const filteredBoardingHouses = useMemo(() => {
-        const keyword = searchTerm.trim().toLowerCase();
-        if (!keyword) return boardingHouses;
-
-        return boardingHouses.filter((item) => [
-            item.name,
-            item.address,
-            item.contactPhone,
-            item.ownerName,
-            item.ownerEmail,
-        ].some((value) => String(value || '').toLowerCase().includes(keyword)));
-    }, [boardingHouses, searchTerm]);
-
-    const handleAddBoardingHouse = () => {
-        if (isAddDisabled) {
-            message.warning('Bạn đã đạt giới hạn số khu trọ theo gói hiện tại. Vui lòng nâng cấp gói.');
-            return;
-        }
-
-        navigate(`${basePath}/create`);
-    };
-
-    const handleEditBoardingHouse = (record) => {
-        navigate(`${basePath}/${record.id}/edit`);
-    };
-
-    const handleDeleteBoardingHouse = (record) => {
-        setSelectedBoardingHouse(record);
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!selectedBoardingHouse) return;
-
-        try {
-            await deleteBoardingHouse(selectedBoardingHouse.id);
-            invalidateQuota();
-            setIsDeleteModalOpen(false);
-            setSelectedBoardingHouse(null);
-            message.success('Xóa khu trọ thành công');
-            fetchBoardingHouses(currentPage, currentPageSize);
-        } catch (error) {
-            message.error(error?.response?.data?.message || 'Không thể xóa khu trọ');
-        }
-    };
-
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'Tên khu trọ',
             dataIndex: 'name',
@@ -201,13 +116,13 @@ function BoardingHouses() {
                         type="danger"
                         icon={<DeleteOutlined/>}
                         buttonWidth={40}
-                        onClick={() => handleDeleteBoardingHouse(record)}
+                        onClick={() => handleOpenDelete(record)}
                         style={{marginLeft: 8}}
                     />
                 </>
             ),
         },
-    ];
+    ], [handleEditBoardingHouse, handleOpenDelete]);
 
     return (
         <ConfigProvider>
@@ -218,13 +133,13 @@ function BoardingHouses() {
                         placeholder="Tìm theo tên khu trọ, địa chỉ, SĐT hoặc chủ sở hữu"
                         icon={<SearchOutlined/>}
                         value={searchTerm}
-                        onChange={(event) => setSearchTerm(event?.target?.value || '')}
+                        onChange={(event) => changeSearchTerm(event?.target?.value || '')}
                     />
 
                     <div className={cx('features')}>
                         <Segmented
                             value={viewMode}
-                            onChange={setViewMode}
+                            onChange={changeViewMode}
                             options={[
                                 {label: (<><TableOutlined/> Bảng</>), value: 'table'},
                                 {label: (<><AppstoreOutlined/> Thẻ</>), value: 'card'},
@@ -254,20 +169,24 @@ function BoardingHouses() {
                                 dataSources={filteredBoardingHouses}
                                 loading={loading}
                                 pagination={false}
+                                onTableChange={handleTableChange}
                             />
                         ) : (
                             <>
                                 {filteredBoardingHouses.length === 0 ? (
-                                    <Empty description="Không tìm thấy khu trọ phù hợp"/>
+                                    <Empty
+                                        description="Không có khu trọ nào"
+                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                    />
                                 ) : (
-                                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                                    <Row gutter={[16, 16]}>
                                         {filteredBoardingHouses.map((boardingHouse) => (
-                                            <Col xs={24} sm={12} md={12} lg={8} xl={6} key={boardingHouse.id}>
+                                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={boardingHouse.id}>
                                                 <BoardingHousesCard
                                                     boardingHouse={boardingHouse}
                                                     onView={() => handleEditBoardingHouse(boardingHouse)}
                                                     onEdit={() => handleEditBoardingHouse(boardingHouse)}
-                                                    onDelete={() => handleDeleteBoardingHouse(boardingHouse)}
+                                                    onDelete={() => handleOpenDelete(boardingHouse)}
                                                 />
                                             </Col>
                                         ))}
@@ -282,28 +201,34 @@ function BoardingHouses() {
                     <AppPagination
                         current={pagination.current}
                         pageSize={pagination.pageSize}
-                        total={pagination.total}
-                        pageSizeOptions={['6', '12', '24']}
+                        total={total}
                         onChange={handlePaginationChange}
-                        showTotal={(total, range) => `Đang xem ${range[0]}-${range[1]} trong ${total} khu trọ`}
                     />
                 </div>
 
                 <PopupModal
-                    isModalOpen={isDeleteModalOpen}
-                    setIsModalOpen={setIsDeleteModalOpen}
+                    isModalOpen={modal.open}
+                    setIsModalOpen={handleCloseModal}
                     title="Xóa khu trọ"
-                    onSubmit={handleConfirmDelete}
-                    initialValues={selectedBoardingHouse}
+                    fields={[]}
+                    onSubmit={submitDelete}
+                    initialValues={modal.selected}
                     isDeleteMode
-                    deleteMessage={(
-                        <>
-                            <p>
-                                Bạn có chắc muốn xóa khu trọ <b>{selectedBoardingHouse?.name}</b>?
-                            </p>
-                            <p>Khu trọ đã có tòa nhà, phòng hoặc dữ liệu vận hành sẽ không được phép xóa.</p>
-                        </>
-                    )}
+                    deleteConfirmLabel={deleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                    deleteMessage={
+                        modal.selected ? (
+                            <>
+                                <p>
+                                    Bạn có chắc chắn muốn xóa{' '}
+                                    <b>
+                                        <i>{modal.selected.name}</i>
+                                    </b>{' '}
+                                    ?
+                                </p>
+                                <p>Hành động này không thể hoàn tác.</p>
+                            </>
+                        ) : null
+                    }
                 />
             </div>
         </ConfigProvider>
