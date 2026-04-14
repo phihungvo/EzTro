@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import s from '../shared.module.scss';
 import cs from './AvatarSection.module.scss';
 
 /**
@@ -30,13 +29,6 @@ export default function AvatarSection({
         const file = e.target.files?.[0];
         if (file) onAvatarChange?.(file);
     };
-
-    const TENANT_TYPES = [
-        { key: 'individual', label: '👤 Cá nhân' },
-        { key: 'family',     label: '👨‍👩‍👧 Gia đình' },
-        { key: 'company',    label: '🏢 Công ty' },
-        { key: 'student',    label: '🎓 Sinh viên' },
-    ];
 
     return (
         <>

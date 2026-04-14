@@ -70,55 +70,95 @@ $radius-lg: 14px;
   margin: 0 auto;
 }
 
-// ── filter bar ───────────────────────────────────────────────────────────────
-.filterBar {
+.kpiTopRow {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  margin-bottom: 20px;
-  border: 1px solid rgba(148, 163, 184, .16);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at 14% 18%, rgba(34, 211, 238, .10), transparent 22%),
-    radial-gradient(circle at 86% 0%, rgba(139, 92, 246, .16), transparent 28%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 12, 24, 0.96));
-  box-shadow:
-    0 24px 56px rgba(0,0,0,0.34),
-    inset 0 1px 0 rgba(255,255,255,.03);
-  backdrop-filter: blur(18px);
-  animation: fadeUp .4s ease both;
-}
-
-.filterHead {
-  display: flex;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
-}
+  margin-bottom: 20px;
 
-.filterBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.16);
-  color: #d8f5ff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-
-  :global(.anticon) {
-    font-size: 11px;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.filterHint {
-  color: $c-muted;
-  font-size: 12px;
+.kpiCluster {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  min-width: 0;
+  animation: fadeUp .5s ease both;
+}
+
+.filterSlot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
+  justify-self: end;
+}
+
+.filterTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 11px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(11, 16, 32, 0.92));
+  color: $c-text;
+  cursor: pointer;
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: rgba(34, 211, 238, .3);
+    box-shadow:
+      0 16px 36px rgba(0,0,0,.28),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.filterTriggerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: rgba(34, 211, 238, 0.12);
+  color: #7dd3fc;
+
+  :global(.anticon) {
+    font-size: 13px;
+  }
+}
+
+.filterTriggerMeta {
+  display: none;
+}
+
+.filterPanel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: min(620px, calc(100vw - 24px));
+  padding: 0;
 }
 
 .filterGrid {
@@ -150,21 +190,23 @@ $radius-lg: 14px;
 .pillRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 3px;
+  flex-wrap: nowrap;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .pill {
   display: inline-flex;
   align-items: center;
-  height: 34px;
-  padding: 0 14px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, .16);
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(11, 16, 32, 0.88));
   color: $c-text;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 7.5px;
+  font-weight: 700;
   letter-spacing: .01em;
   cursor: pointer;
   transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease, color .18s ease;
@@ -174,7 +216,7 @@ $radius-lg: 14px;
     0 1px 0 rgba(0,0,0,.2);
 
   :global(.anticon) {
-    font-size: 12px;
+    font-size: 7.5px;
   }
 
   &:hover {
@@ -197,24 +239,36 @@ $radius-lg: 14px;
 }
 
 .pillCustom {
-  gap: 6px;
-  padding-inline: 16px;
+  justify-content: center;
+  width: 22px;
+  min-width: 22px;
+  padding: 0;
+
+  :global(.anticon) {
+    font-size: 9px;
+  }
 }
 
 .rangeWrap {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  width: auto;
+  flex-shrink: 0;
+
+  :global(.ant-picker) {
+    width: 172px;
+  }
 }
 
 .selectShell {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
+  gap: 3px;
+  width: 168px;
   min-width: 0;
-  padding: 6px 10px 6px 12px;
-  border-radius: 14px;
+  padding: 2px 5px 2px 7px;
+  border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, .16);
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(11, 16, 32, 0.88));
   box-shadow:
@@ -224,34 +278,33 @@ $radius-lg: 14px;
 
 .selectIcon {
   color: #7dd3fc;
-  font-size: 14px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 
-// ── KPI grid ─────────────────────────────────────────────────────────────────
-.kpiGrid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  padding: 4px 0 12px;
-  margin-bottom: 20px;
-  overflow: hidden;
-  animation: fadeUp .5s ease both;
+@media (max-width: 980px) {
+  .filterPanel {
+    flex-wrap: wrap;
+    width: min(620px, calc(100vw - 24px));
+  }
 
-
+  .rangeWrap :global(.ant-picker),
+  .selectShell {
+    width: 100%;
+  }
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 .card {
   display          : flex;
   align-items      : center;
-  gap              : 12px;
-  padding          : 18px 16px;
+  gap              : 9px;
+  padding          : 12px 10px;
   background       : $c-bg;
   border           : 1px solid $c-border;
   border-radius    : $radius-card;
-  min-width        : 160px;
-  max-width        : 220px;
+  min-width        : 0;
+  max-width        : none;
   flex             : 1 1 0;
   transition       : background .15s ease, border-color .15s ease;
   cursor           : default;
@@ -265,8 +318,8 @@ $radius-lg: 14px;
 // ─── Icon box ─────────────────────────────────────────────────────────────────
 .iconWrap {
   flex-shrink      : 0;
-  width            : clamp(40px, 5.5vw, 50px);
-  height           : clamp(40px, 5.5vw, 50px);
+  width            : clamp(32px, 4vw, 38px);
+  height           : clamp(32px, 4vw, 38px);
   border-radius    : $radius-icon;
   background       : var(--kpi-icon-bg, $c-icon-bg);
   display          : flex;
@@ -278,9 +331,9 @@ $radius-lg: 14px;
   // Ant Design / SVG icons bên trong
   :global(.anticon),
   svg {
-    font-size : clamp(16px, 2.2vw, 20px);
-    width     : clamp(16px, 2.2vw, 20px);
-    height    : clamp(16px, 2.2vw, 20px);
+    font-size : clamp(13px, 1.8vw, 16px);
+    width     : clamp(13px, 1.8vw, 16px);
+    height    : clamp(13px, 1.8vw, 16px);
     color     : inherit;
     fill      : currentColor;
   }
@@ -290,12 +343,12 @@ $radius-lg: 14px;
 .body {
   display   : flex;
   flex-direction: column;
-  gap       : 8px;
+  gap       : 5px;
   min-width : 0;
 }
 
 .label {
-  font-size      : clamp(9px, 1.8vw, 10px);
+  font-size      : clamp(8px, 1.3vw, 9px);
   font-weight    : 700;
   letter-spacing : .10em;
   text-transform : uppercase;
@@ -309,16 +362,15 @@ $radius-lg: 14px;
 .valueRow {
   display     : flex;
   align-items : baseline;
-  gap         : 3px;
+  gap         : 2px;
   line-height : 1;
-  padding: 5px 0;
+  padding: 2px 0;
 }
 
 .value {
   font-family    : $font-mono;
-  font-size      : clamp(12px, 3.8vw, 20px);
+  font-size      : clamp(11px, 2.4vw, 15px);
   font-weight    : 900;
-  //font-size: larger;
   color          : $c-value;
   letter-spacing : -.03em;
   white-space    : nowrap;
@@ -326,7 +378,7 @@ $radius-lg: 14px;
 
 .suffix {
   font-family : $font-mono;
-  font-size   : clamp(9px, 1.8vw, 11px);
+  font-size   : clamp(8px, 1.3vw, 10px);
   font-weight : 500;
   color       : $c-suffix;
 }
@@ -335,7 +387,7 @@ $radius-lg: 14px;
 .footer {
   display     : flex;
   align-items : center;
-  gap         : 8px;
+  gap         : 5px;
   margin-top  : 2px;
 }
 
@@ -343,9 +395,9 @@ $radius-lg: 14px;
   display         : inline-flex;
   align-items     : center;
   gap             : 4px;
-  padding         : 3px 9px;
+  padding         : 2px 7px;
   border-radius   : $radius-badge;
-  font-size       : clamp(10px, 1.8vw, 11px);
+  font-size       : clamp(9px, 1.3vw, 10px);
   font-weight     : 700;
   letter-spacing  : .01em;
   white-space     : nowrap;
@@ -366,7 +418,7 @@ $radius-lg: 14px;
 }
 
 .desc {
-  font-size  : clamp(11px, 2vw, 12px);
+  font-size  : clamp(10px, 1.4vw, 11px);
   color      : $c-desc;
   white-space: nowrap;
 }
@@ -640,8 +692,8 @@ $radius-lg: 14px;
 :global {
   .ez-home-range-picker.ant-picker.ant-picker-small {
     width: 100%;
-    height: 36px;
-    border-radius: 12px;
+    height: 30px;
+    border-radius: 9px;
     border-color: rgba(148, 163, 184, .16);
     background: rgba(15, 23, 42, 0.92);
     font-size: 12px;
@@ -650,7 +702,7 @@ $radius-lg: 14px;
 
     .ant-picker-input > input {
       color: $c-text;
-      font-size: 12px;
+      font-size: 10px;
     }
 
     .ant-picker-suffix,
@@ -675,12 +727,12 @@ $radius-lg: 14px;
   }
 
   .ez-home-house-select.ant-select-sm .ant-select-selector {
-    height: 36px !important;
-    padding: 0 10px !important;
-    border-radius: 12px !important;
+    height: 28px !important;
+    padding: 0 6px !important;
+    border-radius: 9px !important;
     border: none !important;
     background: transparent !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
     box-shadow: none !important;
     transition: none !important;
 
@@ -691,7 +743,7 @@ $radius-lg: 14px;
 
     .ant-select-selection-item,
     .ant-select-selection-placeholder {
-      line-height: 34px !important;
+      line-height: 26px !important;
       color: $c-text;
       padding-left: 0;
     }
@@ -721,6 +773,23 @@ $radius-lg: 14px;
 
     .ant-select-item-option-active {
       background: rgba(139, 92, 246, 0.12);
+    }
+  }
+
+  .ez-home-filter-popover {
+    .ant-popover-inner {
+      padding: 10px;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, .16);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(34, 211, 238, .10), transparent 24%),
+        radial-gradient(circle at 88% 0%, rgba(139, 92, 246, .12), transparent 28%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 12, 24, 0.98));
+      box-shadow: 0 30px 60px rgba(0,0,0,.42);
+    }
+
+    .ant-popover-inner-content {
+      padding: 0;
     }
   }
 }

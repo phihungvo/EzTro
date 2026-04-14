@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Row, Col, Card, Tag, DatePicker,
+    Row, Col, Card, Tag, DatePicker, Popover,
     Typography, Avatar, Select, Spin, message,
 } from 'antd';
 import {
     DollarOutlined, HomeOutlined, TeamOutlined, ShoppingOutlined,
     ArrowUpOutlined, ArrowDownOutlined, FireOutlined,
-    WalletOutlined, FieldTimeOutlined, FileProtectOutlined, ApartmentOutlined, CalendarOutlined, FilterOutlined
+    WalletOutlined, FieldTimeOutlined, FileProtectOutlined, ApartmentOutlined, FilterOutlined
 } from '@ant-design/icons';
 import ReactApexChart from 'react-apexcharts';
 import styles from './HomeDashboard.module.scss';
@@ -294,6 +294,7 @@ function AdminDashboard() {
     const [boardingHouses, setBoardingHouses] = useState([]);
     const [ownerSummary, setOwnerSummary] = useState(null);
     const [loadingSummary, setLoadingSummary] = useState(false);
+    const [filterOpen, setFilterOpen] = useState(false);
 
     const handleRangeChange = (value) => {
         setFilterRangeType(value);
@@ -350,6 +351,8 @@ function AdminDashboard() {
             { title: 'Thanh toán quá hạn', value: 120_000_000, suffix: 'VNĐ', change: -2.1, changeBadge: 'So với tuần trước', icon: <FieldTimeOutlined />, iconColor: '#f97316', iconBg: 'rgba(249, 115, 22, 0.14)', description: 'Công nợ quá hạn' },
             { title: 'Tổng giao dịch', value: 8956, suffix: '', change: 24.6, changeBadge: 'Tháng', icon: <ShoppingOutlined />, iconColor: '#14b8a6', iconBg: 'rgba(20, 184, 166, 0.14)', description: '+1,756 tháng này' },
         ];
+    const leftKpiMetrics = kpiMetrics.slice(0, 3);
+    const rightKpiMetrics = kpiMetrics.slice(3);
 
     // Owner dynamic chart data
     const revenueCategories = ownerSummary?.revenueTrend?.categories || [];
@@ -384,76 +387,103 @@ function AdminDashboard() {
         tooltip: { ...baseTooltip, y: { formatter: (v) => v.toLocaleString() } },
     };
 
+    const activeRangeLabel = filterRangeType === 'CUSTOM'
+        ? 'Tùy chọn'
+        : ({WEEK: 'Tuần', MONTH: 'Tháng', YEAR: 'Năm'}[filterRangeType] || 'Tuần');
+
+    const filterContent = (
+        <div className={styles.filterPanel}>
+            <div className={styles.pillRow}>
+                {['WEEK', 'MONTH', 'YEAR'].map((v) => (
+                    <button
+                        key={v}
+                        type="button"
+                        className={`${styles.pill} ${filterRangeType === v ? styles.pillActive : ''}`}
+                        onClick={() => {
+                            handleRangeChange(v);
+                            setFilterOpen(false);
+                        }}
+                    >
+                        {{ WEEK: 'Tuần', MONTH: 'Tháng', YEAR: 'Năm' }[v]}
+                    </button>
+                ))}
+                <button
+                    type="button"
+                    className={`${styles.pill} ${styles.pillCustom} ${filterRangeType === 'CUSTOM' ? styles.pillActive : ''}`}
+                    aria-label="Tùy chọn"
+                    title="Tùy chọn"
+                    onClick={() => {
+                        handleRangeChange('CUSTOM');
+                    }}
+                >
+                    <FieldTimeOutlined />
+                </button>
+            </div>
+            {filterRangeType === 'CUSTOM' && (
+                <div className={styles.rangeWrap}>
+                    <RangePicker
+                        value={filterDateRange}
+                        onChange={(dates) => {
+                            setFilterDateRange(dates);
+                            setFilterOpen(false);
+                        }}
+                        allowClear
+                        size="small"
+                        className="ez-home-range-picker"
+                    />
+                </div>
+            )}
+            <div className={styles.selectShell}>
+                <ApartmentOutlined className={styles.selectIcon} />
+                <Select
+                    allowClear
+                    placeholder="Tất cả khu nhà"
+                    value={selectedHouse}
+                    onChange={(value) => {
+                        setSelectedHouse(value);
+                        setFilterOpen(false);
+                    }}
+                    options={boardingHouses.map((bh) => ({ value: bh.id, label: bh.name }))}
+                    size="small"
+                    className="ez-home-house-select"
+                    popupClassName="ez-home-house-select-dropdown"
+                />
+            </div>
+        </div>
+    );
+
     return (
         <div className={styles.wrapper}>
             <div className={styles.container}>
-                {isOwner && (
-                    <div className={styles.filterBar}>
-                        {/*<div className={styles.filterHead}>*/}
-                        {/*    <div className={styles.filterBadge}>*/}
-                        {/*        <FilterOutlined />*/}
-                        {/*        <span>Bộ lọc dữ liệu</span>*/}
-                        {/*    </div>*/}
-                        {/*    <div className={styles.filterHint}>Chọn nhanh khoảng thời gian và khu nhà</div>*/}
-                        {/*</div>*/}
-
-                        <div className={styles.filterGrid}>
-                            <div className={styles.filterGroup}>
-                                <div className={styles.filterLabel}>Khoảng thời gian</div>
-                                <div className={styles.pillRow}>
-                                    {['WEEK', 'MONTH', 'YEAR'].map((v) => (
-                                        <button
-                                            key={v}
-                                            className={`${styles.pill} ${filterRangeType === v ? styles.pillActive : ''}`}
-                                            onClick={() => handleRangeChange(v)}
-                                        >
-                                            {{ WEEK: 'Tuần', MONTH: 'Tháng', YEAR: 'Năm' }[v]}
-                                        </button>
-                                    ))}
-                                    <button
-                                        className={`${styles.pill} ${styles.pillCustom} ${filterRangeType === 'CUSTOM' ? styles.pillActive : ''}`}
-                                        onClick={() => handleRangeChange('CUSTOM')}
-                                    >
-                                        <CalendarOutlined />
-                                        <span>Tùy chọn</span>
-                                    </button>
-                                </div>
-                                {filterRangeType === 'CUSTOM' && (
-                                    <div className={styles.rangeWrap}>
-                                        <RangePicker
-                                            value={filterDateRange}
-                                            onChange={setFilterDateRange}
-                                            allowClear
-                                            size="small"
-                                            className="ez-home-range-picker"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={styles.filterGroup}>
-                                <div className={styles.filterLabel}>Khu nhà</div>
-                                <div className={styles.selectShell}>
-                                    <ApartmentOutlined className={styles.selectIcon} />
-                                    <Select
-                                        allowClear
-                                        placeholder="Tất cả khu nhà"
-                                        value={selectedHouse}
-                                        onChange={setSelectedHouse}
-                                        options={boardingHouses.map((bh) => ({ value: bh.id, label: bh.name }))}
-                                        size="small"
-                                        className="ez-home-house-select"
-                                        popupClassName="ez-home-house-select-dropdown"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                {/* ── KPI Row ── */}
+                <div className={styles.kpiTopRow}>
+                    <div className={styles.kpiCluster}>
+                        {leftKpiMetrics.map((m, i) => <KpiCard key={i} {...m} />)}
                     </div>
-                )}
 
-                {/* ── KPI Grid ── */}
-                <div className={styles.kpiGrid}>
-                    {kpiMetrics.map((m, i) => <KpiCard key={i} {...m} />)}
+                    <div className={styles.kpiCluster}>
+                        {rightKpiMetrics.map((m, i) => <KpiCard key={i + 3} {...m} />)}
+                    </div>
+
+                    {isOwner && (
+                        <div className={styles.filterSlot}>
+                            <Popover
+                                open={filterOpen}
+                                onOpenChange={setFilterOpen}
+                                trigger="click"
+                                placement="bottomRight"
+                                content={filterContent}
+                                overlayClassName="ez-home-filter-popover"
+                                arrow={false}
+                            >
+                                <button type="button" className={styles.filterTrigger} aria-label="Bộ lọc">
+                                    <span className={styles.filterTriggerIcon}>
+                                        <FilterOutlined />
+                                    </span>
+                                </button>
+                            </Popover>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Owner-specific charts ── */}

@@ -2,6 +2,13 @@ import API_ENDPOINTS from '~/constants/endpoints';
 import apiClient from '~/service/api/api';
 import {message} from 'antd';
 
+const createIdempotencyKey = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 export const listPayments = async (params = {}) => {
     try {
         const res = await apiClient.get(API_ENDPOINTS.PAYMENT.RECEIVE, {params});
@@ -24,7 +31,11 @@ export const getPaymentById = async (paymentId) => {
 
 export const receivePayment = async (payload) => {
     try {
-        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.RECEIVE, payload);
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.RECEIVE, payload, {
+            headers: {
+                'Idempotency-Key': createIdempotencyKey(),
+            },
+        });
         return res.data.result;
     } catch (error) {
         message.error(error.response?.data?.message || 'Ghi nhận thanh toán thất bại');
@@ -34,7 +45,11 @@ export const receivePayment = async (payload) => {
 
 export const confirmPayment = async (paymentId, payload) => {
     try {
-        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId), payload);
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.CONFIRM(paymentId), payload, {
+            headers: {
+                'Idempotency-Key': createIdempotencyKey(),
+            },
+        });
         return res.data.result;
     } catch (error) {
         message.error(error.response?.data?.message || 'Xác nhận thanh toán thất bại');
@@ -44,7 +59,11 @@ export const confirmPayment = async (paymentId, payload) => {
 
 export const allocatePayment = async (paymentId, payload) => {
     try {
-        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.ALLOCATE(paymentId), payload);
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.ALLOCATE(paymentId), payload, {
+            headers: {
+                'Idempotency-Key': createIdempotencyKey(),
+            },
+        });
         return res.data.result;
     } catch (error) {
         message.error(error.response?.data?.message || 'Phân bổ thanh toán thất bại');
@@ -54,7 +73,11 @@ export const allocatePayment = async (paymentId, payload) => {
 
 export const reversePayment = async (paymentId, payload) => {
     try {
-        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.REVERSE(paymentId), payload);
+        const res = await apiClient.post(API_ENDPOINTS.PAYMENT.REVERSE(paymentId), payload, {
+            headers: {
+                'Idempotency-Key': createIdempotencyKey(),
+            },
+        });
         return res.data.result;
     } catch (error) {
         message.error(error.response?.data?.message || 'Đảo ngược thanh toán thất bại');
