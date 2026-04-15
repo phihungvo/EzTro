@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import carevn.luv2code.ez_tro.constants.AppConstants;
 import carevn.luv2code.ez_tro.dto.requests.AuthRequest;
 import carevn.luv2code.ez_tro.dto.requests.GoogleLoginRequest;
 import carevn.luv2code.ez_tro.dto.requests.RegisterRequest;
@@ -35,6 +36,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final SystemConfigService systemConfigService;
+    private final AppConstants appConstants;
 
     @org.springframework.beans.factory.annotation.Value("${google.client-id:}")
     private String googleClientId;
@@ -70,8 +72,10 @@ public class AuthService {
         user.setEnabled(true);
 
         // Gán vai trò mặc định
-        Role userRole = roleRepository.findByName("USER").orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRoles(Set.of(userRole));
+        user.setRoles(roleRepository
+                .findByName(appConstants.getDefaultRole())
+                .map(Set::of)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND)));
 
         User savedUser = userRepository.save(user);
         systemConfigService.ensureDefaultSubscriptionForOwner(savedUser);
