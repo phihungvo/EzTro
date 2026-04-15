@@ -1,5 +1,6 @@
 package carevn.luv2code.ez_tro.configuration;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -21,9 +22,12 @@ public class MailTemplateConfig {
     }
 
     @Bean
-    public SpringTemplateEngine templateEngine(ClassLoaderTemplateResolver mailTemplateResolver) {
+    public SpringTemplateEngine templateEngine(
+            @Qualifier("mailTemplateResolver") ClassLoaderTemplateResolver mailTemplateResolver,
+            @Qualifier("documentTemplateResolver") ClassLoaderTemplateResolver documentTemplateResolver) {
         SpringTemplateEngine engine = new SpringTemplateEngine();
         engine.addTemplateResolver(mailTemplateResolver);
+        engine.addTemplateResolver(documentTemplateResolver);
         return engine;
     }
 }

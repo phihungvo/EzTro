@@ -13,6 +13,11 @@ import carevn.luv2code.ez_tro.service.admin.RoomUtilityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý đăng ký tiện ích theo phòng (RoomUtility).
+ *
+ * <p>RoomUtility là mapping giữa Room và Utility (có thể kèm quantity/start/end date... tùy thiết kế).
+ */
 @RestController
 @RequestMapping("/api/room-utilities")
 @RequiredArgsConstructor
@@ -20,6 +25,12 @@ public class RoomUtilityController {
 
     private final RoomUtilityService roomUtilityService;
 
+    /**
+     * Tạo mới đăng ký tiện ích cho phòng.
+     *
+     * @param request payload đăng ký
+     * @return response chứa room-utility vừa tạo
+     */
     @PostMapping
     public ApiResponse<RoomUtilityResponse> create(@Valid @RequestBody RoomUtilityRequest request) {
         RoomUtilityResponse response = roomUtilityService.create(request);
@@ -30,6 +41,14 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Cập nhật đăng ký tiện ích theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id tiện ích
+     * @param request payload cập nhật
+     * @return response chứa room-utility sau cập nhật
+     */
     @PutMapping("/{roomId}/{utilityId}")
     public ApiResponse<RoomUtilityResponse> update(
             @PathVariable Integer roomId,
@@ -43,6 +62,13 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Xóa đăng ký tiện ích theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id tiện ích
+     * @return response không có payload
+     */
     @DeleteMapping("/{roomId}/{utilityId}")
     public ApiResponse<Void> delete(@PathVariable Integer roomId, @PathVariable Integer utilityId) {
         roomUtilityService.delete(roomId, utilityId);
@@ -52,6 +78,13 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy chi tiết đăng ký tiện ích theo cặp (roomId, utilityId).
+     *
+     * @param roomId id phòng
+     * @param utilityId id tiện ích
+     * @return response chứa room-utility
+     */
     @GetMapping("/{roomId}/{utilityId}")
     public ApiResponse<RoomUtilityResponse> getById(@PathVariable Integer roomId, @PathVariable Integer utilityId) {
         RoomUtilityResponse response = roomUtilityService.getById(roomId, utilityId);
@@ -62,6 +95,12 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tất cả đăng ký tiện ích theo phòng.
+     *
+     * @param roomId id phòng
+     * @return response chứa danh sách room-utilities
+     */
     @GetMapping("/room/{roomId}")
     public ApiResponse<List<RoomUtilityResponse>> getByRoomId(@PathVariable Integer roomId) {
         List<RoomUtilityResponse> responses = roomUtilityService.getByRoomId(roomId);
@@ -72,6 +111,12 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách đăng ký tiện ích active theo phòng.
+     *
+     * @param roomId id phòng
+     * @return response chứa danh sách active
+     */
     @GetMapping("/room/{roomId}/active")
     public ApiResponse<List<RoomUtilityResponse>> getActiveByRoomId(@PathVariable Integer roomId) {
         List<RoomUtilityResponse> responses = roomUtilityService.getActiveByRoomId(roomId);
@@ -82,6 +127,12 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách đăng ký theo utility.
+     *
+     * @param utilityId id utility
+     * @return response chứa danh sách room-utilities
+     */
     @GetMapping("/utility/{utilityId}")
     public ApiResponse<List<RoomUtilityResponse>> getByUtilityId(@PathVariable Integer utilityId) {
         List<RoomUtilityResponse> responses = roomUtilityService.getByUtilityId(utilityId);
@@ -92,6 +143,14 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách room-utilities theo phòng (phân trang).
+     *
+     * @param roomId id phòng
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa page room-utilities
+     */
     @GetMapping("/room/{roomId}/paged")
     public ApiResponse<Page<RoomUtilityResponse>> getByRoomIdPaged(
             @PathVariable Integer roomId,
@@ -105,6 +164,13 @@ public class RoomUtilityController {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tất cả room-utilities (phân trang).
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return response chứa page room-utilities
+     */
     @GetMapping("/all-paged")
     public ApiResponse<Page<RoomUtilityResponse>> getAllPaged(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {

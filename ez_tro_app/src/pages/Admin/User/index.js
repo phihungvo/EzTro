@@ -14,7 +14,7 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Button, Form, message, Space, Tag, Tooltip} from 'antd';
+import {Button, Form, message, Pagination, Space, Tag, Tooltip} from 'antd';
 import {getAllUser, createUser, updateUser, deleteUser} from '~/service/admin/user';
 import {getAllRolesNoPaging} from '~/service/admin/role';
 import {exportExcelFile} from '~/service/admin/export_service';
@@ -452,6 +452,15 @@ function UserList() {
                     <SmartButton title="Thêm mới" icon={<PlusOutlined/>} type="primary" onClick={handleAddUser}/>
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>} onClick={handleExportFile}/>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showTotal={(total) => `Tổng ${total} người dùng`}
+                        pageSizeOptions={['5', '10', '20', '50']}
+                        onChange={(page, pageSize) => handleGetAllUsers(page, pageSize)}
+                    />
                 </div>
             </div>
             <div className={cx('trailer-container')}>
@@ -459,7 +468,7 @@ function UserList() {
                     columns={dynamicColumns}
                     dataSources={userSource}
                     loading={loading}
-                    pagination={pagination}
+                    pagination={false}
                     onTableChange={handleTableChange}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={handleSelectChange}

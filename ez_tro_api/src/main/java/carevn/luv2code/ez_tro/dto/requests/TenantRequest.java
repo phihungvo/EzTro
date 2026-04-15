@@ -28,11 +28,21 @@ public class TenantRequest {
 
     String identityNumber;
 
+    Date issueDate;
+
+    String issuePlace;
+
     Date dateOfBirth;
 
     Gender gender;
 
     String occupation;
+
+    String permanentAddress;
+
+    String emergencyContact;
+
+    String emergencyPhone;
 
     String note;
 }

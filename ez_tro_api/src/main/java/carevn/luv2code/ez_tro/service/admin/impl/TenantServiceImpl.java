@@ -14,10 +14,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantUpdateRequest;
+import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
+import carevn.luv2code.ez_tro.entity.BoardingHouse;
+import carevn.luv2code.ez_tro.entity.Building;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.Tenant;
 import carevn.luv2code.ez_tro.entity.User;
@@ -26,15 +30,31 @@ import carevn.luv2code.ez_tro.enums.Gender;
 import carevn.luv2code.ez_tro.exception.AppException;
 import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.mapper.TenantMapper;
+import carevn.luv2code.ez_tro.repository.BoardingHouseRepository;
+import carevn.luv2code.ez_tro.repository.BuildingRepository;
+import carevn.luv2code.ez_tro.repository.RoleRepository;
 import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.repository.UserRepository;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
+import carevn.luv2code.ez_tro.service.admin.ContractSnapshotService;
+import carevn.luv2code.ez_tro.service.admin.NotificationService;
 import carevn.luv2code.ez_tro.service.admin.TenantService;
 import carevn.luv2code.ez_tro.specification.TenantSpecs;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service xử lý nghiệp vụ người thuê (Tenant) phía admin/owner.
+ *
+ * <p>Trách nhiệm chính:
+ * <ul>
+ *   <li>Tạo tenant kèm tài khoản {@link User} (role USER) và gắn owner hiện tại.</li>
+ *   <li>Cập nhật/xóa tenant.</li>
+ *   <li>Lấy detail tenant và thông tin thuê hiện tại (dựa trên contract ACTIVE + effective date).</li>
+ *   <li>Filter/phân trang theo quyền (admin/owner).</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -45,13 +65,25 @@ public class TenantServiceImpl implements TenantService {
     private final TenantMapper tenantMapper;
     private final PasswordEncoder passwordEncoder;
     private final ResourceLimitServiceImpl resourceLimitService;
+    private final BoardingHouseRepository boardingHouseRepository;
+    private final BuildingRepository buildingRepository;
+    private final RoleRepository roleRepository;
+    private final ContractSnapshotService contractSnapshotService;
+    private final NotificationService notificationService;
 
+    /**
+     * Tạo mới tenant và user account tương ứng.
+     *
+     * @param request payload tạo tenant
+     * @return tenant DTO sau khi tạo
+     */
     @Override
-    public TenantResponse create(TenantRequest request) {
+    public TenantResponse create(TenantCreateRequest request) {
         Integer ownerId = SecurityUtils.getCurrentUserId();
 
         // Validate quota tenant
         resourceLimitService.validateCanCreateTenant(ownerId);
+        validateCreateContext(request.getBoardingHouseId(), request.getBuildingId());
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -65,10 +97,14 @@ public class TenantServiceImpl implements TenantService {
                 .phoneNumber(request.getPhoneNumber())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .originalPassword(request.getPassword())
+                .address(request.getPermanentAddress())
                 .enabled(true)
                 .accountNonExpired(true)
                 .credentialsNonExpired(true)
                 .accountNonLocked(true)
+                .roles(java.util.Set.of(roleRepository
+                        .findByName("USER")
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND))))
                 .build();
 
         userRepository.save(user);
@@ -78,38 +114,113 @@ public class TenantServiceImpl implements TenantService {
 
         tenant = tenantRepository.save(tenant);
 
-        // Handle email noti when create tenant if needed
-        // .....
+        try {
+            notificationService.sendToUser(
+                    ownerId,
+                    "Tạo khách thuê thành công",
+                    "Bạn đã tạo khách thuê " + request.getFullName() + " (" + request.getEmail() + ") thành công.",
+                    "OWNER_TENANT_CREATED",
+                    java.util.Map.of(
+                            "tenantId", tenant.getId(),
+                            "tenantName", request.getFullName(),
+                            "tenantEmail", request.getEmail(),
+                            "dedupeKey", "owner-tenant-created-" + tenant.getId()));
+        } catch (Exception ex) {
+            log.warn(
+                    "Failed to send owner tenant created notification for tenant {}: {}",
+                    tenant.getId(),
+                    ex.getMessage());
+        }
+
+        try {
+            notificationService.sendToUser(
+                    user.getId(),
+                    "Tài khoản của bạn đã được tạo",
+                    "Tài khoản EZ TRO đã được tạo thành công. Bạn có thể đăng nhập bằng email đã đăng ký.",
+                    "TENANT_ACCOUNT_WELCOME",
+                    java.util.Map.of("tenantId", tenant.getId(), "profileAction", "WELCOME"));
+        } catch (Exception ex) {
+            log.warn("Failed to send tenant welcome notification for tenant {}: {}", tenant.getId(), ex.getMessage());
+        }
 
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Cập nhật tenant theo id (bao gồm cập nhật thông tin user nếu có).
+     *
+     * @param id id tenant
+     * @param request payload cập nhật
+     * @return tenant DTO sau khi cập nhật
+     */
     @Override
-    public TenantResponse update(Integer id, TenantRequest request) {
+    public TenantResponse update(Integer id, TenantUpdateRequest request) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
 
+        User user = tenant.getUser();
+        if (user != null) {
+            boolean emailChanged = !user.getEmail().equalsIgnoreCase(request.getEmail());
+            if (emailChanged && userRepository.existsByEmail(request.getEmail())) {
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            }
+
+            user.setFullName(request.getFullName());
+            user.setPhoneNumber(request.getPhoneNumber());
+            user.setEmail(request.getEmail());
+            user.setUserName(request.getEmail());
+            user.setAddress(request.getPermanentAddress());
+
+            if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                user.setOriginalPassword(request.getPassword());
+            }
+            userRepository.save(user);
+        }
+
         tenant.setIdentityNumber(request.getIdentityNumber());
+        tenant.setIssueDate(request.getIssueDate());
+        tenant.setIssuePlace(request.getIssuePlace());
         tenant.setDateOfBirth(request.getDateOfBirth());
         tenant.setGender(request.getGender());
         tenant.setOccupation(request.getOccupation());
+        tenant.setPermanentAddress(request.getPermanentAddress());
+        tenant.setEmergencyContact(request.getEmergencyContact());
+        tenant.setEmergencyPhone(request.getEmergencyPhone());
         tenant.setNote(request.getNote());
 
         tenant = tenantRepository.save(tenant);
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Xóa tenant theo id.
+     *
+     * @param id id tenant
+     */
     @Override
     public void delete(Integer id) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
         tenantRepository.delete(tenant);
     }
 
+    /**
+     * Lấy tenant theo id.
+     *
+     * @param id id tenant
+     * @return tenant DTO
+     */
     @Override
     public TenantResponse getById(Integer id) {
         Tenant tenant = tenantRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
         return tenantMapper.toResponse(tenant);
     }
 
+    /**
+     * Lấy detail tenant (kèm contracts) và gán trạng thái thuê hiện tại.
+     *
+     * @param id id tenant
+     * @return tenant detail DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public TenantDetailResponse getTenantDetail(Integer id) {
@@ -119,6 +230,12 @@ public class TenantServiceImpl implements TenantService {
         return response;
     }
 
+    /**
+     * Lấy thông tin thuê hiện tại của tenant (contract ACTIVE đang hiệu lực tại today).
+     *
+     * @param id id tenant
+     * @return current rental info
+     */
     @Override
     @Transactional(readOnly = true)
     public CurrentRentalInfoResponse getCurrentRentalInfo(Integer id) {
@@ -135,7 +252,7 @@ public class TenantServiceImpl implements TenantService {
         // Find the most recent active and current contract
         Contract currentContract = contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.ACTIVE)
-                .filter(c -> isCurrentContract(c, new Date()))
+                .filter(c -> isCurrentContract(c, LocalDate.now()))
                 .max(Comparator.comparing(Contract::getStartDate))
                 .orElse(null);
 
@@ -146,14 +263,23 @@ public class TenantServiceImpl implements TenantService {
                     .build();
         }
 
+        ContractSnapshotResponse snapshot =
+                contractSnapshotService.getSnapshot(currentContract.getId(), LocalDate.now());
+
         // Build response with exact mappings
         return CurrentRentalInfoResponse.builder()
                 .contractCode(currentContract.getContractCode())
                 .contractStatus("Đang Hiệu Lực") // Hardcoded based on active status
                 .startDate(currentContract.getStartDate())
                 .endDate(currentContract.getEndDate())
-                .rentPrice(currentContract.getRentPrice())
-                .deposit(currentContract.getDeposit())
+                .rentPrice(
+                        snapshot.getCurrentVersion() != null
+                                ? snapshot.getCurrentVersion().getPrice()
+                                : currentContract.getRentPrice())
+                .deposit(
+                        snapshot.getCurrentVersion() != null
+                                ? snapshot.getCurrentVersion().getDepositAmount()
+                                : currentContract.getDeposit())
                 .moveInDate(currentContract.getStartDate()) // Assume same as startDate
                 .isContractRepresentative(true) // Assume "Có" - adjust if field exists in Contract
                 .roomName(currentContract.getRoom().getRoomNumber())
@@ -165,6 +291,12 @@ public class TenantServiceImpl implements TenantService {
                 .build();
     }
 
+    /**
+     * Lấy danh sách tenant phân trang theo quyền hiện tại.
+     *
+     * @param pageable phân trang/sort
+     * @return page tenant DTO
+     */
     @Override
     public Page<TenantResponse> getAllTenantsPaged(Pageable pageable) {
         SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
@@ -178,11 +310,29 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.findAll(spec, pageable).map(tenantMapper::toResponse);
     }
 
+    /**
+     * Lấy danh sách tenant (không phân trang) theo quyền hiện tại.
+     *
+     * @return danh sách tenant DTO
+     */
     @Override
     public List<TenantResponse> getAll() {
         return getAllTenantsPaged(Pageable.unpaged()).getContent();
     }
 
+    /**
+     * Lọc tenant theo nhiều tiêu chí (search/date range/gender/occupation/active contract...) và phân trang.
+     *
+     * @param search từ khóa
+     * @param startDate ngày bắt đầu (yyyy-MM-dd)
+     * @param endDate ngày kết thúc (yyyy-MM-dd)
+     * @param gender giới tính
+     * @param occupation nghề nghiệp
+     * @param hasActiveContract lọc tenant có hợp đồng active
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return page tenant DTO
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<TenantResponse> filterTenants(
@@ -270,6 +420,28 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.findByIdWithDetails(id).orElseThrow(() -> new AppException(ErrorCode.TENANT_NOT_FOUND));
     }
 
+    private void validateCreateContext(Integer boardingHouseId, Integer buildingId) {
+        BoardingHouse boardingHouse = boardingHouseRepository
+                .findById(boardingHouseId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOARDING_HOUSE_NOT_FOUND));
+
+        Building building = buildingRepository
+                .findById(buildingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
+
+        User currentUser = SecurityUtils.getCurrentUser();
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(role -> "ADMIN".equals(role.getName()));
+
+        if (!isAdmin && !boardingHouse.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if (building.getBoardingHouse() == null
+                || !building.getBoardingHouse().getId().equals(boardingHouseId)) {
+            throw new AppException(ErrorCode.BUILDING_NOT_FOUND);
+        }
+    }
+
     private void setContractStatus(TenantDetailResponse response, List<Contract> contracts) {
         if (contracts == null || contracts.isEmpty()) {
             response.setContractStatus("Chưa thuê");
@@ -287,10 +459,9 @@ public class TenantServiceImpl implements TenantService {
             return;
         }
 
-        Date today = new Date();
-        boolean isCurrent = newestContract.getStartDate().before(today)
+        boolean isCurrent = newestContract.getStartDate().isBefore(LocalDate.now())
                 && (newestContract.getEndDate() == null
-                        || newestContract.getEndDate().after(today));
+                        || newestContract.getEndDate().isAfter(LocalDate.now()));
 
         if (newestContract.getStatus() == ContractStatus.ACTIVE && isCurrent) {
             response.setContractStatus("Đang thuê");
@@ -302,8 +473,8 @@ public class TenantServiceImpl implements TenantService {
     }
 
     // Helper: Check if contract is current
-    private boolean isCurrentContract(Contract contract, Date today) {
-        return contract.getStartDate().before(today)
-                && (contract.getEndDate() == null || contract.getEndDate().after(today));
+    private boolean isCurrentContract(Contract contract, LocalDate today) {
+        return contract.getStartDate().isBefore(today)
+                && (contract.getEndDate() == null || contract.getEndDate().isAfter(today));
     }
 }

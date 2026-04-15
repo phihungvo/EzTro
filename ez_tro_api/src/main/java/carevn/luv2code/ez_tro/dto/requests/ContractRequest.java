@@ -1,10 +1,13 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
 import carevn.luv2code.ez_tro.enums.ContractStatus;
 import carevn.luv2code.ez_tro.enums.PaymentMethod;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -20,13 +23,17 @@ public class ContractRequest {
     @NotNull(message = "roomId is required")
     Integer roomId;
 
-    @NotNull(message = "tenantId is required")
     Integer tenantId;
 
-    @NotNull(message = "startDate is required")
-    Date startDate;
+    @Valid
+    ContractTenantRequest tenant;
 
-    Date endDate;
+    @NotNull(message = "startDate is required")
+    LocalDate startDate;
+
+    LocalDate endDate;
+
+    Boolean autoRenew;
 
     BigDecimal deposit;
 
@@ -47,4 +54,7 @@ public class ContractRequest {
     @Min(value = 1, message = "Monthly payment day must be between 1 and 28")
     @Max(value = 28, message = "Monthly payment day must be between 1 and 28")
     Integer monthlyPaymentDay;
+
+    @Valid
+    List<ContractUtilityRequest> utilities;
 }

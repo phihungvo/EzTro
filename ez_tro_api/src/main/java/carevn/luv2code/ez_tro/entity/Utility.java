@@ -2,7 +2,9 @@ package carevn.luv2code.ez_tro.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -63,9 +65,18 @@ public class Utility {
     @UpdateTimestamp
     LocalDateTime updatedAt;
 
+    @ManyToMany
+    @JoinTable(
+            name = "utility_boarding_houses",
+            joinColumns = @JoinColumn(name = "utility_id"),
+            inverseJoinColumns = @JoinColumn(name = "boarding_house_id"))
+    @ToString.Exclude
+    @Builder.Default
+    Set<BoardingHouse> boardingHouses = new HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "boarding_house_id")
-    BoardingHouse boardingHouse;
+    @JoinColumn(name = "owner_id")
+    User owner;
 
     @OneToMany(mappedBy = "utility", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

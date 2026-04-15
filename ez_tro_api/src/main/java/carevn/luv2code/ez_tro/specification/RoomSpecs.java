@@ -20,4 +20,8 @@ public class RoomSpecs {
     public static Specification<Room> isAvailable() {
         return (root, query, cb) -> cb.equal(root.get("status"), RoomStatus.AVAILABLE);
     }
+
+    public static Specification<Room> inBuilding(Integer buildingId) {
+        return (root, query, cb) -> cb.equal(root.get("building").get("id"), buildingId);
+    }
 }

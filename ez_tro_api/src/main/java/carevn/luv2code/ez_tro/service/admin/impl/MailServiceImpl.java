@@ -19,6 +19,11 @@ import carevn.luv2code.ez_tro.dto.requests.TemplateMailRequest;
 import carevn.luv2code.ez_tro.service.admin.MailService;
 import jakarta.mail.internet.MimeMessage;
 
+/**
+ * Service gửi email (plain/html/template) với tùy chọn đính kèm.
+ *
+ * <p>Template sử dụng Thymeleaf nếu {@link TemplateEngine} được cấu hình.
+ */
 @Service
 public class MailServiceImpl implements MailService {
 
@@ -30,6 +35,11 @@ public class MailServiceImpl implements MailService {
         this.templateEngine = templateEngine;
     }
 
+    /**
+     * Gửi email (plain text hoặc HTML).
+     *
+     * @param request payload gửi mail
+     */
     @Override
     public void send(MailRequest request) {
         if (!request.isHtml()) {
@@ -51,6 +61,12 @@ public class MailServiceImpl implements MailService {
                 true);
     }
 
+    /**
+     * Gửi email kèm attachments.
+     *
+     * @param request payload gửi mail
+     * @param attachments danh sách file đính kèm (có thể rỗng)
+     */
     @Override
     public void sendWithAttachments(MailRequest request, MultipartFile[] attachments) {
         sendMime(
@@ -63,12 +79,23 @@ public class MailServiceImpl implements MailService {
                 request.isHtml());
     }
 
+    /**
+     * Render template và gửi email HTML.
+     *
+     * @param request payload template + variables
+     */
     @Override
     public void sendTemplate(TemplateMailRequest request) {
         String html = renderTemplate(request.getTemplateName(), request.getVariables());
         sendMime(null, request.getTo(), request.getCc(), request.getBcc(), request.getSubject(), html, true);
     }
 
+    /**
+     * Render template và gửi email HTML kèm attachments.
+     *
+     * @param request payload template + variables
+     * @param attachments danh sách file đính kèm (có thể rỗng)
+     */
     @Override
     public void sendTemplateWithAttachments(TemplateMailRequest request, MultipartFile[] attachments) {
         String html = renderTemplate(request.getTemplateName(), request.getVariables());

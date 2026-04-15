@@ -1,285 +1,111 @@
-import React, {useState, useEffect} from 'react';
+import React, {useMemo} from 'react';
 import classNames from 'classnames/bind';
+import {Col, ConfigProvider, Empty, Row, Segmented, Spin, Tag} from 'antd';
+import {
+    AppstoreOutlined,
+    CloudUploadOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    PlusOutlined,
+    TableOutlined,
+} from '@ant-design/icons';
 import styles from '~/pages/Admin/Room/Room.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
 import RoomCard from '~/components/Layout/AdminLayout/components/RoomCard';
-import {
-    SearchOutlined,
-    PlusOutlined,
-    FilterOutlined,
-    CloudUploadOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    TableOutlined,
-    AppstoreOutlined,
-} from '@ant-design/icons';
-import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {Form, message, Tag, Row, Col, Segmented, Pagination} from 'antd';
-import {getAllRooms, createRoom, updateRoom, deleteRoom} from '~/service/admin/room';
-import {
-    getAllBoardingHousesNoPaged,
-    getUtilityByBoardingHouse,
-} from '~/service/admin/boarding_house';
-import {getByBoardingHouse} from '~/service/admin/building';
-import {useOwnerQuota} from '~/hooks/useOwnerQuota';
-import {useInvalidateQuota} from '~/hooks/useInvalidateQuota';
-import {useAuth} from "~/routes/AuthContext";
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
+import {useRoomPage} from '~/pages/Admin/Room/useRoomPage';
 
 const cx = classNames.bind(styles);
 
 function Room() {
-    const [roomSource, setRoomSource] = useState([]);
-    const [utilityOption, setUtilityOption] = useState([]);
-    const [buildingOption, setBuildingOption] = useState([]);
-    const [boardingHouseOption, setBoardingHouseOption] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
-    const [modalMode, setModalMode] = useState('create');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedRoom, setSelectedRoom] = useState(null);
-    const [viewMode, setViewMode] = useState('table');
-    const [form] = Form.useForm();
+    const {
+        items,
+        boardingHouseOptions,
+        boardingHouseLoading,
+        loading,
+        deleting,
+        pagination,
+        total,
+        viewMode,
+        modal,
+        searchTerm,
+        statusFilter,
+        boardingHouseFilter,
+        areaRange,
+        priceRange,
+        hasActiveContractFilter,
+        STATUS_OPTIONS,
+        addButtonText,
+        isAddDisabled,
+        handleResetFilters,
+        handleAddRoom,
+        handleEditRoom,
+        handleOpenDelete,
+        handleCloseModal,
+        submitDelete,
+        handlePaginationChange,
+        handleViewModeChange,
+        setSearchTerm,
+        setStatusFilter,
+        setBoardingHouseFilter,
+        setAreaRange,
+        setPriceRange,
+        setHasActiveContractFilter,
+    } = useRoomPage();
 
-    const {data: quota} = useOwnerQuota();
-    const invalidateQuota = useInvalidateQuota();
-
-    const { user } = useAuth();
-    const isOwner = user?.isOwner || false;
-
-    // Tính current/max cho phòng
-    const current = quota?.currentRooms ?? 0;
-    const max = quota?.maxRooms ?? 0;
-    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
-    const isAddDisabled = isOwner && current >= max;
-
-    const statusRoom = {
-        AVAILABLE: {color: 'success', label: 'Trống'},
-        OCCUPIED: {color: 'warning', label: 'Đã cho thuê'},
-        MAINTENANCE: {color: 'error', label: 'Đang bảo trì'},
-    };
-
-    const handleBoardingHouseChange = async (boardingHouseId) => {
-        if (!boardingHouseId) {
-            setUtilityOption([]);
-            setBuildingOption([]);
-            form.setFieldsValue({utilityIds: [], buildingId: null});
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const [utilitiesResponse, buildingsResponse] = await Promise.all([
-                getUtilityByBoardingHouse(boardingHouseId),
-                getByBoardingHouse(boardingHouseId),
-            ]);
-
-            setUtilityOption(utilitiesResponse.map((u) => ({label: u.name, value: u.id})));
-            setBuildingOption(buildingsResponse.map((b) => ({label: b.name, value: b.id})));
-
-            form.setFieldsValue({utilityIds: [], buildingId: null});
-        } catch (error) {
-            message.error('Không thể tải tiện ích và tòa nhà cho khu này');
-            setUtilityOption([]);
-            setBuildingOption([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGetRooms = async (page = 1, pageSize = pagination.pageSize) => {
-        setLoading(true);
-        try {
-            const response = await getAllRooms({page: page - 1, pageSize});
-            if (response?.content) {
-                setRoomSource(response.content);
-                setPagination({
-                    current: page,
-                    pageSize,
-                    total: response.totalElements,
-                });
-            } else {
-                setRoomSource([]);
-                message.error('Dữ liệu phòng không hợp lệ');
-            }
-        } catch (error) {
-            message.error(`Lỗi khi lấy danh sách phòng: ${error.response?.data?.message || error.message}`);
-            setRoomSource([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchOptions = async () => {
-        try {
-            const response = await getAllBoardingHousesNoPaged();
-            setBoardingHouseOption(response.map((bh) => ({value: bh.id, label: bh.name})));
-        } catch (error) {
-            console.error('Error fetching boarding houses:', error);
-        }
-    };
-
-    const handleAddRoom = () => {
-        if (isAddDisabled) {
-            message.warning('Bạn đã đạt giới hạn số phòng theo gói hiện tại. Vui lòng nâng cấp gói!');
-            return;
-        }
-        setModalMode('create');
-        setSelectedRoom(null);
-        form.resetFields();
-        setUtilityOption([]);
-        setBuildingOption([]);
-        setIsModalOpen(true);
-    };
-
-    const handleCallCreateRoom = async (formData) => {
-        try {
-            await createRoom(formData);
-            invalidateQuota();           // Refetch quota ngay
-            handleGetRooms();
-            setIsModalOpen(false);
-            message.success('Thêm phòng thành công!');
-        } catch (error) {
-            message.error(`Lỗi khi tạo phòng: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleEditRoom = async (record) => {
-        setSelectedRoom(record);
-        setModalMode('edit');
-        form.setFieldsValue(record);
-
-        if (record.boardingHouseId) {
-            await handleBoardingHouseChange(record.boardingHouseId);
-            form.setFieldsValue({
-                ...record,
-                utilityIds: record.utilityIds || [],
-                buildingId: record.buildingId || null,
-            });
-        }
-
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateRoom = async (formData) => {
-        try {
-            await updateRoom(selectedRoom.id, formData);
-            handleGetRooms();
-            setIsModalOpen(false);
-            message.success('Cập nhật phòng thành công!');
-        } catch (error) {
-            message.error(`Lỗi khi cập nhật phòng: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleDeleteRoom = (record) => {
-        setModalMode('delete');
-        setSelectedRoom(record);
-        setIsModalOpen(true);
-    };
-
-    const handleCallDeleteRoom = async () => {
-        try {
-            await deleteRoom(selectedRoom.id);
-            invalidateQuota();           // Refetch quota sau xóa
-            handleGetRooms();
-            setIsModalOpen(false);
-            message.success('Xóa phòng thành công!');
-        } catch (error) {
-            message.error(`Lỗi khi xóa phòng: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleFormSubmit = (formData) => {
-        if (modalMode === 'create') {
-            handleCallCreateRoom(formData);
-        } else if (modalMode === 'edit') {
-            handleCallUpdateRoom(formData);
-        } else if (modalMode === 'delete') {
-            handleCallDeleteRoom();
-        }
-    };
-
-    const handleTableChange = (newPagination) => {
-        handleGetRooms(newPagination.current, newPagination.pageSize);
-    };
-
-    const getModalTitle = () => {
-        switch (modalMode) {
-            case 'create':
-                return 'Thêm phòng mới';
-            case 'edit':
-                return 'Chỉnh sửa phòng';
-            case 'delete':
-                return 'Xóa phòng';
-            case 'view':
-                return 'Chi tiết phòng';
-            default:
-                return 'Chi tiết phòng';
-        }
-    };
-
-    useEffect(() => {
-        fetchOptions();
-        handleGetRooms();
-    }, []);
-
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'Số phòng',
             dataIndex: 'roomNumber',
             key: 'roomNumber',
-            width: 150,
+            width: 120,
             fixed: 'left',
             align: 'center',
         },
         {
-            title: 'Diện tích',
+            title: 'Diện tích (m²)',
             dataIndex: 'area',
             key: 'area',
-            width: 150,
+            width: 120,
             align: 'center',
         },
         {
-            title: 'Thuộc nhà trọ',
+            title: 'Khu nhà trọ',
             dataIndex: 'boardingHouseName',
             key: 'boardingHouseName',
+            width: 220,
             align: 'center',
-            width: 250,
         },
         {
-            title: 'Giá',
+            title: 'Giá thuê',
             dataIndex: 'price',
             key: 'price',
-            width: 150,
+            width: 140,
             align: 'center',
-            render: (price) => (price ? `${price.toLocaleString()} ₫` : 'N/A'),
+            render: (price) => price ? `${Number(price).toLocaleString('vi-VN')} ₫` : 'Chưa xác định',
         },
         {
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
-            width: 150,
+            width: 140,
             align: 'center',
             render: (status) => {
-                const info = statusRoom[status] || {color: 'default', label: 'Không xác định'};
-                return <Tag color={info.color}>{info.label}</Tag>;
+                const map = {
+                    AVAILABLE: {color: 'success', text: 'Trống'},
+                    OCCUPIED: {color: 'warning', text: 'Đã thuê'},
+                    MAINTENANCE: {color: 'error', text: 'Bảo trì'},
+                };
+                const info = map[status] || {color: 'default', text: status || 'N/A'};
+                return <Tag color={info.color}>{info.text}</Tag>;
             },
         },
         {
-            title: 'Ghi chú',
-            dataIndex: 'note',
-            key: 'note',
-            width: 350,
-            align: 'center',
-        },
-        {
             title: 'Thao tác',
+            key: 'action',
             fixed: 'right',
             width: 120,
             align: 'center',
@@ -295,171 +121,162 @@ function Room() {
                         type="danger"
                         icon={<DeleteOutlined/>}
                         buttonWidth={40}
-                        onClick={() => handleDeleteRoom(record)}
-                        style={{marginLeft: '8px'}}
+                        onClick={() => handleOpenDelete(record)}
+                        style={{marginLeft: 8}}
                     />
                 </>
             ),
         },
-    ];
-
-    const roomModalFields = [
-        {
-            label: 'Khu nhà',
-            name: modalMode === 'edit' ? 'boardingHouseName' : 'boardingHouseId',
-            type: modalMode === 'edit' ? 'text' : 'select',
-            options: boardingHouseOption,
-            disabled: modalMode === 'edit',
-            onChange: modalMode === 'create' ? handleBoardingHouseChange : undefined,
-            rules: modalMode === 'create' ? [{required: true, message: 'Chọn khu nhà!'}] : [],
-        },
-        {
-            label: 'Tòa nhà',
-            name: modalMode === 'edit' ? 'buildingName' : 'buildingId',
-            type: modalMode === 'edit' ? 'text' : 'select',
-            options: buildingOption,
-            disabled: modalMode === 'edit',
-            rules: modalMode === 'create' ? [{required: true, message: 'Chọn tòa nhà!'}] : [],
-        },
-        {
-            label: 'Số phòng',
-            name: 'roomNumber',
-            type: 'text',
-            placeholder: 'Để trống để hệ thống tự sinh',
-        },
-        {
-            label: 'Diện tích (m²)',
-            name: 'area',
-            type: 'number',
-        },
-        {
-            label: 'Số tầng',
-            name: 'floorNumber',
-            type: 'number',
-        },
-        {
-            label: 'Số người tối đa',
-            name: 'maxOccupants',
-            type: 'number',
-        },
-        {
-            label: 'Giá cho thuê',
-            name: 'price',
-            type: 'number',
-            placeholder: 'Để trống nếu chưa xác định',
-        },
-        {
-            label: 'Ghi chú',
-            name: 'note',
-            type: 'textarea',
-        },
-        {
-            label: 'Tiện ích phòng',
-            name: 'utilityIds',
-            type: 'select',
-            multiple: true,
-            options: utilityOption,
-            placeholder: 'Chọn phòng trước',
-        },
-        {
-            label: 'Điều hòa',
-            name: 'hasAirConditioner',
-            type: 'checkbox',
-        },
-        {
-            label: 'Phòng tắm riêng',
-            name: 'hasBathroom',
-            type: 'checkbox',
-        },
-        {
-            label: 'Bếp',
-            name: 'hasKitchen',
-            type: 'checkbox',
-        },
-    ];
+    ], [handleEditRoom, handleOpenDelete]);
 
     return (
-        <div className={cx('room-wrapper')}>
-            {/* Header */}
-            <div className={cx('sub_header')}>
-                <SmartInput size="large" placeholder="Tìm kiếm phòng" icon={<SearchOutlined/>}/>
-                <div className={cx('features')}>
-                    <Segmented
-                        value={viewMode}
-                        onChange={setViewMode}
-                        options={[
-                            {label: 'Bảng', value: 'table', icon: <TableOutlined/>},
-                            {label: 'Thẻ', value: 'card', icon: <AppstoreOutlined/>},
-                        ]}
-                        className={cx('view-toggle')}
-                    />
+        <ConfigProvider>
+            <div className={cx('room-wrapper')}>
+                <FilterComponent
+                    fields={[
+                        {
+                            type: 'search',
+                            name: 'search',
+                            placeholder: 'Tìm số phòng, tên khu, địa chỉ hoặc SĐT người thuê...',
+                            value: searchTerm,
+                            onChange: setSearchTerm,
+                        },
+                        {
+                            type: 'select',
+                            name: 'status',
+                            placeholder: 'Trạng thái phòng',
+                            value: statusFilter,
+                            onChange: setStatusFilter,
+                            options: STATUS_OPTIONS,
+                            allowClear: true,
+                        },
+                        {
+                            type: 'select',
+                            name: 'boardingHouseId',
+                            placeholder: 'Khu nhà trọ',
+                            value: boardingHouseFilter,
+                            onChange: setBoardingHouseFilter,
+                            options: boardingHouseOptions,
+                            allowClear: true,
+                            loading: boardingHouseLoading,
+                        },
+                        {
+                            type: 'rangeInput',
+                            name: 'areaRange',
+                            label: 'Diện tích (m²)',
+                            minPlaceholder: 'Từ',
+                            maxPlaceholder: 'Đến',
+                            value: areaRange,
+                            onChange: setAreaRange,
+                        },
+                        {
+                            type: 'rangeInput',
+                            name: 'priceRange',
+                            label: 'Giá thuê (₫)',
+                            minPlaceholder: 'Từ',
+                            maxPlaceholder: 'Đến',
+                            value: priceRange,
+                            onChange: setPriceRange,
+                        },
+                        {
+                            type: 'select',
+                            name: 'hasActiveContract',
+                            placeholder: 'Có hợp đồng hiệu lực',
+                            value: hasActiveContractFilter,
+                            onChange: setHasActiveContractFilter,
+                            options: [
+                                {value: 'YES', label: 'Có'},
+                                {value: 'NO', label: 'Không'},
+                            ],
+                            allowClear: true,
+                        },
+                    ]}
+                    onReset={handleResetFilters}
+                    gridTemplate="repeat(6, minmax(180px, 1fr)) 100px"
+                />
 
-                    <SmartButton
-                        title={addButtonText}
-                        icon={<PlusOutlined/>}
-                        type="primary"
-                        onClick={handleAddRoom}
-                        disabled={isAddDisabled}
-                        tooltip={isAddDisabled ? 'Đã đạt giới hạn phòng – nâng cấp gói để thêm' : undefined}
-                    />
+                <div className={cx('sub_header')}>
+                    <div className={cx('features')}>
+                        <Segmented
+                            value={viewMode}
+                            onChange={handleViewModeChange}
+                            options={[
+                                {label: (<><TableOutlined/> Bảng</>), value: 'table'},
+                                {label: (<><AppstoreOutlined/> Thẻ</>), value: 'card'},
+                            ]}
+                        />
+                        <SmartButton
+                            title={addButtonText}
+                            icon={<PlusOutlined/>}
+                            type="primary"
+                            onClick={handleAddRoom}
+                            disabled={isAddDisabled}
+                            tooltip={isAddDisabled ? 'Đạt giới hạn phòng - nâng cấp gói để thêm mới' : undefined}
+                        />
+                        <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
+                    </div>
 
-                    <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
-                    <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
+                    <AppPagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={total}
+                        onChange={handlePaginationChange}
+                        pageSizeOptions={['6', '12', '24', '48']}
+                        showTotal={(count, range) => `Đang xem ${range[0]}-${range[1]} trong ${count} phòng`}
+                    />
                 </div>
-            </div>
 
-            {/* Nội dung */}
-            <div className={cx('room-container')}>
-                {viewMode === 'table' ? (
-                    <SmartTable
-                        columns={columns}
-                        dataSources={roomSource}
-                        loading={loading}
-                        pagination={pagination}
-                        onTableChange={handleTableChange}
-                    />
-                ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {roomSource.map((room) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={room.id}>
-                                    <RoomCard
-                                        room={room}
-                                        // onView={() => handleViewRoom(room)}
-                                        onEdit={() => handleEditRoom(room)}
-                                        onDelete={() => handleDeleteRoom(room)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetRooms(page, pageSize)}
+                <div className={cx('room-container')}>
+                    <Spin spinning={loading}>
+                        {viewMode === 'table' ? (
+                            <SmartTable
+                                columns={columns}
+                                dataSources={items}
+                                loading={loading}
+                                pagination={false}
                             />
-                        </div>
-                    </>
-                )}
-            </div>
+                        ) : (
+                            <>
+                                {items.length === 0 ? (
+                                    <Empty description="Không tìm thấy phòng nào phù hợp"/>
+                                ) : (
+                                    <Row gutter={[16, 16]}>
+                                        {items.map((room) => (
+                                            <Col xs={24} sm={12} md={8} lg={6} key={room.id}>
+                                                <RoomCard
+                                                    room={room}
+                                                    onView={() => handleEditRoom(room)}
+                                                    onEdit={() => handleEditRoom(room)}
+                                                    onDelete={() => handleOpenDelete(room)}
+                                                />
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                )}
+                            </>
+                        )}
+                    </Spin>
+                </div>
 
-            {/* Modal */}
-            <PopupModal
-                isModalOpen={isModalOpen}
-                setIsModalOpen={setIsModalOpen}
-                title={getModalTitle()}
-                fields={modalMode === 'delete' ? [] : roomModalFields}
-                onSubmit={handleFormSubmit}
-                initialValues={selectedRoom}
-                isDeleteMode={modalMode === 'delete'}
-                formInstance={form}
-            />
-        </div>
+                <PopupModal
+                    isModalOpen={modal.open}
+                    setIsModalOpen={handleCloseModal}
+                    title="Xóa phòng"
+                    onSubmit={submitDelete}
+                    initialValues={modal.selected}
+                    isDeleteMode
+                    deleteConfirmLabel={deleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                    deleteMessage={(
+                        <>
+                            <p>
+                                Bạn có chắc chắn muốn xóa phòng <b>{modal.selected?.roomNumber}</b>?
+                            </p>
+                            <p>Phòng có dữ liệu vận hành hoặc hợp đồng liên quan sẽ không được phép xóa.</p>
+                        </>
+                    )}
+                />
+            </div>
+        </ConfigProvider>
     );
 }
 

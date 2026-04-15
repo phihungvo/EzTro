@@ -1,7 +1,7 @@
 package carevn.luv2code.ez_tro.dto.response;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,5 +19,13 @@ public class DashboardSummaryResponse {
 
     String paymentStatus;
 
-    Date contractEndDate;
+    Integer unpaidBillCount;
+
+    BigDecimal outstandingAmount;
+
+    LocalDate latestBillDueDate;
+
+    LocalDate contractStartDate;
+
+    LocalDate contractEndDate;
 }

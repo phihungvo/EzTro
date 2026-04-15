@@ -6,6 +6,9 @@ import carevn.luv2code.ez_tro.dto.requests.MeterPeriodRequest;
 import carevn.luv2code.ez_tro.dto.response.MeterPeriodResponse;
 import carevn.luv2code.ez_tro.entity.MeterReadingPeriod;
 
+/**
+ * Service contract quản lý kỳ ghi chỉ số (meter reading period).
+ */
 public interface MeterReadingPeriodService {
 
     List<MeterReadingPeriod> findAll();

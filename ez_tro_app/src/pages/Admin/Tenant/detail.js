@@ -18,6 +18,7 @@ import {
     UserOutlined,
     UploadOutlined,
     ArrowLeftOutlined,
+    EditOutlined,
     PhoneOutlined,
     MailOutlined,
     IdcardOutlined,
@@ -28,7 +29,7 @@ import {
 import moment from 'moment';
 import classNames from 'classnames/bind';
 import {tenantDetail, tenantRentalDetail} from '~/service/admin/tenant';
-import {getContractFiles, getPresignedUrl, deleteContractFile} from '~/service/admin/contract';
+import {getPresignedUrl} from '~/service/admin/contract';
 import {uploadFile} from "~/service/admin/user";
 import {useAuth} from '~/routes/AuthContext';
 import styles from './TenantDetail.module.scss';
@@ -43,6 +44,7 @@ function TenantDetail() {
     const {id} = useParams();
     const navigate = useNavigate();
     const {user} = useAuth();
+    const tenantBasePath = user?.role === 'OWNER' ? '/owner/tenants' : '/admin/tenants';
     const [tenant, setTenant] = useState(null);
     const [rentalInfo, setRentalInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -86,13 +88,13 @@ function TenantDetail() {
                 }
             } catch (error) {
                 message.error(`Lỗi khi load chi tiết người thuê: ${error.message}`);
-                navigate('/admin/tenants');
+                navigate(tenantBasePath);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [id, user, navigate]);
+    }, [id, user, navigate, tenantBasePath]);
 
     const handleAvatarUpload = async (file) => {
         try {
@@ -145,10 +147,17 @@ function TenantDetail() {
                     <Button
                         type="text"
                         icon={<ArrowLeftOutlined/>}
-                        onClick={() => navigate('/admin/tenants')}
+                        onClick={() => navigate(tenantBasePath)}
                         className={cx('back-button')}
                     >
                         Quay lại danh sách
+                    </Button>
+                    <Button
+                        type="primary"
+                        icon={<EditOutlined/>}
+                        onClick={() => navigate(`${tenantBasePath}/${id}/edit`)}
+                    >
+                        Chỉnh sửa
                     </Button>
                 </div>
 

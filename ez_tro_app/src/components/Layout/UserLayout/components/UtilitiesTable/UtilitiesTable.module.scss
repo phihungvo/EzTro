@@ -1,54 +1,48 @@
 .utilitiesTable {
+  background: #161b26;
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+
   .title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 24px;
-    padding: 0 24px;
+    color: #e8eaf0;
+    margin: 0 0 20px;
   }
 
   .typeCell {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 600;
+    font-weight: 700;
+    color: #f0f2ff;
 
     .iconElectric {
       width: 18px;
       height: 18px;
-      color: #f59e0b;
+      color: #fbbf24;
     }
 
     .iconWater {
       width: 18px;
       height: 18px;
-      color: #3b82f6;
+      color: #4f9cf9;
     }
   }
 
-  .month {
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .reading {
-    font-weight: 500;
-    color: #6b7280;
-  }
-
-  .usage {
-    font-weight: 600;
-    color: #1f2937;
-  }
-
+  .month,
+  .reading,
+  .usage,
   .price {
-    font-weight: 500;
-    color: #6b7280;
+    color: #8892a4;
+    font-weight: 600;
   }
 
   .total {
-    font-weight: 700;
-    color: #7c3aed;
+    font-weight: 800;
+    color: #a78bfa;
     font-size: 15px;
   }
 }

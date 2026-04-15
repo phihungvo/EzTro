@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 24-utility-multi-boarding-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: utility_boarding_houses
+            columns:
+              - column:
+                  name: utility_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: boarding_house_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addPrimaryKey:
+            tableName: utility_boarding_houses
+            columnNames: utility_id, boarding_house_id
+            constraintName: pk_utility_boarding_houses
+        - addForeignKeyConstraint:
+            baseTableName: utility_boarding_houses
+            baseColumnNames: utility_id
+            referencedTableName: utilities
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_utility_boarding_house_utility
+        - addForeignKeyConstraint:
+            baseTableName: utility_boarding_houses
+            baseColumnNames: boarding_house_id
+            referencedTableName: boarding_houses
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_utility_boarding_house_boarding
+        - createIndex:
+            tableName: utility_boarding_houses
+            indexName: idx_utility_boarding_house_bh
+            columns:
+              - column:
+                  name: boarding_house_id
+
+  - changeSet:
+      id: 24-utility-multi-boarding-02
+      author: codex
+      changes:
+        - sql:
+            comment: Seed existing utility-board relations into the junction table
+            sql: |
+              INSERT INTO utility_boarding_houses (utility_id, boarding_house_id)
+              SELECT id, boarding_house_id
+              FROM utilities
+              WHERE boarding_house_id IS NOT NULL;

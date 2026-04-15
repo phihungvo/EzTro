@@ -7,6 +7,9 @@ import org.springframework.data.domain.Page;
 import carevn.luv2code.ez_tro.dto.requests.RoomUtilityRequest;
 import carevn.luv2code.ez_tro.dto.response.RoomUtilityResponse;
 
+/**
+ * Service contract quản lý đăng ký tiện ích theo phòng (RoomUtility).
+ */
 public interface RoomUtilityService {
     RoomUtilityResponse create(RoomUtilityRequest request);
 

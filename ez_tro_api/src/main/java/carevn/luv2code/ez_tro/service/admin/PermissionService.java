@@ -8,6 +8,9 @@ import carevn.luv2code.ez_tro.dto.PermissionDTO;
 import carevn.luv2code.ez_tro.dto.requests.CreatePermissionRequest;
 import carevn.luv2code.ez_tro.entity.Permission;
 
+/**
+ * Service contract quản lý Permission và truy vấn permission theo user.
+ */
 public interface PermissionService {
 
     PermissionDTO createPermission(PermissionDTO permissionDTO);

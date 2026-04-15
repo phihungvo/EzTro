@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 13-01-create-credit-ledger-entries
+      author: openai
+      changes:
+        - createTable:
+            tableName: credit_ledger_entries
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_id
+                  type: INT
+              - column:
+                  name: bill_id
+                  type: INT
+              - column:
+                  name: entry_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: metadata_json
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger_entries
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_entries_organization
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger_entries
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_entries_contract
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger_entries
+            baseColumnNames: payment_id
+            referencedTableName: payments
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_entries_payment
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger_entries
+            baseColumnNames: bill_id
+            referencedTableName: bills
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_entries_bill
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger_entries
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_entries_created_by
+        - createIndex:
+            tableName: credit_ledger_entries
+            indexName: idx_credit_ledger_entries_contract_created_at
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: credit_ledger_entries
+            indexName: idx_credit_ledger_entries_payment
+            columns:
+              - column:
+                  name: payment_id

@@ -12,7 +12,9 @@ import {
     DashboardOutlined,
     AppstoreOutlined,
     BankOutlined,
+    BellOutlined,
     HomeOutlined,
+    NotificationOutlined,
     UserSwitchOutlined,
     TeamOutlined,
     ToolOutlined,
@@ -33,20 +35,29 @@ import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import {message} from "antd";
 import Contract from "~/pages/Admin/Contract";
 import Amenity from "src/pages/Admin/Utility";
-import Bill from "~/pages/Admin/Bill";
+import Bill from "src/pages/Admin/Bill";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
 import IncidentReport from "~/pages/Admin/IncidentReport";
 import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Revenue from "~/pages/Admin/Revenue";
+import Asset from "~/pages/Admin/Asset";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import Owner from "~/pages/Admin/Owner";
 import SystemLogs from "~/pages/Admin/SystemLogs";
 import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
-import AdminSubscriptionPlan from "~/pages/Admin/AdminPaymentManagement";
 import SubscriptionPlan from "~/pages/Admin/SubscriptionPlan";
+import BillingPenaltyConfig from "~/pages/Admin/BillingPenaltyConfig";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
+import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
+import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
+import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
+import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
+import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
+import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
 // import Request from "~/pages/Admin/RequestManagement";
 
 const cx = classNames.bind(styles);
@@ -62,6 +73,22 @@ const adminMenuConfig = [
                 icon: <DashboardOutlined/>,
                 color: "#3b82f6",
                 path: "/admin/dashboard",  // Add path for routing
+            },
+            {
+                key: "notifications",
+                label: "Thông báo",
+                title: "Trung tâm thông báo",
+                icon: <BellOutlined/>,
+                color: "#2563eb",
+                path: "/admin/notifications",
+            },
+            {
+                key: "announcement-center",
+                label: "Gửi announcement",
+                title: "Gửi thông báo tới tenant",
+                icon: <NotificationOutlined/>,
+                color: "#0f766e",
+                path: "/admin/notifications/announcements",
             },
         ],
     },
@@ -176,6 +203,13 @@ const adminMenuConfig = [
                 path: "/admin/subscription-plan",
             },
             {
+                key: "billing-penalty",
+                label: "Phí phạt trễ hạn",
+                title: "Cấu hình phí phạt hóa đơn",
+                icon: <SettingOutlined/>,
+                path: "/admin/billing-penalty",
+            },
+            {
                 key: "payment-management",
                 label: "Đăng ký gói",
                 title: "Quản lý đăng ký gói dịch vụ chủ trọ",
@@ -277,10 +311,16 @@ const AdminLayout = ({onLogout}) => {
 
     // Function to find active menu key based on current path
     const getActiveKey = (pathname) => {
-        const activeItem = adminMenuConfig
+        const matchedItems = adminMenuConfig
             .flatMap((group) => group.items)
-            .find((item) => pathname.startsWith(item.path) || pathname === item.path);
-        return activeItem?.key || 'dashboard';
+            .filter((item) => pathname === item.path || pathname.startsWith(item.path + "/"));
+
+        if (matchedItems.length === 0) {
+            return "dashboard";
+        }
+
+        const activeItem = matchedItems.sort((left, right) => right.path.length - left.path.length)[0];
+        return activeItem?.key || "dashboard";
     };
 
     const selected = getActiveKey(location.pathname);
@@ -314,14 +354,28 @@ const AdminLayout = ({onLogout}) => {
                 <div className={cx("content")}>
                     <Routes>
                         <Route path="/dashboard" element={<Dashboard/>}/>
+                        <Route path="/notifications" element={<NotificationCenter/>}/>
+                        <Route path="/notifications/announcements" element={<AnnouncementCenter/>}/>
                         <Route path="/tenants" element={<Tenant/>}/>
+                        <Route path="/tenants/create-tenant" element={<TenantCreatorPage/>}/>
+                        <Route path="/tenants/:id/edit" element={<TenantCreatorPage/>}/>
                         <Route path="/tenants/:id" element={<TenantDetail/>}/>
                         <Route path="/boarding-houses" element={<BoardingHouses/>}/>
+                        <Route path="/boarding-houses/create" element={<BoardingHouseCreatorPage/>}/>
+                        <Route path="/boarding-houses/:id/edit" element={<BoardingHouseCreatorPage/>}/>
                         <Route path="/owners" element={<Owner/>}/>
                         <Route path="/buildings" element={<Building/>}/>
                         <Route path="/rooms" element={<Room/>}/>
+                        <Route path="/rooms/create-room" element={<RoomCreatorPage/>}/>
+                        <Route path="/rooms/:id/edit" element={<RoomCreatorPage/>}/>
                         <Route path="/contracts" element={<Contract/>}/>
+                        <Route path="/contracts/create-contract" element={<ContractCreatorPage/>}/>
+                        <Route path="/contracts/:id" element={<ContractDetailPage/>}/>
+                        <Route path="/contracts/:id/edit" element={<ContractCreatorPage/>}/>
+                        <Route path="/assets" element={<Asset/>}/>
+                        <Route path="/assets/create" element={<PropertyAssetCreatorPage/>}/>
                         <Route path="/bills" element={<Bill/>}/>
+                        {/*<Route path="/bills/create-bill" element={<BillCreator />} />*/}
                         <Route path="/services" element={<Amenity/>}/>
                         <Route path="/revenues" element={<Revenue/>}/>
                         <Route path="/users" element={<UserManagement/>}/>
@@ -331,12 +385,12 @@ const AdminLayout = ({onLogout}) => {
                         <Route path="/appointments" element={<Appointment/>}/>
                         <Route path="/admin-payment-management" element={<AdminPaymentManagement/>}/>
                         <Route path="/subscription-plan" element={<SubscriptionPlan/>}/>
+                        <Route path="/billing-penalty" element={<BillingPenaltyConfig/>}/>
                         <Route path="/owner-subscription" element={<OwnerSubscriptionPage/>}/>
                         <Route path="/system-log" element={<SystemLogs/>}/>
                         <Route path="/electric-water-record" element={<ElectricWaterRecord/>}/>
 
-                        {/* Add other routes as needed */}
-                        <Route path="/" element={<Dashboard/>}/> // Default route
+                        <Route path="/" element={<Dashboard/>}/>
                     </Routes>
                 </div>
             </div>

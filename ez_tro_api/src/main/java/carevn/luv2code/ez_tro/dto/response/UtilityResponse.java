@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +31,12 @@ public class UtilityResponse {
     Integer boardingHouseId;
 
     String boardingHouseName;
+
+    List<Integer> boardingHouseIds;
+
+    List<String> boardingHouseNames;
+
+    Integer ownerId;
 
     LocalDateTime createdAt;
 

@@ -5,15 +5,19 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import carevn.luv2code.ez_tro.dto.requests.TenantRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantCreateRequest;
+import carevn.luv2code.ez_tro.dto.requests.TenantUpdateRequest;
 import carevn.luv2code.ez_tro.dto.response.CurrentRentalInfoResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantDetailResponse;
 import carevn.luv2code.ez_tro.dto.response.TenantResponse;
 
+/**
+ * Service contract quản lý Tenant phía admin/owner.
+ */
 public interface TenantService {
-    TenantResponse create(TenantRequest request);
+    TenantResponse create(TenantCreateRequest request);
 
-    TenantResponse update(Integer id, TenantRequest request);
+    TenantResponse update(Integer id, TenantUpdateRequest request);
 
     void delete(Integer id);
 

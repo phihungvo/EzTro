@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge, Tag, Modal, Radio, Checkbox, message, Space, Divider, Progress, Alert, Timeline, Table } from 'antd';
+import { Card, Button, Badge, Tag, Modal, Radio, Checkbox, message, Space, Divider, Progress, Alert, Timeline, Table, Empty } from 'antd';
 import {
     CrownOutlined,
     CheckCircleOutlined,
@@ -436,8 +436,16 @@ function OwnerSubscriptionPage() {
                 <Card className={cx('history-card')}>
                     <Table
                         columns={transactionColumns}
-                        dataSource={mockTransactionHistory}
+                        dataSource={Array.isArray(mockTransactionHistory) ? mockTransactionHistory : []}
                         rowKey="id"
+                        locale={{
+                            emptyText: (
+                                <Empty
+                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                    description="Không có dữ liệu"
+                                />
+                            ),
+                        }}
                         pagination={{ pageSize: 10 }}
                     />
                 </Card>

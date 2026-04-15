@@ -3,6 +3,7 @@ package carevn.luv2code.ez_tro.security;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+// Cho phép tắt job khi chạy test để giảm noise/log và tránh side-effect không cần thiết.
+@ConditionalOnProperty(name = "app.jobs.token-cleanup.enabled", havingValue = "true", matchIfMissing = true)
 public class TokenCleanupJob {
 
     private final InvalidatedTokenRepository invalidatedTokenRepository;

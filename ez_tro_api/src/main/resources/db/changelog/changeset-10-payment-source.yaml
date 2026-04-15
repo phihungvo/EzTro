@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10-payment-source-01
+      author: codex
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: source
+                  type: VARCHAR(30)
+                  defaultValue: NORMAL
+                  constraints:
+                    nullable: false

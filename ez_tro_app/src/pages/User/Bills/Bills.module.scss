@@ -2,13 +2,125 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  color: #e8eaf0;
+}
 
-  .header {
-    .title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 0;
-    }
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 26px 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(135deg, rgba(79, 156, 249, 0.14), rgba(167, 139, 250, 0.1));
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+}
+
+.heroTitle {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.heroSub {
+  margin-top: 6px;
+  color: #8892a4;
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 760px;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #161b26;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+}
+
+.statLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5a6478;
+  font-weight: 700;
+}
+
+.statValue {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f0f2ff;
+}
+
+.statSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8892a4;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mainCol,
+.sideCol {
+  min-width: 0;
+}
+
+.sectionCard {
+  background: #161b26;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.sectionHeader {
+  padding: 22px 24px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.sectionSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #5a6478;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

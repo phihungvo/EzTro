@@ -23,6 +23,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service quản lý Permission (phân quyền API).
+ *
+ * <p>Permission có thể được gán cho Role và/hoặc truy vấn theo user để phục vụ kiểm tra quyền.
+ * Một số method có cache để tối ưu truy vấn permission.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,8 +36,17 @@ public class PermissionServiceImpl implements PermissionService {
     private final PermissionRepository permissionRepository;
     private final PermissionMapper permissionMapper;
 
+    /**
+     * Tạo mới permission từ DTO.
+     *
+     * @param permissionDTO DTO permission
+     * @return permission DTO sau khi tạo
+     */
     @Override
     @Transactional
+    @CacheEvict(
+            value = {"userPermissions", "rolePermissions"},
+            allEntries = true)
     public PermissionDTO createPermission(PermissionDTO permissionDTO) {
         if (permissionRepository.existsByName(permissionDTO.getName())) {
             throw new AppException(ErrorCode.PERMISSION_ALREADY_EXISTS);
@@ -53,8 +68,18 @@ public class PermissionServiceImpl implements PermissionService {
     //        return permissionRepository.save(permission);
     //    }
 
+    /**
+     * Cập nhật permission theo id.
+     *
+     * @param id id permission
+     * @param permissionDTO DTO cập nhật
+     * @return permission DTO sau cập nhật
+     */
     @Override
     @Transactional
+    @CacheEvict(
+            value = {"userPermissions", "rolePermissions"},
+            allEntries = true)
     public PermissionDTO updatePermission(Integer id, PermissionDTO permissionDTO) {
         Permission permission =
                 permissionRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOT_FOUND));
@@ -129,6 +154,12 @@ public class PermissionServiceImpl implements PermissionService {
         return permissions.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Tạo permission từ request (dùng cho một số flow khác) và evict cache.
+     *
+     * @param request payload tạo permission
+     * @return permission DTO sau khi tạo
+     */
     @CacheEvict(
             value = {"userPermissions", "rolePermissions"},
             allEntries = true)
@@ -148,6 +179,12 @@ public class PermissionServiceImpl implements PermissionService {
         return permissionMapper.toDTO(savedPermission);
     }
 
+    /**
+     * Lấy danh sách permission của user theo username (có cache).
+     *
+     * @param username username
+     * @return danh sách permission entity
+     */
     @Override
     @Cacheable(value = "userPermissions", key = "#username")
     public List<Permission> getUserPermissions(String username) {
@@ -155,6 +192,14 @@ public class PermissionServiceImpl implements PermissionService {
         return permissions.stream().toList();
     }
 
+    /**
+     * Kiểm tra user có permission cho endpoint + http method hay không.
+     *
+     * @param username username
+     * @param endpoint endpoint đang check
+     * @param method http method (string)
+     * @return true nếu có quyền
+     */
     @Override
     public boolean hasPermissionForEndpoint(String username, String endpoint, String method) {
         try {

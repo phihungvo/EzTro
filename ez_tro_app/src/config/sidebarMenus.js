@@ -1,8 +1,10 @@
 import {
+    BellOutlined,
     DashboardOutlined,
     AppstoreOutlined,
     BankOutlined,
     HomeOutlined,
+    NotificationOutlined,
     UserSwitchOutlined,
     TeamOutlined,
     ToolOutlined,
@@ -14,7 +16,7 @@ import {
     GoldOutlined,
     CalendarOutlined,
     CrownOutlined,
-    UserOutlined,
+    UserOutlined, WalletFilled,
 } from "@ant-design/icons";
 import React from "react";
 
@@ -215,6 +217,22 @@ export const MENU_CONFIG = {
                     path: "/owner/dashboard",
                     color: "#3b82f6"
                 },
+                {
+                    key: "notifications",
+                    label: "Thông báo",
+                    title: "Trung tâm thông báo",
+                    icon: <BellOutlined/>,
+                    path: "/owner/notifications",
+                    color: "#2563eb"
+                },
+                {
+                    key: "announcement-center",
+                    label: "Gửi announcement",
+                    title: "Gửi thông báo tới tenant",
+                    icon: <NotificationOutlined/>,
+                    path: "/owner/notifications/announcements",
+                    color: "#0f766e"
+                },
             ],
         },
         {
@@ -223,6 +241,7 @@ export const MENU_CONFIG = {
                 {
                     key: "boarding-houses",
                     label: "Khu trọ",
+                    title: "Quản lý khu trọ",
                     icon: <AppstoreOutlined/>,
                     path: "/owner/boarding-houses",
                     color: "#10b981"
@@ -248,6 +267,13 @@ export const MENU_CONFIG = {
                     path: "/owner/tenants",
                     color: "#f59e0b"
                 },
+                {
+                    key: "incidents",
+                    label: "Sự cố",
+                    icon: <AlertOutlined/>,
+                    path: "/owner/incidents",
+                    color: "#f97316"
+                },
             ],
         },
         {
@@ -266,6 +292,22 @@ export const MENU_CONFIG = {
                     icon: <FileTextOutlined/>,
                     path: "/owner/bills",
                     color: "#f59e0b"
+                },
+                {
+                    key: "utilities",
+                    label: "Dịch vụ",
+                    title: "Quản lý utility và đăng ký dịch vụ cho phòng",
+                    icon: <ToolOutlined/>,
+                    path: "/owner/utilities",
+                    color: "#6366f1"
+                },
+                {
+                    key: "finance_workspace",
+                    label: "Finance",
+                    title: "Quản lý tài chính tổng thể, bao gồm doanh thu, chi phí, lợi nhuận và các báo cáo tài chính chi tiết",
+                    icon: <WalletFilled/>,
+                    path: "/owner/admin-payment-management",
+                    color: "#bdf163"
                 },
             ],
         },

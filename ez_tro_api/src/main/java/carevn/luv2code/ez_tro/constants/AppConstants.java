@@ -1,19 +1,44 @@
 package carevn.luv2code.ez_tro.constants;
 
-import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-public final class AppConstants {
-    public static final Pattern PERIOD_PATTERN = Pattern.compile("\\d{4}-\\d{2}");
-    public static final String DATE_FORMAT = "yyyy-MM-dd";
+@Component
+public class AppConstants {
 
-    public static final String CODE_TIMESTAMP_FORMAT = "yyyyMMddHHmmss";
+    @Value("${app.default.role}")
+    private String defaultRole;
 
-    public static final String CONTRACT_CODE_PREFIX = "HD-";
-    public static final String BILL_CODE_PREFIX = "BL-";
+    @Value("${app.default.default-room-start-number}")
+    private int defaultRoomStartNumber;
 
-    public static final int DEFAULT_ROOM_START_NUMBER = 101;
+    @Value("${app.prefix.contract}")
+    private String contractCodePrefix;
 
-    private AppConstants() {
-        // Ngăn khởi tạo
+    @Value("${app.prefix.bill}")
+    private String billCodePrefix;
+
+    @Value("${app.timestamp.code-format}")
+    private String codeTimestampFormat;
+
+    // ===== Getter =====
+    public String getDefaultRole() {
+        return defaultRole;
+    }
+
+    public int getDefaultRoomStartNumber() {
+        return defaultRoomStartNumber;
+    }
+
+    public String getContractCodePrefix() {
+        return contractCodePrefix;
+    }
+
+    public String getBillCodePrefix() {
+        return billCodePrefix;
+    }
+
+    public String getCodeTimestampFormat() {
+        return codeTimestampFormat;
     }
 }

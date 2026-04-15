@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20-payment-metadata-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: payments
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT

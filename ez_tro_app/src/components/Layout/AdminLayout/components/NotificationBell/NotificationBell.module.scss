@@ -1,86 +1,224 @@
 // src/components/NotificationBell/NotificationBell.module.scss
+
+// ─── Animations ──────────────────────────────────────────────────────────────
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(255, 77, 79, 0);  }
+}
+
+@keyframes connecting {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  15%       { transform: rotate(12deg); }
+  30%       { transform: rotate(-10deg); }
+  45%       { transform: rotate(8deg); }
+  60%       { transform: rotate(-6deg); }
+  75%       { transform: rotate(4deg); }
+}
+
+// ─── Bell Wrapper ─────────────────────────────────────────────────────────────
+.bellWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bell {
+  font-size: 22px;
+  color: #595959;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: rgba(24, 144, 255, 0.1);
+    color: #1890ff;
+    animation: bellShake 0.6s ease;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+    padding: 6px;
+  }
+}
+
+.connectingDot {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #faad14;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  animation: connecting 1.2s ease-in-out infinite;
+}
+
+// ─── Dropdown Container ───────────────────────────────────────────────────────
 .dropdown {
   width: 420px;
   max-height: 80vh;
-  background: var(--bg-primary, #ffffff);
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  animation: slideDown 0.25s ease-out;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  animation: slideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
 
+  // Tablet
+  @media (max-width: 768px) {
+    width: 380px;
+    border-radius: 14px;
+  }
+
+  // Mobile large
   @media (max-width: 480px) {
-    width: calc(100vw - 32px);
-    max-height: 85vh;
+    width: calc(100vw - 24px);
+    max-height: 88vh;
+    border-radius: 20px 20px 12px 12px;
+    box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.18);
+  }
+
+  // Mobile small
+  @media (max-width: 360px) {
+    width: calc(100vw - 16px);
+    border-radius: 16px 16px 10px 10px;
   }
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+// ─── Header ───────────────────────────────────────────────────────────────────
 .header {
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f766e 100%);
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 
-  .title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: white;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+
     h3 {
-      margin: 0;
-      font-size: 17px;
-      font-weight: 600;
+      font-size: 15px;
     }
   }
+}
 
-  .markAll {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 13px;
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+
+  // Ant Design Button override inside header
+  :global(.ant-btn) {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 12.5px !important;
+    padding: 2px 8px !important;
+    height: auto !important;
+    border-radius: 6px !important;
+    transition: background 0.18s ease !important;
+    white-space: nowrap;
+
     &:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.18) !important;
+      color: white !important;
+    }
+  }
+
+  @media (max-width: 360px) {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+
+    :global(.ant-btn) {
+      font-size: 11px !important;
+      padding: 1px 6px !important;
     }
   }
 }
 
+// ─── List Container ───────────────────────────────────────────────────────────
 .listContainer {
-  max-height: calc(80vh - 70px);
+  flex: 1;
   overflow-y: auto;
-  &::-webkit-scrollbar {
-    width: 6px;
+  overscroll-behavior: contain;
+
+  // Custom scrollbar — desktop only
+  @media (min-width: 481px) {
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.28);
+      }
+    }
   }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+
+  // Ant Design List override
+  :global(.ant-list-empty-text) {
+    padding: 40px 20px;
   }
 }
 
+// ─── Notification Item ────────────────────────────────────────────────────────
 .item {
-  padding: 16px 20px !important;
-  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  padding: 14px 18px !important;
+  border-bottom: 1px solid #f2f2f2 !important;
   cursor: pointer;
   position: relative;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
+
+  // Remove Ant default margin
+  :global(.ant-list-item-meta) {
+    align-items: flex-start;
+  }
+
+  &:last-child {
+    border-bottom: none !important;
+  }
 
   &:hover {
-    background: var(--bg-hover, #f8f9fa);
+    background: #f7f9ff;
+  }
+
+  &:active {
+    background: #eef2ff;
   }
 
   &.unread {
-    background: linear-gradient(90deg, #e6f7ff 0%, #f0f5ff 100%);
-    font-weight: 500;
+    background: linear-gradient(90deg, #f0f7ff 0%, #f5f3ff 100%);
 
     &::before {
       content: '';
@@ -88,73 +226,157 @@
       left: 0;
       top: 0;
       bottom: 0;
-      width: 4px;
-      background: #1890ff;
-      border-radius: 0 4px 4px 0;
+      width: 3px;
+      background: linear-gradient(180deg, #1d4ed8, #0f766e);
+      border-radius: 0 3px 3px 0;
     }
+
+    &:hover {
+      background: linear-gradient(90deg, #e6f1ff 0%, #ede9fe 100%);
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px !important;
   }
 }
 
-.dot {
-  position: absolute;
-  left: 12px;
-  top: 20px;
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.2);
-  z-index: 1;
+// ─── Title Row ────────────────────────────────────────────────────────────────
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .notiTitle {
   font-weight: 600;
-  font-size: 14.5px;
-  color: #1a1a1a;
+  font-size: 13.5px;
+  color: #111827;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+
+  // Ellipsis on very small screens
+  @media (max-width: 360px) {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
+// ─── Category Badge ───────────────────────────────────────────────────────────
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #e2e8f0;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+
+  @media (max-width: 360px) {
+    display: none; // hide badge on very small screens to save space
+  }
+}
+
+// Category color variants
+.billing      { background: #fef3c7; color: #78350f; }
+.payment      { background: #dcfce7; color: #14532d; }
+.contract     { background: #ede9fe; color: #4c1d95; }
+.incident     { background: #fee2e2; color: #7f1d1d; }
+.security     { background: #fecaca; color: #991b1b; }
+.subscription { background: #dbeafe; color: #1e3a8a; }
+.system       { background: #f1f5f9; color: #334155; }
+
+// ─── Message Body ─────────────────────────────────────────────────────────────
 .message {
-  font-size: 13.5px;
-  color: #595959;
-  line-height: 1.5;
-  margin: 6px 0 4px;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.55;
+  margin: 5px 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+
+  @media (max-width: 480px) {
+    font-size: 12.5px;
+    -webkit-line-clamp: 3;
+  }
 }
 
+// ─── Time Row ─────────────────────────────────────────────────────────────────
 .time {
-  font-size: 12px;
-  color: #8c8c8c;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #9ca3af;
+  flex-wrap: wrap;
 }
 
-.loadMore, .loadingMore {
-  text-align: center;
-  padding: 16px;
-  color: #1890ff;
-  font-size: 13.5px;
+.clockIcon {
+  font-size: 11px;
+  color: #d1d5db;
 }
 
-.bellWrapper {
-  position: relative;
-  display: inline-block;
+.actionHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 11.5px;
+  margin-left: 4px;
+
+  &::before {
+    content: '·';
+    color: #d1d5db;
+    margin-right: 1px;
+  }
 }
 
-.bell {
-  font-size: 24px;
-  color: #595959;
-  cursor: pointer;
-  padding: 8px;
+// ─── Unread Dot ───────────────────────────────────────────────────────────────
+.dot {
+  position: absolute;
+  left: 10px;
+  top: 18px;
+  width: 8px;
+  height: 8px;
+  background: #ff4d4f;
   border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 1;
+}
 
-  &:hover {
-    background: rgba(24, 144, 255, 0.1);
-    color: #1890ff;
-    transform: scale(1.1) rotate(15deg);
+// ─── Load More ────────────────────────────────────────────────────────────────
+.loadMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+
+  :global(.ant-btn) {
+    color: #1d4ed8 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    width: 100%;
+    border-radius: 8px !important;
+    height: 36px !important;
+    transition: background 0.15s ease !important;
+
+    &:hover {
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+    }
   }
 }

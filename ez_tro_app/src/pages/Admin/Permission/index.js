@@ -13,7 +13,7 @@ import {
 import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import { Form, message, Tag } from 'antd';
+import { Form, message, Pagination, Tag } from 'antd';
 import { getAllPermissions, createPermission, updatePermission, deletePermission } from '~/service/admin/permission';
 
 const cx = classNames.bind(styles);
@@ -260,6 +260,15 @@ function PermissionList() {
                     />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showTotal={(total) => `Tổng ${total} quyền`}
+                        pageSizeOptions={['5', '10', '20', '50']}
+                        onChange={(page, pageSize) => handleGetAllPermissions(page, pageSize)}
+                    />
                 </div>
             </div>
             <div className={cx('trailer-container')}>
@@ -267,7 +276,7 @@ function PermissionList() {
                     columns={columns}
                     dataSources={permissionSource}
                     loading={loading}
-                    pagination={pagination}
+                    pagination={false}
                     onTableChange={handleTableChange}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={handleSelectChange}

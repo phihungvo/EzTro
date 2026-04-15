@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import carevn.luv2code.ez_tro.service.admin.ExcelExportService;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * REST Controller export dữ liệu ra file Excel.
+ *
+ * <p>Endpoint trả về file dạng {@code .xlsx} thông qua {@link InputStreamResource}.
+ */
 @RestController
 @RequestMapping("/api/export")
 public class ExcelExportController {
@@ -27,6 +32,12 @@ public class ExcelExportController {
         this.excelExportService = excelExportService;
     }
 
+    /**
+     * Export dữ liệu theo {@code entityType} và trả về file Excel để download.
+     *
+     * @param entityType loại entity muốn export (ví dụ: user, boarding_house)
+     * @return response chứa stream file Excel
+     */
     @GetMapping("/excel")
     public ResponseEntity<Resource> exportToExcel(@RequestParam @NotBlank String entityType) {
         ByteArrayInputStream in = excelExportService.exportToExcel(entityType);

@@ -14,6 +14,11 @@ import carevn.luv2code.ez_tro.service.admin.ExcelExportService;
 import carevn.luv2code.ez_tro.util.ExcelColumn;
 import carevn.luv2code.ez_tro.util.ExcelGenerator;
 
+/**
+ * Service export dữ liệu ra Excel.
+ *
+ * <p>Hiện hỗ trợ một số entity type nhất định (ví dụ: user, boarding_house).
+ */
 @Service
 public class ExcelExportServiceImpl implements ExcelExportService {
 
@@ -25,6 +30,12 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         this.boardingHouseRepository = boardingHouseRepository;
     }
 
+    /**
+     * Export dữ liệu theo entityType ra stream Excel ({@code .xlsx}).
+     *
+     * @param entityType loại entity muốn export
+     * @return stream excel
+     */
     @Override
     public ByteArrayInputStream exportToExcel(String entityType) {
         Exportable exportable = getExportableEntity(entityType);

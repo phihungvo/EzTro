@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 19-bill-lifecycle-01
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: bills
+      changes:
+        - addColumn:
+            tableName: bills
+            columns:
+              - column:
+                  name: issued_at
+                  type: DATETIME
+              - column:
+                  name: lifecycle_status
+                  type: VARCHAR(30)

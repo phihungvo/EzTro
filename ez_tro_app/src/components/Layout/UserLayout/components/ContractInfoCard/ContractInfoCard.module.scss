@@ -1,45 +1,166 @@
 .contractInfoCard {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #161b26;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+  padding: 22px 24px 24px;
+}
 
-  .title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 24px;
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e8eaf0;
+}
+
+.subTitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8892a4;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statusTag {
+  margin-inline-end: 0;
+  border-radius: 999px;
+  padding-inline: 10px;
+}
+
+.progressBox {
+  background: linear-gradient(135deg, rgba(79, 156, 249, 0.08), rgba(167, 139, 250, 0.07));
+  border: 1px solid rgba(79, 156, 249, 0.16);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  margin-bottom: 20px;
+}
+
+.progressLabel {
+  font-size: 12px;
+  color: #5a6478;
+  margin-bottom: 6px;
+}
+
+.progressText {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f0f2ff;
+  line-height: 1.45;
+
+  span {
+    color: #8892a4;
+    font-weight: 500;
+  }
+}
+
+.progressWrap {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4f9cf9, #a78bfa);
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #8892a4;
+}
+
+.contractGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .infoGrid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-
-    @media (max-width: 1024px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 640px) {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
   }
+}
 
-  .infoItem {
-    .label {
-      font-size: 11px;
-      color: #6b7280;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
+.contractField {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-    .value {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1f2937;
-    }
-  }
+.contractLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5a6478;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.contractValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f2ff;
+  word-break: break-word;
+}
+
+.highlight {
+  color: #4f9cf9;
+}
+
+.noticeBox {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 14px;
+}
+
+.noticeTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 6px;
+}
+
+.noticeText {
+  font-size: 13px;
+  color: #8892a4;
+  line-height: 1.6;
+}
+
+.actionRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
 }

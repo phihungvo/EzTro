@@ -1,0 +1,179 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9-payment-core-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: payments
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: INT
+              - column:
+                  name: amount
+                  type: DECIMAL(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(10)
+                  defaultValue: VND
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_reference
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: received_at
+                  type: DATETIME
+              - column:
+                  name: confirmed_at
+                  type: DATETIME
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addUniqueConstraint:
+            tableName: payments
+            columnNames: external_reference
+            constraintName: uk_payments_external_reference
+        - addForeignKeyConstraint:
+            baseTableName: payments
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_payments_organization
+        - addForeignKeyConstraint:
+            baseTableName: payments
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_payments_contract
+        - addForeignKeyConstraint:
+            baseTableName: payments
+            baseColumnNames: tenant_id
+            referencedTableName: tenants
+            referencedColumnNames: id
+            constraintName: fk_payments_tenant
+        - addForeignKeyConstraint:
+            baseTableName: payments
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_payments_created_by
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_contract_received_at
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: received_at
+
+  - changeSet:
+      id: 9-payment-core-02
+      author: codex
+      changes:
+        - createTable:
+            tableName: payment_allocations
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: payment_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bill_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: allocation_type
+                  type: VARCHAR(20)
+                  defaultValue: ALLOCATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: payment_allocations
+            baseColumnNames: payment_id
+            referencedTableName: payments
+            referencedColumnNames: id
+            constraintName: fk_payment_allocations_payment
+        - addForeignKeyConstraint:
+            baseTableName: payment_allocations
+            baseColumnNames: bill_id
+            referencedTableName: bills
+            referencedColumnNames: id
+            constraintName: fk_payment_allocations_bill
+        - addForeignKeyConstraint:
+            baseTableName: payment_allocations
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_payment_allocations_created_by
+        - createIndex:
+            tableName: payment_allocations
+            indexName: idx_payment_allocations_payment_id
+            columns:
+              - column:
+                  name: payment_id
+        - createIndex:
+            tableName: payment_allocations
+            indexName: idx_payment_allocations_bill_id
+            columns:
+              - column:
+                  name: bill_id
+

@@ -31,6 +31,9 @@ public class MeterReadingRequest {
     @DecimalMin("0.0")
     BigDecimal currentIndex;
 
+    @DecimalMin("0.0")
+    BigDecimal unitPrice;
+
     Date readingDate;
 
     String note;

@@ -3,8 +3,12 @@ package carevn.luv2code.ez_tro.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
+import carevn.luv2code.ez_tro.enums.BillDeliveryStatus;
+import carevn.luv2code.ez_tro.enums.BillLifecycleStatus;
 import carevn.luv2code.ez_tro.enums.BillStatus;
+import carevn.luv2code.ez_tro.enums.InvoiceType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -46,8 +50,25 @@ public class Bill {
     @JoinColumn(name = "tenant_id", nullable = true)
     Tenant tenant;
 
+    @OneToMany(mappedBy = "bill", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    List<BillLine> lines;
+
     @Column(name = "amount", nullable = false)
     BigDecimal amount;
+
+    @Column(name = "billing_period_start")
+    LocalDate billingPeriodStart;
+
+    @Column(name = "billing_period_end")
+    LocalDate billingPeriodEnd;
+
+    @Column(name = "generation_key", length = 255, unique = true)
+    String generationKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "invoice_type", length = 30)
+    InvoiceType invoiceType;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "payment_date")
@@ -62,11 +83,39 @@ public class Bill {
     BigDecimal serviceAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     BillStatus status = BillStatus.UNPAID;
 
     @Column(length = 500)
     String note;
+
+    @Column(name = "public_note", length = 1000)
+    String publicNote;
+
+    @Column(name = "internal_note", length = 1000)
+    String internalNote;
+
+    @Column(name = "payment_instructions", length = 1000)
+    String paymentInstructions;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "issued_at")
+    Date issuedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lifecycle_status", length = 30)
+    BillLifecycleStatus lifecycleStatus;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "sent_at")
+    Date sentAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_status", length = 30)
+    BillDeliveryStatus deliveryStatus = BillDeliveryStatus.NOT_SENT;
+
+    @Column(name = "delivery_channels_json", columnDefinition = "LONGTEXT")
+    String deliveryChannelsJson;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)

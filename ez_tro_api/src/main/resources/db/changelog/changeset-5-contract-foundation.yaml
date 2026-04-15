@@ -1,0 +1,511 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-contract-foundation-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: organizations
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: owner_id
+                  type: INT
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addUniqueConstraint:
+            tableName: organizations
+            columnNames: organization_code
+            constraintName: uk_organizations_code
+        - addForeignKeyConstraint:
+            baseTableName: organizations
+            baseColumnNames: owner_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_organizations_owner
+
+  - changeSet:
+      id: 5-contract-foundation-02
+      author: codex
+      changes:
+        - addColumn:
+            tableName: boarding_houses
+            columns:
+              - column:
+                  name: organization_id
+                  type: INT
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: organization_id
+                  type: INT
+        - addForeignKeyConstraint:
+            baseTableName: boarding_houses
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_boarding_houses_organization
+        - addForeignKeyConstraint:
+            baseTableName: contracts
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_contracts_organization
+        - createIndex:
+            tableName: boarding_houses
+            indexName: idx_boarding_houses_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: contracts
+            indexName: idx_contracts_organization_id
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 5-contract-foundation-03
+      author: codex
+      changes:
+        - createTable:
+            tableName: contract_versions
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deposit_amount
+                  type: DECIMAL(12,2)
+              - column:
+                  name: billing_cycle
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_cycle_months
+                  type: INT
+              - column:
+                  name: monthly_payment_day
+                  type: INT
+              - column:
+                  name: effective_from
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_to
+                  type: DATE
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addUniqueConstraint:
+            tableName: contract_versions
+            columnNames: contract_id, version_number
+            constraintName: uk_contract_versions_contract_version
+        - addForeignKeyConstraint:
+            baseTableName: contract_versions
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_contract_versions_organization
+        - addForeignKeyConstraint:
+            baseTableName: contract_versions
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_contract_versions_contract
+        - addForeignKeyConstraint:
+            baseTableName: contract_versions
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_contract_versions_created_by
+        - createIndex:
+            tableName: contract_versions
+            indexName: idx_contract_versions_org_effective
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: effective_from
+
+  - changeSet:
+      id: 5-contract-foundation-04
+      author: codex
+      changes:
+        - createTable:
+            tableName: contract_amendments
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amendment_type
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_from
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_to
+                  type: DATE
+              - column:
+                  name: data_json
+                  type: LONGTEXT
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: contract_amendments
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_contract_amendments_organization
+        - addForeignKeyConstraint:
+            baseTableName: contract_amendments
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_contract_amendments_contract
+        - addForeignKeyConstraint:
+            baseTableName: contract_amendments
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_contract_amendments_created_by
+        - createIndex:
+            tableName: contract_amendments
+            indexName: idx_contract_amendments_contract_effective
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: effective_from
+
+  - changeSet:
+      id: 5-contract-foundation-05
+      author: codex
+      changes:
+        - createTable:
+            tableName: contract_billing_rules
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: utility_id
+                  type: INT
+              - column:
+                  name: cycle
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: DECIMAL(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: calculation_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_from
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_to
+                  type: DATE
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: contract_billing_rules
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_contract_billing_rules_organization
+        - addForeignKeyConstraint:
+            baseTableName: contract_billing_rules
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_contract_billing_rules_contract
+        - addForeignKeyConstraint:
+            baseTableName: contract_billing_rules
+            baseColumnNames: utility_id
+            referencedTableName: utilities
+            referencedColumnNames: id
+            constraintName: fk_contract_billing_rules_utility
+        - createIndex:
+            tableName: contract_billing_rules
+            indexName: idx_contract_billing_rules_contract_effective
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: effective_from
+
+  - changeSet:
+      id: 5-contract-foundation-06
+      author: codex
+      changes:
+        - createTable:
+            tableName: deposit_transactions
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transaction_type
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: VND
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_type
+                  type: VARCHAR(40)
+              - column:
+                  name: reference_id
+                  type: VARCHAR(100)
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: occurred_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: deposit_transactions
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_deposit_transactions_organization
+        - addForeignKeyConstraint:
+            baseTableName: deposit_transactions
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_deposit_transactions_contract
+        - addForeignKeyConstraint:
+            baseTableName: deposit_transactions
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_deposit_transactions_created_by
+        - createIndex:
+            tableName: deposit_transactions
+            indexName: idx_deposit_transactions_contract_occurred
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: occurred_at
+
+  - changeSet:
+      id: 5-contract-foundation-07
+      author: codex
+      changes:
+        - createTable:
+            tableName: contract_state_transitions
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: from_state
+                  type: VARCHAR(30)
+              - column:
+                  name: to_state
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(255)
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT
+              - column:
+                  name: changed_by
+                  type: INT
+              - column:
+                  name: changed_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: contract_state_transitions
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_contract_state_transitions_organization
+        - addForeignKeyConstraint:
+            baseTableName: contract_state_transitions
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_contract_state_transitions_contract
+        - addForeignKeyConstraint:
+            baseTableName: contract_state_transitions
+            baseColumnNames: changed_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_contract_state_transitions_changed_by
+        - createIndex:
+            tableName: contract_state_transitions
+            indexName: idx_contract_state_transitions_contract_changed
+            columns:
+              - column:
+                  name: contract_id
+              - column:
+                  name: changed_at

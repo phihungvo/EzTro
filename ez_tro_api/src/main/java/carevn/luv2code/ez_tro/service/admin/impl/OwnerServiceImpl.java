@@ -22,6 +22,12 @@ import carevn.luv2code.ez_tro.service.admin.OwnerService;
 import carevn.luv2code.ez_tro.specification.OwnerSpecs;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service quản lý owner (chủ trọ).
+ *
+ * <p>Owner được quản lý trong bảng {@link User} với role "OWNER".
+ * Service này hỗ trợ CRUD owner và lấy profile owner hiện tại.
+ */
 @Service
 @RequiredArgsConstructor
 public class OwnerServiceImpl implements OwnerService {
@@ -30,6 +36,12 @@ public class OwnerServiceImpl implements OwnerService {
     private final PasswordEncoder passwordEncoder;
     private final OwnerMapper ownerMapper;
 
+    /**
+     * Lấy danh sách owner phân trang.
+     *
+     * @param pageable tham số phân trang
+     * @return page owner DTO
+     */
     @Override
     public Page<OwnerResponse> getAll(Pageable pageable) {
         SecurityUtils.SpecificationSafeUser safe = SecurityUtils.safeUser();
@@ -41,6 +53,12 @@ public class OwnerServiceImpl implements OwnerService {
         return userRepository.findAll(spec, pageable).map(ownerMapper::toResponse);
     }
 
+    /**
+     * Tạo mới owner.
+     *
+     * @param request payload tạo owner
+     * @return owner DTO sau khi tạo
+     */
     @Override
     public OwnerResponse create(OwnerRequest request) {
         validateUnique(request);
@@ -50,6 +68,13 @@ public class OwnerServiceImpl implements OwnerService {
         return ownerMapper.toResponse(userRepository.save(owner));
     }
 
+    /**
+     * Cập nhật owner theo id.
+     *
+     * @param id id owner
+     * @param request payload cập nhật
+     * @return owner DTO sau cập nhật
+     */
     @Override
     public OwnerResponse update(Integer id, OwnerRequest request) {
         User owner = findOwnerById(id);
@@ -60,6 +85,11 @@ public class OwnerServiceImpl implements OwnerService {
         return ownerMapper.toResponse(owner);
     }
 
+    /**
+     * Xóa owner theo id.
+     *
+     * @param id id owner
+     */
     @Override
     public void delete(Integer id) {
         User owner = findOwnerById(id);
@@ -69,11 +99,22 @@ public class OwnerServiceImpl implements OwnerService {
         userRepository.delete(owner);
     }
 
+    /**
+     * Lấy owner theo id.
+     *
+     * @param id id owner
+     * @return owner DTO
+     */
     @Override
     public OwnerResponse getById(Integer id) {
         return ownerMapper.toResponse(findOwnerById(id));
     }
 
+    /**
+     * Lấy profile của owner hiện tại.
+     *
+     * @return owner DTO
+     */
     @Override
     public OwnerResponse getMyProfile() {
         User current = SecurityUtils.getCurrentUser();

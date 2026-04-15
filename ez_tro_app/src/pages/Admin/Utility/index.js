@@ -10,6 +10,7 @@ import {
     CloudUploadOutlined,
     EditOutlined,
     DeleteOutlined,
+    PoweroffOutlined,
     TableOutlined,
     AppstoreOutlined,
     CheckOutlined,
@@ -19,8 +20,8 @@ import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
 import {Form, message, Row, Col, Pagination, Segmented, Tag} from 'antd';
-import {getAllUtilities, createUtility, updateUtility, deleteUtility} from '~/service/admin/utility';
-import {deleteBoardingHouse, getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
+import {getAllUtilities, createUtility, updateUtility, deleteUtility, toggleUtilityStatus} from '~/service/admin/utility';
+import {getAllBoardingHousesNoPaged} from '~/service/admin/boarding_house';
 
 const cx = classNames.bind(styles);
 
@@ -83,10 +84,14 @@ function Utility() {
         },
         {
             title: 'Nhà trọ áp dụng',
-            dataIndex: 'boardingHouseName',
-            key: 'boardingHouseName',
+            dataIndex: 'boardingHouseNames',
+            key: 'boardingHouseNames',
             align: 'center',
             width: 250,
+            render: (_, record) =>
+                (record.boardingHouseNames && record.boardingHouseNames.length > 0)
+                    ? record.boardingHouseNames.join(', ')
+                    : 'Dùng chung (tất cả nhà trọ của bạn)',
         },
         {
             title: 'Khu tòa/Block',
@@ -127,6 +132,13 @@ function Utility() {
                         onClick={() => handleDeleteUtility(record)}
                         style={{ marginLeft: '8px' }}
                     />
+                    <SmartButton
+                        type={record.isActive ? 'default' : 'primary'}
+                        icon={<PoweroffOutlined />}
+                        buttonWidth={40}
+                        onClick={() => handleToggleUtility(record)}
+                        style={{ marginLeft: '8px' }}
+                    />
                 </>
             ),
         },
@@ -142,9 +154,12 @@ function Utility() {
         },
         {
             label: 'Áp dụng cho nhà trọ',
-            name: 'boardingHouseId',
+            name: 'boardingHouseIds',
             type: 'select',
-            options: boardingHouseOptionSource
+            multiple: true,
+            allowClear: true,
+            placeholder: 'Chọn một hoặc nhiều nhà trọ (bỏ trống = dùng chung)',
+            options: boardingHouseOptionSource,
         },
         {
             label: 'Đơn vị tính',
@@ -230,6 +245,10 @@ function Utility() {
         setModalMode('create');
         setSelectedUtility(null);
         form.resetFields();
+        form.setFieldsValue({
+            boardingHouseIds: [],
+            isActive: 'Yes',
+        });
         setIsModalOpen(true);
     };
 
@@ -237,20 +256,24 @@ function Utility() {
         try {
             await createUtility(formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi tạo tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
     const handleEditUtility = (record) => {
         setSelectedUtility(record);
         setModalMode('edit');
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            ...record,
+            boardingHouseIds: record.boardingHouseIds || [],
+            isActive: record.isActive ? 'Yes' : 'No',
+        });
         setIsModalOpen(true);
     };
 
@@ -258,13 +281,13 @@ function Utility() {
         try {
             await updateUtility(selectedUtility.id, formData);
             handleGetUtilities();
-            setIsModalOpen(false);
         } catch (error) {
             message.error(
                 `Lỗi khi cập nhật tiện ích: ${
                     error.response?.data?.message || error.message
                 }`,
             );
+            throw error;
         }
     };
 
@@ -278,20 +301,28 @@ function Utility() {
     const handleCallDeleteUtility = async () => {
         await deleteUtility(selectedUtility.id);
         handleGetUtilities();
-        setIsModalOpen(false);
     };
 
-    const handleFormSubmit = (formData) => {
-        formData.isActive = formData.isActive === 'Yes';
+    const handleToggleUtility = async (record) => {
+        try {
+            await toggleUtilityStatus(record.id, !record.isActive);
+            handleGetUtilities(pagination.current, pagination.pageSize);
+        } catch (error) {
+            // message handled in service
+        }
+    };
+
+    const handleFormSubmit = async (formData) => {
+        formData.isActive = formData.isActive === 'Yes' || formData.isActive === true;
+        formData.boardingHouseIds = formData.boardingHouseIds || [];
 
         if (modalMode === 'create') {
-            handleCallCreateUtility(formData);
+            await handleCallCreateUtility(formData);
         } else if (modalMode === 'edit') {
-            handleCallUpdateUtility(formData);
+            await handleCallUpdateUtility(formData);
         } else if (modalMode === 'delete') {
-            handleCallDeleteUtility();
+            await handleCallDeleteUtility();
         }
-        setIsModalOpen(false);
     };
 
     const handleTableChange = (pagination) => {
@@ -314,7 +345,11 @@ function Utility() {
     const handleViewUtility = (record) => {
         setSelectedUtility(record);
         setModalMode('view');
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            ...record,
+            boardingHouseIds: record.boardingHouseIds || [],
+            isActive: record.isActive ? 'Yes' : 'No',
+        });
         setIsModalOpen(true);
     };
 
@@ -336,6 +371,15 @@ function Utility() {
                     <SmartButton title="Thêm" icon={<PlusOutlined />} type="primary" onClick={handleAddUtility} />
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined />} />
                     <SmartButton title="Excel" icon={<CloudUploadOutlined />} />
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -346,37 +390,23 @@ function Utility() {
                         columns={columns}
                         dataSources={utilitySource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {utilitySource.map((utility) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
-                                    <UtilityCard
-                                        utility={utility}
-                                        onView={() => handleViewUtility(utility)}
-                                        onEdit={() => handleEditUtility(utility)}
-                                        onDelete={() => handleDeleteUtility(utility)}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetUtilities(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {utilitySource.map((utility) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={utility.id}>
+                                <UtilityCard
+                                    utility={utility}
+                                    onView={() => handleViewUtility(utility)}
+                                    onEdit={() => handleEditUtility(utility)}
+                                    onDelete={() => handleDeleteUtility(utility)}
+                                    onToggle={() => handleToggleUtility(utility)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

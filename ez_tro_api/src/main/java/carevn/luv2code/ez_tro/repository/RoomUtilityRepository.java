@@ -28,4 +28,6 @@ public interface RoomUtilityRepository extends JpaRepository<RoomUtility, RoomUt
 
     @Query("SELECT ru FROM RoomUtility ru")
     Page<RoomUtility> findAllPaged(Pageable pageable);
+
+    Page<RoomUtility> findAllByRoom_BoardingHouse_Owner_Id(Integer ownerId, Pageable pageable);
 }

@@ -1,0 +1,302 @@
+databaseChangeLog:
+  - changeSet:
+      id: 21-notification-foundation-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: notification_events
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_key
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(50)
+              - column:
+                  name: priority
+                  type: VARCHAR(20)
+              - column:
+                  name: source_module
+                  type: VARCHAR(50)
+              - column:
+                  name: entity_type
+                  type: VARCHAR(50)
+              - column:
+                  name: entity_id
+                  type: VARCHAR(50)
+              - column:
+                  name: actor_user_id
+                  type: INT
+              - column:
+                  name: payload_json
+                  type: LONGTEXT
+              - column:
+                  name: dedupe_key
+                  type: VARCHAR(255)
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: message
+                  type: LONGTEXT
+              - column:
+                  name: occurred_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: notification_events
+            baseColumnNames: actor_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_notification_events_actor_user
+        - createIndex:
+            tableName: notification_events
+            indexName: idx_notification_events_key_created
+            columns:
+              - column:
+                  name: event_key
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: notification_events
+            indexName: idx_notification_events_dedupe_key
+            columns:
+              - column:
+                  name: dedupe_key
+
+  - changeSet:
+      id: 21-notification-foundation-02
+      author: codex
+      changes:
+        - createTable:
+            tableName: notification_preferences
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_key
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BIT(1)
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_mandatory
+                  type: BIT(1)
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: notification_preferences
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_notification_preferences_user
+        - addUniqueConstraint:
+            tableName: notification_preferences
+            columnNames: user_id,event_key,channel
+            constraintName: uk_notification_preferences_user_event_channel
+
+  - changeSet:
+      id: 21-notification-foundation-03
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: notifications
+      changes:
+        - addColumn:
+            tableName: notifications
+            columns:
+              - column:
+                  name: event_id
+                  type: INT
+              - column:
+                  name: event_key
+                  type: VARCHAR(100)
+              - column:
+                  name: category
+                  type: VARCHAR(50)
+              - column:
+                  name: priority
+                  type: VARCHAR(20)
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+              - column:
+                  name: delivery_status
+                  type: VARCHAR(20)
+              - column:
+                  name: read_status
+                  type: VARCHAR(20)
+              - column:
+                  name: action_url
+                  type: VARCHAR(500)
+              - column:
+                  name: action_label
+                  type: VARCHAR(100)
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT
+              - column:
+                  name: recipient_role
+                  type: VARCHAR(50)
+              - column:
+                  name: archived_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: notifications
+            baseColumnNames: event_id
+            referencedTableName: notification_events
+            referencedColumnNames: id
+            constraintName: fk_notifications_event
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_recipient_read_created
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: read_status
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_event_key
+            columns:
+              - column:
+                  name: event_key
+
+  - changeSet:
+      id: 21-notification-foundation-04
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        tableExists:
+          tableName: notifications
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE notifications
+              SET event_key = COALESCE(event_key, type, 'SYSTEM'),
+                  category = COALESCE(category,
+                    CASE
+                      WHEN COALESCE(type, '') LIKE 'BILL%' THEN 'BILLING'
+                      WHEN COALESCE(type, '') LIKE 'PAYMENT%' THEN 'PAYMENT'
+                      WHEN COALESCE(type, '') LIKE 'CONTRACT%' THEN 'CONTRACT'
+                      WHEN COALESCE(type, '') LIKE 'INCIDENT%' THEN 'INCIDENT'
+                      WHEN COALESCE(type, '') LIKE 'SUBSCRIPTION%' THEN 'SUBSCRIPTION'
+                      WHEN COALESCE(type, '') LIKE 'QUOTA%' THEN 'SUBSCRIPTION'
+                      WHEN COALESCE(type, '') LIKE 'SECURITY%' THEN 'SECURITY'
+                      ELSE 'SYSTEM'
+                    END),
+                  priority = COALESCE(priority,
+                    CASE
+                      WHEN COALESCE(type, '') IN ('BILL_OVERDUE', 'PAYMENT_REJECTED', 'SECURITY_ALERT') THEN 'HIGH'
+                      ELSE 'MEDIUM'
+                    END),
+                  channel = COALESCE(channel, 'IN_APP'),
+                  delivery_status = COALESCE(delivery_status, 'DELIVERED'),
+                  read_status = COALESCE(read_status,
+                    CASE
+                      WHEN COALESCE(is_read, 0) = 1 THEN 'READ'
+                      ELSE 'UNREAD'
+                    END),
+                  metadata_json = COALESCE(metadata_json, data);
+        - sql:
+            splitStatements: false
+            sql: |
+              INSERT INTO notifications (
+                recipient_id,
+                sender_id,
+                title,
+                message,
+                type,
+                data,
+                is_broadcast,
+                is_read,
+                read_at,
+                created_at,
+                event_key,
+                category,
+                priority,
+                channel,
+                delivery_status,
+                read_status,
+                metadata_json
+              )
+              SELECT
+                u.id,
+                n.sender_id,
+                n.title,
+                n.message,
+                n.type,
+                n.data,
+                0,
+                COALESCE(n.is_read, 0),
+                n.read_at,
+                n.created_at,
+                COALESCE(n.event_key, n.type, 'SYSTEM'),
+                COALESCE(n.category, 'SYSTEM'),
+                COALESCE(n.priority, 'MEDIUM'),
+                COALESCE(n.channel, 'IN_APP'),
+                COALESCE(n.delivery_status, 'DELIVERED'),
+                CASE
+                  WHEN COALESCE(n.is_read, 0) = 1 THEN 'READ'
+                  ELSE 'UNREAD'
+                END,
+                COALESCE(n.metadata_json, n.data)
+              FROM notifications n
+              INNER JOIN users u ON 1 = 1
+              WHERE n.is_broadcast = 1;

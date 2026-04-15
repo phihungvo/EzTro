@@ -1,13 +1,10 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
-import Utility from "~/pages/Admin/Utility";
-
-
 export const getAllUtilities = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.UTILITY.GET_ALL, {
-            params: { page, pageSize },
+            params: { page, size: pageSize },
         });
 
         return response.data.result;
@@ -37,9 +34,11 @@ export const createUtility = async (formData) => {
             formData,
         );
         message.success('Utility created successfully');
-        return response.data;
+        return response.data.result;
     } catch (error) {
         console.error('Error when creating utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo tiện ích');
+        throw error;
     }
 };
 
@@ -53,6 +52,8 @@ export const updateUtility = async (utilityId, formData) => {
         return response.data;
     } catch (error) {
         console.error('Error when updating utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi cập nhật tiện ích');
+        throw error;
     }
 };
 
@@ -64,5 +65,20 @@ export const deleteUtility = async (utilityId) => {
         return response.data;
     } catch (error) {
         console.error('Error when deleting utility: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi xóa tiện ích');
+        throw error;
+    }
+};
+
+export const toggleUtilityStatus = async (utilityId, active) => {
+    try {
+        const response = await apiClient.patch(
+            API_ENDPOINTS.UTILITY.TOGGLE_STATUS(utilityId, active));
+        message.success(active ? 'Đã bật tiện ích' : 'Đã vô hiệu hóa tiện ích');
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when toggling utility status: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi thay đổi trạng thái tiện ích');
+        throw error;
     }
 };

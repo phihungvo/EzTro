@@ -266,7 +266,9 @@ function IncidentReport() {
         form.setFieldsValue({
             roomId: record.roomId,
             title: record.title,
-            description: record.description
+            description: record.description,
+            status: record.status,
+            expectedResolveDate: record.expectedResolveDate ? moment(record.expectedResolveDate) : null,
         });
         setIsModalOpen(true);
     };
@@ -317,13 +319,13 @@ function IncidentReport() {
     const getModalTitle = () => {
         switch (modalMode) {
             case 'create':
-                return 'Thêm toà nhà mới';
+                return 'Thêm báo cáo sự cố';
             case 'edit':
-                return 'Chỉnh sửa toà nhà';
+                return 'Chỉnh sửa báo cáo sự cố';
             case 'delete':
-                return 'Xóa toà nhà';
+                return 'Xóa báo cáo sự cố';
             default:
-                return 'Chi tiết toà nhà';
+                return 'Chi tiết báo cáo sự cố';
         }
     };
 
@@ -352,6 +354,15 @@ function IncidentReport() {
                     <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddIncidentReport}/>
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetIncidentReports(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -362,37 +373,22 @@ function IncidentReport() {
                         columns={columns}
                         dataSources={incidentReportSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {incidentReportSource.map((incidentReport) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={incidentReport.id}>
-                                    {/*<IncidentReportCard*/}
-                                    {/*    incidentReport={incidentReport}*/}
-                                    {/*    onView={() => handleViewIncidentReport(incidentReport)}*/}
-                                    {/*    onEdit={() => handleEditIncidentReport(incidentReport)}*/}
-                                    {/*    onDelete={() => handleDeleteIncidentReport(incidentReport)}*/}
-                                    {/*/>*/}
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetIncidentReports(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {incidentReportSource.map((incidentReport) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={incidentReport.id}>
+                                {/*<IncidentReportCard*/}
+                                {/*    incidentReport={incidentReport}*/}
+                                {/*    onView={() => handleViewIncidentReport(incidentReport)}*/}
+                                {/*    onEdit={() => handleEditIncidentReport(incidentReport)}*/}
+                                {/*    onDelete={() => handleDeleteIncidentReport(incidentReport)}*/}
+                                {/*/>*/}
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 
