@@ -2,14 +2,18 @@
   width: 100%;
   display: block;
   padding: 16px;
-  background: #f9f9f9;
   min-height: 100vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  //padding: 32px;
+  animation: slideIn 0.4s ease;
+  background: #0d0f14 linear-gradient(180deg, rgba(18, 24, 38, 0.96) 0%, rgba(14, 20, 31, 0.98) 100%);
 }
 
 .request-container {
   width: 100%;
   overflow-x: auto;
-  background: white;
+  //background: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -56,5 +60,17 @@
 
   .pagination-wrapper {
     justify-content: center;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
