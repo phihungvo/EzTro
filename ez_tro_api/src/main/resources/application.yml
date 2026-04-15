@@ -103,6 +103,14 @@ file:
   upload-dir: ${FILE_UPLOAD_DIR:/var/uploads}
 
 app:
+  default:
+     role: ${DEFAULT_ROLE:USER}
+     default-room-start-number: ${DEFAULT_ROOM_START_NUMBER:101}
+  prefix:
+    contract: ${CONTRACT_CODE_PREFIX:HD-}
+    bill: ${BILL_CODE_PREFIX:BL-}
+  timestamp:
+    code-format: ${TIMESTAMP_FORMAT_CODE:yyyyMMddHHmmss}
   jobs:
     contract-status-sync:
       cron: ${CONTRACT_STATUS_SYNC_CRON:0 10 0 * * *}

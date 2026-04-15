@@ -71,6 +71,7 @@ public class RoomServiceImpl implements RoomService {
     private final PropertyAssetRepository propertyAssetRepository;
     private final ContractSnapshotService contractSnapshotService;
     private final DepositTransactionRepository depositTransactionRepository;
+    private final AppConstants appConstants;
 
     //    @Override
     //    @Transactional
@@ -1065,7 +1066,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         Integer maxRoomNumber = roomRepository.findMaxRoomNumberByBuildingId(buildingId);
-        int nextRoomNumber = (maxRoomNumber == null) ? AppConstants.DEFAULT_ROOM_START_NUMBER : maxRoomNumber + 1;
+        int nextRoomNumber = (maxRoomNumber == null) ? appConstants.getDefaultRoomStartNumber() : maxRoomNumber + 1;
 
         while (roomRepository.existsByBuildingIdAndRoomNumber(buildingId, String.valueOf(nextRoomNumber))) {
             nextRoomNumber++;
