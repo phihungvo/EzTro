@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NestHome – Quản Lý Phòng Trọ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --surface: #161b26;
+            --surface2: #1e2535;
+            --surface3: #252d40;
+            --border: rgba(255,255,255,0.07);
+            --accent: #4f9cf9;
+            --accent2: #a78bfa;
+            --accent3: #34d399;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --text: #e8eaf0;
+            --text2: #8892a4;
+            --text3: #5a6478;
+            --glow: rgba(79,156,249,0.15);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── LAYOUT ── */
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 260px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            transition: transform .3s ease;
+        }
+
+        .sidebar-logo {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-mark {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text3);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* User card */
+        .user-card {
+            margin: 20px 16px;
+            background: linear-gradient(135deg, rgba(79,156,249,0.1), rgba(167,139,250,0.1));
+            border: 1px solid rgba(79,156,249,0.2);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .user-name { font-weight: 600; font-size: 14px; }
+        .user-room { font-size: 11px; color: var(--accent); margin-top: 2px; }
+
+        /* Nav */
+        .nav { flex: 1; padding: 8px 12px; overflow-y: auto; }
+
+        .nav-section-label {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text3);
+            padding: 16px 12px 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all .2s;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            position: relative;
+        }
+
+        .nav-item:hover { background: var(--surface2); color: var(--text); }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(79,156,249,0.15), rgba(79,156,249,0.05));
+            color: var(--accent);
+            border: 1px solid rgba(79,156,249,0.2);
+        }
+
+        .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 99px;
+        }
+
+        .sidebar-bottom {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--danger);
+            font-size: 14px;
+            font-weight: 500;
+            transition: background .2s;
+        }
+
+        .logout-btn:hover { background: rgba(248,113,113,0.1); }
+
+        /* ── MAIN ── */
+        .main {
+            margin-left: 260px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .page-title { font-size: 20px; font-weight: 700; }
+        .page-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+        .icon-btn {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            position: relative;
+            transition: border-color .2s;
+        }
+
+        .icon-btn:hover { border-color: var(--accent); }
+
+        .notif-dot {
+            position: absolute;
+            top: 6px; right: 6px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            border: 2px solid var(--surface);
+        }
+
+        /* ── CONTENT ── */
+        .content {
+            padding: 32px;
+            flex: 1;
+        }
+
+        /* ── PAGES ── */
+        .page { display: none; animation: fadeUp .3s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeUp {
+            from { opacity:0; transform: translateY(12px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+
+        /* ── OVERVIEW CARDS ── */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, border-color .2s;
+        }
+
+        .stat-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.12); }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -30px; right: -20px;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            opacity: 0.08;
+        }
+
+        .stat-card.blue::before { background: var(--accent); }
+        .stat-card.purple::before { background: var(--accent2); }
+        .stat-card.green::before { background: var(--accent3); }
+        .stat-card.red::before { background: var(--danger); }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 14px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-label { font-size: 12px; color: var(--text3); }
+
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            padding: 3px 8px;
+            border-radius: 99px;
+        }
+
+        .stat-change.up { background: rgba(52,211,153,0.15); color: var(--accent3); }
+        .stat-change.down { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .section-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+        /* ── BTN ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all .2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover { background: #3b8ae0; box-shadow: 0 4px 20px rgba(79,156,249,0.3); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text2);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+        .btn-danger {
+            background: rgba(248,113,113,0.15);
+            color: var(--danger);
+            border: 1px solid rgba(248,113,113,0.2);
+        }
+
+        .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* ── BILL ITEM ── */
+        .bill-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bill-item:last-child { border-bottom: none; }
+
+        .bill-left { display: flex; align-items: center; gap: 14px; }
+
+        .bill-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+
+        .bill-name { font-size: 14px; font-weight: 600; }
+        .bill-date { font-size: 11px; color: var(--text3); margin-top: 3px; }
+        .bill-amount { font-size: 16px; font-weight: 700; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-paid { background: rgba(52,211,153,0.12); color: var(--accent3); }
+        .status-pending { background: rgba(251,191,36,0.12); color: var(--warning); }
+        .status-overdue { background: rgba(248,113,113,0.12); color: var(--danger); }
+
+        /* ── MAINTENANCE CARD ── */
+        .request-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: border-color .2s;
+        }
+
+        .request-card:hover { border-color: rgba(255,255,255,0.12); }
+
+        .req-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .req-title { font-size: 14px; font-weight: 600; }
+        .req-date { font-size: 11px; color: var(--text3); margin-top: 4px; }
+        .req-desc { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 12px; }
+
+        /* ── ANNOUNCE ── */
+        .announce-item {
+            display: flex;
+            gap: 14px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .announce-item:last-child { border-bottom: none; }
+
+        .announce-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .announce-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .announce-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+        .announce-time { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+        /* ── ACTIVITY TIMELINE ── */
+        .timeline-item {
+            display: flex;
+            gap: 14px;
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            bottom: 0;
+            width: 1px;
+            background: var(--border);
+        }
+
+        .timeline-item:last-child::before { display: none; }
+
+        .timeline-dot {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .timeline-text { font-size: 13px; color: var(--text2); padding-top: 6px; }
+        .timeline-text strong { color: var(--text); }
+        .timeline-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+        /* ── CONTRACT INFO ── */
+        .contract-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .contract-field {
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+        }
+
+        .contract-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .contract-value { font-size: 15px; font-weight: 600; }
+
+        /* ── PROGRESS ── */
+        .progress-wrap {
+            background: var(--surface3);
+            border-radius: 99px;
+            height: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width .8s ease;
+        }
+
+        /* ── FORM ── */
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 12px; color: var(--text3); margin-bottom: 8px; display: block; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,156,249,0.1);
+        }
+
+        .form-select { appearance: none; cursor: pointer; }
+        .form-textarea { resize: vertical; min-height: 100px; }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            width: 90%;
+            max-width: 480px;
+            animation: slideUp .25s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity:0; }
+            to   { transform: translateY(0); opacity:1; }
+        }
+
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+        /* ── ROOM INFO ── */
+        .room-hero {
+            background: linear-gradient(135deg, rgba(79,156,249,0.1), rgba(167,139,250,0.05));
+            border: 1px solid rgba(79,156,249,0.2);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .room-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .room-details { flex: 1; }
+        .room-name { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .room-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .tag {
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        /* ── CHART (simple bars) ── */
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 120px;
+            margin: 16px 0;
+        }
+
+        .chart-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .chart-bar {
+            width: 100%;
+            border-radius: 6px 6px 0 0;
+            background: linear-gradient(180deg, var(--accent), rgba(79,156,249,0.3));
+            transition: height .6s ease;
+            position: relative;
+        }
+
+        .chart-bar.highlight {
+            background: linear-gradient(180deg, var(--accent2), rgba(167,139,250,0.3));
+        }
+
+        .chart-label { font-size: 10px; color: var(--text3); }
+
+        /* ── CHAT ── */
+        .chat-wrap {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-msg {
+            display: flex;
+            gap: 10px;
+            max-width: 80%;
+        }
+
+        .chat-msg.me { align-self: flex-end; flex-direction: row-reverse; }
+
+        .chat-bubble {
+            background: var(--surface2);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chat-msg.me .chat-bubble {
+            background: linear-gradient(135deg, var(--accent), #3b8ae0);
+            color: #fff;
+        }
+
+        .chat-time { font-size: 10px; color: var(--text3); margin-top: 4px; text-align: right; }
+        .chat-msg.me .chat-time { text-align: left; }
+
+        .chat-avatar-sm {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            margin-top: 14px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .chat-input:focus { border-color: var(--accent); }
+
+        /* ── TOAST ── */
+        .toast-container {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight .3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            min-width: 260px;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(60px); opacity:0; }
+            to   { transform: translateX(0); opacity:1; }
+        }
+
+        .toast.success { border-left: 3px solid var(--accent3); }
+        .toast.warning { border-left: 3px solid var(--warning); }
+        .toast.error   { border-left: 3px solid var(--danger); }
+
+        /* ── UTILITIES ── */
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .gap-10 { gap: 10px; }
+        .mb-20 { margin-bottom: 20px; }
+        .mt-10 { margin-top: 10px; }
+        .text-accent { color: var(--accent); }
+        .text-green  { color: var(--accent3); }
+        .text-yellow { color: var(--warning); }
+        .text-red    { color: var(--danger); }
+        .font-bold   { font-weight: 700; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+        /* ── MOBILE HAMBURGER ── */
+        .hamburger {
+            display: none;
+            font-size: 22px;
+            cursor: pointer;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 40px; height: 40px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .hamburger { display: flex; }
+            .overview-grid { grid-template-columns: 1fr 1fr; }
+            .two-col, .three-col { grid-template-columns: 1fr; }
+            .contract-grid { grid-template-columns: 1fr; }
+            .content { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .overview-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── QUICK ACTIONS ── */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .quick-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .quick-btn:hover {
+            border-color: var(--accent);
+            background: rgba(79,156,249,0.05);
+            transform: translateY(-2px);
+        }
+
+        .quick-btn-icon { font-size: 24px; margin-bottom: 8px; }
+        .quick-btn-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+        /* Rating stars */
+        .stars { color: var(--warning); font-size: 16px; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-mark">
+                <div class="logo-icon">🏠</div>
+                <div>
+                    <div class="logo-text">NestHome</div>
+                    <div class="logo-sub">Quản lý phòng trọ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-card">
+            <div class="user-avatar">NH</div>
+            <div>
+                <div class="user-name">Nguyễn Hữu Dũng</div>
+                <div class="user-room">📍 Phòng 302 – Tầng 3</div>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-section-label">Tổng quan</div>
+            <div class="nav-item active" onclick="showPage('overview', this)">
+                <span class="icon">📊</span> Dashboard
+            </div>
+
+            <div class="nav-section-label">Tài chính</div>
+            <div class="nav-item" onclick="showPage('bills', this)">
+                <span class="icon">💳</span> Hóa đơn & Thanh toán
+                <span class="nav-badge">2</span>
+            </div>
+            <div class="nav-item" onclick="showPage('history', this)">
+                <span class="icon">📑</span> Lịch sử giao dịch
+            </div>
+
+            <div class="nav-section-label">Phòng trọ</div>
+            <div class="nav-item" onclick="showPage('room', this)">
+                <span class="icon">🛏️</span> Thông tin phòng
+            </div>
+            <div class="nav-item" onclick="showPage('contract', this)">
+                <span class="icon">📜</span> Hợp đồng thuê
+            </div>
+            <div class="nav-item" onclick="showPage('maintenance', this)">
+                <span class="icon">🔧</span> Báo hỏng / Sửa chữa
+                <span class="nav-badge">1</span>
+            </div>
+
+            <div class="nav-section-label">Tiện ích</div>
+            <div class="nav-item" onclick="showPage('announce', this)">
+                <span class="icon">📢</span> Thông báo
+            </div>
+            <div class="nav-item" onclick="showPage('chat', this)">
+                <span class="icon">💬</span> Nhắn tin chủ nhà
+            </div>
+            <div class="nav-item" onclick="showPage('profile', this)">
+                <span class="icon">👤</span> Hồ sơ cá nhân
+            </div>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="logout-btn" onclick="showToast('Đã đăng xuất khỏi hệ thống', 'warning')">
+                <span>🚪</span> Đăng xuất
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="flex items-center gap-10">
+                <div class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</div>
+                <div>
+                    <div class="page-title" id="topbar-title">Dashboard</div>
+                    <div class="page-sub" id="topbar-sub">Thứ Ba, 14 tháng 4, 2026</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="icon-btn" onclick="showPage('announce', document.querySelector('[onclick*=announce]'))">
+                    🔔
+                    <span class="notif-dot"></span>
+                </div>
+                <div class="icon-btn" onclick="showPage('chat', document.querySelector('[onclick*=chat]'))">💬</div>
+                <div class="icon-btn" onclick="showPage('profile', document.querySelector('[onclick*=profile]'))">👤</div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- ── PAGE: OVERVIEW ── -->
+            <div class="page active" id="page-overview">
+
+                <div class="overview-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value text-accent">3,500,000₫</div>
+                        <div class="stat-label">Tiền thuê tháng này</div>
+                        <div class="stat-change up">✓ Đã thanh toán</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-value" style="color:var(--accent2)">285,000₫</div>
+                        <div class="stat-label">Điện tháng 3</div>
+                        <div class="stat-change down">↑ +12% so tháng trước</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-icon">💧</div>
+                        <div class="stat-value text-green">96,000₫</div>
+                        <div class="stat-label">Nước tháng 3</div>
+                        <div class="stat-change up">↓ -8% so tháng trước</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-value text-yellow">17 ngày</div>
+                        <div class="stat-label">Đến hạn thanh toán</div>
+                        <div class="stat-change up">↗ 1/5/2026</div>
+                    </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="quick-actions">
+                    <div class="quick-btn" onclick="openModal('payModal')">
+                        <div class="quick-btn-icon">💳</div>
+                        <div class="quick-btn-label">Thanh toán</div>
+                    </div>
+                    <div class="quick-btn" onclick="openModal('maintModal')">
+                        <div class="quick-btn-icon">🔧</div>
+                        <div class="quick-btn-label">Báo hỏng</div>
+                    </div>
+                    <div class="quick-btn" onclick="showPage('chat', document.querySelector('[onclick*=chat]'))">
+                        <div class="quick-btn-icon">💬</div>
+                        <div class="quick-btn-label">Nhắn chủ nhà</div>
+                    </div>
+                    <div class="quick-btn" onclick="showPage('contract', document.querySelector('[onclick*=contract]'))">
+                        <div class="quick-btn-icon">📜</div>
+                        <div class="quick-btn-label">Hợp đồng</div>
+                    </div>
+                </div>
+
+                <div class="two-col">
+                    <!-- Hóa đơn sắp đến hạn -->
+                    <div class="card">
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Hóa đơn sắp đến hạn</div>
+                                <div class="section-sub">Tháng 4/2026</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('payModal')">Thanh toán</button>
+                        </div>
+
+                        <div class="bill-item">
+                            <div class="bill-left">
+                                <div class="bill-icon" style="background:rgba(79,156,249,0.15)">🏠</div>
+                                <div>
+                                    <div class="bill-name">Tiền thuê phòng</div>
+                                    <div class="bill-date">Hạn: 01/05/2026</div>
+                                </div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="bill-amount">3,500,000₫</div>
+                                <span class="status-badge status-pending">⏳ Chưa thanh toán</span>
+                            </div>
+                        </div>
+
+                        <div class="bill-item">
+                            <div class="bill-left">
+                                <div class="bill-icon" style="background:rgba(251,191,36,0.15)">⚡</div>
+                                <div>
+                                    <div class="bill-name">Tiền điện</div>
+                                    <div class="bill-date">Hạn: 15/04/2026</div>
+                                </div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="bill-amount">285,000₫</div>
+                                <span class="status-badge status-overdue">🔴 Quá hạn</span>
+                            </div>
+                        </div>
+
+                        <div class="bill-item">
+                            <div class="bill-left">
+                                <div class="bill-icon" style="background:rgba(52,211,153,0.15)">💧</div>
+                                <div>
+                                    <div class="bill-name">Tiền nước</div>
+                                    <div class="bill-date">Hạn: 15/04/2026</div>
+                                </div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="bill-amount">96,000₫</div>
+                                <span class="status-badge status-paid">✓ Đã thanh toán</span>
+                            </div>
+                        </div>
+
+                        <div class="bill-item">
+                            <div class="bill-left">
+                                <div class="bill-icon" style="background:rgba(167,139,250,0.15)">📡</div>
+                                <div>
+                                    <div class="bill-name">Internet + Dịch vụ</div>
+                                    <div class="bill-date">Hạn: 01/05/2026</div>
+                                </div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="bill-amount">120,000₫</div>
+                                <span class="status-badge status-pending">⏳ Chưa thanh toán</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chi tiêu biểu đồ -->
+                    <div class="card">
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Chi tiêu 6 tháng gần đây</div>
+                                <div class="section-sub">Đơn vị: 1,000₫</div>
+                            </div>
+                        </div>
+                        <div class="chart-bars" id="chartBars"></div>
+
+                        <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:4px;">
+                            <div style="display:flex; justify-content:space-between; font-size:13px;">
+                                <div>
+                                    <div style="color:var(--text3); font-size:11px; margin-bottom:4px;">Tháng thấp nhất</div>
+                                    <div class="font-bold text-green">3,701,000₫</div>
+                                </div>
+                                <div style="text-align:right">
+                                    <div style="color:var(--text3); font-size:11px; margin-bottom:4px;">Tháng cao nhất</div>
+                                    <div class="font-bold text-red">4,250,000₫</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="two-col mt-10">
+                    <!-- Thông báo mới -->
+                    <div class="card">
+                        <div class="section-header">
+                            <div class="section-title">Thông báo mới nhất</div>
+                            <button class="btn btn-ghost" onclick="showPage('announce', document.querySelector('[onclick*=announce]'))">Xem tất cả</button>
+                        </div>
+
+                        <div class="announce-item">
+                            <div class="announce-dot" style="background:var(--danger)"></div>
+                            <div>
+                                <div class="announce-title">Cắt nước 2 tiếng ngày mai</div>
+                                <div class="announce-desc">Ngày 15/4 từ 8:00–10:00 sẽ ngừng cung cấp nước để bảo trì đường ống tầng 3</div>
+                                <div class="announce-time">2 giờ trước</div>
+                            </div>
+                        </div>
+
+                        <div class="announce-item">
+                            <div class="announce-dot" style="background:var(--accent3)"></div>
+                            <div>
+                                <div class="announce-title">Wifi mới đã lắp đặt</div>
+                                <div class="announce-desc">Hệ thống wifi tầng 3 đã nâng cấp lên 300Mbps. Mật khẩu: NestHome@302</div>
+                                <div class="announce-time">1 ngày trước</div>
+                            </div>
+                        </div>
+
+                        <div class="announce-item">
+                            <div class="announce-dot" style="background:var(--accent)"></div>
+                            <div>
+                                <div class="announce-title">Giữ xe tháng 5 – đặt trước</div>
+                                <div class="announce-desc">Đặt slot giữ xe tháng 5 trước 25/4 để được ưu tiên vị trí mái che</div>
+                                <div class="announce-time">3 ngày trước</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hoạt động gần đây -->
+                    <div class="card">
+                        <div class="section-title mb-20">Hoạt động gần đây</div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background:rgba(52,211,153,0.15); color:var(--accent3)">✓</div>
+                            <div>
+                                <div class="timeline-text"><strong>Thanh toán thành công</strong> – Tiền nước tháng 4</div>
+                                <div class="timeline-time">Hôm nay, 09:22</div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background:rgba(251,191,36,0.15); color:var(--warning)">🔧</div>
+                            <div>
+                                <div class="timeline-text"><strong>Yêu cầu sửa chữa</strong> – Đèn phòng bị chập</div>
+                                <div class="timeline-time">Hôm qua, 15:40</div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background:rgba(79,156,249,0.15); color:var(--accent)">💬</div>
+                            <div>
+                                <div class="timeline-text"><strong>Tin nhắn từ chủ nhà</strong> – Xác nhận đơn bảo trì</div>
+                                <div class="timeline-time">Hôm qua, 16:15</div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background:rgba(167,139,250,0.15); color:var(--accent2)">📜</div>
+                            <div>
+                                <div class="timeline-text"><strong>Hợp đồng gia hạn</strong> – Đến tháng 3/2027</div>
+                                <div class="timeline-time">01/03/2026</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: BILLS ── -->
+            <div class="page" id="page-bills">
+                <div class="two-col mb-20">
+                    <div class="card" style="background:linear-gradient(135deg,rgba(248,113,113,0.1),rgba(248,113,113,0.03)); border-color:rgba(248,113,113,0.2);">
+                        <div class="stat-label">Tổng nợ chưa thanh toán</div>
+                        <div class="stat-value text-red" style="margin-top:8px">3,785,000₫</div>
+                        <div class="progress-wrap" style="margin-top:12px">
+                            <div class="progress-bar" style="width:60%; background:linear-gradient(90deg,var(--danger),rgba(248,113,113,0.5))"></div>
+                        </div>
+                    </div>
+                    <div class="card" style="background:linear-gradient(135deg,rgba(52,211,153,0.1),rgba(52,211,153,0.03)); border-color:rgba(52,211,153,0.2);">
+                        <div class="stat-label">Đã thanh toán tháng này</div>
+                        <div class="stat-value text-green" style="margin-top:8px">96,000₫</div>
+                        <div class="progress-wrap" style="margin-top:12px">
+                            <div class="progress-bar" style="width:20%; background:linear-gradient(90deg,var(--accent3),rgba(52,211,153,0.5))"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-header">
+                        <div class="section-title">Tất cả hóa đơn tháng 4/2026</div>
+                        <button class="btn btn-primary" onclick="openModal('payModal')">💳 Thanh toán tất cả</button>
+                    </div>
+
+                    <div class="bill-item">
+                        <div class="bill-left">
+                            <div class="bill-icon" style="background:rgba(79,156,249,0.15)">🏠</div>
+                            <div>
+                                <div class="bill-name">Tiền thuê phòng 302</div>
+                                <div class="bill-date">Kỳ: 01/04 – 30/04/2026 | Hạn: 01/05/2026</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:16px">
+                            <div class="bill-amount">3,500,000₫</div>
+                            <span class="status-badge status-pending">⏳ Chưa TT</span>
+                            <button class="btn btn-primary" onclick="openModal('payModal')">Trả</button>
+                        </div>
+                    </div>
+
+                    <div class="bill-item">
+                        <div class="bill-left">
+                            <div class="bill-icon" style="background:rgba(248,113,113,0.15)">⚡</div>
+                            <div>
+                                <div class="bill-name">Tiền điện – 142 kWh</div>
+                                <div class="bill-date">Chỉ số: 1840 → 1982 | Hạn: 15/04/2026</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:16px">
+                            <div class="bill-amount text-red">285,000₫</div>
+                            <span class="status-badge status-overdue">🔴 Quá hạn</span>
+                            <button class="btn btn-danger" onclick="openModal('payModal')">Trả ngay</button>
+                        </div>
+                    </div>
+
+                    <div class="bill-item">
+                        <div class="bill-left">
+                            <div class="bill-icon" style="background:rgba(52,211,153,0.15)">💧</div>
+                            <div>
+                                <div class="bill-name">Tiền nước – 8 m³</div>
+                                <div class="bill-date">Chỉ số: 312 → 320 | Đã TT: 10/04/2026</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:16px">
+                            <div class="bill-amount text-green">96,000₫</div>
+                            <span class="status-badge status-paid">✓ Hoàn thành</span>
+                        </div>
+                    </div>
+
+                    <div class="bill-item">
+                        <div class="bill-left">
+                            <div class="bill-icon" style="background:rgba(167,139,250,0.15)">📡</div>
+                            <div>
+                                <div class="bill-name">Internet + Truyền hình</div>
+                                <div class="bill-date">Gói 300Mbps | Hạn: 01/05/2026</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:16px">
+                            <div class="bill-amount">120,000₫</div>
+                            <span class="status-badge status-pending">⏳ Chưa TT</span>
+                            <button class="btn btn-primary" onclick="openModal('payModal')">Trả</button>
+                        </div>
+                    </div>
+
+                    <div class="bill-item">
+                        <div class="bill-left">
+                            <div class="bill-icon" style="background:rgba(251,191,36,0.15)">🅿️</div>
+                            <div>
+                                <div class="bill-name">Phí giữ xe máy</div>
+                                <div class="bill-date">Mái che – 1 xe | Hạn: 01/05/2026</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:16px">
+                            <div class="bill-amount">100,000₫</div>
+                            <span class="status-badge status-pending">⏳ Chưa TT</span>
+                            <button class="btn btn-primary" onclick="openModal('payModal')">Trả</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: HISTORY ── -->
+            <div class="page" id="page-history">
+                <div class="card">
+                    <div class="section-header mb-20">
+                        <div class="section-title">Lịch sử giao dịch</div>
+                        <select class="form-select" style="width:auto; padding:8px 14px">
+                            <option>Tất cả tháng</option>
+                            <option selected>Tháng 4/2026</option>
+                            <option>Tháng 3/2026</option>
+                            <option>Tháng 2/2026</option>
+                        </select>
+                    </div>
+
+                    <div id="txList"></div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: ROOM ── -->
+            <div class="page" id="page-room">
+                <div class="room-hero">
+                    <div class="room-number">302</div>
+                    <div class="room-details">
+                        <div class="room-name">Phòng 302 – Tầng 3, Khu A</div>
+                        <div style="color:var(--text2); font-size:14px; margin-bottom:12px;">Nhà trọ NestHome – 45 Nguyễn Thị Minh Khai, Quận 1, TP.HCM</div>
+                        <div class="room-tags">
+                            <span class="tag">🛏 Phòng đơn</span>
+                            <span class="tag">📐 25 m²</span>
+                            <span class="tag">❄️ Điều hòa</span>
+                            <span class="tag">🛁 WC riêng</span>
+                            <span class="tag">🌞 Ban công</span>
+                            <span class="tag">📺 TV 43"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="three-col">
+                    <div class="card">
+                        <div style="font-size:28px; margin-bottom:8px">⚡</div>
+                        <div class="stat-label">Chỉ số điện hiện tại</div>
+                        <div style="font-size:22px; font-weight:800; color:var(--warning); margin-top:6px">1,982 kWh</div>
+                        <div style="font-size:12px; color:var(--text3); margin-top:4px">Tháng 3: 1,840 kWh | Tiêu thụ: 142 kWh</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size:28px; margin-bottom:8px">💧</div>
+                        <div class="stat-label">Chỉ số nước hiện tại</div>
+                        <div style="font-size:22px; font-weight:800; color:var(--accent); margin-top:6px">320 m³</div>
+                        <div style="font-size:12px; color:var(--text3); margin-top:4px">Tháng 3: 312 m³ | Tiêu thụ: 8 m³</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size:28px; margin-bottom:8px">🌡️</div>
+                        <div class="stat-label">Nhiệt độ & độ ẩm</div>
+                        <div style="font-size:22px; font-weight:800; color:var(--accent3); margin-top:6px">28°C – 72%</div>
+                        <div style="font-size:12px; color:var(--text3); margin-top:4px">Cập nhật: 14/04/2026, 10:30</div>
+                    </div>
+                </div>
+
+                <div class="card mt-10">
+                    <div class="section-title" style="margin-bottom:16px">Tiện nghi phòng</div>
+                    <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px">
+                        <div class="contract-field">
+                            <div class="contract-label">Diện tích</div>
+                            <div class="contract-value">25 m²</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Tầng</div>
+                            <div class="contract-value">Tầng 3 / 5</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Hướng phòng</div>
+                            <div class="contract-value">Đông Nam</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Điều hòa</div>
+                            <div class="contract-value">Daikin 9000 BTU</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Giường</div>
+                            <div class="contract-value">1.6m × 2m</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Tủ lạnh</div>
+                            <div class="contract-value">Samsung 180L</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: CONTRACT ── -->
+            <div class="page" id="page-contract">
+                <div class="card">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Hợp đồng thuê phòng</div>
+                            <div class="section-sub">HĐ-2025-302-NHD</div>
+                        </div>
+                        <div style="display:flex; gap:10px">
+                            <button class="btn btn-ghost">📥 Tải PDF</button>
+                            <span class="status-badge status-paid" style="align-self:center; padding:8px 14px">✓ Còn hiệu lực</span>
+                        </div>
+                    </div>
+
+                    <div style="background:linear-gradient(135deg,rgba(79,156,249,0.06),rgba(167,139,250,0.06)); border:1px solid rgba(79,156,249,0.15); border-radius:var(--radius-sm); padding:20px; margin:16px 0;">
+                        <div style="font-size:12px; color:var(--text3); margin-bottom:6px">Thời hạn hợp đồng</div>
+                        <div style="font-size:15px; font-weight:700;">01/03/2026 – 28/02/2027 <span style="color:var(--text3); font-weight:400">(12 tháng)</span></div>
+                        <div class="progress-wrap" style="margin-top:12px">
+                            <div class="progress-bar" style="width:12%"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text3)">
+                            <span>Đã qua: 44 ngày</span>
+                            <span>Còn lại: 321 ngày</span>
+                        </div>
+                    </div>
+
+                    <div class="contract-grid">
+                        <div class="contract-field">
+                            <div class="contract-label">Bên thuê</div>
+                            <div class="contract-value">Nguyễn Hữu Dũng</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Bên cho thuê</div>
+                            <div class="contract-value">Trần Văn Thành</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Phòng thuê</div>
+                            <div class="contract-value">302 – Tầng 3, Khu A</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Giá thuê / tháng</div>
+                            <div class="contract-value text-accent">3,500,000₫</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Đặt cọc</div>
+                            <div class="contract-value">7,000,000₫ (2 tháng)</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Ngày thanh toán</div>
+                            <div class="contract-value">Ngày 1 hằng tháng</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Điện</div>
+                            <div class="contract-value">3,500₫ / kWh</div>
+                        </div>
+                        <div class="contract-field">
+                            <div class="contract-label">Nước</div>
+                            <div class="contract-value">12,000₫ / m³</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px; padding:16px; background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.2); border-radius:var(--radius-sm);">
+                        <div style="font-size:13px; font-weight:600; color:var(--warning); margin-bottom:6px;">⚠️ Điều khoản báo trước</div>
+                        <div style="font-size:13px; color:var(--text2);">Cần thông báo trước <strong>30 ngày</strong> nếu muốn chấm dứt hợp đồng trước hạn.</div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button class="btn btn-ghost" onclick="showToast('Yêu cầu gia hạn đã gửi đến chủ nhà','success')">🔄 Yêu cầu gia hạn</button>
+                        <button class="btn btn-danger" onclick="showToast('Vui lòng liên hệ chủ nhà để chấm dứt hợp đồng','warning')">❌ Chấm dứt HĐ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: MAINTENANCE ── -->
+            <div class="page" id="page-maintenance">
+                <div class="section-header mb-20">
+                    <div class="section-title">Báo hỏng & Yêu cầu sửa chữa</div>
+                    <button class="btn btn-primary" onclick="openModal('maintModal')">+ Tạo yêu cầu mới</button>
+                </div>
+
+                <div class="request-card" style="border-left:3px solid var(--warning)">
+                    <div class="req-header">
+                        <div>
+                            <div class="req-title">💡 Đèn phòng bị chập điện</div>
+                            <div class="req-date">Tạo: 13/04/2026 lúc 15:40</div>
+                        </div>
+                        <span class="status-badge status-pending">🔄 Đang xử lý</span>
+                    </div>
+                    <div class="req-desc">Đèn phòng ngủ nhấp nháy, thỉnh thoảng tắt đột ngột. Cần thợ điện kiểm tra aptomat và bóng đèn.</div>
+                    <div style="display:flex; gap:8px">
+                        <span class="tag">⚡ Điện</span>
+                        <span class="tag">🔴 Ưu tiên cao</span>
+                    </div>
+                    <div style="margin-top:12px; background:var(--surface3); border-radius:8px; padding:12px; font-size:13px; color:var(--text2);">
+                        <strong style="color:var(--text)">Phản hồi của chủ nhà:</strong> Thợ điện sẽ đến vào sáng 15/04/2026. Vui lòng có mặt tại phòng từ 9:00–11:00.
+                    </div>
+                </div>
+
+                <div class="request-card" style="border-left:3px solid var(--accent3)">
+                    <div class="req-header">
+                        <div>
+                            <div class="req-title">🚿 Vòi hoa sen bị rỉ nước</div>
+                            <div class="req-date">Tạo: 28/03/2026</div>
+                        </div>
+                        <span class="status-badge status-paid">✓ Đã hoàn thành</span>
+                    </div>
+                    <div class="req-desc">Vòi hoa sen trong phòng tắm bị rỉ nước ở chỗ nối. Đã thay ron, vòi hoạt động bình thường.</div>
+                    <div style="display:flex; gap:8px">
+                        <span class="tag">💧 Nước</span>
+                        <span class="tag">🟡 Ưu tiên vừa</span>
+                    </div>
+                    <div style="margin-top:12px">
+                        <div class="stars">★★★★★</div>
+                        <div style="font-size:12px; color:var(--text3); margin-top:4px">Thợ làm nhanh, sạch sẽ. Rất hài lòng!</div>
+                    </div>
+                </div>
+
+                <div class="request-card" style="border-left:3px solid var(--text3)">
+                    <div class="req-header">
+                        <div>
+                            <div class="req-title">🪟 Cửa sổ khó đóng</div>
+                            <div class="req-date">Tạo: 10/03/2026</div>
+                        </div>
+                        <span class="status-badge status-paid">✓ Đã hoàn thành</span>
+                    </div>
+                    <div class="req-desc">Cửa sổ hướng ban công bị lệch bản lề, khó đóng kín. Đã điều chỉnh bản lề.</div>
+                    <div style="display:flex; gap:8px">
+                        <span class="tag">🪟 Cơ sở vật chất</span>
+                        <span class="tag">🟢 Ưu tiên thấp</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: ANNOUNCEMENTS ── -->
+            <div class="page" id="page-announce">
+                <div class="card">
+                    <div class="section-header mb-20">
+                        <div class="section-title">Thông báo từ chủ nhà</div>
+                        <select class="form-select" style="width:auto; padding:8px 14px">
+                            <option>Tất cả</option><option>Quan trọng</option><option>Tiện ích</option>
+                        </select>
+                    </div>
+
+                    <div class="announce-item">
+                        <div class="announce-dot" style="background:var(--danger); width:10px; height:10px; margin-top:4px"></div>
+                        <div style="flex:1">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                                <div class="announce-title">🚰 Cắt nước từ 8:00–10:00 ngày 15/4</div>
+                                <span class="status-badge status-overdue">❗ Quan trọng</span>
+                            </div>
+                            <div class="announce-desc">Ngày mai (15/04/2026) sẽ ngừng cung cấp nước trong 2 tiếng để bảo trì đường ống tầng 3. Bà con lưu ý trữ nước sử dụng. Xin lỗi vì sự bất tiện này.</div>
+                            <div class="announce-time">🕑 2 giờ trước</div>
+                        </div>
+                    </div>
+
+                    <div class="announce-item">
+                        <div class="announce-dot" style="background:var(--accent3); width:10px; height:10px; margin-top:4px"></div>
+                        <div style="flex:1">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                                <div class="announce-title">📡 Nâng cấp wifi tầng 3 hoàn tất</div>
+                                <span class="status-badge status-paid">✓ Tiện ích</span>
+                            </div>
+                            <div class="announce-desc">Đã hoàn tất lắp đặt router mới tốc độ 300Mbps tầng 3. Kết nối mạng: NestHome_T3. Mật khẩu mới: NestHome@302</div>
+                            <div class="announce-time">🕑 1 ngày trước</div>
+                        </div>
+                    </div>
+
+                    <div class="announce-item">
+                        <div class="announce-dot" style="background:var(--accent); width:10px; height:10px; margin-top:4px"></div>
+                        <div style="flex:1">
+                            <div class="announce-title">🅿️ Đặt chỗ giữ xe tháng 5/2026</div>
+                            <div class="announce-desc">Vui lòng đăng ký giữ xe tháng 5 trước ngày 25/4 để được ưu tiên chọn vị trí. Phí xe máy: 100,000₫/tháng (có mái che), xe đạp: miễn phí.</div>
+                            <div class="announce-time">🕑 3 ngày trước</div>
+                        </div>
+                    </div>
+
+                    <div class="announce-item">
+                        <div class="announce-dot" style="background:var(--text3); width:10px; height:10px; margin-top:4px"></div>
+                        <div style="flex:1">
+                            <div class="announce-title">🧹 Tổng vệ sinh hành lang ngày 20/4</div>
+                            <div class="announce-desc">Nhà vệ sinh và hành lang tầng 3 sẽ được tổng vệ sinh vào sáng 20/4/2026.</div>
+                            <div class="announce-time">🕑 5 ngày trước</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: CHAT ── -->
+            <div class="page" id="page-chat">
+                <div class="card">
+                    <div style="display:flex; align-items:center; gap:14px; padding-bottom:16px; border-bottom:1px solid var(--border); margin-bottom:4px">
+                        <div class="user-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">TV</div>
+                        <div>
+                            <div style="font-weight:700">Trần Văn Thành – Chủ nhà</div>
+                            <div style="font-size:12px; color:var(--accent3)">● Đang trực tuyến</div>
+                        </div>
+                    </div>
+
+                    <div class="chat-wrap">
+                        <div class="chat-messages" id="chatMsgs">
+                            <div class="chat-msg">
+                                <div class="chat-avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">TV</div>
+                                <div>
+                                    <div class="chat-bubble">Chào bạn Dũng! Tôi đã nhận được yêu cầu sửa điện của bạn rồi nhé.</div>
+                                    <div class="chat-time">Hôm qua, 16:15</div>
+                                </div>
+                            </div>
+                            <div class="chat-msg">
+                                <div class="chat-avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">TV</div>
+                                <div>
+                                    <div class="chat-bubble">Thợ điện sẽ đến phòng bạn vào sáng 15/04 từ 9:00–11:00. Bạn có thể ở nhà không?</div>
+                                    <div class="chat-time">Hôm qua, 16:16</div>
+                                </div>
+                            </div>
+                            <div class="chat-msg me">
+                                <div class="chat-avatar-sm" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">NH</div>
+                                <div>
+                                    <div class="chat-bubble">Dạ được ạ, em sẽ ở nhà sáng mai. Cảm ơn anh!</div>
+                                    <div class="chat-time">Hôm qua, 16:20</div>
+                                </div>
+                            </div>
+                            <div class="chat-msg">
+                                <div class="chat-avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">TV</div>
+                                <div>
+                                    <div class="chat-bubble">Ok bạn nhé! Nhớ để số điện thoại để thợ liên hệ trước khi đến 🛠️</div>
+                                    <div class="chat-time">Hôm qua, 16:22</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-row">
+                            <input class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." onkeydown="if(event.key==='Enter')sendMsg()">
+                            <button class="btn btn-primary" onclick="sendMsg()">Gửi ✈️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGE: PROFILE ── -->
+            <div class="page" id="page-profile">
+                <div class="two-col">
+                    <div class="card">
+                        <div style="text-align:center; padding:12px 0 20px">
+                            <div class="user-avatar" style="width:72px; height:72px; margin:0 auto 12px; font-size:28px">NH</div>
+                            <div style="font-size:18px; font-weight:700">Nguyễn Hữu Dũng</div>
+                            <div style="color:var(--text3); font-size:13px; margin-top:4px">Thuê phòng từ 01/03/2026</div>
+                            <div class="status-badge status-paid" style="display:inline-flex; margin-top:10px">✓ Khách thuê uy tín</div>
+                        </div>
+
+                        <div style="border-top:1px solid var(--border); padding-top:16px">
+                            <div class="contract-field" style="margin-bottom:10px">
+                                <div class="contract-label">Số điện thoại</div>
+                                <div class="contract-value">0901 234 567</div>
+                            </div>
+                            <div class="contract-field" style="margin-bottom:10px">
+                                <div class="contract-label">Email</div>
+                                <div class="contract-value">nhudung@email.com</div>
+                            </div>
+                            <div class="contract-field" style="margin-bottom:10px">
+                                <div class="contract-label">CCCD</div>
+                                <div class="contract-value">079 *** *** 012</div>
+                            </div>
+                            <div class="contract-field">
+                                <div class="contract-label">Ngày sinh</div>
+                                <div class="contract-value">15/06/1998</div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-ghost" style="width:100%; margin-top:16px; justify-content:center" onclick="openModal('editProfileModal')">✏️ Chỉnh sửa thông tin</button>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:16px">
+                        <div class="card">
+                            <div class="section-title" style="margin-bottom:12px">Bảo mật tài khoản</div>
+                            <button class="btn btn-ghost" style="width:100%; justify-content:center; margin-bottom:8px" onclick="showToast('Liên kết đổi mật khẩu đã gửi qua email','success')">🔒 Đổi mật khẩu</button>
+                            <button class="btn btn-ghost" style="width:100%; justify-content:center" onclick="showToast('Tính năng xác thực 2 lớp đang được phát triển','warning')">📱 Bật xác thực 2 lớp</button>
+                        </div>
+
+                        <div class="card">
+                            <div class="section-title" style="margin-bottom:12px">Cài đặt thông báo</div>
+                            <div style="display:flex; flex-direction:column; gap:10px">
+                                <label style="display:flex; align-items:center; justify-content:space-between; cursor:pointer">
+                                    <span style="font-size:14px">🔔 Nhắc nhở thanh toán</span>
+                                    <input type="checkbox" checked style="width:18px; height:18px; accent-color:var(--accent)">
+                                </label>
+                                <label style="display:flex; align-items:center; justify-content:space-between; cursor:pointer">
+                                    <span style="font-size:14px">📢 Thông báo từ chủ nhà</span>
+                                    <input type="checkbox" checked style="width:18px; height:18px; accent-color:var(--accent)">
+                                </label>
+                                <label style="display:flex; align-items:center; justify-content:space-between; cursor:pointer">
+                                    <span style="font-size:14px">🔧 Trạng thái sửa chữa</span>
+                                    <input type="checkbox" checked style="width:18px; height:18px; accent-color:var(--accent)">
+                                </label>
+                                <label style="display:flex; align-items:center; justify-content:space-between; cursor:pointer">
+                                    <span style="font-size:14px">📊 Báo cáo chi tiêu</span>
+                                    <input type="checkbox" style="width:18px; height:18px; accent-color:var(--accent)">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="section-title" style="margin-bottom:12px">Đánh giá chỗ ở</div>
+                            <div class="stars" style="font-size:24px; margin-bottom:8px">★★★★☆</div>
+                            <div style="font-size:13px; color:var(--text2)">4.2/5 – Phòng sạch sẽ, chủ nhà nhiệt tình, vị trí thuận tiện</div>
+                            <button class="btn btn-ghost" style="margin-top:12px; width:100%; justify-content:center" onclick="openModal('rateModal')">✍️ Viết đánh giá</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /content -->
+    </div><!-- /main -->
+</div><!-- /app-shell -->
+
+<!-- ── MODALS ── -->
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="payModal">
+    <div class="modal">
+        <div class="modal-title">💳 Thanh toán hóa đơn</div>
+        <div class="form-group">
+            <label class="form-label">Hóa đơn cần thanh toán</label>
+            <select class="form-select">
+                <option>⚡ Tiền điện – 285,000₫ (Quá hạn)</option>
+                <option>🏠 Tiền thuê – 3,500,000₫</option>
+                <option>📡 Internet – 120,000₫</option>
+                <option>🅿️ Xe máy – 100,000₫</option>
+                <option>Thanh toán tất cả – 4,005,000₫</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Phương thức thanh toán</label>
+            <select class="form-select">
+                <option>🏦 Chuyển khoản ngân hàng</option>
+                <option>📱 MoMo</option>
+                <option>📱 ZaloPay</option>
+                <option>💵 Tiền mặt</option>
+            </select>
+        </div>
+        <div style="background:var(--surface2); border-radius:var(--radius-sm); padding:14px; font-size:13px;">
+            <div style="color:var(--text3); margin-bottom:8px">Thông tin chuyển khoản:</div>
+            <div><strong>Ngân hàng:</strong> Vietcombank</div>
+            <div><strong>Số TK:</strong> 1234 5678 9012</div>
+            <div><strong>Chủ TK:</strong> Trần Văn Thành</div>
+            <div style="margin-top:8px; color:var(--warning)">Nội dung: <strong>P302 [Tên hóa đơn] T4/2026</strong></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('payModal')">Hủy</button>
+            <button class="btn btn-primary" onclick="closeModal('payModal'); showToast('Xác nhận thanh toán thành công!','success')">✓ Xác nhận đã chuyển</button>
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance Modal -->
+<div class="modal-overlay" id="maintModal">
+    <div class="modal">
+        <div class="modal-title">🔧 Tạo yêu cầu sửa chữa</div>
+        <div class="form-group">
+            <label class="form-label">Loại sự cố</label>
+            <select class="form-select">
+                <option>⚡ Điện</option><option>💧 Nước/Ống nước</option>
+                <option>❄️ Điều hòa</option><option>🪟 Cửa/Cửa sổ</option>
+                <option>📶 Internet/TV</option><option>🏠 Khác</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Tiêu đề sự cố</label>
+            <input class="form-input" placeholder="VD: Điều hòa không mát...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Mô tả chi tiết</label>
+            <textarea class="form-textarea" placeholder="Mô tả rõ hiện tượng, thời điểm xảy ra..."></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Mức độ ưu tiên</label>
+            <select class="form-select">
+                <option>🔴 Khẩn cấp (ảnh hưởng sinh hoạt)</option>
+                <option>🟡 Vừa (cần xử lý sớm)</option>
+                <option>🟢 Thấp (có thể chờ)</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('maintModal')">Hủy</button>
+            <button class="btn btn-primary" onclick="closeModal('maintModal'); showToast('Yêu cầu đã gửi đến chủ nhà!','success')">📤 Gửi yêu cầu</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+        <div class="modal-title">✏️ Chỉnh sửa hồ sơ</div>
+        <div class="form-group">
+            <label class="form-label">Họ và tên</label>
+            <input class="form-input" value="Nguyễn Hữu Dũng">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Số điện thoại</label>
+            <input class="form-input" value="0901 234 567">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" value="nhudung@email.com">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('editProfileModal')">Hủy</button>
+            <button class="btn btn-primary" onclick="closeModal('editProfileModal'); showToast('Cập nhật thông tin thành công!','success')">💾 Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rate Modal -->
+<div class="modal-overlay" id="rateModal">
+    <div class="modal">
+        <div class="modal-title">⭐ Đánh giá chỗ ở</div>
+        <div style="text-align:center; margin:16px 0">
+            <div class="stars" style="font-size:36px; cursor:pointer">★★★★☆</div>
+            <div style="font-size:13px; color:var(--text3); margin-top:6px">Chạm vào sao để chọn mức đánh giá</div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Nhận xét của bạn</label>
+            <textarea class="form-textarea" placeholder="Chia sẻ trải nghiệm thuê trọ của bạn..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('rateModal')">Hủy</button>
+            <button class="btn btn-primary" onclick="closeModal('rateModal'); showToast('Cảm ơn bạn đã đánh giá!','success')">📤 Gửi đánh giá</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    // ── NAV ──
+    function showPage(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + id).classList.add('active');
+        if (el) el.classList.add('active');
+
+        const titles = {
+            overview: ['Dashboard', 'Tổng quan phòng trọ của bạn'],
+            bills: ['Hóa đơn & Thanh toán', 'Tháng 4/2026'],
+            history: ['Lịch sử giao dịch', 'Tất cả giao dịch'],
+            room: ['Thông tin phòng', 'Phòng 302 – Tầng 3'],
+            contract: ['Hợp đồng thuê', 'HĐ-2025-302-NHD'],
+            maintenance: ['Báo hỏng / Sửa chữa', 'Yêu cầu bảo trì'],
+            announce: ['Thông báo', 'Từ chủ nhà'],
+            chat: ['Nhắn tin chủ nhà', 'Trần Văn Thành'],
+            profile: ['Hồ sơ cá nhân', 'Nguyễn Hữu Dũng'],
+        };
+        if (titles[id]) {
+            document.getElementById('topbar-title').textContent = titles[id][0];
+            document.getElementById('topbar-sub').textContent = titles[id][1];
+        }
+
+        // Close sidebar on mobile
+        if (window.innerWidth <= 900) {
+            document.getElementById('sidebar').classList.remove('open');
+        }
+    }
+
+    // ── SIDEBAR TOGGLE ──
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // ── MODAL ──
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => {
+            if (e.target === m) m.classList.remove('open');
+        });
+    });
+
+    // ── TOAST ──
+    function showToast(msg, type = 'success') {
+        const icons = { success: '✅', warning: '⚠️', error: '❌' };
+        const container = document.getElementById('toastContainer');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+        container.appendChild(t);
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateX(60px)';
+            t.style.transition = '.3s';
+            setTimeout(() => t.remove(), 300);
+        }, 3000);
+    }
+
+    // ── CHART ──
+    function renderChart() {
+        const data = [
+            { label: 'T11', val: 38, hi: false },
+            { label: 'T12', val: 42, hi: false },
+            { label: 'T1', val: 37, hi: false },
+            { label: 'T2', val: 40, hi: false },
+            { label: 'T3', val: 36, hi: false },
+            { label: 'T4', val: 40, hi: true },
+        ];
+        const max = Math.max(...data.map(d => d.val));
+        const container = document.getElementById('chartBars');
+        container.innerHTML = '';
+        data.forEach(d => {
+            const pct = (d.val / max) * 100;
+            container.innerHTML += `
+      <div class="chart-bar-wrap">
+        <div class="chart-bar${d.hi ? ' highlight' : ''}" style="height:${pct}%" title="${d.val * 100}k₫"></div>
+        <div class="chart-label">${d.label}</div>
+      </div>`;
+        });
+    }
+
+    // ── TRANSACTION HISTORY ──
+    function renderTxList() {
+        const txs = [
+            { icon: '💧', name: 'Tiền nước tháng 4', date: '10/04/2026 09:22', amount: '-96,000₫', type: 'paid' },
+            { icon: '⚡', name: 'Tiền điện tháng 3', date: '28/03/2026', amount: '-242,000₫', type: 'paid' },
+            { icon: '🏠', name: 'Tiền thuê tháng 4', date: '01/04/2026', amount: '-3,500,000₫', type: 'paid' },
+            { icon: '📡', name: 'Internet tháng 3', date: '25/03/2026', amount: '-120,000₫', type: 'paid' },
+            { icon: '🅿️', name: 'Xe máy tháng 4', date: '01/04/2026', amount: '-100,000₫', type: 'paid' },
+            { icon: '💰', name: 'Hoàn cọc bảo trì', date: '15/03/2026', amount: '+200,000₫', type: 'refund' },
+            { icon: '🏠', name: 'Tiền thuê tháng 3', date: '01/03/2026', amount: '-3,500,000₫', type: 'paid' },
+        ];
+
+        const el = document.getElementById('txList');
+        el.innerHTML = txs.map(t => `
+    <div class="bill-item">
+      <div class="bill-left">
+        <div class="bill-icon" style="background:var(--surface3)">${t.icon}</div>
+        <div>
+          <div class="bill-name">${t.name}</div>
+          <div class="bill-date">${t.date}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="bill-amount ${t.type === 'refund' ? 'text-green' : ''}">${t.amount}</div>
+        <span class="status-badge status-paid" style="margin-top:4px">✓ Hoàn thành</span>
+      </div>
+    </div>`).join('');
+    }
+
+    // ── CHAT ──
+    function sendMsg() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+        const msgs = document.getElementById('chatMsgs');
+        msgs.innerHTML += `
+    <div class="chat-msg me">
+      <div class="chat-avatar-sm" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">NH</div>
+      <div>
+        <div class="chat-bubble">${text}</div>
+        <div class="chat-time">Vừa xong</div>
+      </div>
+    </div>`;
+        input.value = '';
+        msgs.scrollTop = msgs.scrollHeight;
+
+        // Auto reply
+        setTimeout(() => {
+            const replies = [
+                'Tôi đã nhận được tin nhắn của bạn, sẽ phản hồi sớm!',
+                'Cảm ơn bạn đã liên hệ. Tôi sẽ kiểm tra và trả lời ngay 👍',
+                'Ok bạn nhé, để tôi xem xét và xử lý vấn đề này!',
+            ];
+            const r = replies[Math.floor(Math.random() * replies.length)];
+            msgs.innerHTML += `
+      <div class="chat-msg">
+        <div class="chat-avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">TV</div>
+        <div>
+          <div class="chat-bubble">${r}</div>
+          <div class="chat-time">Vừa xong</div>
+        </div>
+      </div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        }, 1200);
+    }
+
+    // ── INIT ──
+    renderChart();
+    renderTxList();
+</script>
+</body>
+</html>

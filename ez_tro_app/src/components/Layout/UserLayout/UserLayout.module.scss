@@ -1,15 +1,15 @@
-$bg-base:        #0d111a;
-$bg-surface:     #10131c;
-$bg-elevated:    #161a27;
-$bg-hover:       #1d2235;
-$bg-active:      #1e2640;
+$bg-base:        #0d0f14;
+$bg-surface:     #161b26;
+$bg-elevated:    #1e2535;
+$bg-hover:       #252d40;
+$bg-active:      #2b3550;
 
 $border-subtle:  rgba(255, 255, 255, 0.06);
 $border-mid:     rgba(255, 255, 255, 0.10);
 
-$accent:         #6c8fff;       // cool blue
-$accent-dim:     rgba(108, 143, 255, 0.12);
-$accent-glow:    rgba(108, 143, 255, 0.25);
+$accent:         #4f9cf9;
+$accent-dim:     rgba(79, 156, 249, 0.12);
+$accent-glow:    rgba(79, 156, 249, 0.24);
 
 $text-primary:   #f0f2ff;
 $text-secondary: #8b91a8;
@@ -18,9 +18,9 @@ $text-muted:     #525870;
 $danger:         #f87171;
 $danger-dim:     rgba(248, 113, 113, 0.12);
 
-$sidebar-w:      240px;
+$sidebar-w:      260px;
 $sidebar-w-sm:   68px;
-$topbar-h:       60px;
+$topbar-h:       64px;
 
 $radius-sm:      6px;
 $radius-md:      10px;
@@ -36,7 +36,7 @@ $transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
   background: $bg-base;
   color: $text-primary;
-  font-family: 'DM Sans', 'Noto Sans', system-ui, sans-serif;
+  font-family: 'Be Vietnam Pro', 'DM Sans', 'Noto Sans', system-ui, sans-serif;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -417,13 +417,13 @@ $transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
   top: 0;
   z-index: 100;
   height: $topbar-h;
-  background: rgba($bg-surface, 0.85);
+  background: rgba($bg-surface, 0.9);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid $border-subtle;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
+  padding: 0 32px;
   gap: 16px;
 }
 
@@ -515,7 +515,7 @@ $transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ════════════════════════════════════════════════════════════
 .content {
   flex: 1;
-  padding: 28px 28px 40px;
+  padding: 32px 32px 40px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -534,7 +534,7 @@ $transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
   width: 44px;
   height: 44px;
   background: $accent-dim;
-  border: 1px solid rgba(108, 143, 255, 0.2);
+  border: 1px solid rgba(79, 156, 249, 0.2);
   border-radius: $radius-md;
   display: flex;
   align-items: center;

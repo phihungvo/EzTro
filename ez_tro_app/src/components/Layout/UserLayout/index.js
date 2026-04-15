@@ -21,7 +21,7 @@ import {
     MenuUnfoldOutlined,
 } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
-import { message, Badge, Tooltip } from "antd";
+import { message, Tooltip } from "antd";
 import NotificationBell from "~/components/Layout/AdminLayout/components/NotificationBell";
 import NotificationCenter from "~/pages/Common/NotificationCenter";
 import { getMyProfile } from "~/service/user/profile";

@@ -1,103 +1,131 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { message } from "antd";
-import classNames from "classnames/bind";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import "dayjs/locale/vi";
-import styles from "./Dashboard.module.scss";
-
-import StatsGrid from "~/components/Layout/UserLayout/components/StatsGrid";
-import BillsCard from "~/components/Layout/UserLayout/components/BillsCard";
-import ServicesCard from "~/components/Layout/UserLayout/components/ServicesCard";
-
-import { getMyBills, getSummaryInfo } from "src/service/user/dashboard";
-import { getMyRoomInfo, getMyCurrentContract } from "~/service/user/my-room";
-import { getMyIncidentReports } from "~/service/user/incident-report";
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {Spin, Tag} from 'antd';
+import ReactApexChart from 'react-apexcharts';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import classNames from 'classnames/bind';
+import styles from './Dashboard.module.scss';
+import {
+    getMyBills,
+    getSummaryInfo,
+} from 'src/service/user/dashboard';
+import {getMyRoomInfo, getMyCurrentContract} from '~/service/user/my-room';
+import {getMyIncidentReports} from '~/service/user/incident-report';
 import {
     getMyMeterReadingsCurrentPeriod,
-    getMyMeterReadingsHistory
-} from "~/service/user/utilities";
-import { getMyNotifications } from "~/service/admin/notification-service";
+    getMyMeterReadingsHistory,
+} from '~/service/user/utilities';
+import {getMyNotifications} from '~/service/admin/notification-service';
+import {
+    MOCK_MONTHLY_SPENDING,
+    MOCK_TENANT_BILLS,
+    MOCK_TENANT_CONTRACT,
+    MOCK_TENANT_INCIDENTS,
+    MOCK_TENANT_NOTICES,
+    MOCK_TENANT_ROOM,
+    MOCK_TENANT_SUMMARY,
+    MOCK_TENANT_UTILITIES,
+} from './mockData';
+
+import {CloudUploadOutlined, PlusOutlined} from '@ant-design/icons';
+
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 
 const cx = classNames.bind(styles);
 
 const INCIDENT_STATUS_META = {
-    PENDING: { label: "Đang chờ xử lý", pill: "new", icon: "🕐", iconClass: "pending" },
-    IN_PROGRESS: { label: "Đang xử lý", pill: "processing", icon: "🔧", iconClass: "inProgress" },
-    RESOLVED: { label: "Đã hoàn tất", pill: "done", icon: "✅", iconClass: "resolved" },
-    REJECTED: { label: "Đã từ chối", pill: "done", icon: "⚠️", iconClass: "rejected" },
+    PENDING: {label: 'Đang chờ xử lý', tone: 'warning', icon: '🕐'},
+    IN_PROGRESS: {label: 'Đang xử lý', tone: 'info', icon: '🔧'},
+    RESOLVED: {label: 'Đã hoàn tất', tone: 'success', icon: '✅'},
+    REJECTED: {label: 'Đã từ chối', tone: 'danger', icon: '⚠️'},
 };
 
-const formatMoney = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
+const BILL_STATUS_META = {
+    PAID: {label: 'Đã thanh toán', tone: 'success'},
+    UNPAID: {label: 'Chưa thanh toán', tone: 'warning'},
+    OVERDUE: {label: 'Quá hạn', tone: 'danger'},
+    PARTIALLY_PAID: {label: 'Thanh toán một phần', tone: 'warning'},
+};
+
+const currency = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'});
+
+const formatMoney = (value) => currency.format(Number(value || 0));
+
+const formatCompactMoney = (value) => `${(Number(value || 0) / 1_000_000).toFixed(1)} tr`;
+
+const formatDate = (value) => {
+    if (!value) return '—';
+    if (Array.isArray(value) && value.length >= 3) {
+        const [year, month, day] = value;
+        return dayjs(new Date(year, month - 1, day)).format('DD/MM/YYYY');
+    }
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.format('DD/MM/YYYY') : '—';
+};
 
 const isElectricReading = (reading) =>
-    String(reading?.utilityUnit || "")
-        .toLowerCase()
-        .includes("kwh")
-    || String(reading?.utilityName || "").toLowerCase().includes("điện");
+    String(reading?.utilityUnit || '').toLowerCase().includes('kwh')
+    || String(reading?.utilityName || '').toLowerCase().includes('điện');
 
 const isWaterReading = (reading) => {
-    const unit = String(reading?.utilityUnit || "").toLowerCase();
-    return unit.includes("m³") || unit.includes("m3") || String(reading?.utilityName || "").toLowerCase().includes("nước");
+    const unit = String(reading?.utilityUnit || '').toLowerCase();
+    return unit.includes('m³') || unit.includes('m3') || String(reading?.utilityName || '').toLowerCase().includes('nước');
 };
 
 const isInternetReading = (reading) =>
-    String(reading?.utilityName || "").toLowerCase().includes("internet")
-    || String(reading?.utilityUnit || "").toLowerCase().includes("gói");
+    String(reading?.utilityName || '').toLowerCase().includes('internet')
+    || String(reading?.utilityUnit || '').toLowerCase().includes('gói');
 
-const formatTimestamp = (value) => {
-    if (!value) return "—";
-    return dayjs(value).fromNow();
-};
+const buildBillStatus = (status) => BILL_STATUS_META[status] || {label: status || '—', tone: 'default'};
 
-dayjs.extend(relativeTime);
-dayjs.locale("vi");
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const SectionCard = ({title, subtitle, action, children, className = ''}) => (
+    <section className={cx('card', className)}>
+        <div className={cx('cardHeader')}>
+            <div>
+                <div className={cx('cardTitle')}>{title}</div>
+                {subtitle && <div className={cx('cardSub')}>{subtitle}</div>}
+            </div>
+            {action}
+        </div>
+        <div className={cx('cardBody')}>
+            {children}
+        </div>
+    </section>
+);
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const [summary, setSummary] = useState(null);
-    const [bills, setBills] = useState([]);
-    const [roomInfo, setRoomInfo] = useState(null);
-    const [incidentReports, setIncidentReports] = useState([]);
-    const [currentReadings, setCurrentReadings] = useState([]);
-    const [historyReadings, setHistoryReadings] = useState([]);
-    const [noticeItems, setNoticeItems] = useState([]);
-    const [contractData, setContractData] = useState(null);
-    const [contractLoading, setContractLoading] = useState(true);
-
-    const formatCurrencyCompact = (value) => `${(Number(value || 0) / 1_000_000).toFixed(1)} tr`;
-    const parseDate = (dateArr) => {
-        if (!Array.isArray(dateArr)) return null;
-        const [year, month, day] = dateArr;
-        return new Date(year, month - 1, day); // ⚠️ month - 1
-    };
-
-    const formatDate = (dateArr) => {
-        const date = parseDate(dateArr);
-        return date ? date.toLocaleDateString('vi-VN') : '--';
-    };
+    const [summary, setSummary] = useState(MOCK_TENANT_SUMMARY);
+    const [bills, setBills] = useState(MOCK_TENANT_BILLS);
+    const [roomInfo, setRoomInfo] = useState(MOCK_TENANT_ROOM);
+    const [incidentReports, setIncidentReports] = useState(MOCK_TENANT_INCIDENTS);
+    const [currentReadings, setCurrentReadings] = useState(MOCK_TENANT_UTILITIES.currentPeriod);
+    const [historyReadings, setHistoryReadings] = useState(MOCK_TENANT_UTILITIES.history);
+    const [noticeItems, setNoticeItems] = useState(MOCK_TENANT_NOTICES);
+    const [contractData, setContractData] = useState(MOCK_TENANT_CONTRACT);
+    const [loading, setLoading] = useState(true);
 
     const fetchDashboardData = useCallback(async () => {
         try {
             const [summaryRes, billsRes] = await Promise.all([
-                getSummaryInfo(),
-                getMyBills(),
+                getSummaryInfo().catch(() => null),
+                getMyBills().catch(() => null),
             ]);
 
-            if (!summaryRes) {
-                message.warning("Không thể lấy thông tin tổng quan");
-            } else {
+            if (summaryRes) {
                 setSummary(summaryRes);
             }
 
-            setBills(billsRes?.result || []);
+            const nextBills = billsRes?.result || billsRes?.content || billsRes || [];
+            if (Array.isArray(nextBills) && nextBills.length > 0) {
+                setBills(nextBills);
+            }
         } catch (error) {
-            console.error("❌ Error fetching dashboard data:", error);
-            message.error("Lỗi khi tải dữ liệu tổng quan");
+            console.error('Error fetching tenant dashboard summary', error);
+        } finally {
+            setLoading(false);
         }
     }, []);
 
@@ -107,16 +135,17 @@ const Dashboard = () => {
 
     useEffect(() => {
         let active = true;
+
         const loadRoom = async () => {
             try {
                 const response = await getMyRoomInfo();
-                if (active) {
-                    setRoomInfo(response?.result || null);
-                }
+                if (!active || !response?.result) return;
+                setRoomInfo(response.result);
             } catch (error) {
-                console.error("Failed to load room info for dashboard", error);
+                console.error('Failed to load room info for dashboard', error);
             }
         };
+
         loadRoom();
         return () => {
             active = false;
@@ -125,20 +154,17 @@ const Dashboard = () => {
 
     useEffect(() => {
         let active = true;
+
         const loadContract = async () => {
             try {
                 const data = await getMyCurrentContract();
-                if (active) {
-                    setContractData(data || null);
-                }
+                if (!active || !data) return;
+                setContractData(data);
             } catch (error) {
-                console.error("Failed to load contract for dashboard", error);
-            } finally {
-                if (active) {
-                    setContractLoading(false);
-                }
+                console.error('Failed to load contract for dashboard', error);
             }
         };
+
         loadContract();
         return () => {
             active = false;
@@ -147,16 +173,17 @@ const Dashboard = () => {
 
     useEffect(() => {
         let active = true;
+
         const loadIncidents = async () => {
             try {
                 const response = await getMyIncidentReports();
-                if (active) {
-                    setIncidentReports(Array.isArray(response) ? response : []);
-                }
+                if (!active || !Array.isArray(response) || response.length === 0) return;
+                setIncidentReports(response);
             } catch (error) {
-                console.error("Failed to load incident reports for dashboard", error);
+                console.error('Failed to load incident reports for dashboard', error);
             }
         };
+
         loadIncidents();
         return () => {
             active = false;
@@ -165,20 +192,27 @@ const Dashboard = () => {
 
     useEffect(() => {
         let active = true;
+
         const loadUtilities = async () => {
             try {
                 const [current, history] = await Promise.all([
-                    getMyMeterReadingsCurrentPeriod(),
-                    getMyMeterReadingsHistory(24),
+                    getMyMeterReadingsCurrentPeriod().catch(() => null),
+                    getMyMeterReadingsHistory(24).catch(() => null),
                 ]);
-                if (active) {
-                    setCurrentReadings(Array.isArray(current) ? current : []);
-                    setHistoryReadings(Array.isArray(history) ? history : []);
+
+                if (!active) return;
+
+                if (Array.isArray(current) && current.length > 0) {
+                    setCurrentReadings(current);
+                }
+                if (Array.isArray(history) && history.length > 0) {
+                    setHistoryReadings(history);
                 }
             } catch (error) {
-                console.error("Failed to load utility readings for dashboard", error);
+                console.error('Failed to load utility readings for dashboard', error);
             }
         };
+
         loadUtilities();
         return () => {
             active = false;
@@ -187,499 +221,638 @@ const Dashboard = () => {
 
     useEffect(() => {
         let active = true;
+
         const loadNotices = async () => {
             try {
-                const response = await getMyNotifications(0, 3, { status: "ALL" });
-                if (active) {
-                    setNoticeItems(response?.content || []);
+                const response = await getMyNotifications(0, 3, {status: 'ALL'});
+                if (!active) return;
+                const nextItems = response?.content || response?.result?.content || [];
+                if (Array.isArray(nextItems) && nextItems.length > 0) {
+                    setNoticeItems(nextItems);
                 }
             } catch (error) {
-                console.error("Failed to load notifications for dashboard", error);
+                console.error('Failed to load notifications for dashboard', error);
             }
         };
+
         loadNotices();
         return () => {
             active = false;
         };
     }, []);
 
-    const statsData = summary
-        ? [
-            { label: "Phòng hiện tại", value: summary.roomNumber },
-            {
-                label: "Tiền thuê tháng này",
-                value: formatCurrencyCompact(summary.monthlyRent),
-            },
-            {
-                label: "Thanh toán",
-                value: summary.paymentStatus,
-                status: summary.paymentStatus?.includes("Chưa") || summary.paymentStatus?.includes("Quá hạn")
-                    ? "unpaid"
-                    : "paid",
-            },
-            {
-                label: "Hết hạn hợp đồng",
-                value: formatDate(summary.contractEndDate),
-            },
-        ]
-        : [];
-
-    const servicesData = [
-        { icon: "⚡", label: "Điện / Nước", onClick: () => navigate("/user/dashboard?tab=utilities") },
-        { icon: "📄", label: "Hoá đơn", onClick: () => navigate("/user/dashboard?tab=bills") },
-        { icon: "👤", label: "Hồ sơ", onClick: () => navigate("/user/dashboard?tab=profile") },
-        { icon: "📞", label: "Liên hệ", onClick: () => {} },
-    ];
-
-    const unpaidCount = Number(summary?.unpaidBillCount ?? bills.filter((b) =>
-        ["UNPAID", "OVERDUE", "PARTIALLY_PAID"].includes(b?.status)
+    const unpaidCount = Number(summary?.unpaidBillCount ?? bills.filter((bill) =>
+        ['UNPAID', 'OVERDUE', 'PARTIALLY_PAID'].includes(bill?.status)
     ).length);
-    const outstandingAmount = Number(summary?.outstandingAmount || 0);
-    const bannerRoomLabel = (roomInfo?.roomNumber || summary?.roomNumber)
+
+    const outstandingAmount = Number(summary?.outstandingAmount || bills.reduce((sum, bill) => {
+        const status = String(bill?.status || '').toUpperCase();
+        if (!['UNPAID', 'OVERDUE', 'PARTIALLY_PAID'].includes(status)) return sum;
+        return sum + Number(bill?.outstandingAmount ?? bill?.amount ?? 0);
+    }, 0));
+
+    const roomLabel = (roomInfo?.roomNumber || summary?.roomNumber)
         ? `Phòng ${roomInfo?.roomNumber || summary?.roomNumber}`
-        : "Phòng của bạn";
-    const bannerSubText = unpaidCount > 0
-        ? `Bạn có ${unpaidCount} hoá đơn chưa thanh toán${outstandingAmount > 0 ? ` · Còn nợ ${(outstandingAmount / 1_000_000).toFixed(1)} triệu` : ""}`
-        : summary?.latestBillDueDate
-            ? `Hợp đồng còn hiệu lực · Kỳ gần nhất đến hạn: ${formatDate(summary.contractStartDate)}`
-            : "Hợp đồng còn hiệu lực";
-    const contractStartDate = parseDate(contractData?.startDate);
-    const contractEndDate = parseDate(contractData?.endDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const totalContractDays = contractStartDate && contractEndDate
-        ? Math.max(1, Math.round((contractEndDate - contractStartDate) / (1000 * 60 * 60 * 24)))
-        : null;
-    const elapsedContractDays = contractStartDate && contractEndDate
-        ? Math.min(
-            totalContractDays,
-            Math.max(0, Math.round((today - contractStartDate) / (1000 * 60 * 60 * 24)))
-        )
-        : null;
+        : 'Phòng của bạn';
+
+    const heroSubtitle = unpaidCount > 0
+        ? `Bạn có ${unpaidCount} hóa đơn chưa thanh toán${outstandingAmount > 0 ? ` · Còn nợ ${formatCompactMoney(outstandingAmount)}` : ''}`
+        : 'Hợp đồng và chi tiêu đang ổn định';
+
+    const contractStartDate = dayjs(contractData?.startDate);
+    const contractEndDate = dayjs(contractData?.endDate);
+    const validContract = contractStartDate.isValid() && contractEndDate.isValid();
+    const today = dayjs().startOf('day');
+    const totalContractDays = validContract ? Math.max(1, contractEndDate.diff(contractStartDate, 'day')) : null;
+    const elapsedContractDays = validContract ? Math.min(totalContractDays, Math.max(0, today.diff(contractStartDate, 'day'))) : null;
     const contractProgressPercent = totalContractDays
         ? Math.min(100, Math.max(0, Math.round((elapsedContractDays / totalContractDays) * 100)))
         : 0;
-    const monthsLeft = contractEndDate
-        ? Math.max(
-            0,
-            (contractEndDate.getFullYear() - today.getFullYear()) * 12
-                + (contractEndDate.getMonth() - today.getMonth())
-                + (contractEndDate.getDate() >= today.getDate() ? 0 : -1)
-        )
-        : 0;
-
-    const daysLeft = contractEndDate
-        ? Math.ceil((contractEndDate - today) / (1000 * 60 * 60 * 24))
-        : null;
+    const daysLeft = validContract ? contractEndDate.diff(today, 'day') : null;
 
     const contractStatus = useMemo(() => {
-        if (contractLoading) {
-            return { label: "Đang tải...", tone: "muted" };
+        if (!validContract) return {label: 'Chưa có hợp đồng', tone: 'muted'};
+        if (contractData?.isLiving === false || (daysLeft != null && daysLeft < 0)) {
+            return {label: 'Đã hết hạn', tone: 'danger'};
         }
-
-        if (!contractStartDate || !contractEndDate) {
-            return { label: "Chưa có hợp đồng", tone: "muted" };
+        if (daysLeft != null && daysLeft <= 30) {
+            return {label: 'Sắp hết hạn', tone: 'warning'};
         }
-
-        if (contractData?.isLiving === false) {
-            return { label: "Đã hết hạn", tone: "expired" };
-        }
-
-        if (daysLeft != null) {
-            if (daysLeft < 0) {
-                return { label: "Đã hết hạn", tone: "expired" };
-            }
-            if (daysLeft <= 30) {
-                return { label: "Sắp hết hạn", tone: "warning" };
-            }
-        }
-
-        return { label: "Đang hiệu lực", tone: "active" };
-    }, [contractLoading, contractStartDate, contractEndDate, contractData?.isLiving, daysLeft]);
-
-    const heroRoomLabel = roomInfo?.roomNumber ? `Phòng ${roomInfo.roomNumber}` : bannerRoomLabel;
-    const heroRoomSubtitle = roomInfo
-        ? `${roomInfo.boardingHouseName || "—"} · Tòa ${roomInfo.buildingName || "—"} · Tầng ${roomInfo.floor ?? "—"}`
-        : "Đang tải thông tin phòng";
+        return {label: 'Đang hiệu lực', tone: 'success'};
+    }, [contractData?.isLiving, daysLeft, validContract]);
 
     const roomHighlights = useMemo(() => {
-        const highlights = [
-            roomInfo?.buildingName,
+        const items = [
+            roomInfo?.boardingHouseName,
+            roomInfo?.buildingName ? `Tòa ${roomInfo.buildingName}` : null,
             roomInfo?.status,
             summary?.paymentStatus,
-            summary?.unpaidBillCount > 0 ? `${summary.unpaidBillCount} hoá đơn chưa thanh toán` : null,
         ];
-        return highlights.filter(Boolean);
-    }, [roomInfo, summary]);
+        return items.filter(Boolean);
+    }, [roomInfo, summary?.paymentStatus]);
 
-    const roomDetailRows = useMemo(() => [
-        { label: "Diện tích", value: roomInfo?.area ? `${roomInfo.area} m²` : "Đang tải..." },
-        { label: "Giá thuê", value: roomInfo?.price ? formatMoney(roomInfo.price) : "Đang tải..." },
-        { label: "Tòa nhà", value: roomInfo?.buildingName || "Đang tải..." },
-        { label: "Trạng thái", value: roomInfo?.status || "Đang tải..." },
-    ], [roomInfo]);
+    const bannerActions = [
+        {label: 'Thanh toán ngay', icon: <CloudUploadOutlined />, onClick: () => navigate('/user/dashboard?tab=bills'), primary: true},
+        {label: 'Tạo yêu cầu', icon: <PlusOutlined />, onClick: () => navigate('/user/dashboard?tab=my-room'), primary: false},
+    ];
 
-    const incidentList = useMemo(() => incidentReports.slice(0, 3), [incidentReports]);
+    const statsData = useMemo(() => ([
+        {
+            label: 'Phòng hiện tại',
+            value: roomLabel,
+            icon: '🏠',
+            accent: 'blue',
+        },
+        {
+            label: 'Tiền thuê tháng này',
+            value: formatCompactMoney(summary?.monthlyRent || contractData?.rentPrice || roomInfo?.price),
+            icon: '💳',
+            accent: 'purple',
+        },
+        {
+            label: 'Thanh toán',
+            value: summary?.paymentStatus || 'Đang cập nhật',
+            icon: '✅',
+            accent: unpaidCount > 0 ? 'red' : 'green',
+            sub: unpaidCount > 0 ? `${unpaidCount} hóa đơn cần xử lý` : 'Không có hóa đơn quá hạn',
+        },
+        {
+            label: 'Hết hạn hợp đồng',
+            value: formatDate(summary?.contractEndDate || contractData?.endDate),
+            icon: '📅',
+            accent: 'green',
+        },
+    ]), [contractData?.endDate, contractData?.rentPrice, roomInfo?.price, roomLabel, summary?.contractEndDate, summary?.monthlyRent, summary?.paymentStatus, unpaidCount]);
 
-    const utilityStats = useMemo(() => {
+    const utilityRows = useMemo(() => {
         const normalize = (value) => Number(value ?? 0);
-        const maxConsumption = (matcher) => {
-            const values = historyReadings
-                .filter(matcher)
-                .map((reading) => normalize(reading?.consumption));
-            values.push(normalize(currentReadings.find(matcher)?.consumption));
-            return values.length > 0 ? Math.max(...values, 1) : 1;
-        };
-
-        const buildEntry = (icon, label, matcher, cssKey) => {
+        const build = (label, matcher, unit, cssKey) => {
             const reading = currentReadings.find(matcher);
+            const values = historyReadings.filter(matcher).map((item) => normalize(item?.consumption));
+            if (reading) {
+                values.push(normalize(reading?.consumption));
+            }
+            const benchmark = values.length > 0 ? Math.max(...values, 1) : 1;
             const consumption = normalize(reading?.consumption);
-            const benchmark = maxConsumption(matcher);
-            const percent = reading ? Math.min(100, Math.round((consumption / benchmark) * 100)) : 0;
             const amount = normalize(reading?.amount);
             return {
-                icon,
                 label,
+                unit,
                 cssKey,
-                percent,
-                displayValue: reading?.consumption ? `${consumption.toLocaleString()} ${reading?.utilityUnit || ""}` : "—",
                 amount,
-                amountLabel: amount ? formatMoney(amount) : "—",
+                consumption: reading ? `${consumption.toLocaleString('vi-VN')} ${reading?.utilityUnit || ''}` : '—',
+                amountLabel: amount ? formatMoney(amount) : '—',
+                percent: reading ? Math.min(100, Math.round((consumption / benchmark) * 100)) : 0,
             };
         };
 
-        const entries = [
-            buildEntry("⚡", "Điện", isElectricReading, "electricity"),
-            buildEntry("💧", "Nước", isWaterReading, "water"),
-            buildEntry("🌐", "Internet", isInternetReading, "internet"),
+        return [
+            build('Điện', isElectricReading, 'kWh', 'electricity'),
+            build('Nước', isWaterReading, 'm³', 'water'),
+            build('Internet', isInternetReading, 'gói', 'internet'),
         ];
-
-        const totalCost = entries.reduce((sum, entry) => sum + entry.amount, 0);
-        const compareItems = [
-            { label: "Tiền điện", value: entries[0].amountLabel },
-            { label: "Tiền nước", value: entries[1].amountLabel },
-            { label: "Internet", value: entries[2].amountLabel },
-        ];
-
-        return {
-            entries,
-            compareItems,
-            totalLabel: totalCost ? formatMoney(totalCost) : "—",
-        };
     }, [currentReadings, historyReadings]);
 
-    const notices = useMemo(() => noticeItems.slice(0, 3), [noticeItems]);
+    const utilityCompare = useMemo(() => {
+        const total = utilityRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+        return [
+            {label: 'Tiền điện', value: utilityRows[0]?.amountLabel || '—'},
+            {label: 'Tiền nước', value: utilityRows[1]?.amountLabel || '—'},
+            {label: 'Internet', value: utilityRows[2]?.amountLabel || '—'},
+            {label: 'Tổng phụ phí', value: total ? formatMoney(total) : '—', highlight: true},
+        ];
+    }, [utilityRows]);
+
+    const spendingSource = MOCK_MONTHLY_SPENDING;
+    const highestSpend = useMemo(() => spendingSource.reduce((best, currentItem) => (
+        currentItem.amount > best.amount ? currentItem : best
+    ), spendingSource[0]), [spendingSource]);
+    const lowestSpend = useMemo(() => spendingSource.reduce((best, currentItem) => (
+        currentItem.amount < best.amount ? currentItem : best
+    ), spendingSource[0]), [spendingSource]);
+
+    const spendingSeries = useMemo(() => [{
+        name: 'Chi tiêu',
+        data: spendingSource.map((item) => item.amount),
+    }], [spendingSource]);
+
+    const spendingChartOptions = useMemo(() => ({
+        chart: {
+            type: 'bar',
+            toolbar: {show: false},
+            foreColor: '#8892a4',
+            fontFamily: 'Be Vietnam Pro, sans-serif',
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 700,
+            },
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 10,
+                columnWidth: '46%',
+                distributed: true,
+            },
+        },
+        colors: spendingSource.map((item) => {
+            if (item.month === highestSpend.month) return '#34d399';
+            if (item.month === lowestSpend.month) return '#fbbf24';
+            return '#4f9cf9';
+        }),
+        dataLabels: {
+            enabled: true,
+            formatter: (value) => formatCompactMoney(value),
+            offsetY: -22,
+            style: {
+                fontSize: '11px',
+                fontWeight: 700,
+                colors: ['#e8eaf0'],
+            },
+        },
+        grid: {
+            borderColor: 'rgba(255,255,255,0.07)',
+            strokeDashArray: 4,
+        },
+        xaxis: {
+            categories: spendingSource.map((item) => item.month),
+            labels: {
+                style: {
+                    colors: '#8892a4',
+                    fontSize: '11px',
+                },
+            },
+            axisBorder: {color: 'rgba(255,255,255,0.07)'},
+            axisTicks: {color: 'rgba(255,255,255,0.07)'},
+        },
+        yaxis: {
+            labels: {
+                formatter: (value) => formatCompactMoney(value),
+                style: {colors: '#8892a4'},
+            },
+        },
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: (value) => formatMoney(value),
+            },
+        },
+        legend: {show: false},
+        annotations: {
+            points: [
+                {
+                    x: highestSpend.month,
+                    y: highestSpend.amount,
+                    marker: {
+                        size: 6,
+                        fillColor: '#34d399',
+                        strokeColor: '#ffffff',
+                        strokeWidth: 2,
+                    },
+                    label: {
+                        text: `Cao nhất ${formatMoney(highestSpend.amount)}`,
+                        offsetY: -12,
+                        style: {
+                            background: '#34d399',
+                            color: '#0d111a',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                        },
+                    },
+                },
+                {
+                    x: lowestSpend.month,
+                    y: lowestSpend.amount,
+                    marker: {
+                        size: 6,
+                        fillColor: '#fbbf24',
+                        strokeColor: '#ffffff',
+                        strokeWidth: 2,
+                    },
+                    label: {
+                        text: `Thấp nhất ${formatMoney(lowestSpend.amount)}`,
+                        offsetY: -12,
+                        style: {
+                            background: '#fbbf24',
+                            color: '#0d111a',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                        },
+                    },
+                },
+            ],
+        },
+    }), [highestSpend.amount, highestSpend.month, lowestSpend.amount, lowestSpend.month, spendingSource]);
+
+    const recentBills = Array.isArray(bills) ? bills.slice(0, 4) : [];
+    const incidentList = Array.isArray(incidentReports) ? incidentReports.slice(0, 3) : [];
+    const notices = Array.isArray(noticeItems) ? noticeItems.slice(0, 3) : [];
+
+    const handleNavigate = (tab) => navigate(`/user/dashboard?tab=${tab}`);
 
     return (
-        <div className={cx("dashboard")}>
-
-            {/* ── Banner ── */}
-            <div className={cx("banner")}>
-                <div className={cx("bannerContent")}>
-                    <div className={cx("bannerRoom")}>{bannerRoomLabel}</div>
-                    <div className={cx("bannerSub")}>{bannerSubText}</div>
-                    <div className={cx("bannerActions")}>
-                        <button className={cx("btnPrimary")} onClick={() => navigate("/user/dashboard?tab=bills")}>
-                            💳 Thanh toán ngay
-                        </button>
-                        <button className={cx("btnOutline")} onClick={() => navigate("/user/dashboard?tab=my-room")}>
-                            🔧 Tạo yêu cầu
-                        </button>
+        <div className={cx('dashboard')}>
+            <section className={cx('hero')}>
+                <div className={cx('heroContent')}>
+                    <div className={cx('heroRoom')}>{roomLabel}</div>
+                    <div className={cx('heroSub')}>{heroSubtitle}</div>
+                    <div className={cx('heroActions')}>
+                        {bannerActions.map((action) => (
+                            <button
+                                key={action.label}
+                                type="button"
+                                className={cx(action.primary ? 'btnPrimary' : 'btnOutline')}
+                                onClick={action.onClick}
+                            >
+                                {action.icon}
+                                {action.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
-                <div className={cx("bannerDecor")}>🏠</div>
-            </div>
+                <div className={cx('heroDecor')}>🏠</div>
+            </section>
 
-            {/* ── Main grid: Room info + Contract ── */}
-            <div className={cx("mainGrid")}>
-
-                {/* Room Info Card */}
-                <div className={cx("card")}>
-                    <div className={cx("cardHeader")}>
-                        <div>
-                            <div className={cx("cardTitle")}>Thông tin phòng</div>
-                            <div className={cx("cardSub")}>Chi tiết phòng đang thuê</div>
-                        </div>
-                        <span className={cx("cardAction")} onClick={() => navigate("/user/dashboard?tab=contract")}>
-                            Xem hợp đồng →
-                        </span>
+            <section className={cx('statsGrid')}>
+                {statsData.map((stat) => (
+                    <div key={stat.label} className={cx('statCard', stat.accent)}>
+                        <div className={cx('statIcon')}>{stat.icon}</div>
+                        <div className={cx('statValue')}>{stat.value}</div>
+                        <div className={cx('statLabel')}>{stat.label}</div>
+                        {stat.sub && <div className={cx('statChange', 'up')}>{stat.sub}</div>}
                     </div>
-                    <div className={cx("cardBody")}>
-                        <div className={cx("roomHero")}>
-                            <div className={cx("roomHeroBg")}>🏢</div>
-                            <div className={cx("roomHeroInfo")}>
-                                <div className={cx("roomNumber")}>{heroRoomLabel}</div>
-                                <div className={cx("roomType")}>{heroRoomSubtitle}</div>
+                ))}
+            </section>
+
+            <div className={cx('mainGrid')}>
+                <SectionCard
+                    title="Thông tin phòng"
+                    subtitle="Chi tiết phòng đang thuê"
+                    action={(
+                        <button type="button" className={cx('cardAction')} onClick={() => handleNavigate('contract')}>
+                            Xem hợp đồng →
+                        </button>
+                    )}
+                >
+                    <div className={cx('roomHero')}>
+                        <div className={cx('roomHeroBg')}>🏢</div>
+                        <div className={cx('roomHeroInfo')}>
+                            <div className={cx('roomNumber')}>{`Phòng ${roomInfo?.roomNumber || summary?.roomNumber || '—'}`}</div>
+                            <div className={cx('roomType')}>
+                                {roomInfo?.boardingHouseName || MOCK_TENANT_ROOM.boardingHouseName}
+                                {' · '}
+                                Tòa {roomInfo?.buildingName || MOCK_TENANT_ROOM.buildingName}
+                                {' · '}
+                                Tầng {roomInfo?.floor ?? MOCK_TENANT_ROOM.floor}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={cx('roomDetails')}>
+                        <div className={cx('roomDetailItem')}>
+                            <div className={cx('roomDetailLabel')}>Diện tích</div>
+                            <div className={cx('roomDetailValue')}>{roomInfo?.area ? `${roomInfo.area} m²` : '—'}</div>
+                        </div>
+                        <div className={cx('roomDetailItem')}>
+                            <div className={cx('roomDetailLabel')}>Giá thuê</div>
+                            <div className={cx('roomDetailValue')}>{formatMoney(roomInfo?.price || contractData?.rentPrice)}</div>
+                        </div>
+                        <div className={cx('roomDetailItem')}>
+                            <div className={cx('roomDetailLabel')}>Tòa nhà</div>
+                            <div className={cx('roomDetailValue')}>{roomInfo?.buildingName || '—'}</div>
+                        </div>
+                        <div className={cx('roomDetailItem')}>
+                            <div className={cx('roomDetailLabel')}>Trạng thái</div>
+                            <div className={cx('roomDetailValue')}>
+                                <Tag color="blue">{roomInfo?.status || 'Đang cập nhật'}</Tag>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={cx('amenitiesLabel')}>Tóm tắt nhanh</div>
+                    <div className={cx('amenities')}>
+                        {roomHighlights.length > 0 ? roomHighlights.map((tag) => (
+                            <span key={tag} className={cx('amenityTag')}>{tag}</span>
+                        )) : (
+                            <span className={cx('amenityTag')}>Đang cập nhật</span>
+                        )}
+                    </div>
+                </SectionCard>
+
+                <div className={cx('rightCol')}>
+                    <SectionCard
+                        title="Hợp đồng"
+                        subtitle="Trạng thái hợp đồng thuê"
+                    >
+                        <div className={cx('contractBox')}>
+                            <div className={cx('contractStatusRow')}>
+                                <div className={cx('contractLive', contractStatus.tone)}>
+                                    <span className={cx('liveDot', contractStatus.tone)} />
+                                    {contractStatus.label}
+                                </div>
+                                {contractData?.contractCode && (
+                                    <div className={cx('contractCode')}>Mã: {contractData.contractCode}</div>
+                                )}
+                            </div>
+
+                            <div className={cx('contractDates')}>
+                                <div className={cx('contractDateItem')}>
+                                    <div className={cx('contractDateLabel')}>Ngày bắt đầu</div>
+                                    <div className={cx('contractDateValue')}>{formatDate(contractData?.startDate)}</div>
+                                </div>
+                                <span className={cx('contractArrow')}>→</span>
+                                <div className={cx('contractDateItem')}>
+                                    <div className={cx('contractDateLabel')}>Ngày kết thúc</div>
+                                    <div className={cx('contractDateValue')}>{formatDate(contractData?.endDate)}</div>
+                                </div>
+                            </div>
+
+                            <div className={cx('contractDivider')} />
+
+                            <div className={cx('progressLabel')}>
+                                <span>Tiến độ hợp đồng</span>
+                                <span>
+                                    {validContract
+                                        ? `${contractProgressPercent}% · còn ${Math.max(0, daysLeft ?? 0)} ngày`
+                                        : 'Chưa có dữ liệu'}
+                                </span>
+                            </div>
+                            <div className={cx('progressBarWrap')}>
+                                <div
+                                    className={cx('progressBar')}
+                                    style={{'--progress': `${contractProgressPercent}%`}}
+                                />
                             </div>
                         </div>
 
-                        <div className={cx("roomDetails")}>
-                            {roomDetailRows.map((item) => (
-                                <div key={item.label} className={cx("roomDetailItem")}>
-                                    <div className={cx("roomDetailLabel")}>{item.label}</div>
-                                    <div className={cx("roomDetailValue")}>{item.value}</div>
-                                </div>
+                        <button type="button" className={cx('btnOutline', 'btnFull')} onClick={() => handleNavigate('contract')}>
+                            📄 Xem hợp đồng PDF
+                        </button>
+                    </SectionCard>
+
+                    <SectionCard
+                        title="Thao tác nhanh"
+                        subtitle="Điểm truy cập thường dùng"
+                    >
+                        <div className={cx('quickGrid')}>
+                            {[
+                                {icon: '💳', label: 'Thanh toán', sub: 'Tiền thuê & phí', tab: 'bills'},
+                                {icon: '🔧', label: 'Sửa chữa', sub: 'Gửi yêu cầu', tab: 'my-room'},
+                                {icon: '💬', label: 'Liên hệ', sub: 'Ban quản lý', tab: 'notifications'},
+                                {icon: '📷', label: 'Báo cáo', sub: 'Sự cố phòng', tab: 'my-room'},
+                                {icon: '🔑', label: 'Gia hạn', sub: 'Hợp đồng', tab: 'contract'},
+                                {icon: '🚗', label: 'Đăng ký', sub: 'Bãi đỗ xe', tab: 'profile'},
+                            ].map((item) => (
+                                <button
+                                    key={item.label}
+                                    type="button"
+                                    className={cx('quickBtn')}
+                                    onClick={() => handleNavigate(item.tab)}
+                                >
+                                    <div className={cx('quickBtnIcon')}>{item.icon}</div>
+                                    <div className={cx('quickBtnText')}>{item.label}</div>
+                                    <div className={cx('quickBtnSub')}>{item.sub}</div>
+                                </button>
                             ))}
                         </div>
-
-                        <div className={cx("amenitiesLabel")}>Tóm tắt nhanh</div>
-                        <div className={cx("amenities")}>
-                            {roomHighlights.length > 0 ? (
-                                roomHighlights.map((tag) => (
-                                    <span key={tag} className={cx("amenityTag")}>{tag}</span>
-                                ))
-                            ) : (
-                                <span className={cx("amenityTag")}>Đang cập nhật</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right column */}
-                <div className={cx("rightCol")}>
-
-                    {/* Contract Status */}
-                    <div className={cx("card")}>
-                        <div className={cx("cardHeader")}>
-                            <div>
-                                <div className={cx("cardTitle")}>Hợp đồng</div>
-                                <div className={cx("cardSub")}>Trạng thái hợp đồng thuê</div>
-                            </div>
-                        </div>
-                        <div className={cx("cardBody")}>
-                            <div className={cx("contractBox")}>
-                                <div className={cx("contractStatusRow")}>
-                                    <div className={cx("contractLive", contractStatus.tone)}>
-                                        <span className={cx("liveDot", contractStatus.tone)} />
-                                        {contractStatus.label}
-                                    </div>
-                                    {contractData?.contractCode && (
-                                        <div className={cx("contractCode")}>Mã: {contractData.contractCode}</div>
-                                    )}
-                                </div>
-                                <div className={cx("contractDates")}>
-                                    <div className={cx("contractDateItem")}>
-                                        <div className={cx("contractDateLabel")}>Ngày bắt đầu</div>
-                                        <div className={cx("contractDateValue")}>
-                                            {formatDate(contractData?.startDate)}
-                                        </div>
-                                    </div>
-                                    <span className={cx("contractArrow")}>→</span>
-                                    <div className={cx("contractDateItem")}>
-                                        <div className={cx("contractDateLabel")}>Ngày kết thúc</div>
-                                        <div className={cx("contractDateValue")}>
-                                            {contractEndDate ? formatDate(contractData?.endDate || summary?.contractEndDate) : "—"}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={cx("contractDivider")} />
-                                <div className={cx("progressLabel")}>
-                                    <span>Tiến độ hợp đồng</span>
-                                    <span>
-                                        {contractStartDate && contractEndDate
-                                            ? `${contractProgressPercent}% — còn ${Math.max(0, daysLeft ?? 0)} ngày`
-                                            : "Chưa có dữ liệu"}
-                                    </span>
-                                </div>
-                                <div className={cx("progressBarWrap")}>
-                                    <div
-                                        className={cx("progressBar")}
-                                        style={{ "--progress": `${contractProgressPercent}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <button
-                                className={cx("btnOutline", "btnFull")}
-                                onClick={() => navigate("/user/dashboard?tab=contract")}
-                            >
-                                📄 Tải hợp đồng PDF
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className={cx("card")}>
-                        <div className={cx("cardHeader")}>
-                            <div className={cx("cardTitle")}>Thao tác nhanh</div>
-                        </div>
-                        <div className={cx("cardBody")}>
-                            <div className={cx("quickGrid")}>
-                                {[
-                                    { icon: "💳", label: "Thanh toán", sub: "Tiền thuê & phí", path: "/user/bills" },
-                                    { icon: "🔧", label: "Sửa chữa", sub: "Gửi yêu cầu", path: "/user/maintenance" },
-                                    { icon: "💬", label: "Liên hệ", sub: "Ban quản lý", path: null },
-                                    { icon: "📷", label: "Báo cáo", sub: "Sự cố phòng", path: null },
-                                    { icon: "🔑", label: "Gia hạn", sub: "Hợp đồng", path: "/user/contract" },
-                                    { icon: "🚗", label: "Đăng ký", sub: "Bãi đỗ xe", path: null },
-                                ].map((item) => (
-                                    <button
-                                        key={item.label}
-                                        className={cx("quickBtn")}
-                                        onClick={() => {
-                                            if (!item.path) return;
-                                            const map = {
-                                                "/user/maintenance": "/user/dashboard?tab=my-room",
-                                                "/user/utilities": "/user/dashboard?tab=utilities",
-                                                "/user/contract": "/user/dashboard?tab=contract",
-                                                "/user/bills": "/user/dashboard?tab=bills",
-                                            };
-                                            navigate(map[item.path] || item.path);
-                                        }}
-                                    >
-                                        <div className={cx("quickBtnIcon")}>{item.icon}</div>
-                                        <div className={cx("quickBtnText")}>{item.label}</div>
-                                        <div className={cx("quickBtnSub")}>{item.sub}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
+                    </SectionCard>
                 </div>
             </div>
 
-            {/* ── Bills (from API) ── */}
-            <BillsCard bills={bills} onViewAll={() => navigate("/user/dashboard?tab=bills")} />
-
-            {/* ── Bottom grid ── */}
-            <div className={cx("bottomGrid")}>
-
-                {/* Maintenance Requests */}
-                <div className={cx("card")}>
-                    <div className={cx("cardHeader")}>
-                        <div>
-                            <div className={cx("cardTitle")}>Yêu cầu bảo trì</div>
-                            <div className={cx("cardSub")}>Trạng thái xử lý</div>
-                        </div>
-                        <span
-                            className={cx("cardAction")}
-                            onClick={() => navigate("/user/dashboard?tab=my-room")}
-                        >
-                            Tạo mới +
-                        </span>
-                    </div>
-                <div className={cx("cardBody")}>
-                        {incidentList.length > 0 ? (
-                            incidentList.map((incident) => {
-                                const statusKey = incident.status ?? "PENDING";
-                                const meta = INCIDENT_STATUS_META[statusKey] || {
-                                    label: statusKey,
-                                    pill: "new",
-                                    icon: "🛠️",
-                                    iconClass: "pending",
-                                };
-                                return (
-                                    <div key={incident.id} className={cx("requestItem")}>
-                                        <div className={cx("requestIcon", meta.iconClass)}>{meta.icon}</div>
-                                        <div className={cx("requestContent")}>
-                                            <div className={cx("requestTitle")}>{incident.title}</div>
-                                            <div className={cx("requestDesc")}>
-                                                {incident.description || "Không có mô tả chi tiết"}
-                                            </div>
-                                            <div className={cx("requestMeta")}>
-                                                <span className={cx("statusPill", meta.pill)}>
-                                                    {meta.label}
-                                                </span>
-                                                <span className={cx("requestDate")}>
-                                                    {formatDate(incident.createdAt)}
-                                                </span>
-                                            </div>
+            <div className={cx('bottomGrid')}>
+                <SectionCard
+                    title="Hóa đơn gần đây"
+                    subtitle="Theo dõi tình trạng thanh toán"
+                    action={(
+                        <button type="button" className={cx('cardAction')} onClick={() => handleNavigate('bills')}>
+                            Xem tất cả →
+                        </button>
+                    )}
+                >
+                    <div className={cx('billList')}>
+                        {recentBills.length > 0 ? recentBills.map((bill) => {
+                            const statusMeta = buildBillStatus(bill.status);
+                            return (
+                                <div key={bill.id || bill.billCode} className={cx('billItem')}>
+                                    <div className={cx('billLeft')}>
+                                        <div className={cx('billIcon', statusMeta.tone)}>
+                                            {statusMeta.tone === 'success' ? '✅' : statusMeta.tone === 'danger' ? '⚠️' : '💳'}
+                                        </div>
+                                        <div>
+                                            <div className={cx('billName')}>{bill.billTitle || bill.billCode || 'Hóa đơn'}</div>
+                                            <div className={cx('billDate')}>Hạn thanh toán: {formatDate(bill.dueDate)}</div>
                                         </div>
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <div className={cx("emptyState")}>
-                                <div className={cx("emptyIcon")}>🎉</div>
-                                <div className={cx("emptyText")}>Chưa có yêu cầu bảo trì nào</div>
-                                <div className={cx("emptySubtext")}>
-                                    Nhấn "Tạo mới +" để gửi yêu cầu đầu tiên
+                                    <div>
+                                        <div className={cx('billAmount')}>{formatMoney(bill.outstandingAmount ?? bill.amount)}</div>
+                                        <div className={cx('statusBadge', statusMeta.tone)}>{statusMeta.label}</div>
+                                    </div>
                                 </div>
+                            );
+                        }) : (
+                            <div className={cx('emptyState')}>
+                                <div className={cx('emptyIcon')}>🧾</div>
+                                <div className={cx('emptyText')}>Chưa có hóa đơn nào được phát hành</div>
+                                <div className={cx('emptySubtext')}>Hệ thống sẽ hiển thị khi chủ trọ tạo hóa đơn</div>
                             </div>
                         )}
                     </div>
-                </div>
+                </SectionCard>
 
-                {/* Utilities */}
-                <div className={cx("card")}>
-                    <div className={cx("cardHeader")}>
-                        <div>
-                            <div className={cx("cardTitle")}>Tiêu thụ điện nước</div>
-                            <div className={cx("cardSub")}>Tháng 3/2026</div>
+                <SectionCard
+                    title="Chi tiêu 6 tháng gần đây"
+                    subtitle="Theo dõi chi phí sinh hoạt của tenant"
+                >
+                    <div className={cx('chartMeta')}>
+                        <div className={cx('chartStat')}>
+                            <div className={cx('chartStatLabel')}>Tháng cao nhất</div>
+                            <div className={cx('chartStatValue')}>{highestSpend.month}</div>
+                            <div className={cx('chartStatMoney')}>{formatMoney(highestSpend.amount)}</div>
                         </div>
-                        <span
-                            className={cx("cardAction")}
-                            onClick={() => navigate("/user/dashboard?tab=utilities")}
-                        >
-                            Chi tiết →
-                        </span>
+                        <div className={cx('chartStat')}>
+                            <div className={cx('chartStatLabel')}>Tháng thấp nhất</div>
+                            <div className={cx('chartStatValue')}>{lowestSpend.month}</div>
+                            <div className={cx('chartStatMoney')}>{formatMoney(lowestSpend.amount)}</div>
+                        </div>
                     </div>
-                    <div className={cx("cardBody")}>
-                        {utilityStats.entries.map((entry) => (
-                            <div key={entry.label} className={cx("utilRow")}>
-                                <span className={cx("utilIcon")}>{entry.icon}</span>
-                                <span className={cx("utilLabel")}>{entry.label}</span>
-                                <div className={cx("utilBarWrap")}>
+                    <div className={cx('chartWrap')}>
+                        <ReactApexChart
+                            options={spendingChartOptions}
+                            series={spendingSeries}
+                            type="bar"
+                            height={280}
+                        />
+                    </div>
+                    <div className={cx('chartLegend')}>
+                        Dữ liệu đang hiển thị từ mock fallback. Khi API sẵn sàng, chart sẽ tự đồng bộ theo dữ liệu thật.
+                    </div>
+                </SectionCard>
+
+                <SectionCard
+                    title="Tiêu thụ điện nước"
+                    subtitle="Tóm tắt mức dùng và phụ phí hiện tại"
+                    action={(
+                        <button type="button" className={cx('cardAction')} onClick={() => handleNavigate('utilities')}>
+                            Chi tiết →
+                        </button>
+                    )}
+                >
+                    <div className={cx('utilityList')}>
+                        {utilityRows.map((entry) => (
+                            <div key={entry.label} className={cx('utilityRow')}>
+                                <span className={cx('utilityIcon')}>{entry.label === 'Điện' ? '⚡' : entry.label === 'Nước' ? '💧' : '🌐'}</span>
+                                <span className={cx('utilityLabel')}>{entry.label}</span>
+                                <div className={cx('utilityBarWrap')}>
                                     <div
-                                        className={cx("utilBar", entry.cssKey)}
-                                        style={{ "--util-pct": `${entry.percent}%` }}
+                                        className={cx('utilityBar', entry.cssKey)}
+                                        style={{'--utility-pct': `${entry.percent}%`}}
                                     />
                                 </div>
-                                <span className={cx("utilVal")}>{entry.displayValue}</span>
+                                <span className={cx('utilityValue')}>{entry.consumption}</span>
                             </div>
                         ))}
+                    </div>
 
-                        <div className={cx("utilCompare")}>
-                            {utilityStats.compareItems.map((item) => (
-                                <div key={item.label} className={cx("utilCompareItem")}>
-                                    <div className={cx("utilCompareLabel")}>{item.label}</div>
-                                    <div className={cx("utilCompareValue")}>{item.value}</div>
-                                </div>
-                            ))}
-                            <div className={cx("utilCompareItem", "highlight")}>
-                                <div className={cx("utilCompareLabel")}>Tổng phụ phí</div>
-                                <div className={cx("utilCompareValue")}>{utilityStats.totalLabel}</div>
+                    <div className={cx('utilityCompare')}>
+                        {utilityCompare.map((item) => (
+                            <div
+                                key={item.label}
+                                className={cx('utilityCompareItem', {highlight: item.highlight})}
+                            >
+                                <div className={cx('utilityCompareLabel')}>{item.label}</div>
+                                <div className={cx('utilityCompareValue')}>{item.value}</div>
                             </div>
-                        </div>
+                        ))}
                     </div>
-                </div>
+                </SectionCard>
 
-                {/* Notices */}
-                <div className={cx("card")}>
-                    <div className={cx("cardHeader")}>
-                        <div>
-                            <div className={cx("cardTitle")}>Thông báo tòa nhà</div>
-                            <div className={cx("cardSub")}>Cập nhật mới nhất</div>
-                        </div>
-                        <span className={cx("cardAction")}>Tất cả →</span>
-                    </div>
-                    <div className={cx("cardBody")}>
-                        {notices.length > 0 ? (
-                            notices.map((notice) => (
-                                <div key={`${notice.id}-${notice.createdAt}`} className={cx("noticeItem")}>
-                                    <div className={cx("noticeBadge")}>
-                                        {notice.category || notice.priority || "Thông báo"}
+                <SectionCard
+                    title="Yêu cầu bảo trì"
+                    subtitle="Trạng thái xử lý"
+                    action={(
+                        <button type="button" className={cx('cardAction')} onClick={() => handleNavigate('my-room')}>
+                            Tạo mới +
+                        </button>
+                    )}
+                >
+                    <div className={cx('requestList')}>
+                        {incidentList.length > 0 ? incidentList.map((incident) => {
+                            const meta = INCIDENT_STATUS_META[incident.status] || INCIDENT_STATUS_META.PENDING;
+                            return (
+                                <div key={incident.id} className={cx('requestItem')}>
+                                    <div className={cx('requestIcon', meta.tone)}>{meta.icon}</div>
+                                    <div className={cx('requestContent')}>
+                                        <div className={cx('requestTitle')}>{incident.title}</div>
+                                        <div className={cx('requestDesc')}>{incident.description || 'Không có mô tả chi tiết'}</div>
+                                        <div className={cx('requestMeta')}>
+                                            <span className={cx('statusPill', meta.tone)}>{meta.label}</span>
+                                            <span className={cx('requestDate')}>{formatDate(incident.createdAt)}</span>
+                                        </div>
                                     </div>
-                                    <div className={cx("noticeTitle")}>{notice.title}</div>
-                                    <div className={cx("noticeDesc")}>{notice.message || "Không có nội dung"}</div>
-                                    <div className={cx("noticeTime")}>{formatDate(notice.createdAt)}</div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className={cx("emptyState")}>
-                                <div className={cx("emptyIcon")}>🔔</div>
-                                <div className={cx("emptyText")}>Chưa có thông báo mới</div>
-                                <div className={cx("emptySubtext")}>Hệ thống sẽ hiển thị thông báo khi có cập nhật</div>
+                            );
+                        }) : (
+                            <div className={cx('emptyState')}>
+                                <div className={cx('emptyIcon')}>🎉</div>
+                                <div className={cx('emptyText')}>Chưa có yêu cầu bảo trì nào</div>
+                                <div className={cx('emptySubtext')}>Nhấn "Tạo mới +" để gửi yêu cầu đầu tiên</div>
                             </div>
                         )}
                     </div>
-                </div>
+                </SectionCard>
 
+                <SectionCard
+                    title="Thông báo tòa nhà"
+                    subtitle="Cập nhật mới nhất"
+                    action={(
+                        <button type="button" className={cx('cardAction')} onClick={() => handleNavigate('notifications')}>
+                            Tất cả →
+                        </button>
+                    )}
+                >
+                    <div className={cx('noticeList')}>
+                        {notices.length > 0 ? notices.map((notice) => (
+                            <div key={`${notice.id}-${notice.createdAt}`} className={cx('noticeItem')}>
+                                <div className={cx('noticeBadge')}>{notice.category || 'Thông báo'}</div>
+                                <div className={cx('noticeTitle')}>{notice.title}</div>
+                                <div className={cx('noticeDesc')}>{notice.message || 'Không có nội dung'}</div>
+                                <div className={cx('noticeTime')}>{formatDate(notice.createdAt)}</div>
+                            </div>
+                        )) : (
+                            <div className={cx('emptyState')}>
+                                <div className={cx('emptyIcon')}>🔔</div>
+                                <div className={cx('emptyText')}>Chưa có thông báo mới</div>
+                                <div className={cx('emptySubtext')}>Hệ thống sẽ hiển thị khi có cập nhật</div>
+                            </div>
+                        )}
+                    </div>
+                </SectionCard>
             </div>
 
-            {/* ── Services (from API) ── */}
-            <ServicesCard services={servicesData} />
+            <section className={cx('serviceStrip')}>
+                {[
+                    {icon: '⚡', label: 'Điện / Nước', tab: 'utilities'},
+                    {icon: '📄', label: 'Hóa đơn', tab: 'bills'},
+                    {icon: '👤', label: 'Hồ sơ', tab: 'profile'},
+                    {icon: '📞', label: 'Liên hệ', tab: 'notifications'},
+                ].map((item) => (
+                    <button
+                        key={item.label}
+                        type="button"
+                        className={cx('serviceBtn')}
+                        onClick={() => handleNavigate(item.tab)}
+                    >
+                        <div className={cx('serviceIcon')}>{item.icon}</div>
+                        <div className={cx('serviceLabel')}>{item.label}</div>
+                    </button>
+                ))}
+            </section>
 
+            {loading && (
+                <div className={cx('loadingOverlay')}>
+                    <Spin size="large" />
+                </div>
+            )}
         </div>
     );
 };

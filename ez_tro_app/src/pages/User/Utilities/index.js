@@ -87,6 +87,17 @@ const Utilities = () => {
         });
     }, [historyReadings]);
 
+    const utilitiesSummary = useMemo(() => {
+        const totalElectric = electricStats.cost;
+        const totalWater = waterStats.cost;
+        const total = totalElectric + totalWater;
+        return [
+            {label: 'Chi phí điện', value: totalElectric.toLocaleString('vi-VN') + ' đ'},
+            {label: 'Chi phí nước', value: totalWater.toLocaleString('vi-VN') + ' đ'},
+            {label: 'Tổng phụ phí', value: total.toLocaleString('vi-VN') + ' đ'},
+        ];
+    }, [electricStats.cost, waterStats.cost]);
+
     if (loading) {
         return (
             <div className={styles.utilities}>
@@ -97,14 +108,31 @@ const Utilities = () => {
 
     return (
         <div className={styles.utilities}>
-            {/* Stats Section */}
-            <UtilitiesStats
-                electricStats={electricStats}
-                waterStats={waterStats}
-            />
+            <section className={styles.hero}>
+                <div>
+                    <div className={styles.heroTitle}>Điện nước & phụ phí</div>
+                    <div className={styles.heroSub}>
+                        Theo dõi tiêu thụ hiện tại, lịch sử và chi phí trong giao diện tối đồng bộ.
+                    </div>
+                </div>
+                <div className={styles.summaryChips}>
+                    {utilitiesSummary.map((item) => (
+                        <div key={item.label} className={styles.summaryChip}>
+                            <div className={styles.summaryLabel}>{item.label}</div>
+                            <div className={styles.summaryValue}>{item.value}</div>
+                        </div>
+                    ))}
+                </div>
+            </section>
 
-            {/* Table Section */}
-            {utilitiesData.length > 0 ? <UtilitiesTable data={utilitiesData} /> : <Empty description="Chưa có dữ liệu điện/nước" />}
+            <div className={styles.contentGrid}>
+                <UtilitiesStats
+                    electricStats={electricStats}
+                    waterStats={waterStats}
+                />
+
+                {utilitiesData.length > 0 ? <UtilitiesTable data={utilitiesData} /> : <Empty description="Chưa có dữ liệu điện/nước" />}
+            </div>
         </div>
     );
 };
