@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import RoomInfoCard from "~/components/Layout/UserLayout/components/RoomInfoCard";
 import IncidentsCard from "~/components/Layout/UserLayout/components/IncidentsCard";
 import styles from "./MyRoom.module.scss";
@@ -90,9 +90,26 @@ const MyRoom = () => {
         }
     };
 
+    const roomTitle = myRoom?.roomNumber ? `Phòng ${myRoom.roomNumber}` : 'Phòng của tôi';
+    const roomSubtitle = myRoom
+        ? `${myRoom.buildingName || '—'} · Tầng ${myRoom.floor ?? '—'} · ${myRoom.area ? `${myRoom.area} m²` : 'Đang cập nhật'}`
+        : 'Thông tin phòng đang được tải';
+
     return (
         <div className={styles.myRoom}>
-            {myRoom ? (
+            <section className={styles.hero}>
+                <div>
+                    <div className={styles.heroTitle}>{roomTitle}</div>
+                    <div className={styles.heroSub}>{roomSubtitle}</div>
+                </div>
+                <div className={styles.heroBadge}>{myRoom?.status || 'Đang tải'}</div>
+            </section>
+
+            {loading && !myRoom ? (
+                <div className={styles.loadingWrap}>
+                    <Spin size="large" />
+                </div>
+            ) : myRoom ? (
                 <RoomInfoCard
                     roomData={{
                         roomNumber: myRoom.roomNumber,
@@ -104,7 +121,7 @@ const MyRoom = () => {
                     }}
                 />
             ) : (
-                <p>Đang tải thông tin phòng...</p>
+                <div className={styles.emptyState}>Đang tải thông tin phòng...</div>
             )}
 
             <IncidentsCard

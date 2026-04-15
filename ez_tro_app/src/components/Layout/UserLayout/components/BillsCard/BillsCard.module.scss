@@ -1,37 +1,26 @@
 .billsCard {
-  border-radius: 18px !important;
-  border: 1px solid rgba(148, 163, 184, 0.35) !important;
-  background: radial-gradient(600px 400px at 0% 0%, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.9));
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.8);
-  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #161b26;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 
   :global {
     .ant-card-head {
-      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-      padding: 0 20px;
-      min-height: 52px;
-      background: radial-gradient(380px 260px at 0% 0%, rgba(56, 189, 248, 0.16), transparent);
-    }
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
-    .ant-card-head-title {
-      padding: 14px 0;
-      font-weight: 600;
-      font-size: 15px;
-      color: #e5f0ff;
-    }
-
-    .ant-card-extra a {
-      color: #7dd3fc;
-      font-size: 13px;
+      .ant-card-head-title {
+        color: #e8eaf0;
+      }
     }
 
     .ant-card-body {
-      padding: 14px 20px 18px;
+      padding: 24px;
     }
   }
-}
 
-.billsList {
-  display: flex;
-  flex-direction: column;
+  .billsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 }

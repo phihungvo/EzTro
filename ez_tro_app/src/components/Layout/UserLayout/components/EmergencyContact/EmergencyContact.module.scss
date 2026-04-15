@@ -1,21 +1,21 @@
 .emergencyContact {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: #161b26;
+  border-radius: 18px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 
   .title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    color: #1f2937;
+    color: #e8eaf0;
     margin: 0 0 24px;
   }
 
   .formGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: 18px;
     margin-bottom: 24px;
 
     @media (max-width: 1024px) {
@@ -26,23 +26,23 @@
   .formGroup {
     .label {
       display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
+      font-size: 13px;
+      font-weight: 700;
+      color: #8892a4;
       margin-bottom: 8px;
     }
 
     :global {
       .ant-input,
       .ant-select-selector {
-        border-radius: 8px;
+        border-radius: 10px;
       }
     }
   }
 
   .submitButton {
-    border-radius: 8px;
+    border-radius: 10px;
     height: 44px;
-    font-weight: 600;
+    font-weight: 700;
   }
 }

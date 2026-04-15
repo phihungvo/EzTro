@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import { Alert, Button, Descriptions, Divider, Empty, Form, Input, InputNumber, message, Modal, Select, Spin, Table, Timeline, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -199,28 +199,79 @@ const Bills = () => {
         }
     }, [closePaymentModal, detailBill?.id, detailOpen, paymentBill?.id, paymentForm, paymentProofFileList, refreshBillContexts]);
 
+    const billList = useMemo(() => (Array.isArray(myBills) ? myBills : []), [myBills]);
+    const billStats = useMemo(() => {
+        const unpaidBills = billList.filter((bill) => isBillPayable(bill));
+        const paidBills = billList.filter((bill) => bill?.status === 'PAID');
+        const overdueBills = billList.filter((bill) => bill?.status === 'OVERDUE');
+        const outstanding = unpaidBills.reduce((sum, bill) => sum + Number(bill?.outstandingAmount ?? bill?.amount ?? 0), 0);
+
+        return [
+            {label: 'Tổng hóa đơn', value: billList.length, sub: 'đang hiển thị'},
+            {label: 'Chưa thanh toán', value: unpaidBills.length, sub: overdueBills.length > 0 ? `${overdueBills.length} quá hạn` : 'an toàn'},
+            {label: 'Đã thanh toán', value: paidBills.length, sub: 'thành công'},
+            {label: 'Còn nợ', value: formatCurrency(outstanding), sub: 'VND'},
+        ];
+    }, [billList]);
+
     return (
         <div className={styles.bills}>
-            <div className={styles.header}>
-                <h2 className={styles.title}>Danh Sách Hóa Đơn</h2>
+            <section className={styles.hero}>
+                <div>
+                    <div className={styles.heroTitle}>Hóa đơn & thanh toán</div>
+                    <div className={styles.heroSub}>
+                        Quản lý hóa đơn, chứng từ và trạng thái thanh toán trong một giao diện tối.
+                    </div>
+                </div>
+                <div className={styles.heroActions}>
+                    <Button type="primary" icon={<UploadOutlined />} onClick={() => message.info('Tính năng đồng bộ hóa đơn đang phát triển')}>
+                        Đồng bộ
+                    </Button>
+                    <Button onClick={() => message.info('Xuất báo cáo đang phát triển')}>
+                        Xuất báo cáo
+                    </Button>
+                </div>
+            </section>
+
+            <section className={styles.statsGrid}>
+                {billStats.map((item) => (
+                    <div key={item.label} className={styles.statCard}>
+                        <div className={styles.statLabel}>{item.label}</div>
+                        <div className={styles.statValue}>{item.value}</div>
+                        <div className={styles.statSub}>{item.sub}</div>
+                    </div>
+                ))}
+            </section>
+
+            <div className={styles.grid}>
+                <div className={styles.mainCol}>
+                    <div className={styles.sectionCard}>
+                        <div className={styles.sectionHeader}>
+                            <div>
+                                <div className={styles.sectionTitle}>Danh sách hóa đơn</div>
+                                <div className={styles.sectionSub}>Theo dõi các hóa đơn gần đây và thao tác thanh toán</div>
+                            </div>
+                        </div>
+
+                        {billList.length > 0 ? (
+                            <UserTable
+                                bills={billList}
+                                onPayment={handlePayment}
+                                onViewDetail={handleViewDetail}
+                            />
+                        ) : (
+                            <Empty description="Bạn chưa có hóa đơn nào" />
+                        )}
+                    </div>
+                </div>
+
+                <div className={styles.sideCol}>
+                    <PaymentMethods
+                        methods={paymentMethods}
+                        onSelectMethod={handleSelectMethod}
+                    />
+                </div>
             </div>
-
-            {/* Bills Table */}
-            {Array.isArray(myBills) && myBills.length > 0 ? (
-                <UserTable
-                    bills={myBills}
-                    onPayment={handlePayment}
-                    onViewDetail={handleViewDetail}
-                />
-            ) : (
-                <Empty description="Bạn chưa có hóa đơn nào" />
-            )}
-
-            {/* Payment Methods */}
-            <PaymentMethods
-                methods={paymentMethods}
-                onSelectMethod={handleSelectMethod}
-            />
 
             <Modal
                 open={detailOpen}

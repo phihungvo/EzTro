@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {Button, Form, Input, Modal, Select, message} from "antd";
+import {Button, Form, Input, Modal, Select, Spin, message} from "antd";
 
 import styles from "./Profile.module.scss";
 import ProfileInfo from "~/components/Layout/UserLayout/components/ProfileInfo";
@@ -170,31 +170,48 @@ const Profile = () => {
         message.success("Lưu cài đặt thông báo thành công!");
     };
 
+    const profileTitle = profile?.fullName || 'Hồ sơ cá nhân';
+    const profileSubtitle = profile
+        ? `${profile?.email || '—'} · ${profile?.phoneNumber || '—'}`
+        : 'Thông tin tài khoản và cài đặt của bạn';
+
     return (
         <div className={styles.profile}>
-            {/* Profile Info */}
-            <ProfileInfo
-                profile={profileInfoData}
-                onEdit={openEditModal}
-            />
+            <section className={styles.hero}>
+                <div>
+                    <div className={styles.heroTitle}>{profileTitle}</div>
+                    <div className={styles.heroSub}>{profileSubtitle}</div>
+                </div>
+                <div className={styles.heroBadge}>Portal tenant</div>
+            </section>
 
-            {/* Password Section */}
-            <PasswordSection onChangePassword={handleChangePassword} />
+            {profileLoading && !profile ? (
+                <div className={styles.loadingWrap}>
+                    <Spin size="large" />
+                </div>
+            ) : null}
 
-            {/* Emergency Contact */}
-            <EmergencyContact
-                contact={parsedEmergencyContact}
-                onSave={handleSaveEmergencyContact}
-            />
+            <div className={styles.contentGrid}>
+                <ProfileInfo
+                    profile={profileInfoData}
+                    onEdit={openEditModal}
+                />
 
-            {/* Notification Settings */}
-            <NotificationSettings
-                settings={notificationSettings}
-                onSave={handleSaveNotificationSettings}
-                loading={preferencesLoading}
-                title="Cài đặt thông báo"
-                description="Tùy chỉnh cách bạn muốn nhận từng loại notification trong portal thuê trọ."
-            />
+                <PasswordSection onChangePassword={handleChangePassword} />
+
+                <EmergencyContact
+                    contact={parsedEmergencyContact}
+                    onSave={handleSaveEmergencyContact}
+                />
+
+                <NotificationSettings
+                    settings={notificationSettings}
+                    onSave={handleSaveNotificationSettings}
+                    loading={preferencesLoading}
+                    title="Cài đặt thông báo"
+                    description="Tùy chỉnh cách bạn muốn nhận từng loại notification trong portal thuê trọ."
+                />
+            </div>
 
             <Modal
                 title="Chỉnh sửa thông tin"
