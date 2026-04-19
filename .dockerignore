@@ -1,0 +1,13 @@
+.git
+.idea
+.vscode
+.DS_Store
+**/node_modules
+**/build
+**/*.log
+**/.env
+**/.env.*
+tasks
+docs
+README.md
+TODO.md
