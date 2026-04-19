@@ -1,0 +1,112 @@
+name: deploy-vps
+
+on:
+  workflow_call:
+    inputs:
+      backend_tag:
+        description: Backend image tag
+        required: true
+        type: string
+      frontend_tag:
+        description: Frontend image tag
+        required: true
+        type: string
+      minio_url:
+        description: Public MinIO URL
+        required: true
+        type: string
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      VPS_HOST:
+        required: true
+      VPS_SSH_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Prepare VPS directories
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ubuntu
+        run: |
+          ssh -i ~/.ssh/id_rsa "$VPS_USER@$VPS_HOST" "sudo mkdir -p /opt/ez-tro/nginx && sudo chown -R $VPS_USER:$VPS_USER /opt/ez-tro"
+
+      - name: Upload deployment files
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ubuntu
+        run: |
+          scp -i ~/.ssh/id_rsa docker-compose.prod.yml "$VPS_USER@$VPS_HOST:/opt/ez-tro/docker-compose.prod.yml"
+          scp -i ~/.ssh/id_rsa nginx/nginx.conf "$VPS_USER@$VPS_HOST:/opt/ez-tro/nginx/nginx.conf"
+
+      - name: Deploy via SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ubuntu
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          BACKEND_TAG: ${{ inputs.backend_tag }}
+          FRONTEND_TAG: ${{ inputs.frontend_tag }}
+          MINIO_URL: ${{ inputs.minio_url }}
+        run: |
+          printf '%s\n' "$DOCKER_PASSWORD" | ssh -i ~/.ssh/id_rsa "$VPS_USER@$VPS_HOST" "set -e
+          cd /opt/ez-tro
+
+          if [ ! -f .env ]; then
+            touch .env
+          fi
+
+          if grep -q '^DOCKER_USERNAME=' .env; then
+            sed -i \"s|^DOCKER_USERNAME=.*|DOCKER_USERNAME=$DOCKER_USERNAME|\" .env
+          else
+            printf 'DOCKER_USERNAME=%s\n' \"$DOCKER_USERNAME\" >> .env
+          fi
+
+          if grep -q '^BACKEND_IMAGE_TAG=' .env; then
+            sed -i \"s|^BACKEND_IMAGE_TAG=.*|BACKEND_IMAGE_TAG=$BACKEND_TAG|\" .env
+          else
+            printf 'BACKEND_IMAGE_TAG=%s\n' \"$BACKEND_TAG\" >> .env
+          fi
+
+          if grep -q '^FRONTEND_IMAGE_TAG=' .env; then
+            sed -i \"s|^FRONTEND_IMAGE_TAG=.*|FRONTEND_IMAGE_TAG=$FRONTEND_TAG|\" .env
+          else
+            printf 'FRONTEND_IMAGE_TAG=%s\n' \"$FRONTEND_TAG\" >> .env
+          fi
+
+          if grep -q '^MINIO_URL=' .env; then
+            sed -i \"s|^MINIO_URL=.*|MINIO_URL=$MINIO_URL|\" .env
+          else
+            printf 'MINIO_URL=%s\n' \"$MINIO_URL\" >> .env
+          fi
+
+          if grep -q '^REACT_APP_MINIO_URL=' .env; then
+            sed -i \"s|^REACT_APP_MINIO_URL=.*|REACT_APP_MINIO_URL=$MINIO_URL|\" .env
+          else
+            printf 'REACT_APP_MINIO_URL=%s\n' \"$MINIO_URL\" >> .env
+          fi
+
+          docker login -u \"$DOCKER_USERNAME\" --password-stdin
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans"
