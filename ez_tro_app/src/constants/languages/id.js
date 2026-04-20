@@ -1,4 +1,4 @@
-export default {
+const id = {
   common: {
     search: 'Cari',
     cancel: 'Batal',
@@ -108,3 +108,5 @@ export default {
     more: 'Selengkapnya'
   }
 };
+
+export default id;

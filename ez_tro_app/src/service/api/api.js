@@ -47,8 +47,6 @@ apiClient.interceptors.request.use(
 // Response interceptor: xử lý lỗi tập trung
 apiClient.interceptors.response.use(
     (response) => {
-        const resData = response.data; // trả về nguyên response
-
         // Hiển thị message thành công nếu có của backend
         // if (resData?.message && typeof resData.message === 'string') {
         //     if (!resData.code || resData.code === 200 || resData.code === 201) {

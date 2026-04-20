@@ -1,6 +1,8 @@
 import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
+
+
 export const getAllUtilities = async ({ page, pageSize }) => {
     try {
         const response = await apiClient.get(API_ENDPOINTS.UTILITY.GET_ALL, {
