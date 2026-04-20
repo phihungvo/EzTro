@@ -12,19 +12,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DEFAULT_REACT_APP_API_URL: /api
-  DEFAULT_REACT_APP_WS_URL: ws://localhost/ws
-  DEFAULT_REACT_APP_MINIO_URL: http://your-domain.com/minio
-  BACKEND_IMAGE: ez-tro-backend
-  FRONTEND_IMAGE: ez-tro-frontend
-
 jobs:
   backend:
     name: Build backend
     uses: ./.github/workflows/build-backend-image.yml
     with:
-      image_name: ${{ env.BACKEND_IMAGE }}
+      image_name: ez-tro-backend
       image_tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
       push: false
 
@@ -32,9 +25,9 @@ jobs:
     name: Build and test frontend
     uses: ./.github/workflows/build-frontend-image.yml
     with:
-      image_name: ${{ env.FRONTEND_IMAGE }}
+      image_name: ez-tro-frontend
       image_tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
-      react_app_api_url: ${{ env.DEFAULT_REACT_APP_API_URL }}
-      react_app_ws_url: ${{ env.DEFAULT_REACT_APP_WS_URL }}
-      react_app_minio_url: ${{ env.DEFAULT_REACT_APP_MINIO_URL }}
+      react_app_api_url: /api
+      react_app_ws_url: ws://localhost/ws
+      react_app_minio_url: http://your-domain.com/minio
       push: false

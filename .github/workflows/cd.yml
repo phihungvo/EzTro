@@ -22,13 +22,6 @@ concurrency:
   group: cd-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  BACKEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/ez-tro-backend
-  FRONTEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/ez-tro-frontend
-  DEFAULT_REACT_APP_API_URL: /api
-  DEFAULT_REACT_APP_WS_URL: ws://localhost/ws
-  DEFAULT_REACT_APP_MINIO_URL: http://your-domain.com/minio
-
 jobs:
   validate-config:
     name: Validate CI/CD configuration
@@ -57,7 +50,7 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ env.BACKEND_IMAGE }}
+      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-backend
       image_tag: sha-${{ github.sha }}
       push: true
 
@@ -68,11 +61,11 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ env.FRONTEND_IMAGE }}
+      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-frontend
       image_tag: sha-${{ github.sha }}
-      react_app_api_url: ${{ vars.REACT_APP_API_URL || env.DEFAULT_REACT_APP_API_URL }}
-      react_app_ws_url: ${{ vars.REACT_APP_WS_URL || env.DEFAULT_REACT_APP_WS_URL }}
-      react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || env.DEFAULT_REACT_APP_MINIO_URL }}
+      react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
+      react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+      react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
       push: true
 
   deploy:
@@ -86,4 +79,4 @@ jobs:
     with:
       backend_tag: ${{ inputs.backend_tag || format('sha-{0}', github.sha) }}
       frontend_tag: ${{ inputs.frontend_tag || format('sha-{0}', github.sha) }}
-      minio_url: ${{ vars.REACT_APP_MINIO_URL || env.DEFAULT_REACT_APP_MINIO_URL }}
+      minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
