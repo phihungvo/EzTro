@@ -1,4 +1,4 @@
-export default {
+const zh = {
   common: {
     search: '搜索',
     cancel: '取消',
@@ -108,3 +108,5 @@ export default {
     more: '更多'
   }
 };
+
+export default zh;

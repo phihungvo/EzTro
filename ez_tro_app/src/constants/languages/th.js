@@ -1,4 +1,4 @@
-export default {
+const th = {
   common: {
     search: 'ค้นหา',
     cancel: 'ยกเลิก',
@@ -108,3 +108,5 @@ export default {
     more: 'เพิ่มเติม'
   }
 };
+
+export default th;

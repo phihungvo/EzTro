@@ -6,30 +6,21 @@ import { useAuth } from "./AuthContext";
 import Login from "~/pages/General/Login";
 import Register from "~/pages/General/Register";
 
-import AdminDashboard from "~/pages/Admin/HomeDashboard";
 import Building from "~/pages/Admin/Building";
 import Room from "~/pages/Admin/Room";
 import Tenant from "~/pages/Admin/Tenant";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import Contract from "~/pages/Admin/Contract";
 import Bill from "~/pages/Admin/Bill";
-import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
-import IncidentReport from "~/pages/Admin/IncidentReport";
-import UserManagement from "~/pages/Admin/User/UserManagement";
-import BoardingHouses from "~/pages/Admin/BoardingHouse";
 import UserLayout from "~/components/Layout/UserLayout";
 import UserDashboard from "~/pages/User/HomeDashboard";
-import Owner from "~/pages/Admin/Owner";
 import Revenue from "~/pages/Admin/Revenue";
-import RequestManagement from "~/pages/Admin/RequestManagement";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
 import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
-import ElectricWaterRecord from "~/pages/Admin/ElectricWaterRecord";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
-import React from "react";
 
 const AppRoutes = () => {
     const { user } = useAuth();

@@ -1,4 +1,4 @@
-export default {
+const en = {
   common: {
     search: 'Search',
     cancel: 'Cancel',
@@ -100,7 +100,7 @@ export default {
       japanese: 'Japanese Movies',
       thai: 'Thai Movies'
     },
-    copyright: 'Copyright Complaint',
+    copyrightComplaint: 'Copyright Complaint',
   },
   navigation: {
     movies: 'Movies',
@@ -109,3 +109,5 @@ export default {
     more: 'More'
   }
 };
+
+export default en;

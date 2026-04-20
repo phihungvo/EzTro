@@ -1,4 +1,4 @@
-export default {
+const vi = {
   common: {
     search: 'Tìm kiếm',
     cancel: 'Hủy',
@@ -108,3 +108,5 @@ export default {
     more: 'Xem Thêm'
   }
 };
+
+export default vi;

@@ -1,9 +1,7 @@
 import axios from 'axios';
 import API_ENDPOINTS from '../../../constants/endpoints';
-import { getToken } from '~/constants/token';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
-import { setAuthToken } from '~/service/api/api';
 import axiosInstance from '~/utils/axiosInstance';
 
 export const login = async (username, password) => {
