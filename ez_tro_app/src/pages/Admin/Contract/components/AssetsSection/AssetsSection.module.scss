@@ -1,0 +1,70 @@
+.tagGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  user-select: none;
+
+  &.default {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border-color: var(--border);
+
+    &:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  }
+
+  &.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+/* ── Upload zone ── */
+.uploadZone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 14px;
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+
+.uploadIcon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.uploadText {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.uploadSubtext {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}

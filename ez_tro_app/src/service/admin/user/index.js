@@ -3,6 +3,7 @@ import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
 import axiosInstance from '~/utils/axiosInstance';
+import API_ENDPOINTS from "~/constants/endpoints";
 
 export const login = async (username, password) => {
     try {
@@ -17,9 +18,24 @@ export const login = async (username, password) => {
     }
 };
 
+export const googleLogin = async (idToken) => {
+    try {
+        const response = await axiosInstance.post('/auth/google', {
+            idToken,
+        });
+        return response.data.result.token;
+    } catch (error) {
+        message.error(error.response?.data?.message || 'Đăng nhập Google thất bại');
+        throw error;
+    }
+};
+
 export const logout = async () => {
     try {
-        await apiClient.post('/auth/logout');
+        const token = localStorage.getItem('token');
+        if (token) {
+            await axiosInstance.post('/auth/logout', {token});
+        }
     } catch (error) {
         console.error('Logout error:', error);
     } finally {
@@ -30,8 +46,8 @@ export const logout = async () => {
 
 export const refreshToken = async () => {
     try {
-        const response = await apiClient.post('/auth/refresh');
-        return response.data.result.token;
+        const response = await axiosInstance.post('/auth/refresh');
+        return response.data?.result?.token;
     } catch (error) {
         message.error(error.response?.data?.message || 'Lỗi làm mới token');
         throw error;
@@ -40,12 +56,12 @@ export const refreshToken = async () => {
 
 export const register = async (username, email, password) => {
     try {
-        const response = await apiClient.post('/auth/register', {
-            username,
-            email,
-            password,
-        });
-        return response.data.token;
+        const payload =
+            typeof username === 'object' && username !== null
+                ? username
+                : {username, email, password};
+        const response = await axiosInstance.post('/auth/register', payload);
+        return response.data?.result?.token;
     } catch (error) {
         message.error(error.response?.data?.message || 'Đăng ký thất bại');
         throw error;
@@ -141,7 +157,7 @@ export const updateUser = async (userId, formData) => {
 
 export const deleteUser = async (userIds) => {
     try {
-        const response = await axios.delete(API_ENDPOINTS.USER.DELETE, {data: userIds});
+        const response = await apiClient.delete(API_ENDPOINTS.USER.DELETE, {data: userIds});
 
         if (response.data) {
             message.success('User deleted successfully!');

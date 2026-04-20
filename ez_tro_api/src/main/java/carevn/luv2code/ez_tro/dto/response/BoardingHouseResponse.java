@@ -18,6 +18,8 @@ public class BoardingHouseResponse {
 
     String description;
 
+    Integer ownerId;
+
     Integer totalBuildings;
 
     Integer totalRooms;

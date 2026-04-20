@@ -1,12 +1,13 @@
 // src/pages/General/Login/Login.jsx
 import React, { useState } from 'react';
 import { useAuth } from '~/routes/AuthContext';
-import { login as loginService } from '~/service/admin/user';
+import { googleLogin as googleLoginService, login as loginService } from '~/service/admin/user';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import classNames from 'classnames/bind';
 import styles from '~/pages/General/Login/Login.module.scss';
 import { useQueryClient } from '@tanstack/react-query';
+import { GoogleLogin } from '@react-oauth/google';
 
 const cx = classNames.bind(styles);
 
@@ -88,7 +89,14 @@ const Login = () => {
                     </button>
 
                     <p className={cx('signup-link')}>
-                        Chưa có tài khoản? <a href="#" onClick={(e) => e.preventDefault()}>Đăng ký ngay</a>
+                        Chưa có tài khoản?{' '}
+                        <button
+                            type="button"
+                            onClick={() => message.info('Tính năng đăng ký sẽ được bổ sung sau.')}
+                            className={cx('signup-btn')}
+                        >
+                            Đăng ký ngay
+                        </button>
                     </p>
                 </form>
 
@@ -97,10 +105,43 @@ const Login = () => {
                 </div>
 
                 <div className={cx('social-buttons')}>
-                    <button type="button">
-                        <span className={cx('icon')}>G</span>
-                        <span>Tiếp tục với Google</span>
-                    </button>
+                    <div className={cx('google-login')}>
+                        <GoogleLogin
+                            onSuccess={async (credentialResponse) => {
+                                try {
+                                    const idToken = credentialResponse?.credential;
+                                    if (!idToken) {
+                                        message.error('Không lấy được thông tin Google. Vui lòng thử lại.');
+                                        return;
+                                    }
+
+                                    setLoading(true);
+                                    const token = await googleLoginService(idToken);
+                                    if (!token) {
+                                        message.error('Đăng nhập Google thất bại.');
+                                        return;
+                                    }
+
+                                    login(token);
+                                    queryClient.invalidateQueries({ queryKey: ['owner-quota'] });
+                                    queryClient.refetchQueries({ queryKey: ['owner-quota'] });
+                                    message.success('Đăng nhập thành công!');
+                                    navigate('/dashboard');
+                                } catch (err) {
+                                    console.error(err);
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            onError={() => {
+                                message.error('Đăng nhập Google thất bại. Vui lòng thử lại.');
+                            }}
+                            theme="filled_black"
+                            size="large"
+                            text="continue_with"
+                            shape="rectangular"
+                        />
+                    </div>
                     <button type="button">
                         <span className={cx('icon')}>🍎</span>
                         <span>Tiếp tục với Apple</span>

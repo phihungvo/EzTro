@@ -12,6 +12,11 @@ import carevn.luv2code.ez_tro.security.AuthorizationService;
 import carevn.luv2code.ez_tro.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service hỗ trợ kiểm tra phân quyền theo ownership (owner của khu nhà/phòng).
+ *
+ * <p>Admin được xem như có toàn quyền và sẽ bypass một số check.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthorizationServiceImpl implements AuthorizationService {
@@ -19,6 +24,11 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Kiểm tra user hiện tại có phải owner của phòng hay không (admin bypass).
+     *
+     * @param roomId id phòng
+     */
     @Override
     public void checkOwnerOfRoom(Integer roomId) {
         if (SecurityUtils.isAdmin()) {
@@ -34,6 +44,13 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         }
     }
 
+    /**
+     * Kiểm tra user hiện tại có phải owner của khu nhà trọ hay không.
+     *
+     * <p>Hiện tại đang là placeholder (TODO).
+     *
+     * @param boardingHouseId id khu nhà trọ
+     */
     @Override
     public void checkOwnerOfBoardingHouse(Integer boardingHouseId) {
         // Tương tự, kiểm tra owner của BoardingHouse
@@ -41,7 +58,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     }
 
     /**
-     * Kiểm tra userId có phải OWNER không
+     * Kiểm tra một userId có role OWNER hay không.
+     *
+     * @param userId id user
+     * @return true nếu là owner
      */
     public boolean isUserAnOwner(Integer userId) {
         User user = userRepository.findById(userId).orElse(null);
@@ -52,6 +72,12 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         return user.getRoles().stream().anyMatch(role -> "OWNER".equals(role.getName()));
     }
 
+    /**
+     * Kiểm tra nhanh user hiện tại có phải owner của phòng hay không.
+     *
+     * @param roomId id phòng
+     * @return true nếu là owner (admin luôn true)
+     */
     @Override
     public boolean isOwnerOfRoom(Integer roomId) {
         try {

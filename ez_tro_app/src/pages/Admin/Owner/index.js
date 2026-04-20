@@ -408,6 +408,15 @@ function Owner() {
                     <SmartButton title="Thêm" icon={<PlusOutlined/>} type="primary" onClick={handleAddOwner}/>
                     <SmartButton title="Bộ lọc" icon={<FilterOutlined/>}/>
                     <SmartButton title="Excel" icon={<CloudUploadOutlined/>}/>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        showSizeChanger
+                        showQuickJumper
+                        pageSizeOptions={['6', '12', '24']}
+                        onChange={(page, pageSize) => handleGetOwners(page, pageSize)}
+                    />
                 </div>
             </div>
 
@@ -418,37 +427,22 @@ function Owner() {
                         columns={columns}
                         dataSources={ownerSource}
                         loading={loading}
-                        pagination={pagination}
+                        pagination={false}
                         onTableChange={handleTableChange}
                     />
                 ) : (
-                    <>
-                        <Row gutter={[16, 16]} className={cx('card-grid')}>
-                            {ownerSource.map((Owner) => (
-                                <Col xs={24} sm={24} md={12} lg={8} xl={6} key={Owner.id}>
-                                    {/*<OwnerCard*/}
-                                    {/*    Owner={Owner}*/}
-                                    {/*    onView={() => handleViewOwner(Owner)}*/}
-                                    {/*    onEdit={() => handleEditOwner(Owner)}*/}
-                                    {/*    onDelete={() => handleDeleteOwner(Owner)}*/}
-                                    {/*/>*/}
-                                </Col>
-                            ))}
-                        </Row>
-
-                        {/* ✅ Pagination riêng cho chế độ card */}
-                        <div className={cx('pagination-wrapper')}>
-                            <Pagination
-                                current={pagination.current}
-                                pageSize={pagination.pageSize}
-                                total={pagination.total}
-                                showSizeChanger
-                                showQuickJumper
-                                pageSizeOptions={['6', '12', '24']}
-                                onChange={(page, pageSize) => handleGetOwners(page, pageSize)}
-                            />
-                        </div>
-                    </>
+                    <Row gutter={[16, 16]} className={cx('card-grid')}>
+                        {ownerSource.map((Owner) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={Owner.id}>
+                                {/*<OwnerCard*/}
+                                {/*    Owner={Owner}*/}
+                                {/*    onView={() => handleViewOwner(Owner)}*/}
+                                {/*    onEdit={() => handleEditOwner(Owner)}*/}
+                                {/*    onDelete={() => handleDeleteOwner(Owner)}*/}
+                                {/*/>*/}
+                            </Col>
+                        ))}
+                    </Row>
                 )}
             </div>
 

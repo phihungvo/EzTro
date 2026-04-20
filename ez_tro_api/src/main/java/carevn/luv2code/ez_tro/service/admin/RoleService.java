@@ -9,6 +9,9 @@ import carevn.luv2code.ez_tro.dto.requests.AssignPermissionRequest;
 import carevn.luv2code.ez_tro.dto.requests.CreateRoleRequest;
 import carevn.luv2code.ez_tro.dto.requests.UpdateRoleRequest;
 
+/**
+ * Service contract quản lý Role và gán Permission cho Role.
+ */
 public interface RoleService {
     //    RoleDTO createRole(RoleDTO roleDTO);
 

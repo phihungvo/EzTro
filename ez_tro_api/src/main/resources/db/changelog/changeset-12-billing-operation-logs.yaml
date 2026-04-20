@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 12-billing-operation-logs-01
+      author: codex
+      changes:
+        - createTable:
+            tableName: billing_operation_logs
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: INT
+              - column:
+                  name: contract_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operation_type
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_id
+                  type: VARCHAR(120)
+              - column:
+                  name: actor_id
+                  type: INT
+              - column:
+                  name: before_state_json
+                  type: LONGTEXT
+              - column:
+                  name: after_state_json
+                  type: LONGTEXT
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: billing_operation_logs
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_billing_operation_logs_organization
+        - addForeignKeyConstraint:
+            baseTableName: billing_operation_logs
+            baseColumnNames: contract_id
+            referencedTableName: contracts
+            referencedColumnNames: id
+            constraintName: fk_billing_operation_logs_contract
+        - addForeignKeyConstraint:
+            baseTableName: billing_operation_logs
+            baseColumnNames: actor_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_billing_operation_logs_actor
+        - createIndex:
+            tableName: billing_operation_logs
+            indexName: idx_billing_operation_logs_contract
+            columns:
+              - column:
+                  name: contract_id
+        - createIndex:
+            tableName: billing_operation_logs
+            indexName: idx_billing_operation_logs_target
+            columns:
+              - column:
+                  name: target_type
+              - column:
+                  name: target_id

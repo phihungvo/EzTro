@@ -1,35 +1,35 @@
 .card {
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 32px 24px;
+  background: #161b26;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 26px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    border-color: #7c3aed;
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
-    transform: translateY(-4px);
+    border-color: rgba(79, 156, 249, 0.28);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    transform: translateY(-2px);
 
     .icon {
-      transform: scale(1.1);
+      transform: scale(1.06);
     }
   }
 
   &:active {
-    transform: translateY(-2px);
+    transform: translateY(0);
   }
 
   .icon {
-    font-size: 48px;
+    font-size: 42px;
     margin-bottom: 12px;
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
   }
 
   .title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1f2937;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e8eaf0;
   }
 }

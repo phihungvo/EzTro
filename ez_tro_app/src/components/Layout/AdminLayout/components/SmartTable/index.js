@@ -1,5 +1,5 @@
 import React from 'react';
-import {Table as AntTable} from 'antd';
+import {Empty, Table as AntTable} from 'antd';
 import classNames from 'classnames/bind';
 import styles from './SmartTable.module.scss';
 
@@ -27,7 +27,9 @@ function SmartTable({
                         onTableChange,
                         selectedRowKeys = [],
                         onSelectChange,
+                        emptyDescription = 'Không có dữ liệu',
                     }) {
+    const normalizedDataSources = Array.isArray(dataSources) ? dataSources : [];
 
     const rowSelection = onSelectChange
         ? {
@@ -49,18 +51,30 @@ function SmartTable({
                 rowClassName={() => cx('fixed-row-height')}
                 className={styles.customTable}
                 columns={columns}
-                dataSource={dataSources}
+                dataSource={normalizedDataSources}
                 loading={loading}
                 rowKey="id"
                 size="small"
                 rowSelection={rowSelection}
-                pagination={{
-                    ...pagination,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['5', '10', '20', '50'],
-                    showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} của ${total} bản ghi`,
+                locale={{
+                    emptyText: (
+                        <Empty
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description={emptyDescription}
+                        />
+                    ),
                 }}
+                pagination={
+                    pagination
+                        ? {
+                            ...pagination,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['5', '10', '20', '50'],
+                            showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} của ${total} bản ghi`,
+                        }
+                        : false
+                }
                 onChange={onTableChange}
                 scroll={{x: 'max-content'}}
             />

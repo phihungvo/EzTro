@@ -9,9 +9,36 @@ export const createTenant = async (formData) => {
             API_ENDPOINTS.TENANTS.CREATE,
             formData,
         );
-        return response.data;
+        return response.data.result;
     } catch (error) {
         console.error('Error when creating tenant: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi tạo người thuê');
+        throw error;
+    }
+};
+
+export const updateTenant = async (tenantId, formData) => {
+    try {
+        const response = await apiClient.put(
+            API_ENDPOINTS.TENANTS.UPDATE(tenantId),
+            formData,
+        );
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when updating tenant: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi cập nhật người thuê');
+        throw error;
+    }
+};
+
+export const deleteTenant = async (tenantId) => {
+    try {
+        const response = await apiClient.delete(API_ENDPOINTS.TENANTS.DELETE(tenantId));
+        return response.data.result;
+    } catch (error) {
+        console.error('Error when deleting tenant: ', error);
+        message.error(error.response?.data?.message || 'Lỗi khi xóa người thuê');
+        throw error;
     }
 };
 
@@ -24,8 +51,8 @@ export const getAllTenants = async ({ page, pageSize }) => {
         return response.data;
     } catch (error) {
         console.log('Error when fetching all tenants ! Error: ', error);
-        message.error('Error get all tenants: ');
-        return null;
+        message.error(error.response?.data?.message || 'Lỗi khi tải danh sách người thuê');
+        throw error;
     }
 };
 
@@ -57,8 +84,8 @@ export const filterTenants = async ({ startDate, endDate, gender, occupation, ha
         return response.data;
     } catch (error) {
         console.error('Error when filtering tenants: ', error);
-        message.error('Lỗi khi lọc người thuê');
-        return null;
+        message.error(error.response?.data?.message || 'Lỗi khi lọc người thuê');
+        throw error;
     }
 };
 

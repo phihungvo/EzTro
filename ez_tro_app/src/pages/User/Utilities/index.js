@@ -1,76 +1,138 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useMemo, useState} from "react";
+import {Empty, Spin, message} from "antd";
 import UtilitiesStats from "~/components/Layout/UserLayout/components/UtilitiesStats";
 import UtilitiesTable from "~/components/Layout/UserLayout/components/UtilitiesTable";
 import styles from "./Utilities.module.scss";
+import {getMyMeterReadingsCurrentPeriod, getMyMeterReadingsHistory} from "~/service/user/utilities";
 
 const Utilities = () => {
-    const [loading, setLoading] = useState(false);
-
-    // Mock data - replace with API call
-    const electricStats = {
-        usage: 20,
-        cost: 70000
-    };
-
-    const waterStats = {
-        usage: 5,
-        cost: 75000
-    };
-
-    const utilitiesData = [
-        {
-            type: 'electric',
-            month: '11/2024',
-            oldReading: 100,
-            newReading: 120,
-            usage: 20,
-            unitPrice: 3500,
-            total: 70000
-        },
-        {
-            type: 'water',
-            month: '11/2024',
-            oldReading: 50,
-            newReading: 55,
-            usage: 5,
-            unitPrice: 15000,
-            total: 75000
-        },
-        {
-            type: 'electric',
-            month: '10/2024',
-            oldReading: 80,
-            newReading: 100,
-            usage: 20,
-            unitPrice: 3500,
-            total: 70000
-        },
-        {
-            type: 'water',
-            month: '10/2024',
-            oldReading: 45,
-            newReading: 50,
-            usage: 5,
-            unitPrice: 15000,
-            total: 75000
-        }
-    ];
+    const [loading, setLoading] = useState(true);
+    const [currentReadings, setCurrentReadings] = useState([]);
+    const [historyReadings, setHistoryReadings] = useState([]);
 
     useEffect(() => {
-        // Load data from API
-        // fetchUtilitiesData();
+        let active = true;
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [current, history] = await Promise.all([
+                    getMyMeterReadingsCurrentPeriod(),
+                    getMyMeterReadingsHistory(24),
+                ]);
+                if (!active) return;
+                setCurrentReadings(Array.isArray(current) ? current : []);
+                setHistoryReadings(Array.isArray(history) ? history : []);
+            } catch (error) {
+                console.error("Failed to load utilities", error);
+                message.error("Không thể tải dữ liệu điện/nước");
+                if (active) {
+                    setCurrentReadings([]);
+                    setHistoryReadings([]);
+                }
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        fetchData();
+        return () => {
+            active = false;
+        };
     }, []);
+
+    const isElectricReading = (reading) => String(reading?.utilityUnit || "").toLowerCase().includes("kwh");
+    const isWaterReading = (reading) => String(reading?.utilityUnit || "").includes("m³")
+        || String(reading?.utilityUnit || "").toLowerCase().includes("m3");
+
+    const electricStats = useMemo(() => {
+        const readings = currentReadings.filter(isElectricReading);
+        const usage = readings.reduce((sum, r) => sum + Number(r?.consumption || 0), 0);
+        const cost = readings.reduce((sum, r) => sum + Number(r?.amount || 0), 0);
+        return {usage, cost};
+    }, [currentReadings]);
+
+    const waterStats = useMemo(() => {
+        const readings = currentReadings.filter(isWaterReading);
+        const usage = readings.reduce((sum, r) => sum + Number(r?.consumption || 0), 0);
+        const cost = readings.reduce((sum, r) => sum + Number(r?.amount || 0), 0);
+        return {usage, cost};
+    }, [currentReadings]);
+
+    const utilitiesData = useMemo(() => {
+        const filtered = historyReadings
+            .filter((reading) => isElectricReading(reading) || isWaterReading(reading))
+            .slice()
+            .sort((a, b) => {
+                const byYear = Number(b?.periodYear || 0) - Number(a?.periodYear || 0);
+                if (byYear !== 0) return byYear;
+                const byMonth = Number(b?.periodMonth || 0) - Number(a?.periodMonth || 0);
+                if (byMonth !== 0) return byMonth;
+                return Number(b?.id || 0) - Number(a?.id || 0);
+            });
+
+        return filtered.map((reading) => {
+            const electric = isElectricReading(reading);
+            const month = reading?.periodMonth && reading?.periodYear
+                ? `${String(reading.periodMonth).padStart(2, "0")}/${reading.periodYear}`
+                : "—";
+            return {
+                type: electric ? "electric" : "water",
+                month,
+                oldReading: Number(reading?.previousIndex || 0),
+                newReading: Number(reading?.currentIndex || 0),
+                usage: Number(reading?.consumption || 0),
+                unitPrice: Number(reading?.unitPrice || 0),
+                total: Number(reading?.amount || 0),
+            };
+        });
+    }, [historyReadings]);
+
+    const utilitiesSummary = useMemo(() => {
+        const totalElectric = electricStats.cost;
+        const totalWater = waterStats.cost;
+        const total = totalElectric + totalWater;
+        return [
+            {label: 'Chi phí điện', value: totalElectric.toLocaleString('vi-VN') + ' đ'},
+            {label: 'Chi phí nước', value: totalWater.toLocaleString('vi-VN') + ' đ'},
+            {label: 'Tổng phụ phí', value: total.toLocaleString('vi-VN') + ' đ'},
+        ];
+    }, [electricStats.cost, waterStats.cost]);
+
+    if (loading) {
+        return (
+            <div className={styles.utilities}>
+                <Spin size="large"/>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.utilities}>
-            {/* Stats Section */}
-            <UtilitiesStats
-                electricStats={electricStats}
-                waterStats={waterStats}
-            />
+            <section className={styles.hero}>
+                <div>
+                    <div className={styles.heroTitle}>Điện nước & phụ phí</div>
+                    <div className={styles.heroSub}>
+                        Theo dõi tiêu thụ hiện tại, lịch sử và chi phí trong giao diện tối đồng bộ.
+                    </div>
+                </div>
+                <div className={styles.summaryChips}>
+                    {utilitiesSummary.map((item) => (
+                        <div key={item.label} className={styles.summaryChip}>
+                            <div className={styles.summaryLabel}>{item.label}</div>
+                            <div className={styles.summaryValue}>{item.value}</div>
+                        </div>
+                    ))}
+                </div>
+            </section>
 
-            {/* Table Section */}
-            <UtilitiesTable data={utilitiesData} />
+            <div className={styles.contentGrid}>
+                <UtilitiesStats
+                    electricStats={electricStats}
+                    waterStats={waterStats}
+                />
+
+                {utilitiesData.length > 0 ? <UtilitiesTable data={utilitiesData} /> : <Empty description="Chưa có dữ liệu điện/nước" />}
+            </div>
         </div>
     );
 };

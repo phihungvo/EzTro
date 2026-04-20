@@ -1,0 +1,11 @@
+local wezterm = require 'wezterm' local config = wezterm.config_builder() -- font hacker style config.font = wezterm.font("JetBrains Mono") config.font_size = 14 -- theme config.color_scheme = "Catppuccin Mocha" -- nền hơi trong suốt 
+config.window_background_opacity = 0.92 -- cursor hacker style config.default_cursor_style = "BlinkingBar" config.cursor_blink_rate = 500 -- padding config.window_padding = {
+  left = 10, right = 10, top = 10, bottom = 10, } -- hide title bar config.window_decorations = "RESIZE"
+return config
+
+
+
+
+
+
+

@@ -6,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import carevn.luv2code.ez_tro.dto.requests.OwnerRequest;
 import carevn.luv2code.ez_tro.dto.response.OwnerResponse;
 
+/**
+ * Service contract quản lý owner (chủ trọ).
+ */
 public interface OwnerService {
     Page<OwnerResponse> getAll(Pageable pageable);
 

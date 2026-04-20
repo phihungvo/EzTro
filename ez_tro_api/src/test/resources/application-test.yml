@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:ez_tro_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  task:
+    scheduling:
+      enabled: false
+  quartz:
+    auto-startup: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration
+  mail:
+    host: localhost
+    port: 1025
+    username: test
+    password: test
+    properties:
+      mail:
+        debug: false
+
+jwt:
+  secret: test-secret-key
+  expiration: 3600000
+
+minio:
+  url: http://localhost:9000
+  access-key: test
+  secret-key: test
+  bucket: test
+  base-path: /uploads
+
+app:
+  jobs:
+    enabled: false
+    token-cleanup:
+      enabled: false

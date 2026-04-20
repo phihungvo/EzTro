@@ -1,114 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, {useMemo} from 'react';
 import classNames from 'classnames/bind';
-import { useNavigate } from 'react-router-dom';
+import {AppstoreOutlined, CloudUploadOutlined, DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, TableOutlined} from '@ant-design/icons';
+import {Card, Col, ConfigProvider, Empty, Row, Segmented, Space, Spin, message} from 'antd';
 import styles from '~/pages/Admin/Tenant/Tenant.module.scss';
 import SmartTable from '~/components/Layout/AdminLayout/components/SmartTable';
-import {
-    SearchOutlined,
-    PlusOutlined,
-    FilterOutlined,
-    CloudUploadOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    EyeOutlined,
-    CloseCircleOutlined,
-    TableOutlined,
-    AppstoreOutlined,
-} from '@ant-design/icons';
-import SmartInput from '~/components/Layout/AdminLayout/components/SmartInput';
 import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton';
 import PopupModal from '~/components/Layout/AdminLayout/components/PopupModal';
-import {
-    Form,
-    message,
-    Row,
-    Col,
-    Pagination,
-    Segmented,
-    Tag,
-    DatePicker,
-    Card,
-    Space,
-    Empty,
-    Select,
-    Spin,
-    Statistic,
-    ConfigProvider,
-} from 'antd';
-import FilterComponent from "~/components/Layout/AdminLayout/components/FilterComponent";
-import {
-    getAllTenants,
-    filterTenants,
-    createTenant,
-    updateTenant,
-    deleteTenant,
-} from '~/service/admin/tenant';
-import useDebounce from '~/hooks/useDebounce';
-import { disablePastDates } from "~/utils/dateUtils";
-import {useOwnerQuota} from "~/hooks/useOwnerQuota";
-import {useInvalidateQuota} from "~/hooks/useInvalidateQuota";
-import {useAuth} from "~/routes/AuthContext";
+import AppPagination from '~/components/Layout/AdminLayout/components/AppPagination';
+import FilterComponent from '~/components/Layout/AdminLayout/components/FilterComponent';
+import {useTenantPage} from '~/pages/Admin/Tenant/useTenantPage';
 
 const cx = classNames.bind(styles);
-const { RangePicker } = DatePicker;
 
 function Tenant() {
-    const [tenantSource, setTenantSource] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
-    const [modalMode, setModalMode] = useState('create');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTenant, setSelectedTenant] = useState(null);
-    const [viewMode, setViewMode] = useState('table');
-    const [form] = Form.useForm();
-    const navigate = useNavigate();
+    const {
+        items,
+        loading,
+        deleting,
+        pagination,
+        total,
+        viewMode,
+        modal,
+        searchTerm,
+        dateRange,
+        genderFilter,
+        occupationFilter,
+        hasActiveContractFilter,
+        GENDER_OPTIONS,
+        OCCUPATION_OPTIONS,
+        addButtonText,
+        isAddDisabled,
+        getGenderTag,
+        handleResetFilters,
+        handleAddTenant,
+        handleViewTenant,
+        handleEditTenant,
+        handleOpenDelete,
+        handleCloseModal,
+        submitDelete,
+        handleTableChange,
+        handleViewModeChange,
+        setSearchTerm,
+        setDateRange,
+        setGenderFilter,
+        setOccupationFilter,
+        setHasActiveContractFilter,
+    } = useTenantPage();
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
-    const [dateRange, setDateRange] = useState(null);
-    const [genderFilter, setGenderFilter] = useState(null);
-    const [occupationFilter, setOccupationFilter] = useState(null);
-    const [hasActiveContractFilter, setHasActiveContractFilter] = useState(null);
-
-    const {data: quota} = useOwnerQuota();
-    const invalidateQuota = useInvalidateQuota();
-
-    const { user } = useAuth();
-    const isOwner = user?.isOwner || false;
-
-    // Tính current/max cho boarding house
-    const current = quota?.currentTenants ?? 0;
-    const max = quota?.maxTenants ?? 0;
-    const addButtonText = isOwner ? `Thêm (${current}/${max})` : 'Thêm';
-    const isAddDisabled = isOwner && current >= max;
-
-    const genderStyles = {
-        MALE: { color: 'blue', label: 'Nam' },
-        FEMALE: { color: 'magenta', label: 'Nữ' },
-        OTHER: { color: 'purple', label: 'Khác' },
-    };
-
-    const getGenderTag = (gender) => {
-        if (!gender) return <Tag color="default">N/A</Tag>;
-        const { color, label } = genderStyles[gender] || { color: 'default', label: gender };
-        return <Tag color={color}>{label}</Tag>;
-    };
-
-    const handleResetFilters = () => {
-        setSearchTerm('');
-        setDateRange(null);
-        setGenderFilter(null);
-        setOccupationFilter(null);
-        setHasActiveContractFilter(null);
-        setPagination(prev => ({...prev, current: 1}));
-        message.success('Đã reset bộ lọc!');
-    };
-
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'Họ tên người thuê',
             dataIndex: 'fullName',
@@ -144,8 +83,7 @@ function Tenant() {
             key: 'dateOfBirth',
             width: 150,
             align: 'center',
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
+            render: (date) => (date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A'),
         },
         {
             title: 'Giới tính',
@@ -175,8 +113,7 @@ function Tenant() {
             key: 'createdAt',
             align: 'center',
             width: 200,
-            render: (date) =>
-                date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
+            render: (date) => (date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A'),
         },
         {
             title: 'Thao tác',
@@ -184,299 +121,29 @@ function Tenant() {
             width: 200,
             align: 'center',
             render: (_, record) => (
-                <>
+                <Space>
                     <SmartButton
                         type="default"
                         icon={<EyeOutlined />}
                         buttonWidth={50}
-                        onClick={() => navigate(`/admin/tenants/${record.id}`)}
+                        onClick={() => handleViewTenant(record)}
                     />
                     <SmartButton
                         type="primary"
                         icon={<EditOutlined />}
                         buttonWidth={50}
                         onClick={() => handleEditTenant(record)}
-                        style={{ marginLeft: '8px' }}
                     />
                     <SmartButton
                         type="danger"
                         icon={<DeleteOutlined />}
                         buttonWidth={50}
-                        onClick={() => handleDeleteTenant(record)}
-                        style={{ marginLeft: '8px' }}
+                        onClick={() => handleOpenDelete(record)}
                     />
-                </>
+                </Space>
             ),
         },
-    ];
-
-    const tenantModalFields = [
-        {
-            label: 'Full Name',
-            name: 'fullName',
-            type: 'text',
-            rules: [{ required: true, message: 'Full Name bắt buộc!' }],
-        },
-        {
-            label: 'Phone Number',
-            name: 'phoneNumber',
-            type: 'number',
-        },
-        {
-            label: 'Email',
-            name: 'email',
-            type: 'text',
-            rules: [{ required: true, message: 'Email bắt buộc!' }],
-        },
-        {
-            label: 'Password',
-            name: 'password',
-            type: 'number',
-        },
-        {
-            label: 'Số căn cước',
-            name: 'identityNumber',
-            type: 'number',
-            rules: [{ required: true, message: 'Số căn cước bắt buộc!' }],
-        },
-        // {
-        //     label: 'Ngày cấp',
-        //     name: 'issueDate',
-        //     type: 'date',
-        //     format: 'DD/MM/YYYY',
-        //     placeholder: 'Chọn ngày cấp',
-        //     disabledDate: disablePastDates,
-        // },
-        // {
-        //     label: 'Nơi cấp',
-        //     name: 'issuePlace',
-        //     type: 'text',
-        // },
-        {
-            label: 'Ngày sinh',
-            name: 'dateOfBirth',
-            type: 'date',
-            format: 'DD/MM/YYYY',
-            placeholder: 'Chọn ngày sinh',
-            disabledDate: disablePastDates,
-        },
-        {
-            label: 'Giới tính',
-            name: 'gender',
-            type: 'select',
-            options: [
-                { label: 'Nam', value: 'MALE' },
-                { label: 'Nữ', value: 'FEMALE' },
-                { label: 'Khác', value: 'OTHER' },
-            ],
-            rules: [{ required: true, message: 'Giới tính bắt buộc!' }],
-        },
-        {
-            label: 'Nghề nghiệp',
-            name: 'occupation',
-            type: 'text',
-        },
-        // {
-        //     label: 'Địa chỉ thường trú',
-        //     name: 'permanentAddress',
-        //     type: 'textarea',
-        // },
-        // {
-        //     label: 'Thông tin xe',
-        //     name: 'vehicleInfo',
-        //     type: 'text',
-        // },
-        // {
-        //     label: 'Người liên hệ khẩn cấp',
-        //     name: 'emergencyContact',
-        //     type: 'text',
-        // },
-        // {
-        //     label: 'SĐT liên hệ khẩn cấp',
-        //     name: 'emergencyPhone',
-        //     type: 'text',
-        // },
-        {
-            label: 'Ghi chú',
-            name: 'note',
-            type: 'textarea',
-        },
-    ];
-
-    const handleFilterTenants = async () => {
-        setLoading(true);
-        try {
-            const params = {
-                page: pagination.current - 1,
-                pageSize: pagination.pageSize,
-            };
-
-            if (debouncedSearchTerm) {
-                params.search = debouncedSearchTerm;
-            }
-
-            if (dateRange && dateRange.length === 2) {
-                params.startDate = dateRange[0].format('YYYY-MM-DD');
-                params.endDate = dateRange[1].format('YYYY-MM-DD');
-            }
-
-            if (genderFilter) {
-                params.gender = genderFilter;
-            }
-
-            if (occupationFilter) {
-                params.occupation = occupationFilter;
-            }
-
-            if (hasActiveContractFilter) {
-                params.hasActiveContract = hasActiveContractFilter === 'YES';
-            }
-
-            const response = await filterTenants(params);
-
-            if (response && Array.isArray(response.content)) {
-                setTenantSource(response.content);
-                setPagination({
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: response.totalElements,
-                });
-            } else {
-                setTenantSource([]);
-            }
-        } catch (error) {
-            console.error('Error filtering tenants:', error);
-            message.error(`Lỗi khi lọc người thuê: ${error.response?.data?.message || error.message}`);
-            setTenantSource([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        setPagination(prev => ({...prev, current: 1}));
-        handleFilterTenants();
-    }, [debouncedSearchTerm, dateRange, genderFilter, occupationFilter, hasActiveContractFilter]);
-
-    useEffect(() => {
-        handleFilterTenants();
-    }, [pagination.current, pagination.pageSize]);
-
-    useEffect(() => {
-        handleFilterTenants();
-    }, []);
-
-    const handleAddTenant = () => {
-        if (isAddDisabled) {
-            message.warning('Bạn đã đạt giới hạn số người thuê theo gói hiện tại. Vui lòng nâng cấp gói!');
-            return;
-        }
-        setModalMode('create');
-        setSelectedTenant(null);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleCallCreateTenant = async (formData) => {
-        try {
-            await createTenant(formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            // message.success('Tạo người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi tạo người thuê: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleEditTenant = (record) => {
-        setSelectedTenant(record);
-        setModalMode('edit');
-        const formValues = {
-            ...record,
-            dateOfBirth: record.dateOfBirth ? new Date(record.dateOfBirth) : null,
-            // issueDate: record.issueDate ? new Date(record.issueDate) : null,
-        };
-        form.setFieldsValue(formValues);
-        setIsModalOpen(true);
-    };
-
-    const handleCallUpdateTenant = async (formData) => {
-        try {
-            // await updateTenant(selectedTenant.id, formData);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            message.success('Cập nhật người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi cập nhật người thuê: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleDeleteTenant = (record) => {
-        setModalMode('delete');
-        setSelectedTenant(record);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
-
-    const handleCallDeleteTenant = async () => {
-        try {
-            // await deleteTenant(selectedTenant.id);
-            handleFilterTenants();
-            setIsModalOpen(false);
-            message.success('Xóa người thuê thành công');
-        } catch (error) {
-            message.error(`Lỗi khi xóa người thuê: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleFormSubmit = (formData) => {
-        const submitData = {
-            ...formData,
-            dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
-        };
-
-        if (modalMode === 'create') {
-            handleCallCreateTenant(submitData);
-        } else if (modalMode === 'edit') {
-            handleCallUpdateTenant(submitData);
-        } else if (modalMode === 'delete') {
-            handleCallDeleteTenant();
-        }
-        setIsModalOpen(false);
-    };
-
-    const handleTableChange = (pagination) => {
-        setPagination(prev => ({
-            ...prev,
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-        }));
-    };
-
-    const getModalTitle = () => {
-        switch (modalMode) {
-            case 'create':
-                return 'Thêm người thuê mới';
-            case 'edit':
-                return 'Chỉnh sửa người thuê';
-            case 'delete':
-                return 'Xóa người thuê';
-            default:
-                return 'Chi tiết người thuê';
-        }
-    };
-
-    const handleViewModeChange = (value) => {
-        setViewMode(value);
-    };
-
-    const handlePaginationChange = (page, pageSize) => {
-        setPagination(prev => ({
-            ...prev,
-            current: page,
-            pageSize,
-        }));
-    };
+    ], [getGenderTag, handleEditTenant, handleOpenDelete, handleViewTenant]);
 
     return (
         <ConfigProvider>
@@ -503,11 +170,7 @@ function Tenant() {
                             placeholder: 'Chọn giới tính',
                             value: genderFilter,
                             onChange: setGenderFilter,
-                            options: [
-                                { value: 'MALE', label: 'Nam' },
-                                { value: 'FEMALE', label: 'Nữ' },
-                                { value: 'OTHER', label: 'Khác' },
-                            ],
+                            options: GENDER_OPTIONS,
                             allowClear: true,
                         },
                         {
@@ -516,12 +179,7 @@ function Tenant() {
                             placeholder: 'Chọn nghề nghiệp',
                             value: occupationFilter,
                             onChange: setOccupationFilter,
-                            options: [
-                                { value: 'STUDENT', label: 'Sinh viên' },
-                                { value: 'EMPLOYEE', label: 'Nhân viên' },
-                                { value: 'FREELANCER', label: 'Freelancer' },
-                                { value: 'OTHER', label: 'Khác' },
-                            ],
+                            options: OCCUPATION_OPTIONS,
                             allowClear: true,
                         },
                         {
@@ -531,8 +189,8 @@ function Tenant() {
                             value: hasActiveContractFilter,
                             onChange: setHasActiveContractFilter,
                             options: [
-                                { value: 'YES', label: 'Có hợp đồng hiệu lực' },
-                                { value: 'NO', label: 'Không có hợp đồng hiệu lực' },
+                                {value: 'YES', label: 'Có hợp đồng hiệu lực'},
+                                {value: 'NO', label: 'Không có hợp đồng hiệu lực'},
                             ],
                             allowClear: true,
                         },
@@ -541,31 +199,14 @@ function Tenant() {
                     gridTemplate="230px 200px 1fr 1fr 1fr auto"
                 />
 
-                {/* Nội dung */}
                 <div className={cx('tenant-container')}>
                     <div className={cx('pagination-wrapper')}>
                         <div className={cx('left-actions')}>
                             <div className={cx('view-mode-toggle')}>
                                 <Segmented
                                     options={[
-                                        {
-                                            label: (
-                                                <>
-                                                    <TableOutlined />
-                                                    Bảng
-                                                </>
-                                            ),
-                                            value: 'table',
-                                        },
-                                        {
-                                            label: (
-                                                <>
-                                                    <AppstoreOutlined />
-                                                    Thẻ
-                                                </>
-                                            ),
-                                            value: 'card',
-                                        },
+                                        {label: (<><TableOutlined /> Bảng</>), value: 'table'},
+                                        {label: (<><AppstoreOutlined /> Thẻ</>), value: 'card'},
                                     ]}
                                     value={viewMode}
                                     onChange={handleViewModeChange}
@@ -585,37 +226,36 @@ function Tenant() {
                                 onClick={() => message.info('Tính năng xuất Excel đang phát triển')}
                             />
                         </div>
-                        <Pagination
+                        <AppPagination
                             current={pagination.current}
                             pageSize={pagination.pageSize}
-                            total={pagination.total}
-                            onChange={handlePaginationChange}
-                            showSizeChanger
-                            showTotal={(total) => `Tổng ${total} người thuê`}
+                            total={total}
+                            onChange={handleTableChange}
+                            showTotal={(count, range) => `Đang xem ${range[0]}-${range[1]} trong ${count} người thuê`}
                             pageSizeOptions={['10', '20', '30']}
                         />
                     </div>
 
-                    {viewMode === 'table' ? (
-                        <SmartTable
-                            columns={columns}
-                            dataSources={tenantSource}
-                            loading={loading}
-                            pagination={false}
-                            onTableChange={handleTableChange}
-                        />
-                    ) : (
-                        <>
-                            <Spin spinning={loading}>
-                                {tenantSource.length === 0 ? (
+                    <Spin spinning={loading}>
+                        {viewMode === 'table' ? (
+                            <SmartTable
+                                columns={columns}
+                                dataSources={items}
+                                loading={loading}
+                                pagination={false}
+                                onTableChange={handleTableChange}
+                            />
+                        ) : (
+                            <>
+                                {items.length === 0 ? (
                                     <Empty description="Không có người thuê nào phù hợp với bộ lọc" />
                                 ) : (
                                     <Row gutter={[16, 16]} className={cx('card-grid')}>
-                                        {tenantSource.map((tenant) => (
+                                        {items.map((tenant) => (
                                             <Col xs={24} sm={24} md={12} lg={8} xl={6} key={tenant.id}>
                                                 <Card
                                                     title={tenant.fullName}
-                                                    extra={
+                                                    extra={(
                                                         <Space>
                                                             <SmartButton
                                                                 type="primary"
@@ -625,10 +265,10 @@ function Tenant() {
                                                             <SmartButton
                                                                 type="danger"
                                                                 icon={<DeleteOutlined />}
-                                                                onClick={() => handleDeleteTenant(tenant)}
+                                                                onClick={() => handleOpenDelete(tenant)}
                                                             />
                                                         </Space>
-                                                    }
+                                                    )}
                                                 >
                                                     <p><strong>Email:</strong> {tenant.email}</p>
                                                     <p><strong>SĐT:</strong> {tenant.phoneNumber}</p>
@@ -640,60 +280,28 @@ function Tenant() {
                                         ))}
                                     </Row>
                                 )}
-                            </Spin>
-                            {/* Pagination bottom for card view */}
-                            <div className={cx('pagination-wrapper')}>
-                                <div className={cx('left-actions')}>
-                                    <div className={cx('view-mode-toggle')}>
-                                        <Segmented
-                                            options={[
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <TableOutlined />
-                                                            Bảng
-                                                        </>
-                                                    ),
-                                                    value: 'table',
-                                                },
-                                                {
-                                                    label: (
-                                                        <>
-                                                            <AppstoreOutlined />
-                                                            Thẻ
-                                                        </>
-                                                    ),
-                                                    value: 'card',
-                                                },
-                                            ]}
-                                            value={viewMode}
-                                            onChange={handleViewModeChange}
-                                        />
-                                    </div>
-                                </div>
-                                <Pagination
-                                    current={pagination.current}
-                                    pageSize={pagination.pageSize}
-                                    total={pagination.total}
-                                    onChange={handlePaginationChange}
-                                    showSizeChanger
-                                    showQuickJumper
-                                    pageSizeOptions={['10', '20', '30']}
-                                />
-                            </div>
-                        </>
-                    )}
+                            </>
+                        )}
+                    </Spin>
                 </div>
 
                 <PopupModal
-                    isModalOpen={isModalOpen}
-                    setIsModalOpen={setIsModalOpen}
-                    title={getModalTitle()}
-                    fields={modalMode === 'delete' ? [] : tenantModalFields}
-                    onSubmit={handleFormSubmit}
-                    initialValues={selectedTenant}
-                    isDeleteMode={modalMode === 'delete'}
-                    formInstance={form}
+                    isModalOpen={modal.open}
+                    setIsModalOpen={handleCloseModal}
+                    title="Xóa người thuê"
+                    fields={[]}
+                    onSubmit={submitDelete}
+                    initialValues={modal.selected}
+                    isDeleteMode
+                    deleteConfirmLabel={deleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                    deleteMessage={(
+                        <>
+                            <p>
+                                Bạn có chắc chắn muốn xóa người thuê <b>{modal.selected?.fullName}</b>?
+                            </p>
+                            <p>Hành động này sẽ xóa dữ liệu người thuê khỏi hệ thống.</p>
+                        </>
+                    )}
                 />
             </div>
         </ConfigProvider>

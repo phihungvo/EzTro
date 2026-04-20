@@ -1,6 +1,7 @@
 package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -32,5 +33,5 @@ public class UtilityRequest {
 
     Boolean isActive;
 
-    Integer boardingHouseId;
+    List<Integer> boardingHouseIds;
 }

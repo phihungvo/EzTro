@@ -1,5 +1,4 @@
 import React, {useState, useEffect} from 'react';
-import moment from 'moment';
 import TextField from '../TextField';
 import PasswordField from '../PasswordField';
 import DateField from '../DateField';
@@ -97,6 +96,13 @@ function PopupModal({
     }, [fields, dataSources]);
 
     if (isDeleteMode) {
+        const targetName =
+            initialValues?.name ||
+            initialValues?.title ||
+            initialValues?.boardingHouseName ||
+            initialValues?.roomNumber ||
+            initialValues?.username;
+
         return (
             <Modal
                 title={title}
@@ -115,7 +121,18 @@ function PopupModal({
                             key="submit"
                             type="primary"
                             danger
-                            onClick={() => onSubmit(initialValues)}
+                            loading={isSubmitting}
+                            onClick={async () => {
+                                try {
+                                    setIsSubmitting(true);
+                                    await onSubmit(initialValues);
+                                    setIsModalOpen(false);
+                                } catch (error) {
+                                    message.error(error || 'Xóa thất bại. Vui lòng thử lại.');
+                                } finally {
+                                    setIsSubmitting(false);
+                                }
+                            }}
                         >
                             {deleteConfirmLabel}
                         </Button>,
@@ -124,11 +141,11 @@ function PopupModal({
             >
                 {deleteMessage || (
                     <>
-                        {initialValues?.title && (
+                        {targetName && (
                             <p>
                                 Bạn có chắc chắn muốn xóa{' '}
                                 <b>
-                                    <i>{initialValues.title}</i>
+                                    <i>{targetName}</i>
                                 </b>{' '}
                                 ?
                             </p>
@@ -154,18 +171,14 @@ function PopupModal({
 
             setIsModalOpen(false);
         } catch (error) {
-            console.log('Validation Failed: ', error);
-            message.error('Vui lòng kiểm tra lại thông tin nhập liệu');
+            if (error?.errorFields) {
+                message.error('Vui lòng kiểm tra lại thông tin nhập liệu');
+            } else {
+                message.error(error || 'Có lỗi xảy ra. Vui lòng thử lại.');
+            }
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const normFile = (e) => {
-        if (Array.isArray(e)) {
-            return e;
-        }
-        return e?.fileList;
     };
 
     const renderField = (field) => {
@@ -257,13 +270,13 @@ function PopupModal({
                 layout="vertical"
                 requiredMark={true}
                 validateMessages={{
-                    required: '${label} là trường bắt buộc!',
+                    required: ['$', '{label} là trường bắt buộc!'].join(''),
                     types: {
-                        email: '${label} không phải là email hợp lệ!',
-                        number: '${label} không phải là số hợp lệ!',
+                        email: ['$', '{label} không phải là email hợp lệ!'].join(''),
+                        number: ['$', '{label} không phải là số hợp lệ!'].join(''),
                     },
                     number: {
-                        range: '${label} phải nằm trong khoảng ${min} đến ${max}',
+                        range: ['$', '{label} phải nằm trong khoảng $', '{min} đến $', '{max}'].join(''),
                     },
                 }}
             >

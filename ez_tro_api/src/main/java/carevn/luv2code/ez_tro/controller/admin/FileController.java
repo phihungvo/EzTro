@@ -20,6 +20,16 @@ import carevn.luv2code.ez_tro.repository.UserRepository;
 import io.minio.StatObjectResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý file (upload/download/presigned URL) qua MinIO.
+ *
+ * <p>Controller hiện hỗ trợ:
+ * <ul>
+ *   <li>Upload file đính kèm cho hợp đồng.</li>
+ *   <li>Lấy presigned URL để view/download trực tiếp từ storage.</li>
+ *   <li>Download file qua backend, xóa file, và một số utility endpoint (list/exists/metadata/copy/move).</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
@@ -31,6 +41,13 @@ public class FileController {
 
     private final FileRepository fileRepository;
 
+    /**
+     * Upload nhiều file cho một hợp đồng.
+     *
+     * @param contractId id hợp đồng
+     * @param files danh sách file upload (multipart)
+     * @return response chứa danh sách file đã upload (metadata)
+     */
     @PostMapping("/upload/contract/{contractId}")
     public ResponseEntity<ApiResponse<List<FileDTO>>> uploadContractFiles(
             @PathVariable Integer contractId, @RequestParam("files") MultipartFile[] files) {
@@ -78,6 +95,13 @@ public class FileController {
         }
     }
 
+    /**
+     * Lấy presigned URL cho file để view/download trực tiếp từ MinIO.
+     *
+     * @param fileId id file (DB)
+     * @param action hành động: "view" hoặc "download"
+     * @return response chứa presigned URL
+     */
     @GetMapping("/{fileId}/presigned-url")
     public ResponseEntity<ApiResponse<String>> getPresignedUrl(
             @PathVariable Integer fileId, @RequestParam(defaultValue = "view") String action) { // "view" or "download"
@@ -113,6 +137,12 @@ public class FileController {
         }
     }
 
+    /**
+     * Download file theo {@code fileId}.
+     *
+     * @param fileId id file (DB)
+     * @return response body là byte[] hoặc message lỗi
+     */
     @GetMapping("/{fileId}/download")
     public ResponseEntity<?> downloadFile(@PathVariable Integer fileId) {
         try {
@@ -138,6 +168,12 @@ public class FileController {
         }
     }
 
+    /**
+     * Xóa file theo {@code fileId} (storage + DB soft delete tùy theo MinioService).
+     *
+     * @param fileId id file (DB)
+     * @return response 204 nếu xóa thành công
+     */
     @DeleteMapping("/{fileId}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable Integer fileId) {
         try {
@@ -158,24 +194,48 @@ public class FileController {
         }
     }
 
+    /**
+     * Liệt kê các file object trong bucket (debug/admin).
+     *
+     * @return danh sách object name
+     */
     @GetMapping("/list")
     public ResponseEntity<List<String>> listFiles() {
         List<String> fileNames = minioService.listFiles();
         return ResponseEntity.ok(fileNames);
     }
 
+    /**
+     * Kiểm tra object có tồn tại trong storage hay không.
+     *
+     * @param fileName object name
+     * @return true nếu tồn tại
+     */
     @GetMapping("/exists/{fileName}")
     public ResponseEntity<Boolean> fileExists(@PathVariable String fileName) {
         boolean exists = minioService.fileExists(fileName);
         return ResponseEntity.ok(exists);
     }
 
+    /**
+     * Lấy metadata của object trong MinIO.
+     *
+     * @param fileName object name
+     * @return metadata từ MinIO
+     */
     @GetMapping("/metadata/{fileName}")
     public ResponseEntity<StatObjectResponse> getFileMetadata(@PathVariable String fileName) {
         StatObjectResponse metadata = minioService.getFileMetadata(fileName);
         return ResponseEntity.ok(metadata);
     }
 
+    /**
+     * Copy object trong MinIO.
+     *
+     * @param sourceFileName object source
+     * @param targetFileName object target
+     * @return response 200 nếu copy thành công
+     */
     @PostMapping("/copy")
     public ResponseEntity<Void> copyFile(@RequestParam String sourceFileName, @RequestParam String targetFileName) {
         if (sourceFileName.isBlank() || targetFileName.isBlank()) {
@@ -185,6 +245,13 @@ public class FileController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Move object trong MinIO (copy + delete source).
+     *
+     * @param sourceFileName object source
+     * @param targetFileName object target
+     * @return response 200 nếu move thành công
+     */
     @PostMapping("/move")
     public ResponseEntity<Void> moveFile(@RequestParam String sourceFileName, @RequestParam String targetFileName) {
         if (sourceFileName.isBlank() || targetFileName.isBlank()) {

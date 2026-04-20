@@ -1,0 +1,181 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: codex
+      changes:
+        - createTable:
+            tableName: property_assets
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: asset_code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: asset_name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: specification
+                  type: TEXT
+              - column:
+                  name: brand
+                  type: VARCHAR(100)
+              - column:
+                  name: model
+                  type: VARCHAR(100)
+              - column:
+                  name: serial_number
+                  type: VARCHAR(100)
+              - column:
+                  name: boarding_house_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: building_id
+                  type: INT
+              - column:
+                  name: room_id
+                  type: INT
+              - column:
+                  name: purchase_date
+                  type: DATE
+              - column:
+                  name: purchase_price
+                  type: DECIMAL(15,2)
+              - column:
+                  name: warranty_months
+                  type: INT
+              - column:
+                  name: warranty_expiry
+                  type: DATE
+              - column:
+                  name: install_date
+                  type: DATE
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: asset_condition
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_maintenance_date
+                  type: DATE
+              - column:
+                  name: next_maintenance_date
+                  type: DATE
+              - column:
+                  name: maintenance_cycle
+                  type: INT
+              - column:
+                  name: depreciation_rate
+                  type: DECIMAL(5,2)
+              - column:
+                  name: current_value
+                  type: DECIMAL(15,2)
+              - column:
+                  name: supplier
+                  type: VARCHAR(150)
+              - column:
+                  name: supplier_phone
+                  type: VARCHAR(20)
+              - column:
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: assigned_to
+                  type: VARCHAR(100)
+              - column:
+                  name: assigned_date
+                  type: DATE
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addUniqueConstraint:
+            tableName: property_assets
+            columnNames: asset_code
+            constraintName: uk_property_assets_asset_code
+        - addUniqueConstraint:
+            tableName: property_assets
+            columnNames: serial_number
+            constraintName: uk_property_assets_serial_number
+        - addForeignKeyConstraint:
+            baseTableName: property_assets
+            baseColumnNames: boarding_house_id
+            referencedTableName: boarding_houses
+            referencedColumnNames: id
+            constraintName: fk_property_assets_boarding_house
+        - addForeignKeyConstraint:
+            baseTableName: property_assets
+            baseColumnNames: building_id
+            referencedTableName: buildings
+            referencedColumnNames: id
+            constraintName: fk_property_assets_building
+        - addForeignKeyConstraint:
+            baseTableName: property_assets
+            baseColumnNames: room_id
+            referencedTableName: rooms
+            referencedColumnNames: id
+            constraintName: fk_property_assets_room
+        - createTable:
+            tableName: property_asset_histories
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: property_asset_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action_date
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: performed_by
+                  type: VARCHAR(100)
+              - column:
+                  name: note
+                  type: TEXT
+        - addForeignKeyConstraint:
+            baseTableName: property_asset_histories
+            baseColumnNames: property_asset_id
+            referencedTableName: property_assets
+            referencedColumnNames: id
+            constraintName: fk_property_asset_histories_asset

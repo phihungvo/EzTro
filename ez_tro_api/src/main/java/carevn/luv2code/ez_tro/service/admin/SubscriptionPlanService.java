@@ -5,6 +5,9 @@ import java.util.List;
 import carevn.luv2code.ez_tro.dto.SubscriptionPlanDTO;
 import carevn.luv2code.ez_tro.dto.requests.SubscriptionPlanCreateRequest;
 
+/**
+ * Service contract quản lý SubscriptionPlan.
+ */
 public interface SubscriptionPlanService {
 
     SubscriptionPlanDTO create(SubscriptionPlanCreateRequest request);

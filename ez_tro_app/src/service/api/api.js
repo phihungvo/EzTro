@@ -3,7 +3,9 @@ import {message} from 'antd';
 
 // Tạo axios instance
 const apiClient = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
+    // NOTE: Most callers already pass URLs prefixed with `/api` via `API_ENDPOINTS`.
+    // Keeping `baseURL` empty avoids accidentally generating `/api/api/...` in local dev.
+    baseURL: '',
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',

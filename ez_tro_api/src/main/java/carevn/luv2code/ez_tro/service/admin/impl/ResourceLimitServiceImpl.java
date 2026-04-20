@@ -13,6 +13,12 @@ import carevn.luv2code.ez_tro.repository.*;
 import carevn.luv2code.ez_tro.service.admin.ResourceLimitService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service kiểm tra giới hạn tài nguyên (resource limits) theo subscription của owner.
+ *
+ * <p>Giới hạn bao gồm: số boarding houses, buildings, rooms, tenants, và số hợp đồng ACTIVE tối đa.
+ * Các service tạo mới entity sẽ gọi các method validate tương ứng để chặn vượt quota.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +33,11 @@ public class ResourceLimitServiceImpl implements ResourceLimitService {
 
     // ========== VALIDATE CREATE ==========
 
+    /**
+     * Kiểm tra owner có thể tạo thêm khu nhà trọ hay không.
+     *
+     * @param ownerId id owner
+     */
     @Override
     public void validateCanCreateBoardingHouse(Integer ownerId) {
         OwnerResourceLimits limits = getLimits(ownerId);
@@ -36,6 +47,11 @@ public class ResourceLimitServiceImpl implements ResourceLimitService {
         }
     }
 
+    /**
+     * Kiểm tra owner có thể tạo thêm building hay không.
+     *
+     * @param ownerId id owner
+     */
     @Override
     public void validateCanCreateBuilding(Integer ownerId) {
         OwnerResourceLimits limits = getLimits(ownerId);
@@ -45,6 +61,11 @@ public class ResourceLimitServiceImpl implements ResourceLimitService {
         }
     }
 
+    /**
+     * Kiểm tra owner có thể tạo thêm room hay không.
+     *
+     * @param ownerId id owner
+     */
     @Override
     public void validateCanCreateRoom(Integer ownerId) {
         OwnerResourceLimits limits = getLimits(ownerId);
@@ -54,6 +75,11 @@ public class ResourceLimitServiceImpl implements ResourceLimitService {
         }
     }
 
+    /**
+     * Kiểm tra owner có thể tạo thêm tenant hay không.
+     *
+     * @param ownerId id owner
+     */
     @Override
     public void validateCanCreateTenant(Integer ownerId) {
         OwnerResourceLimits limits = getLimits(ownerId);
@@ -63,6 +89,11 @@ public class ResourceLimitServiceImpl implements ResourceLimitService {
         }
     }
 
+    /**
+     * Kiểm tra owner có thể tạo thêm hợp đồng ACTIVE hay không.
+     *
+     * @param ownerId id owner
+     */
     @Override
     public void validateCanCreateContract(Integer ownerId) {
         OwnerResourceLimits limits = getLimits(ownerId);

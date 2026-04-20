@@ -7,6 +7,9 @@ import org.springframework.data.domain.Page;
 import carevn.luv2code.ez_tro.dto.requests.UtilityRequest;
 import carevn.luv2code.ez_tro.dto.response.UtilityResponse;
 
+/**
+ * Service contract quản lý Utility (tiện ích/dịch vụ) của khu nhà trọ.
+ */
 public interface UtilityService {
     UtilityResponse create(UtilityRequest request);
 
@@ -25,4 +28,6 @@ public interface UtilityService {
     Page<UtilityResponse> getActiveByBoardingHouse(Integer boardingHouseId, int page, int size);
 
     List<UtilityResponse> getUtilitiesByBoardingHouse(Integer boardingHouseId);
+
+    UtilityResponse updateStatus(Integer id, boolean active);
 }

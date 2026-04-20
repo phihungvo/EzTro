@@ -26,6 +26,16 @@ import carevn.luv2code.ez_tro.service.admin.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý User (tài khoản) phía admin.
+ *
+ * <p>Controller hỗ trợ:
+ * <ul>
+ *   <li>Tạo user, cập nhật user, gán roles.</li>
+ *   <li>Truy vấn danh sách user phân trang và danh sách basic info.</li>
+ *   <li>Upload file cho user (ví dụ: avatar/attachments) qua {@link MinioService}.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
@@ -34,18 +44,37 @@ public class UserController {
     private final UserRepository userRepository;
     private final MinioService minioService;
 
+    /**
+     * Tạo mới user.
+     *
+     * @param request payload tạo user
+     * @return user vừa tạo
+     */
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody CreateUserRequest request) {
         UserDTO createdUser = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
+    /**
+     * Gán roles cho user.
+     *
+     * @param request payload gán role
+     * @return user sau khi gán roles
+     */
     @PostMapping("/assign-roles")
     public ResponseEntity<UserDTO> assignRoles(@Valid @RequestBody AssignRoleRequest request) {
         UserDTO user = userService.assignRoles(request);
         return ResponseEntity.ok(user);
     }
 
+    /**
+     * Cập nhật thông tin user theo id.
+     *
+     * @param id id user
+     * @param request payload cập nhật
+     * @return user sau khi cập nhật
+     */
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> updateUser(@PathVariable Integer id, @RequestBody UserUpdateRequest request) {
         UserDTO updatedUser = userService.updateUser(id, request);
@@ -60,6 +89,13 @@ public class UserController {
     //                .build();
     //    }
 
+    /**
+     * Lấy danh sách user phân trang.
+     *
+     * @param page trang (0-based)
+     * @param size kích thước trang
+     * @return danh sách user phân trang
+     */
     @GetMapping("/getAll")
     public ResponseEntity<Page<UserDTO>> findAll(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
@@ -67,18 +103,35 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    /**
+     * Lấy danh sách basic info của tất cả user (phục vụ dropdown/autocomplete).
+     *
+     * @return danh sách basic info
+     */
     @GetMapping("/basic-info")
     public ResponseEntity<List<UserInfoDTO>> getAllUserBasicInfo() {
         List<UserInfoDTO> users = userService.getAllBasicUserInfo();
         return ResponseEntity.ok(users);
     }
 
+    /**
+     * Lấy danh sách basic info của tất cả owner.
+     *
+     * @return danh sách owners
+     */
     @GetMapping("/owners")
     public ResponseEntity<List<UserInfoDTO>> getAllOwners() {
         List<UserInfoDTO> owners = userService.getAllOwners();
         return ResponseEntity.ok(owners);
     }
 
+    /**
+     * Upload một file cho user (ví dụ: avatar).
+     *
+     * @param file file upload
+     * @param userId id user được gắn file
+     * @return response chứa file metadata
+     */
     @PostMapping("/upload/{userId}")
     public ApiResponse<FileDTO> uploadFile(@RequestParam("file") MultipartFile file, @PathVariable Integer userId) {
         if (file.isEmpty()) {

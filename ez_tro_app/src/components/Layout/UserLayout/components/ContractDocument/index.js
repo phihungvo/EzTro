@@ -1,31 +1,38 @@
 import React from "react";
-import { Card, Button } from "antd";
-import { FileTextOutlined, DownloadOutlined } from "@ant-design/icons";
+import {Button} from "antd";
+import {DownloadOutlined, FileTextOutlined} from "@ant-design/icons";
 import styles from "./ContractDocument.module.scss";
 
-const ContractDocument = ({ fileName, onDownload }) => {
+const ContractDocument = ({fileName, onDownload}) => {
     return (
-        <Card
-            title={
-                <>
-                    <FileTextOutlined style={{ marginRight: '8px' }} />
-                    Tài Liệu Hợp Đồng
-                </>
-            }
-            className={styles.contractDocument}
-        >
-            <div className={styles.documentPreview}>
-                <div className={styles.fileIcon}>📄</div>
-                <div className={styles.fileName}>{fileName}</div>
-                <Button
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={onDownload}
-                >
-                    Tải Xuống
-                </Button>
+        <section className={styles.contractDocument}>
+            <div className={styles.header}>
+                <div>
+                    <div className={styles.title}>
+                        <FileTextOutlined className={styles.titleIcon} />
+                        Tài liệu hợp đồng
+                    </div>
+                    <div className={styles.subTitle}>Tải xuống bản PDF để lưu trữ hoặc in ấn</div>
+                </div>
+                <div className={styles.badge}>PDF</div>
             </div>
-        </Card>
+
+            <div className={styles.documentPreview}>
+                <div className={styles.fileCard}>
+                    <div className={styles.fileIcon}>📄</div>
+                    <div className={styles.fileMeta}>
+                        <div className={styles.fileName}>{fileName}</div>
+                        <div className={styles.fileHint}>Bản sao hợp đồng, sẵn sàng tải về khi cần.</div>
+                    </div>
+                </div>
+
+                <div className={styles.actionRow}>
+                    <Button type="primary" icon={<DownloadOutlined />} onClick={onDownload}>
+                        Tải xuống
+                    </Button>
+                </div>
+            </div>
+        </section>
     );
 };
 

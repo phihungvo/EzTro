@@ -20,9 +20,15 @@ const SharedLayout = ({children}) => {
     const menu = MENU_CONFIG[role] || MENU_CONFIG.OWNER;
 
     const getActiveKey = () => {
-        const item = menu
+        const matchedItems = menu
             .flatMap(g => g.items)
-            .find(i => location.pathname === i.path || location.pathname.startsWith(i.path + "/"));
+            .filter(i => location.pathname === i.path || location.pathname.startsWith(i.path + "/"));
+
+        if (matchedItems.length === 0) {
+            return "dashboard";
+        }
+
+        const item = matchedItems.sort((left, right) => right.path.length - left.path.length)[0];
         return item?.key || "dashboard";
     };
 

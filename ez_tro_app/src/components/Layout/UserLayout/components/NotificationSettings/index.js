@@ -1,19 +1,71 @@
-import React, { useState } from "react";
-import { Checkbox, Button, message } from "antd";
+import React, {useEffect, useMemo, useState} from "react";
+import {Button, Checkbox, Space, Typography} from "antd";
 import styles from "./NotificationSettings.module.scss";
 
-const NotificationSettings = ({ settings, onSave }) => {
-    const [notifications, setNotifications] = useState({
-        newInvoice: settings?.newInvoice ?? true,
-        invoiceExpiring: settings?.invoiceExpiring ?? true,
-        maintenanceAlert: settings?.maintenanceAlert ?? true,
-        promotions: settings?.promotions ?? false
-    });
+const CHANNEL_COLUMNS = [
+    {key: "inApp", label: "In-app"},
+    {key: "email", label: "Email"},
+    {key: "sms", label: "SMS"},
+    {key: "zalo", label: "Zalo"},
+];
 
-    const handleChange = (field, checked) => {
+const EVENT_GROUPS = [
+    {key: "billingIssue", label: "Billing / hóa đơn"},
+    {key: "contractExpiring", label: "Hợp đồng sắp hết hạn"},
+    {key: "incidentUpdates", label: "Sự cố / bảo trì"},
+    {key: "announcements", label: "Announcement / tin tức"},
+    {key: "paymentUpdates", label: "Thanh toán"},
+    {key: "securityAlerts", label: "Bảo mật"},
+    {key: "subscriptionAlerts", label: "Gói dịch vụ / quota"},
+];
+
+const buildDefaultSettings = (settings = {}) => EVENT_GROUPS.reduce((accumulator, item) => {
+    const nextValue = settings?.[item.key] || {};
+    accumulator[item.key] = {
+        inApp: nextValue?.inApp ?? false,
+        email: nextValue?.email ?? false,
+        sms: nextValue?.sms ?? false,
+        zalo: nextValue?.zalo ?? false,
+        mandatoryChannels: nextValue?.mandatoryChannels || [],
+    };
+    return accumulator;
+}, {});
+
+const NotificationSettings = ({
+    settings,
+    onSave,
+    loading = false,
+    title = "Cài đặt thông báo",
+    description = "Tùy chỉnh từng loại notification theo kênh nhận phù hợp với nhu cầu của bạn.",
+    submitLabel = "Lưu cài đặt",
+    embedded = false,
+}) => {
+    const [notifications, setNotifications] = useState(buildDefaultSettings(settings));
+
+    useEffect(() => {
+        setNotifications(buildDefaultSettings(settings));
+    }, [settings]);
+
+    const mandatoryHints = useMemo(() => EVENT_GROUPS.reduce((accumulator, item) => {
+        const mandatoryChannels = notifications?.[item.key]?.mandatoryChannels || [];
+        if (mandatoryChannels.length > 0) {
+            accumulator[item.key] = `Bắt buộc: ${mandatoryChannels.join(", ")}`;
+        }
+        return accumulator;
+    }, {}), [notifications]);
+
+    const handleChange = (field, channel, checked) => {
         setNotifications(prev => ({
             ...prev,
             [field]: checked
+                ? {
+                    ...prev[field],
+                    [channel]: checked,
+                }
+                : {
+                    ...prev[field],
+                    [channel]: checked,
+                }
         }));
     };
 
@@ -22,49 +74,63 @@ const NotificationSettings = ({ settings, onSave }) => {
     };
 
     return (
-        <div className={styles.notificationSettings}>
-            <h2 className={styles.title}>🔔 Cài Đặt Thông Báo</h2>
+        <div className={`${styles.notificationSettings} ${embedded ? styles.embedded : ""}`}>
+            <div className={styles.header}>
+                <div>
+                    <h2 className={styles.title}>{title}</h2>
+                    <Typography.Paragraph className={styles.description}>
+                        {description}
+                    </Typography.Paragraph>
+                </div>
+                <Space wrap className={styles.channelLegend}>
+                    {CHANNEL_COLUMNS.map((channel) => (
+                        <span key={channel.key} className={styles.legendItem}>
+                            {channel.label}
+                        </span>
+                    ))}
+                </Space>
+            </div>
 
-            <div className={styles.checkboxList}>
-                <div className={styles.checkboxItem}>
-                    <Checkbox
-                        checked={notifications.newInvoice}
-                        onChange={(e) => handleChange('newInvoice', e.target.checked)}
-                    />
-                    <div className={styles.checkboxLabel}>
-                        Thông báo hóa đơn mới
-                    </div>
+            <div className={styles.matrix}>
+                <div className={styles.matrixHeader}>
+                    <div className={styles.eventHeader}>Loại thông báo</div>
+                    {CHANNEL_COLUMNS.map((channel) => (
+                        <div key={channel.key} className={styles.channelHeader}>
+                            {channel.label}
+                        </div>
+                    ))}
                 </div>
 
-                <div className={styles.checkboxItem}>
-                    <Checkbox
-                        checked={notifications.invoiceExpiring}
-                        onChange={(e) => handleChange('invoiceExpiring', e.target.checked)}
-                    />
-                    <div className={styles.checkboxLabel}>
-                        Thông báo hết hạn hợp đồng
-                    </div>
-                </div>
+                {EVENT_GROUPS.map((item) => {
+                    const current = notifications?.[item.key] || {};
+                    const mandatoryChannels = current?.mandatoryChannels || [];
 
-                <div className={styles.checkboxItem}>
-                    <Checkbox
-                        checked={notifications.maintenanceAlert}
-                        onChange={(e) => handleChange('maintenanceAlert', e.target.checked)}
-                    />
-                    <div className={styles.checkboxLabel}>
-                        Thông báo về bảo trì, sửa chữa
-                    </div>
-                </div>
+                    return (
+                        <div key={item.key} className={styles.matrixRow}>
+                            <div className={styles.eventCell}>
+                                <div className={styles.checkboxLabel}>{item.label}</div>
+                                {mandatoryHints[item.key] && (
+                                    <Typography.Text type="secondary" className={styles.mandatoryHint}>
+                                        {mandatoryHints[item.key]}
+                                    </Typography.Text>
+                                )}
+                            </div>
 
-                <div className={styles.checkboxItem}>
-                    <Checkbox
-                        checked={notifications.promotions}
-                        onChange={(e) => handleChange('promotions', e.target.checked)}
-                    />
-                    <div className={styles.checkboxLabel}>
-                        Thông báo khuyến mãi, tin tức
-                    </div>
-                </div>
+                            {CHANNEL_COLUMNS.map((channel) => {
+                                const disabled = mandatoryChannels.includes(channel.key.toUpperCase());
+                                return (
+                                    <div key={channel.key} className={styles.channelCell}>
+                                        <Checkbox
+                                            checked={Boolean(current?.[channel.key])}
+                                            disabled={disabled || loading}
+                                            onChange={(event) => handleChange(item.key, channel.key, event.target.checked)}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })}
             </div>
 
             <Button
@@ -72,8 +138,9 @@ const NotificationSettings = ({ settings, onSave }) => {
                 size="large"
                 onClick={handleSubmit}
                 className={styles.submitButton}
+                loading={loading}
             >
-                Lưu Cài Đặt
+                {submitLabel}
             </Button>
         </div>
     );

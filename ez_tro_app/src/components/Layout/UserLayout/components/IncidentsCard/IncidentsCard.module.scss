@@ -1,198 +1,91 @@
 .incidentsCard {
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  }
+  background: #161b26;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 
   :global {
     .ant-card-head {
-      border-bottom: 2px solid #f3f4f6;
-      background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+      .ant-card-head-title {
+        color: #e8eaf0;
+      }
     }
 
     .ant-card-body {
       padding: 24px;
-      background: #fafbfc;
     }
   }
 }
 
 .cardTitle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
+  gap: 8px;
+  color: #e8eaf0;
+}
 
-  .titleIcon {
-    font-size: 22px;
-    color: #1890ff;
-  }
+.titleIcon {
+  color: #4f9cf9;
+}
 
-  .incidentCount {
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    background: #e5e7eb;
-    padding: 2px 10px;
-    border-radius: 12px;
-    margin-left: 4px;
-  }
+.incidentCount {
+  color: #8892a4;
+  font-weight: 600;
 }
 
 .newReportBtn {
-  border-radius: 8px;
-  height: 38px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
-  }
+  border-radius: 10px;
 }
 
 .incidentsList {
-  min-height: 200px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .emptyState {
-  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #e5e7eb;
+  gap: 6px;
+  padding: 24px 0;
+}
 
-  .emptyIcon {
-    font-size: 56px;
-    margin-bottom: 16px;
-    animation: bounce 2s infinite;
-  }
+.emptyIcon {
+  font-size: 32px;
+}
 
-  .emptyText {
-    font-size: 16px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 8px;
-  }
+.emptyText {
+  font-size: 14px;
+  color: #e8eaf0;
+  font-weight: 700;
+}
 
-  .emptySubtext {
-    font-size: 14px;
-    color: #9ca3af;
-  }
+.emptySubtext {
+  font-size: 12px;
+  color: #5a6478;
 }
 
 .deleteMessage {
-  text-align: center;
-  padding: 20px;
-
-  p {
-    font-size: 15px;
-    color: #374151;
-    margin-bottom: 16px;
-  }
-
-  .deleteDetails {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-
-    strong {
-      display: block;
-      font-size: 16px;
-      color: #1f2937;
-      margin-bottom: 8px;
-    }
-
-    span {
-      font-size: 13px;
-      color: #6b7280;
-      font-style: italic;
-    }
-  }
-
-  .deleteWarning {
-    color: #ef4444;
-    font-weight: 500;
-    margin-bottom: 0 !important;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #e8eaf0;
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+.deleteDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
 }
 
-@media (max-width: 768px) {
-  .incidentsCard {
-    border-radius: 12px;
-
-    :global {
-      .ant-card-head {
-        padding: 16px;
-      }
-
-      .ant-card-body {
-        padding: 16px;
-      }
-    }
-  }
-
-  .cardTitle {
-    font-size: 16px;
-
-    .titleIcon {
-      font-size: 18px;
-    }
-
-    .incidentCount {
-      font-size: 12px;
-      padding: 1px 8px;
-    }
-  }
-
-  .newReportBtn {
-    font-size: 13px;
-    padding: 4px 12px;
-    height: 32px;
-
-    :global {
-      span:not(.anticon) {
-        display: none;
-      }
-    }
-  }
-
-  .emptyState {
-    padding: 40px 16px;
-
-    .emptyIcon {
-      font-size: 40px;
-    }
-
-    .emptyText {
-      font-size: 14px;
-    }
-
-    .emptySubtext {
-      font-size: 12px;
-    }
-  }
+.deleteWarning {
+  color: #fbbf24;
 }

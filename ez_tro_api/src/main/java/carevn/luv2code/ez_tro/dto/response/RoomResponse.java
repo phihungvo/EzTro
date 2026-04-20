@@ -16,6 +16,10 @@ public class RoomResponse {
 
     String roomNumber;
 
+    Integer boardingHouseId;
+
+    Integer buildingId;
+
     BigDecimal area;
 
     BigDecimal price;
@@ -27,6 +31,8 @@ public class RoomResponse {
     String boardingHouseName;
 
     String buildingName;
+
+    java.util.List<Integer> utilityIds;
 
     Date startDate;
 
@@ -41,4 +47,8 @@ public class RoomResponse {
     Boolean hasBathroom = true;
 
     Boolean hasKitchen = true;
+
+    String tenantName;
+    String tenantPhone;
+    Long remainingDays;
 }

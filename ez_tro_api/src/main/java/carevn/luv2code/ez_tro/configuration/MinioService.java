@@ -143,6 +143,38 @@ public class MinioService {
         return result;
     }
 
+    public FileDTO uploadPaymentProofForContract(MultipartFile file, User uploadedBy, Integer contractId) {
+        Contract contract = contractRepository
+                .findById(contractId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
+
+        try (InputStream inputStream = file.getInputStream()) {
+            LocalDate today = LocalDate.now();
+            String relativePath = minioBasePath + "/contracts/" + contractId + "/payment-proofs/" + today.getYear()
+                    + "/" + String.format("%02d", today.getMonthValue()) + "/";
+            String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+            String fullObjectName = relativePath + fileName;
+
+            minioClient.putObject(PutObjectArgs.builder().bucket(bucket).object(fullObjectName).stream(
+                            inputStream, file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build());
+
+            File fileEntity = new File(
+                    fullObjectName,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    relativePath,
+                    file.getSize(),
+                    uploadedBy);
+            fileEntity.setContract(contract);
+            File savedFile = fileRepository.save(fileEntity);
+            return fileMapper.toDTO(savedFile);
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.MINIO_UPLOAD_ERROR);
+        }
+    }
+
     public FileDTO uploadFileForUser(MultipartFile file, User uploadedBy, Integer userId) {
         try (InputStream inputStream = file.getInputStream()) {
             LocalDate today = LocalDate.now();

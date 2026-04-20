@@ -6,7 +6,6 @@ import {
     HomeOutlined,
     UserOutlined,
     CalendarOutlined,
-    DollarOutlined,
     EyeOutlined,
     EditOutlined,
     DeleteOutlined,
@@ -17,19 +16,25 @@ import SmartButton from '~/components/Layout/AdminLayout/components/SmartButton'
 const cx = classNames.bind(cardStyles);
 
 const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
-    // Format tiền tệ
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', {
             style: 'decimal',
-        }).format(amount) + ' ₫';
+        }).format(Number(amount || 0)) + ' ₫';
     };
 
-    // Format ngày tháng
     const formatDate = (dateString) => {
         if (!dateString) return 'Không rõ';
         const date = new Date(dateString);
         return date.toLocaleDateString('vi-VN');
     };
+
+    const statusConfig = {
+        ACTIVE: { color: 'success', text: 'Đang hiệu lực' },
+        PENDING: { color: 'processing', text: 'Sắp hiệu lực' },
+        EXPIRED: { color: 'error', text: 'Đã hết hạn' },
+        CANCELLED: { color: 'default', text: 'Đã hủy' },
+    };
+    const status = statusConfig[contract.status] || { color: 'default', text: contract.status || 'Không rõ' };
 
     return (
         <Card
@@ -41,9 +46,9 @@ const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
             <div className={cx('card-header')}>
                 <div className={cx('header-main')}>
                     <HomeOutlined className={cx('home-icon')} />
-                    <h3 className={cx('contract-id')}>{contract.contractCode || 'P01'}</h3>
+                    <h3 className={cx('contract-id')}>{contract.contractCode || 'N/A'}</h3>
                 </div>
-                <Tag color="cyan" className={cx('status-tag')}>Tạo giữ chỗ</Tag>
+                <Tag color={status.color} className={cx('status-tag')}>{status.text}</Tag>
             </div>
 
             {/* Body */}
@@ -58,7 +63,7 @@ const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
                     <UserOutlined className={cx('icon')} />
                     <div className={cx('info-content')}>
                         <span className={cx('label')}>Đại diện: </span>
-                        <span className={cx('value')}>{contract.representative || 'hung'}</span>
+                        <span className={cx('value')}>{contract.tenantFullName || contract.tenantName || 'N/A'}</span>
                     </div>
                 </div>
 
@@ -68,7 +73,7 @@ const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
                     <div className={cx('info-content')}>
                         <span className={cx('label')}>Hiệu lực: </span>
                         <span className={cx('value')}>
-                            {formatDate(contract.endDate) || '01/11/2025'} - {contract.status || 'Không thời hạn'}
+                            {formatDate(contract.startDate)} - {contract.endDate ? formatDate(contract.endDate) : 'Không thời hạn'}
                         </span>
                     </div>
                 </div>
@@ -78,14 +83,14 @@ const ContractCard = ({ contract, onView, onEdit, onDelete }) => {
                     <div className={cx('price-item')}>
                         <span className={cx('price-label')}>Giá thuê</span>
                         <span className={cx('price-value')}>
-                            {formatCurrency(contract.price || 3500000)}
+                            {formatCurrency(contract.rentPrice)}
                         </span>
                     </div>
                     <div className={cx('divider')}></div>
                     <div className={cx('price-item')}>
                         <span className={cx('price-label')}>Tiền cọc</span>
                         <span className={cx('price-value')}>
-                            {formatCurrency(contract.deposit || 1000000)}
+                            {formatCurrency(contract.deposit)}
                         </span>
                     </div>
                 </div>

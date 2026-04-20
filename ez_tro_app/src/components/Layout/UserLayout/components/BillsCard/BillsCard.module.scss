@@ -1,20 +1,26 @@
 .billsCard {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #161b26;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 
   :global {
     .ant-card-head {
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+      .ant-card-head-title {
+        color: #e8eaf0;
+      }
     }
 
     .ant-card-body {
       padding: 24px;
     }
   }
-}
 
-.billsList {
-  display: flex;
-  flex-direction: column;
+  .billsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 }

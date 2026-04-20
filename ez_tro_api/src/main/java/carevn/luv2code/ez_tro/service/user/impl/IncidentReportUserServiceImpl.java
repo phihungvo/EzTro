@@ -21,6 +21,11 @@ import carevn.luv2code.ez_tro.repository.TenantRepository;
 import carevn.luv2code.ez_tro.service.user.IncidentReportUserService;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý báo cáo sự cố (Incident Report) phía người thuê.
+ *
+ * <p>Luồng tạo report gắn theo tenant hiện tại và hợp đồng active.
+ */
 @Service
 @RequiredArgsConstructor
 public class IncidentReportUserServiceImpl implements IncidentReportUserService {
@@ -30,7 +35,15 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
     private final RoomRepository roomRepository;
     private final IncidentReportMapper incidentReportMapper;
     private final ContractRepository contractRepository;
+    private final carevn.luv2code.ez_tro.service.admin.IncidentNotificationService incidentNotificationService;
 
+    /**
+     * Tạo mới incident report cho user hiện tại.
+     *
+     * @param userId id user
+     * @param request payload tạo report
+     * @return report DTO sau khi tạo
+     */
     @Override
     @Transactional
     public IncidentReportResponse create(Integer userId, IncidentReportRequest request) {
@@ -51,10 +64,17 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
                 .build();
 
         incidentReportRepository.save(report);
+        incidentNotificationService.notifyTenantCreated(report);
 
         return incidentReportMapper.toResponse(report);
     }
 
+    /**
+     * Lấy danh sách incident reports của user hiện tại.
+     *
+     * @param userId id user
+     * @return danh sách report DTO
+     */
     @Override
     public List<IncidentReportResponse> getAllByUserId(Integer userId) {
 
@@ -66,44 +86,66 @@ public class IncidentReportUserServiceImpl implements IncidentReportUserService 
         return response.stream().map(incidentReportMapper::toResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Cập nhật incident report theo id.
+     *
+     * <p>Lưu ý: một số validate ownership/trạng thái đang được comment out (TODO).
+     *
+     * @param userId id user
+     * @param reportId id report
+     * @param request payload cập nhật
+     * @return report DTO sau cập nhật
+     */
     @Override
     @Transactional
     public IncidentReportResponse update(Integer userId, Integer reportId, IncidentReportRequest request) {
-        //        Tenant tenant = tenantRepository
-        //                .findByUserId(userId)
-        //                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " +
-        // userId));
+        Tenant tenant = tenantRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " + userId));
 
         IncidentReport report = incidentReportRepository
                 .findById(reportId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy báo cáo sự cố với ID: " + reportId));
 
-        // Đảm bảo chỉ chủ báo cáo mới được cập nhật
-        //        if (!report.getTenant().getId().equals(tenant.getId())) {
-        //            throw new AppException(ErrorCode.ACCESS_DENIED);
-        //        }
+        if (report.getTenant() == null || !report.getTenant().getId().equals(tenant.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
 
-        // Chỉ được sửa khi chưa xử lý xong
-        //        if (report.getStatus() == IncidentStatus.RESOLVED || report.getStatus() == IncidentStatus.REJECTED) {
-        //            throw new AppException(ErrorCode.CANNOT_EDIT_RESOLVED_INCIDENT);
-        //        }
+        if (report.getStatus() == IncidentStatus.RESOLVED || report.getStatus() == IncidentStatus.REJECTED) {
+            throw new AppException(ErrorCode.CANNOT_EDIT_RESOLVED_INCIDENT);
+        }
 
         report.setTitle(request.getTitle());
         report.setDescription(request.getDescription());
-        report.setStatus(request.getStatus());
-        report.setExpectedResolveDate(request.getExpectedResolveDate());
 
         incidentReportRepository.save(report);
+        incidentNotificationService.notifyTenantUpdated(report);
         return incidentReportMapper.toResponse(report);
     }
 
+    /**
+     * Xóa incident report theo id.
+     *
+     * @param reportId id report
+     */
     @Override
     @Transactional
-    public void delete(Integer reportId) {
+    public void delete(Integer userId, Integer reportId) {
+        Tenant tenant = tenantRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy tenant cho user ID: " + userId));
         IncidentReport report = incidentReportRepository
                 .findById(reportId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy báo cáo sự cố với ID: " + reportId));
 
+        if (report.getTenant() == null || !report.getTenant().getId().equals(tenant.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        if (report.getStatus() == IncidentStatus.RESOLVED || report.getStatus() == IncidentStatus.REJECTED) {
+            throw new AppException(ErrorCode.CANNOT_EDIT_RESOLVED_INCIDENT);
+        }
+
+        incidentNotificationService.notifyTenantDeleted(report);
         incidentReportRepository.delete(report);
     }
 }

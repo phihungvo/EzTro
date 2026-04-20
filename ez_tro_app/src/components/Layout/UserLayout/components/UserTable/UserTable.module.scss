@@ -1,28 +1,37 @@
 .dataTable {
-  background: white;
-  border-radius: 12px;
+  background: #161b26;
+  border-radius: 18px;
   padding: 24px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 
   :global {
     .ant-table {
+      background: transparent;
+      color: #e8eaf0;
       font-size: 14px;
 
+      .ant-table-container {
+        border-start-start-radius: 14px;
+        border-start-end-radius: 14px;
+      }
+
       .ant-table-thead > tr > th {
-        background: #f9fafb;
-        font-weight: 600;
-        color: #374151;
+        background: #1e2535;
+        font-weight: 700;
+        color: #e8eaf0;
         padding: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       }
 
       .ant-table-tbody > tr {
         &:hover {
-          background: #f9fafb;
+          background: rgba(79, 156, 249, 0.05);
         }
 
         td {
           padding: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
       }
     }
