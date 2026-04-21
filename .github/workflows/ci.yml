@@ -3,7 +3,9 @@ name: ci
 on:
   pull_request:
     branches:
-      - main
+#      - main
+      - staging
+
 
 permissions:
   contents: read
