@@ -30,6 +30,8 @@ jobs:
     name: Build backend image
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      IMAGE_REF: ${{ inputs.push && format('{0}/{1}', secrets.DOCKER_USERNAME, inputs.image_name) || inputs.image_name }}
 
     steps:
       - name: Checkout
@@ -64,4 +66,4 @@ jobs:
           file: ./docker/backend/Dockerfile
           push: ${{ inputs.push }}
           tags: |
-            ${{ inputs.image_name }}:${{ inputs.image_tag }}
+            ${{ env.IMAGE_REF }}:${{ inputs.image_tag }}

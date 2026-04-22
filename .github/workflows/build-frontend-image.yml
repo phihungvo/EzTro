@@ -42,6 +42,8 @@ jobs:
     name: Build frontend image
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      IMAGE_REF: ${{ inputs.push && format('{0}/{1}', secrets.DOCKER_USERNAME, inputs.image_name) || inputs.image_name }}
 
     steps:
       - name: Checkout
@@ -94,4 +96,4 @@ jobs:
             REACT_APP_WS_URL=${{ inputs.react_app_ws_url }}
             REACT_APP_MINIO_URL=${{ inputs.react_app_minio_url }}
           tags: |
-            ${{ inputs.image_name }}:${{ inputs.image_tag }}
+            ${{ env.IMAGE_REF }}:${{ inputs.image_tag }}

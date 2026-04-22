@@ -50,7 +50,7 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-backend
+      image_name: ez-tro-backend
       image_tag: sha-${{ github.sha }}
       push: true
 
@@ -61,7 +61,7 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-frontend
+      image_name: ez-tro-frontend
       image_tag: sha-${{ github.sha }}
       react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
       react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
