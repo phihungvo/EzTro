@@ -103,9 +103,9 @@ jobs:
         run: |
           remote_ssh() {
             if [ "$SSH_AUTH_MODE" = "key" ]; then
-              ssh -i ~/.ssh/id_rsa "$@"
+              ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa "$@"
             else
-              sshpass -p "$VPS_SSH_PASSWORD" ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
+              sshpass -p "$VPS_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
             fi
           }
 
@@ -136,9 +136,9 @@ jobs:
         run: |
           remote_scp() {
             if [ "$SSH_AUTH_MODE" = "key" ]; then
-              scp -i ~/.ssh/id_rsa "$@"
+              scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa "$@"
             else
-              sshpass -p "$VPS_SSH_PASSWORD" scp "$@"
+              sshpass -p "$VPS_SSH_PASSWORD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$@"
             fi
           }
 
@@ -165,9 +165,9 @@ jobs:
         run: |
           remote_ssh() {
             if [ "$SSH_AUTH_MODE" = "key" ]; then
-              ssh -i ~/.ssh/id_rsa "$@"
+              ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa "$@"
             else
-              sshpass -p "$VPS_SSH_PASSWORD" ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
+              sshpass -p "$VPS_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
             fi
           }
 
