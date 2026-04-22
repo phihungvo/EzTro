@@ -209,13 +209,18 @@ jobs:
           }
           trap dump_diagnostics EXIT
 
+          DEPLOY_MYSQL_USER="$MYSQL_USER"
+          if [ "$DEPLOY_MYSQL_USER" = "root" ]; then
+            DEPLOY_MYSQL_USER="eztro_app"
+          fi
+
           cat > .env <<EOF
           DOCKER_USERNAME=$DOCKER_USERNAME
           BACKEND_IMAGE_TAG=$BACKEND_TAG
           FRONTEND_IMAGE_TAG=$FRONTEND_TAG
           REACT_APP_MINIO_URL=$MINIO_URL
           MYSQL_DATABASE=$MYSQL_DATABASE
-          MYSQL_USER=$MYSQL_USER
+          MYSQL_USER=$DEPLOY_MYSQL_USER
           MYSQL_PASSWORD=$MYSQL_PASSWORD
           MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
           JWT_SECRET=$JWT_SECRET
