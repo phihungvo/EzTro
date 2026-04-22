@@ -38,27 +38,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare SSH env
+      - name: Prepare SSH auth
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-        run: |
-          trim_outer_quotes() {
-            local value="$1"
-            if [[ "$value" == \"*\" && "$value" == *\" ]]; then
-              value="${value#\"}"
-              value="${value%\"}"
-            elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
-              value="${value#\'}"
-              value="${value%\'}"
-            fi
-            printf '%s' "$value"
-          }
-
-          SANITIZED_VPS_HOST="$(trim_outer_quotes "$VPS_HOST")"
-          printf 'VPS_HOST=%s\n' "$SANITIZED_VPS_HOST" >> "$GITHUB_ENV"
-
-      - name: Add SSH key
-        env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           trim_outer_quotes() {
@@ -73,23 +55,51 @@ jobs:
             printf '%s' "$value"
           }
 
+          SANITIZED_VPS_HOST="$(trim_outer_quotes "$VPS_HOST")"
+          SANITIZED_VPS_SSH_KEY="$(trim_outer_quotes "$VPS_SSH_KEY")"
+          printf 'VPS_HOST=%s\n' "$SANITIZED_VPS_HOST" >> "$GITHUB_ENV"
           mkdir -p ~/.ssh
-          trim_outer_quotes "$VPS_SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$SANITIZED_VPS_HOST" >> ~/.ssh/known_hosts
+
+          if [[ "$SANITIZED_VPS_SSH_KEY" == *"BEGIN "* ]]; then
+            printf '%s\n' "$SANITIZED_VPS_SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            printf 'SSH_AUTH_MODE=key\n' >> "$GITHUB_ENV"
+          else
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+            printf 'SSH_AUTH_MODE=password\n' >> "$GITHUB_ENV"
+            printf 'VPS_SSH_PASSWORD=%s\n' "$SANITIZED_VPS_SSH_KEY" >> "$GITHUB_ENV"
+          fi
 
       - name: Prepare VPS directories
         env:
           VPS_USER: ubuntu
         run: |
-          ssh -i ~/.ssh/id_rsa "$VPS_USER@$VPS_HOST" "sudo mkdir -p /opt/ez-tro/nginx && sudo chown -R $VPS_USER:$VPS_USER /opt/ez-tro"
+          remote_ssh() {
+            if [ "$SSH_AUTH_MODE" = "key" ]; then
+              ssh -i ~/.ssh/id_rsa "$@"
+            else
+              sshpass -p "$VPS_SSH_PASSWORD" ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
+            fi
+          }
+
+          remote_ssh "$VPS_USER@$VPS_HOST" "sudo mkdir -p /opt/ez-tro/nginx && sudo chown -R $VPS_USER:$VPS_USER /opt/ez-tro"
 
       - name: Upload deployment files
         env:
           VPS_USER: ubuntu
         run: |
-          scp -i ~/.ssh/id_rsa docker-compose.prod.yml "$VPS_USER@$VPS_HOST:/opt/ez-tro/docker-compose.prod.yml"
-          scp -i ~/.ssh/id_rsa nginx/nginx.conf "$VPS_USER@$VPS_HOST:/opt/ez-tro/nginx/nginx.conf"
+          remote_scp() {
+            if [ "$SSH_AUTH_MODE" = "key" ]; then
+              scp -i ~/.ssh/id_rsa "$@"
+            else
+              sshpass -p "$VPS_SSH_PASSWORD" scp "$@"
+            fi
+          }
+
+          remote_scp docker-compose.prod.yml "$VPS_USER@$VPS_HOST:/opt/ez-tro/docker-compose.prod.yml"
+          remote_scp nginx/nginx.conf "$VPS_USER@$VPS_HOST:/opt/ez-tro/nginx/nginx.conf"
 
       - name: Deploy via SSH
         env:
@@ -100,7 +110,15 @@ jobs:
           FRONTEND_TAG: ${{ inputs.frontend_tag }}
           MINIO_URL: ${{ inputs.minio_url }}
         run: |
-          printf '%s\n' "$DOCKER_PASSWORD" | ssh -i ~/.ssh/id_rsa "$VPS_USER@$VPS_HOST" "set -e
+          remote_ssh() {
+            if [ "$SSH_AUTH_MODE" = "key" ]; then
+              ssh -i ~/.ssh/id_rsa "$@"
+            else
+              sshpass -p "$VPS_SSH_PASSWORD" ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no "$@"
+            fi
+          }
+
+          printf '%s\n' "$DOCKER_PASSWORD" | remote_ssh "$VPS_USER@$VPS_HOST" "set -e
           cd /opt/ez-tro
 
           if [ ! -f .env ]; then
