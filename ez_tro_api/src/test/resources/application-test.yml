@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:ez_tro_test;MODE=MYSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+
+  mail:
+    host: localhost
+    port: 1025
+    username: test
+    password: test
+    properties:
+      mail:
+        debug: false
+
+jwt:
+  secret: test-secret-test-secret-test-secret-1234
+  expiration: 3600000
+
+minio:
+  init:
+    enabled: false
+  url: http://localhost:9000
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket: test-bucket
+  base-path: uploads

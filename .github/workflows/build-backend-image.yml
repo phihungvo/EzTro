@@ -45,7 +45,7 @@ jobs:
 
       - name: Build backend jar
         working-directory: ez_tro_api
-        run: ./mvnw clean package -DskipTests
+        run: ./mvnw clean verify
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

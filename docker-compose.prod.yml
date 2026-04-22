@@ -1,15 +1,13 @@
-version: '3.9'
-
 services:
   mysql:
     image: mysql:8.0
-    container_name: tevc_mysql
+    container_name: ez_tro_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tevc_db
-    ports:
-      - "3306:3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -18,45 +16,119 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - tevc_net
+      - ez_tro_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ez_tro_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ez_tro_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: ez_tro_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    networks:
+      - ez_tro_network
+
+  minio-ready:
+    image: curlimages/curl:8.10.1
+    container_name: ez_tro_minio_ready
+    depends_on:
+      - minio
+    command:
+      - sh
+      - -c
+      - >
+        until curl -fsS http://minio:9000/minio/health/live >/dev/null; do
+          echo "Waiting for MinIO...";
+          sleep 2;
+        done
+    networks:
+      - ez_tro_network
 
   backend:
-    build:
-      context: ./tevc_cms_api
-      dockerfile: Dockerfile
-    image: hungvo2410/tevc_cms_api:latest
-    container_name: tevc_backend
+    image: ${DOCKER_USERNAME}/ez-tro-backend:${BACKEND_IMAGE_TAG}
+    container_name: ez_tro_backend
     restart: always
-    env_file:
-      - .env.prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      FILE_UPLOAD_DIR: ${FILE_UPLOAD_DIR:-/uploads}
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_BASE_PATH: ${MINIO_BASE_PATH:-/uploads}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_DEBUG: ${MAIL_DEBUG:-false}
+    volumes:
+      - ez_tro_uploads:/uploads:rw
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-ready:
+        condition: service_completed_successfully
     networks:
-      - tevc_net
-    ports:
-      - "8080:8080"  # Thêm để test local
+      - ez_tro_network
+
+  frontend:
+    image: ${DOCKER_USERNAME}/ez-tro-frontend:${FRONTEND_IMAGE_TAG}
+    container_name: ez_tro_frontend
+    restart: always
+    networks:
+      - ez_tro_network
 
   nginx:
-    build:
-      context: ./tevc_cms_app
-      dockerfile: Dockerfile
-    image: hungvo2410/tevc_cms_app:latest
-    container_name: tevc_nginx
+    image: nginx:1.27-alpine
+    container_name: ez_tro_nginx
     restart: always
     ports:
       - "80:80"
     volumes:
-      - tevc_cms_uploads:/uploads:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ez_tro_uploads:/uploads:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+      minio-ready:
+        condition: service_completed_successfully
     networks:
-      - tevc_net
+      - ez_tro_network
 
 volumes:
   mysql_data:
-  tevc_cms_uploads:
+  redis_data:
+  minio_data:
+  ez_tro_uploads:
 
 networks:
-  tevc_net:
+  ez_tro_network:
     driver: bridge

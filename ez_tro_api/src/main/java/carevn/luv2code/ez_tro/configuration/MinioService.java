@@ -46,6 +46,9 @@ public class MinioService {
     @Autowired
     private String minioUrl;
 
+    @Value("${minio.init.enabled:true}")
+    private boolean initEnabled;
+
     //    @Autowired
     //    private EmployeeRepository employeeRepository;
     //
@@ -60,6 +63,10 @@ public class MinioService {
 
     @PostConstruct
     public void init() {
+        if (!initEnabled) {
+            return;
+        }
+
         try {
             boolean found = minioClient.bucketExists(
                     BucketExistsArgs.builder().bucket(bucket).build());
