@@ -194,6 +194,21 @@ jobs:
           set -e
           cd /opt/ez-tro
 
+          dump_diagnostics() {
+            exit_code=$?
+            if [ "$exit_code" -ne 0 ]; then
+              echo '--- docker compose ps ---'
+              docker compose -f docker-compose.prod.yml ps || true
+              echo '--- mysql health ---'
+              docker inspect ez_tro_mysql --format 'status={{.State.Health.Status}}' || true
+              docker inspect ez_tro_mysql --format '{{range .State.Health.Log}}{{println .Start}}exit={{.ExitCode}}{{println .Output}}{{println "---"}}{{end}}' || true
+              echo '--- mysql logs ---'
+              docker logs ez_tro_mysql --tail 200 || true
+            fi
+            exit "$exit_code"
+          }
+          trap dump_diagnostics EXIT
+
           cat > .env <<EOF
           DOCKER_USERNAME=$DOCKER_USERNAME
           BACKEND_IMAGE_TAG=$BACKEND_TAG
@@ -219,4 +234,5 @@ jobs:
           printf '%s\n' "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker compose -f docker-compose.prod.yml pull
           docker compose -f docker-compose.prod.yml up -d --remove-orphans
-          REMOTE
+          docker compose -f docker-compose.prod.yml ps
+REMOTE
