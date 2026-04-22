@@ -24,6 +24,8 @@ on:
         required: true
       VPS_SSH_KEY:
         required: true
+      VPS_PASSWORD:
+        required: true
       MYSQL_DATABASE:
         required: true
       MYSQL_USER:
@@ -60,6 +62,7 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           trim_outer_quotes() {
             local value="$1"
@@ -75,11 +78,15 @@ jobs:
 
           SANITIZED_VPS_HOST="$(trim_outer_quotes "$VPS_HOST")"
           SANITIZED_VPS_SSH_KEY="$(trim_outer_quotes "$VPS_SSH_KEY")"
+          SANITIZED_VPS_PASSWORD="$(trim_outer_quotes "$VPS_PASSWORD")"
           printf 'VPS_HOST=%s\n' "$SANITIZED_VPS_HOST" >> "$GITHUB_ENV"
           mkdir -p ~/.ssh
           ssh-keyscan -H "$SANITIZED_VPS_HOST" >> ~/.ssh/known_hosts
 
-          if [[ "$SANITIZED_VPS_SSH_KEY" == *"BEGIN "* ]]; then
+          if [[ -n "$SANITIZED_VPS_PASSWORD" ]]; then
+            printf 'SSH_AUTH_MODE=password\n' >> "$GITHUB_ENV"
+            printf 'VPS_SSH_PASSWORD=%s\n' "$SANITIZED_VPS_PASSWORD" >> "$GITHUB_ENV"
+          elif [[ "$SANITIZED_VPS_SSH_KEY" == *"BEGIN "* ]]; then
             printf '%s\n' "$SANITIZED_VPS_SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
             printf 'SSH_AUTH_MODE=key\n' >> "$GITHUB_ENV"
