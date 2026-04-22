@@ -213,6 +213,7 @@ jobs:
           if [ "$DEPLOY_MYSQL_USER" = "root" ]; then
             DEPLOY_MYSQL_USER="eztro_app"
           fi
+          MYSQL_USER="$DEPLOY_MYSQL_USER"
 
           cat > .env <<EOF
           DOCKER_USERNAME=$DOCKER_USERNAME
