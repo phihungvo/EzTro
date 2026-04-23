@@ -24,6 +24,19 @@ import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
+import AdminDashboard from "~/pages/Admin/HomeDashboard";
+import NotificationCenter from "~/pages/Common/NotificationCenter";
+import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
+import BoardingHouses from "~/pages/Admin/BoardingHouse";
+import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
+import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
+import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
+import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
+import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
+import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
+import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
+import IncidentReport from "~/pages/Admin/IncidentReport";
+import InvoiceCreator from "~/pages/Admin/Bill/component/BillCreator";
 
 const AppRoutes = () => {
     const { user } = useAuth();
@@ -81,7 +94,7 @@ const AppRoutes = () => {
                                 <Route path="contracts/:id" element={<ContractDetailPage />} />
                                 <Route path="contracts/:id/edit" element={<ContractCreatorPage />} />
                                 <Route path="bills" element={<Bill />} />
-                                <Route path="bills/create-bill" element={<BillCreator />} />
+                                <Route path="bills/create-bill" element={<InvoiceCreator />} />
                                 <Route path="utilities" element={<UtilityManagement />} />
                                 <Route path="revenues" element={<Revenue />} />
                                 <Route path="appointments" element={<Appointment />} />
