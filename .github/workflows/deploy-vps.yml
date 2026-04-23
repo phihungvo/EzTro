@@ -15,20 +15,16 @@ on:
         description: Public MinIO URL
         required: true
         type: string
-      vps_user:
-        description: VPS SSH user
-        required: true
-        type: string
-      vps_password:
-        description: VPS SSH password
-        required: true
-        type: string
     secrets:
       DOCKER_USERNAME:
         required: true
       DOCKER_PASSWORD:
         required: true
       VPS_HOST:
+        required: true
+      VPS_USER:
+        required: true
+      VPS_PASSWORD:
         required: true
 
 permissions:
@@ -55,18 +51,18 @@ jobs:
       - name: Prepare VPS directories
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ inputs.vps_user }}
-          VPS_PASSWORD: ${{ inputs.vps_password }}
-          SSHPASS: ${{ inputs.vps_password }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
           sshpass -e ssh -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "echo \"$VPS_PASSWORD\" | sudo -S mkdir -p /opt/ez-tro/nginx && echo \"$VPS_PASSWORD\" | sudo -S chown -R $VPS_USER:$VPS_USER /opt/ez-tro"
 
       - name: Upload deployment files
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ inputs.vps_user }}
-          VPS_PASSWORD: ${{ inputs.vps_password }}
-          SSHPASS: ${{ inputs.vps_password }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
           sshpass -e scp -o StrictHostKeyChecking=yes docker-compose.prod.yml "$VPS_USER@$VPS_HOST:/opt/ez-tro/docker-compose.prod.yml"
           sshpass -e scp -o StrictHostKeyChecking=yes nginx/nginx.conf "$VPS_USER@$VPS_HOST:/opt/ez-tro/nginx/nginx.conf"
@@ -74,9 +70,9 @@ jobs:
       - name: Deploy via SSH
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ inputs.vps_user }}
-          VPS_PASSWORD: ${{ inputs.vps_password }}
-          SSHPASS: ${{ inputs.vps_password }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_TAG: ${{ inputs.backend_tag }}
