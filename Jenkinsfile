@@ -1,23 +1,23 @@
 pipeline {
 	agent any
 
-    environment {
+	environment {
 		DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        IMAGE_BACKEND = 'hungvo2410/tevc_cms_api'
-        IMAGE_FRONTEND = 'hungvo2410/tevc_cms_app'
+        IMAGE_BACKEND = 'hungvo2410/ez_tro_api'
+        IMAGE_FRONTEND = 'hungvo2410/ez_tro_app'
         TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
 		stage('Checkout') {
 			steps {
-				git url: 'https://github.com/phihungvo/tevc_cms.git', branch: 'main', credentialsId: 'github-cred'
+				git url: 'https://github.com/phihungvo/EzTro.git', branch: 'main', credentialsId: 'github-cred'
             }
         }
 
         stage('Build Backend') {
 			steps {
-				dir('tevc_cms_api') {
+				dir('ez_tro_api') {
 					withMaven(maven: 'Maven-3.8') {
 						sh 'mvn clean package -DskipTests'
                     }
@@ -27,8 +27,8 @@ pipeline {
 
         stage('Build Frontend') {
 			steps {
-				dir('tevc_cms_app') {
-					sh 'docker run --rm -v $(pwd):/app -w /app docker:20.10.21-dind sh -c "docker build --build-arg REACT_APP_API_URL=/api -t hungvo2410/tevc_cms_app:${TAG} ."'
+				dir('ez_tro_app') {
+					sh 'docker run --rm -v $(pwd):/app -w /app docker:20.10.21-dind sh -c "docker build --build-arg REACT_APP_API_URL=/api -t hungvo2410/ez_tro_app:${TAG} ."'
                 }
             }
         }

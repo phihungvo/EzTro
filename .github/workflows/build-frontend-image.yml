@@ -3,10 +3,6 @@ name: build-frontend-image
 on:
   workflow_call:
     inputs:
-      image_name:
-        description: Full Docker image name
-        required: true
-        type: string
       image_tag:
         description: Docker image tag
         required: true
@@ -93,4 +89,4 @@ jobs:
             REACT_APP_WS_URL=${{ inputs.react_app_ws_url }}
             REACT_APP_MINIO_URL=${{ inputs.react_app_minio_url }}
           tags: |
-            ${{ inputs.image_name }}:${{ inputs.image_tag }}
+            ${{ secrets.DOCKER_USERNAME }}/ez_tro_app:${{ inputs.image_tag }}

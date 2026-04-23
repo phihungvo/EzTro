@@ -2,9 +2,9 @@ version: "3.8"
 
 services:
   backend:
-    build: ./tevc_cms_api
-    image: tevc_cms_api:latest
-    container_name: tevc_cms_backend
+    build: ./ez_tro_api
+    image: ez_tro_api:latest
+    container_name: ez_tro_backend
     platform: linux/amd64
     expose:
       - "8080" # chỉ lộ ra trong internal network
@@ -31,17 +31,17 @@ services:
 
   nginx:
     build:
-      context: ./tevc_cms_app
+      context: ./ez_tro_app
       dockerfile: Dockerfile
       args:
         REACT_APP_API_URL: /api
-    image: tevc_cms_app:latest
-    container_name: tevc_cms_nginx
+    image: ez_tro_app:latest
+    container_name: ez_tro_app
     platform: linux/amd64
     ports:
       - "80:80" # Public website
     volumes:
-      - ./tevc_cms_app/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ez_tro_app/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - tevc_cms_uploads:/uploads:ro
     depends_on:
       - backend
@@ -50,7 +50,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: tevc_cms_mysql
+    container_name: ez_tro_mysql
     platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -67,7 +67,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: tevc_cms_minio
+    container_name: ez_tro_minio
     platform: linux/amd64
     ports:
       - "19000:9000"   # API
@@ -83,7 +83,7 @@ services:
 
   redis:
     image: redis:7.0
-    container_name: tevc_cms_redis
+    container_name: ez_tro_redis
     ports:
       - "6379:6379"
     networks:

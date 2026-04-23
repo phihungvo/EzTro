@@ -1,4 +1,4 @@
-package carevn.luv2code.cms.tevc_cms_api.service;
+package carevn.luv2code.ez_tro.service.admin;
 
 import java.util.List;
 

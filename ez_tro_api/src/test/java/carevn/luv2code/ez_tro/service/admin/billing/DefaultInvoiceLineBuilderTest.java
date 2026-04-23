@@ -56,7 +56,7 @@ class DefaultInvoiceLineBuilderTest {
                 .build();
 
         when(contractVersionRepository.findOverlappingVersions(
-                        contract.getId(), LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
+                        contract.getId(), LocalDate.of(2026, 4, 10), LocalDate.of(2026, 4, 30)))
                 .thenReturn(List.of());
 
         InvoicePreviewRequest req = InvoicePreviewRequest.builder()

@@ -3,7 +3,7 @@ version: '3.9'
 services:
   mysql:
     image: mysql:8.0
-    container_name: tevc_mysql
+    container_name: ez_tro_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -21,28 +21,18 @@ services:
       - tevc_net
 
   backend:
-    build:
-      context: ./tevc_cms_api
-      dockerfile: Dockerfile
-    image: hungvo2410/tevc_cms_api:latest
-    container_name: tevc_backend
+    image: ${DOCKER_USERNAME}/ez_tro_api:${BACKEND_IMAGE_TAG}
+    container_name: ez_tro_backend
     restart: always
-    env_file:
-      - .env.prod
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - tevc_net
-    ports:
-      - "8080:8080"  # Thêm để test local
 
   nginx:
-    build:
-      context: ./tevc_cms_app
-      dockerfile: Dockerfile
-    image: hungvo2410/tevc_cms_app:latest
-    container_name: tevc_nginx
+    image: ${DOCKER_USERNAME}/ez_tro_app:${FRONTEND_IMAGE_TAG}
+    container_name: ez_tro_app
     restart: always
     ports:
       - "80:80"
