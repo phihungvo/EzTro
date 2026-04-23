@@ -5,7 +5,7 @@
 
 # Start Spring Boot backend
 echo "Starting Spring Boot backend..."
-cd tevc_cms_api
+cd ez_tro_api
 ./mvnw spring-boot:run &
 BACKEND_PID=$!
 cd ..
@@ -16,7 +16,7 @@ sleep 10
 
 # Start React frontend
 echo "Starting React frontend..."
-cd tevc_cms_app
+cd ez_tro_app
 npm start
 
 # Optional: stop backend when frontend ends

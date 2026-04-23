@@ -41,7 +41,7 @@ jobs:
           vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
           react_app_api_url: ${{ vars.REACT_APP_API_URL }}
           react_app_ws_url: ${{ vars.REACT_APP_WS_URL }}
-          react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL }}
+          react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
 
   backend:
     name: Build backend and push image
@@ -50,7 +50,6 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-backend
       image_tag: sha-${{ github.sha }}
       push: true
 
@@ -61,7 +60,6 @@ jobs:
     needs:
       - validate-config
     with:
-      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-frontend
       image_tag: sha-${{ github.sha }}
       react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
       react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}

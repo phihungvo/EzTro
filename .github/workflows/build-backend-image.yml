@@ -3,10 +3,6 @@ name: build-backend-image
 on:
   workflow_call:
     inputs:
-      image_name:
-        description: Full Docker image name
-        required: true
-        type: string
       image_tag:
         description: Docker image tag
         required: true
@@ -64,4 +60,4 @@ jobs:
           file: ./docker/backend/Dockerfile
           push: ${{ inputs.push }}
           tags: |
-            ${{ inputs.image_name }}:${{ inputs.image_tag }}
+            ${{ secrets.DOCKER_USERNAME }}/ez_tro_api:${{ inputs.image_tag }}

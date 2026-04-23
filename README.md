@@ -9,7 +9,7 @@ Dự án hướng đến mục tiêu giúp **chủ trọ và người thuê tr�
 
 EZ_TRO bao gồm **hai thành phần chính**:
 
-### 1. 🧩 API – `tevc_cms_api`
+### 1. 🧩 API – `ez_tro_api`
 Cung cấp các RESTful API phục vụ cho toàn bộ hệ thống.
 
 **Chức năng chính:**
@@ -27,7 +27,7 @@ or
 mvn spotless:check
 ```
 
-### 2. 💻 APP – `tevc_cms_app`
+### 2. 💻 APP – `ez_tro_app`
 
 - Ứng dụng web frontend cung cấp giao diện trực quan cho người dùng tương tác với hệ thống CMS.
 

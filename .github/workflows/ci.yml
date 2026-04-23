@@ -17,7 +17,6 @@ jobs:
     name: Build backend
     uses: ./.github/workflows/build-backend-image.yml
     with:
-      image_name: ez-tro-backend
       image_tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
       push: false
 
@@ -25,7 +24,6 @@ jobs:
     name: Build and test frontend
     uses: ./.github/workflows/build-frontend-image.yml
     with:
-      image_name: ez-tro-frontend
       image_tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
       react_app_api_url: /api
       react_app_ws_url: ws://localhost/ws
