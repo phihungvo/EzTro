@@ -1,5 +1,4 @@
 import axios from 'axios';
-import API_ENDPOINTS from '../../../constants/endpoints';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
 import axiosInstance from '~/utils/axiosInstance';
