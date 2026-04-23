@@ -15,6 +15,10 @@ on:
         description: Public MinIO URL
         required: true
         type: string
+      vps_user:
+        description: VPS SSH user
+        required: true
+        type: string
     secrets:
       DOCKER_USERNAME:
         required: true
@@ -48,14 +52,14 @@ jobs:
       - name: Prepare VPS directories
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ubuntu
+          VPS_USER: ${{ inputs.vps_user }}
         run: |
           ssh -i ~/.ssh/id_rsa "$VPS_USER@$VPS_HOST" "sudo mkdir -p /opt/ez-tro/nginx && sudo chown -R $VPS_USER:$VPS_USER /opt/ez-tro"
 
       - name: Upload deployment files
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ubuntu
+          VPS_USER: ${{ inputs.vps_user }}
         run: |
           scp -i ~/.ssh/id_rsa docker-compose.prod.yml "$VPS_USER@$VPS_HOST:/opt/ez-tro/docker-compose.prod.yml"
           scp -i ~/.ssh/id_rsa nginx/nginx.conf "$VPS_USER@$VPS_HOST:/opt/ez-tro/nginx/nginx.conf"
@@ -63,7 +67,7 @@ jobs:
       - name: Deploy via SSH
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ubuntu
+          VPS_USER: ${{ inputs.vps_user }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_TAG: ${{ inputs.backend_tag }}
