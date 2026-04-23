@@ -60,7 +60,8 @@ public class TokenBlacklist {
     //        }
     //    }
 
-    @Scheduled(cron = "0 * * * * *")
+    //    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 */30 * * * *") // Chạy mỗi 30 phút
     @Transactional
     public void cleanupExpiredTokens() {
         log.info("🔄 Bắt đầu job cleanupExpiredTokens tại: {}", new Date());
