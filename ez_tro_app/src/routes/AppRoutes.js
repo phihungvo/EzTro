@@ -9,17 +9,14 @@ import Landing from "~/pages/General/Landing";
 import About from "~/pages/General/About";
 import Careers from "~/pages/General/Careers";
 
-import AdminDashboard from "~/pages/Admin/HomeDashboard";
 import Building from "~/pages/Admin/Building";
 import Room from "~/pages/Admin/Room";
 import Tenant from "~/pages/Admin/Tenant";
 import TenantDetail from "~/pages/Admin/Tenant/detail";
 import Contract from "~/pages/Admin/Contract";
-import Bill from "src/pages/Admin/Bill";
-import UtilityManagement from "~/pages/Admin/Utility/UtilityManagement";
-import IncidentReport from "~/pages/Admin/IncidentReport";
-import BoardingHouses from "~/pages/Admin/BoardingHouse";
+import Bill from "~/pages/Admin/Bill";
 import UserLayout from "~/components/Layout/UserLayout";
+import UserDashboard from "~/pages/User/HomeDashboard";
 import Revenue from "~/pages/Admin/Revenue";
 import Appointment from "~/pages/Admin/Appointment";
 import Asset from "~/pages/Admin/Asset";
@@ -27,16 +24,6 @@ import OperatingCostTracker from "~/pages/Admin/OperatingCostTracker";
 import AdminPaymentManagement from "~/pages/Admin/AdminPaymentManagement";
 import OwnerSubscriptionPage from "~/pages/Admin/OwnerSubscriptionPage";
 import AdminLayout from "~/components/Layout/AdminLayout";
-import React from "react";
-import BillCreator from "~/pages/Admin/Bill/component/BillCreator";
-import ContractCreatorPage from "~/pages/Admin/Contract/components/ContractCreatorPage";
-import ContractDetailPage from "~/pages/Admin/Contract/components/ContractDetailPage";
-import TenantCreatorPage from "~/pages/Admin/Tenant/components/TenantCreatorPage";
-import PropertyAssetCreatorPage from "~/pages/Admin/Asset/components/PropertyAssetCreatorPage";
-import RoomCreatorPage from "~/pages/Admin/Room/components/RoomCreatorPage";
-import BoardingHouseCreatorPage from "~/pages/Admin/BoardingHouse/components/BoardingHouseCreatorPage";
-import NotificationCenter from "~/pages/Common/NotificationCenter";
-import AnnouncementCenter from "~/pages/Common/AnnouncementCenter";
 
 const AppRoutes = () => {
     const { user } = useAuth();

@@ -1,0 +1,82 @@
+name: cd
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      backend_tag:
+        description: Optional backend image tag override
+        required: false
+        default: ""
+      frontend_tag:
+        description: Optional frontend image tag override
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-config:
+    name: Validate CI/CD configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate CI/CD config
+        uses: ./.github/actions/validate-cicd-config
+        with:
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          vps_host: ${{ secrets.VPS_HOST }}
+          vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
+          react_app_api_url: ${{ vars.REACT_APP_API_URL }}
+          react_app_ws_url: ${{ vars.REACT_APP_WS_URL }}
+          react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL }}
+
+  backend:
+    name: Build backend and push image
+    uses: ./.github/workflows/build-backend-image.yml
+    secrets: inherit
+    needs:
+      - validate-config
+    with:
+      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-backend
+      image_tag: sha-${{ github.sha }}
+      push: true
+
+  frontend:
+    name: Build frontend and push image
+    uses: ./.github/workflows/build-frontend-image.yml
+    secrets: inherit
+    needs:
+      - validate-config
+    with:
+      image_name: ${{ secrets.DOCKER_USERNAME }}/ez-tro-frontend
+      image_tag: sha-${{ github.sha }}
+      react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
+      react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+      react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
+      push: true
+
+  deploy:
+    name: Deploy to VPS
+    uses: ./.github/workflows/deploy-vps.yml
+    secrets: inherit
+    needs:
+      - validate-config
+      - backend
+      - frontend
+    with:
+      backend_tag: ${{ inputs.backend_tag || format('sha-{0}', github.sha) }}
+      frontend_tag: ${{ inputs.frontend_tag || format('sha-{0}', github.sha) }}
+      minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}

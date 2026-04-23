@@ -1,0 +1,96 @@
+name: build-frontend-image
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: Full Docker image name
+        required: true
+        type: string
+      image_tag:
+        description: Docker image tag
+        required: true
+        type: string
+      react_app_api_url:
+        description: Frontend API URL
+        required: true
+        type: string
+      react_app_ws_url:
+        description: Frontend WebSocket URL
+        required: true
+        type: string
+      react_app_minio_url:
+        description: Frontend MinIO URL
+        required: true
+        type: string
+      push:
+        description: Whether to push the image
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      DOCKER_USERNAME:
+        required: false
+      DOCKER_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build frontend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ez_tro_app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ez_tro_app
+        run: npm ci
+
+      - name: Test frontend
+        working-directory: ez_tro_app
+        env:
+          CI: true
+        run: npm test -- --watchAll=false --passWithNoTests
+
+      - name: Build frontend
+        working-directory: ez_tro_app
+        env:
+          REACT_APP_API_URL: ${{ inputs.react_app_api_url }}
+          REACT_APP_WS_URL: ${{ inputs.react_app_ws_url }}
+          REACT_APP_MINIO_URL: ${{ inputs.react_app_minio_url }}
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/frontend/Dockerfile
+          push: ${{ inputs.push }}
+          build-args: |
+            REACT_APP_API_URL=${{ inputs.react_app_api_url }}
+            REACT_APP_WS_URL=${{ inputs.react_app_ws_url }}
+            REACT_APP_MINIO_URL=${{ inputs.react_app_minio_url }}
+          tags: |
+            ${{ inputs.image_name }}:${{ inputs.image_tag }}
