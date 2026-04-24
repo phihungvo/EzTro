@@ -64,7 +64,13 @@ public class OwnerServiceImpl implements OwnerService {
         validateUnique(request);
         User owner = ownerMapper.toEntity(request);
         owner.setPassword(passwordEncoder.encode(request.getPassword()));
+        owner.setOriginalPassword(request.getPassword());
+        owner.setEnabled(true);
+        owner.setAccountNonExpired(true);
+        owner.setCredentialsNonExpired(true);
+        owner.setAccountNonLocked(true);
         owner.setRoles(Set.of(getOwnerRole()));
+//        owner.setProfilePicture();
         return ownerMapper.toResponse(userRepository.save(owner));
     }
 

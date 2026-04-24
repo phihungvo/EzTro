@@ -26,6 +26,6 @@ jobs:
     with:
       image_tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
       react_app_api_url: /api
-      react_app_ws_url: ws://localhost/ws
+      react_app_ws_url: /ws
       react_app_minio_url: http://your-domain.com/minio
       push: false

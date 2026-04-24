@@ -37,6 +37,21 @@ services:
     networks:
       - tevc_net
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: ez_tro_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tevc_net
+
   backend:
     image: ${DOCKER_USERNAME}/ez_tro_api:${BACKEND_IMAGE_TAG}
     container_name: ez_tro_backend
@@ -45,6 +60,8 @@ services:
       mysql:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-ez_tro_dev}
@@ -72,19 +89,42 @@ services:
       APP_SEED_ADMIN_EMAIL: ${APP_SEED_ADMIN_EMAIL:-admin@example.com}
       APP_SEED_ADMIN_PASSWORD: ${APP_SEED_ADMIN_PASSWORD:-admin123}
       APP_SEED_ADMIN_ROLE_NAME: ${APP_SEED_ADMIN_ROLE_NAME:-ADMIN}
+    volumes:
+      - tevc_cms_uploads:/uploads:rw
+    networks:
+      - tevc_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  frontend:
+    image: ${DOCKER_USERNAME}/ez_tro_app:${FRONTEND_IMAGE_TAG}
+    container_name: ez_tro_frontend
+    restart: always
+    depends_on:
+      - backend
     networks:
       - tevc_net
 
   nginx:
-    image: ${DOCKER_USERNAME}/ez_tro_app:${FRONTEND_IMAGE_TAG}
-    container_name: ez_tro_app
+    image: nginx:1.27-alpine
+    container_name: ez_tro_nginx
     restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+      minio:
+        condition: service_healthy
     ports:
       - "80:80"
     volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - tevc_cms_uploads:/uploads:ro
-    depends_on:
-      - backend
     networks:
       - tevc_net
 
@@ -92,6 +132,7 @@ volumes:
   mysql_data:
   tevc_cms_uploads:
   minio_data:
+  redis_data:
 
 networks:
   tevc_net:

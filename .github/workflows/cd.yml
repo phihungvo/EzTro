@@ -40,20 +40,20 @@ jobs:
           vps_host: ${{ secrets.VPS_HOST }}
           vps_user: ${{ secrets.VPS_USER }}
           vps_password: ${{ secrets.VPS_PASSWORD }}
-          react_app_api_url: ${{ vars.REACT_APP_API_URL }}
-          react_app_ws_url: ${{ vars.REACT_APP_WS_URL }}
-          react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
-          mysql_database: ${{ vars.MYSQL_DATABASE }}
+          react_app_api_url: ${{ secrets.REACT_APP_API_URL || '/api' }}
+          react_app_ws_url: ${{ secrets.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+          react_app_minio_url: ${{ secrets.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
+          mysql_database: ${{ secrets.MYSQL_DATABASE || 'ez_tro_prod' }}
           mysql_root_password: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           jwt_secret: ${{ secrets.JWT_SECRET }}
-          minio_url: ${{ vars.MINIO_URL}}
+          minio_url: ${{ vars.MINIO_URL || 'http://minio:9000' }}
           minio_access_key: ${{ secrets.MINIO_ACCESS_KEY }}
           minio_secret_key: ${{ secrets.MINIO_SECRET_KEY }}
-          app_seed_enabled: ${{ vars.APP_SEED_ENABLED }}
-          app_seed_admin_username: ${{ vars.APP_SEED_ADMIN_USERNAME}}
-          app_seed_admin_email: ${{ vars.APP_SEED_ADMIN_EMAIL}}
-          app_seed_admin_password: ${{ secrets.APP_SEED_ADMIN_PASSWORD}}
-          app_seed_admin_role_name: ${{ vars.APP_SEED_ADMIN_ROLE_NAME}}
+          app_seed_enabled: ${{ vars.APP_SEED_ENABLED || 'true' }}
+          app_seed_admin_username: ${{ vars.APP_SEED_ADMIN_USERNAME || 'admin' }}
+          app_seed_admin_email: ${{ vars.APP_SEED_ADMIN_EMAIL || 'admin@example.com' }}
+          app_seed_admin_password: ${{ secrets.APP_SEED_ADMIN_PASSWORD }}
+          app_seed_admin_role_name: ${{ vars.APP_SEED_ADMIN_ROLE_NAME || 'ADMIN' }}
 
   backend:
     name: Build backend and push image
@@ -73,8 +73,8 @@ jobs:
       - validate-config
     with:
       image_tag: sha-${{ github.sha }}
-      react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
-      react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+      react_app_api_url: /api
+      react_app_ws_url: /ws
       react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
       push: true
 
