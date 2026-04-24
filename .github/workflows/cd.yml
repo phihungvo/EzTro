@@ -43,6 +43,17 @@ jobs:
           react_app_api_url: ${{ vars.REACT_APP_API_URL }}
           react_app_ws_url: ${{ vars.REACT_APP_WS_URL }}
           react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
+          mysql_database: ${{ vars.MYSQL_DATABASE }}
+          mysql_root_password: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          jwt_secret: ${{ secrets.JWT_SECRET }}
+          minio_url: ${{ vars.MINIO_URL}}
+          minio_access_key: ${{ secrets.MINIO_ACCESS_KEY }}
+          minio_secret_key: ${{ secrets.MINIO_SECRET_KEY }}
+          app_seed_enabled: ${{ vars.APP_SEED_ENABLED }}
+          app_seed_admin_username: ${{ vars.APP_SEED_ADMIN_USERNAME}}
+          app_seed_admin_email: ${{ vars.APP_SEED_ADMIN_EMAIL}}
+          app_seed_admin_password: ${{ secrets.APP_SEED_ADMIN_PASSWORD}}
+          app_seed_admin_role_name: ${{ vars.APP_SEED_ADMIN_ROLE_NAME}}
 
   backend:
     name: Build backend and push image
@@ -78,4 +89,3 @@ jobs:
     with:
       backend_tag: ${{ inputs.backend_tag || format('sha-{0}', github.sha) }}
       frontend_tag: ${{ inputs.frontend_tag || format('sha-{0}', github.sha) }}
-      minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio'}}

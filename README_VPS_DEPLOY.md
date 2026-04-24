@@ -21,8 +21,8 @@ Tài liệu này là checklist deploy production ngắn cho stack hiện tại:
 - Workflow `cd.yml` sẽ validate secrets/variables trước khi build với push/main hoặc manual dispatch.
 - Frontend sẽ chạy test tự động nếu có test file.
 - Docker image được push lên Docker Hub.
-- VPS Ubuntu cập nhật tag image trong `.env`, rồi pull image và chạy `docker compose up -d`.
-- Stack production gồm `backend`, `frontend`, `mysql`, `redis`, `minio`, và `nginx` reverse proxy.
+- VPS không cần giữ `.env` thủ công. Workflow deploy sẽ truyền biến môi trường tạm thời qua SSH rồi chạy `docker compose`.
+- Stack production gồm `backend`, `frontend`, `mysql`, `minio`, và `nginx` reverse proxy.
 - Backend và frontend chạy bằng image đã build sẵn, không build lại trên VPS.
 - Nginx public ra Internet qua port `80` và route `/api`, `/ws`, `/minio`, và `/` về đúng service.
 
@@ -33,7 +33,6 @@ Tài liệu này là checklist deploy production ngắn cho stack hiện tại:
 ```text
 /opt/ez-tro/
 ├── docker-compose.prod.yml
-├── .env
 └── nginx/
     └── nginx.conf
 ```
@@ -72,35 +71,47 @@ sudo ufw allow 80/tcp
 sudo ufw enable
 ```
 
-## 5. File `.env`
+## 5. GitHub Variables và Secrets
 
-Copy từ `.env.example` rồi điền giá trị thật:
+Tất cả cấu hình deploy nên đặt trong `Settings` -> `Secrets and variables` -> `Actions` của GitHub.
+
+### Secrets
 
 - `DOCKER_USERNAME`
-- `BACKEND_IMAGE_TAG`
-- `FRONTEND_IMAGE_TAG`
-- `MYSQL_DATABASE`
-- `MYSQL_USER`
-- `MYSQL_PASSWORD`
+- `DOCKER_PASSWORD`
+- `VPS_HOST`
+- `VPS_USER`
+- `VPS_PASSWORD`
 - `MYSQL_ROOT_PASSWORD`
 - `JWT_SECRET`
+- `MINIO_ACCESS_KEY`
+- `MINIO_SECRET_KEY`
+- `APP_SEED_ADMIN_PASSWORD`
+
+### Variables
+
+- `MYSQL_DATABASE`
 - `JWT_EXPIRATION`
 - `FILE_UPLOAD_DIR`
 - `REDIS_HOST`
 - `REDIS_PORT`
 - `REDIS_PASSWORD`
+- `MINIO_URL`
+- `MINIO_BUCKET`
+- `MINIO_BASE_PATH`
 - `MAIL_USERNAME`
 - `MAIL_PASSWORD`
 - `MAIL_DEBUG`
-- `MINIO_ACCESS_KEY`
-- `MINIO_SECRET_KEY`
-- `MINIO_BUCKET`
-- `MINIO_BASE_PATH`
+- `APP_SEED_ENABLED`
+- `APP_SEED_RBAC_RESOURCE`
+- `APP_SEED_SUBSCRIPTION_PLANS_RESOURCE`
+- `APP_SEED_DEFAULT_PLAN_CODE`
+- `APP_SEED_ADMIN_USERNAME`
+- `APP_SEED_ADMIN_EMAIL`
+- `APP_SEED_ADMIN_ROLE_NAME`
 - `REACT_APP_API_URL`
 - `REACT_APP_WS_URL`
 - `REACT_APP_MINIO_URL`
-
-Không commit `.env` lên GitHub.
 
 ## 6. Chạy production trên VPS
 
@@ -118,7 +129,7 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d --remove-orphans
 ```
 
-Workflow GitHub Actions sẽ tự cập nhật `DOCKER_USERNAME`, `BACKEND_IMAGE_TAG`, và `FRONTEND_IMAGE_TAG` trong `.env` trên VPS trước khi chạy lệnh trên.
+Workflow GitHub Actions sẽ truyền các biến cần thiết trực tiếp vào phiên SSH, nên không tạo file `.env` trên VPS.
 
 ## 7. Flow CI/CD
 
@@ -144,31 +155,17 @@ docker compose up -d
 
 Vào repo GitHub, mở `Settings` -> `Secrets and variables` -> `Actions`.
 
-### Secrets
-
-- `DOCKER_USERNAME`
-- `DOCKER_PASSWORD`
-- `VPS_HOST`
-- `VPS_SSH_KEY`
-
-### Variables
-
-Khuyến nghị thêm repo variables:
-
-- `REACT_APP_API_URL`
-- `REACT_APP_WS_URL`
-- `REACT_APP_MINIO_URL`
-
 ### Giá trị gợi ý
 
 - `REACT_APP_API_URL`: `https://your-domain.com/api` hoặc `http://your-domain.com/api`
 - `REACT_APP_WS_URL`: `wss://your-domain.com/ws` hoặc `ws://your-domain.com/ws`
 - `REACT_APP_MINIO_URL`: `https://files.your-domain.com` hoặc `http://files.your-domain.com`
+- `MINIO_URL`: `http://minio:9000`
 
 ### Lưu ý
 
-- `VPS_SSH_KEY` nên là private key dùng để SSH vào VPS.
 - `DOCKER_USERNAME` phải khớp với namespace image trên Docker Hub.
+- `MINIO_URL` là endpoint nội bộ trong Docker network, không phải public URL có path `/minio`.
 - Workflow `cd.yml` sẽ dùng các biến này để build, push image và deploy.
 
 ## 9. Checklist kiểm tra sau deploy
@@ -185,4 +182,4 @@ Khuyến nghị thêm repo variables:
 - Không dùng `latest` cho production image.
 - Không mở public port database.
 - Database phải dùng volume.
-- Secret chỉ để trong GitHub Secrets hoặc `.env` trên VPS.
+- Secret chỉ để trong GitHub Secrets.

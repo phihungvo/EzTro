@@ -11,10 +11,6 @@ on:
         description: Frontend image tag
         required: true
         type: string
-      minio_url:
-        description: Public MinIO URL
-        required: true
-        type: string
     secrets:
       DOCKER_USERNAME:
         required: true
@@ -77,45 +73,69 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_TAG: ${{ inputs.backend_tag }}
           FRONTEND_TAG: ${{ inputs.frontend_tag }}
-          MINIO_URL: ${{ inputs.minio_url }}
+          MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE || 'ez_tro_dev' }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION || '360000000' }}
+          FILE_UPLOAD_DIR: ${{ vars.FILE_UPLOAD_DIR || '/uploads' }}
+          REDIS_HOST: ${{ vars.REDIS_HOST || 'redis' }}
+          REDIS_PORT: ${{ vars.REDIS_PORT || '6379' }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          MINIO_URL: ${{ vars.MINIO_URL || 'http://minio:9000' }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY || 'minioadmin' }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY || 'minioadmin' }}
+          MINIO_BUCKET: ${{ vars.MINIO_BUCKET || 'ez-tro' }}
+          MINIO_BASE_PATH: ${{ vars.MINIO_BASE_PATH || '/uploads' }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_DEBUG: ${{ vars.MAIL_DEBUG || 'false' }}
+          APP_SEED_ENABLED: ${{ vars.APP_SEED_ENABLED || 'true' }}
+          APP_SEED_RBAC_RESOURCE: ${{ vars.APP_SEED_RBAC_RESOURCE || 'classpath:seeds/rbac-seed.json' }}
+          APP_SEED_SUBSCRIPTION_PLANS_RESOURCE: ${{ vars.APP_SEED_SUBSCRIPTION_PLANS_RESOURCE || 'classpath:seeds/subscription-plans-seed.json' }}
+          APP_SEED_DEFAULT_PLAN_CODE: ${{ vars.APP_SEED_DEFAULT_PLAN_CODE || 'DEFAULT' }}
+          APP_SEED_ADMIN_USERNAME: ${{ vars.APP_SEED_ADMIN_USERNAME || 'admin' }}
+          APP_SEED_ADMIN_EMAIL: ${{ vars.APP_SEED_ADMIN_EMAIL || 'admin@example.com' }}
+          APP_SEED_ADMIN_PASSWORD: ${{ secrets.APP_SEED_ADMIN_PASSWORD || 'admin123' }}
+          APP_SEED_ADMIN_ROLE_NAME: ${{ vars.APP_SEED_ADMIN_ROLE_NAME || 'ADMIN' }}
         run: |
-          printf '%s\n' "$DOCKER_PASSWORD" | sshpass -e ssh -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "set -e
+          shell_quote() {
+            printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\"'\"'/g")"
+          }
+
+          sshpass -e ssh -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "bash -s" <<EOF
+          set -euo pipefail
           cd /opt/ez-tro
 
-          if [ ! -f .env ]; then
-            touch .env
-          fi
+          printf '%s\n' $(shell_quote "$DOCKER_PASSWORD") | docker login -u $(shell_quote "$DOCKER_USERNAME") --password-stdin
 
-          if grep -q '^DOCKER_USERNAME=' .env; then
-            sed -i \"s|^DOCKER_USERNAME=.*|DOCKER_USERNAME=$DOCKER_USERNAME|\" .env
-          else
-            printf 'DOCKER_USERNAME=%s\n' \"$DOCKER_USERNAME\" >> .env
-          fi
+          export DOCKER_USERNAME=$(shell_quote "$DOCKER_USERNAME")
+          export BACKEND_IMAGE_TAG=$(shell_quote "$BACKEND_TAG")
+          export FRONTEND_IMAGE_TAG=$(shell_quote "$FRONTEND_TAG")
+          export MYSQL_DATABASE=$(shell_quote "$MYSQL_DATABASE")
+          export MYSQL_ROOT_PASSWORD=$(shell_quote "$MYSQL_ROOT_PASSWORD")
+          export JWT_SECRET=$(shell_quote "$JWT_SECRET")
+          export JWT_EXPIRATION=$(shell_quote "$JWT_EXPIRATION")
+          export FILE_UPLOAD_DIR=$(shell_quote "$FILE_UPLOAD_DIR")
+          export REDIS_HOST=$(shell_quote "$REDIS_HOST")
+          export REDIS_PORT=$(shell_quote "$REDIS_PORT")
+          export REDIS_PASSWORD=$(shell_quote "$REDIS_PASSWORD")
+          export MINIO_URL=$(shell_quote "$MINIO_URL")
+          export MINIO_ACCESS_KEY=$(shell_quote "$MINIO_ACCESS_KEY")
+          export MINIO_SECRET_KEY=$(shell_quote "$MINIO_SECRET_KEY")
+          export MINIO_BUCKET=$(shell_quote "$MINIO_BUCKET")
+          export MINIO_BASE_PATH=$(shell_quote "$MINIO_BASE_PATH")
+          export MAIL_USERNAME=$(shell_quote "$MAIL_USERNAME")
+          export MAIL_PASSWORD=$(shell_quote "$MAIL_PASSWORD")
+          export MAIL_DEBUG=$(shell_quote "$MAIL_DEBUG")
+          export APP_SEED_ENABLED=$(shell_quote "$APP_SEED_ENABLED")
+          export APP_SEED_RBAC_RESOURCE=$(shell_quote "$APP_SEED_RBAC_RESOURCE")
+          export APP_SEED_SUBSCRIPTION_PLANS_RESOURCE=$(shell_quote "$APP_SEED_SUBSCRIPTION_PLANS_RESOURCE")
+          export APP_SEED_DEFAULT_PLAN_CODE=$(shell_quote "$APP_SEED_DEFAULT_PLAN_CODE")
+          export APP_SEED_ADMIN_USERNAME=$(shell_quote "$APP_SEED_ADMIN_USERNAME")
+          export APP_SEED_ADMIN_EMAIL=$(shell_quote "$APP_SEED_ADMIN_EMAIL")
+          export APP_SEED_ADMIN_PASSWORD=$(shell_quote "$APP_SEED_ADMIN_PASSWORD")
+          export APP_SEED_ADMIN_ROLE_NAME=$(shell_quote "$APP_SEED_ADMIN_ROLE_NAME")
 
-          if grep -q '^BACKEND_IMAGE_TAG=' .env; then
-            sed -i \"s|^BACKEND_IMAGE_TAG=.*|BACKEND_IMAGE_TAG=$BACKEND_TAG|\" .env
-          else
-            printf 'BACKEND_IMAGE_TAG=%s\n' \"$BACKEND_TAG\" >> .env
-          fi
-
-          if grep -q '^FRONTEND_IMAGE_TAG=' .env; then
-            sed -i \"s|^FRONTEND_IMAGE_TAG=.*|FRONTEND_IMAGE_TAG=$FRONTEND_TAG|\" .env
-          else
-            printf 'FRONTEND_IMAGE_TAG=%s\n' \"$FRONTEND_TAG\" >> .env
-          fi
-
-          if grep -q '^MINIO_URL=' .env; then
-            sed -i \"s|^MINIO_URL=.*|MINIO_URL=$MINIO_URL|\" .env
-          else
-            printf 'MINIO_URL=%s\n' \"$MINIO_URL\" >> .env
-          fi
-
-          if grep -q '^REACT_APP_MINIO_URL=' .env; then
-            sed -i \"s|^REACT_APP_MINIO_URL=.*|REACT_APP_MINIO_URL=$MINIO_URL|\" .env
-          else
-            printf 'REACT_APP_MINIO_URL=%s\n' \"$MINIO_URL\" >> .env
-          fi
-
-          docker login -u \"$DOCKER_USERNAME\" --password-stdin
           docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml up -d --remove-orphans"
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          EOF
