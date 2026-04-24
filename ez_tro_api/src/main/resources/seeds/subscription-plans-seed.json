@@ -1,0 +1,32 @@
+{
+  "plans": [
+    {
+      "code": "DEFAULT",
+      "name": "Gói Mặc Định",
+      "description": "Gói mặc định cho owner mới, có giới hạn mọi thứ",
+      "fullDescription": null,
+      "maxBoardingHouses": 1,
+      "maxBuildings": 2,
+      "maxRooms": 10,
+      "maxTenants": 20,
+      "maxActiveContracts": 0,
+      "pricePerMonth": 0.00,
+      "durationDays": null,
+      "isActive": true
+    },
+    {
+      "code": "ENTERPRISE_PRO",
+      "name": "Gói Doanh Nghiệp Pro",
+      "description": "Giải pháp toàn diện cho chuỗi nhà trọ, quản lý quy mô lớn",
+      "fullDescription": "## 🚀 Gói Doanh Nghiệp Pro\n\nPhù hợp cho các đơn vị vận hành nhiều khu trọ.\n\n### 🔹 Tính năng nổi bật\n- Không giới hạn khu trọ\n- Không giới hạn tòa nhà\n- Không giới hạn phòng\n- Quản lý hợp đồng nâng cao\n- Báo cáo doanh thu chi tiết\n- Hỗ trợ kỹ thuật ưu tiên 24/7\n\n### 💼 Phù hợp với\n- Doanh nghiệp vận hành chuỗi phòng trọ\n- Công ty quản lý bất động sản cho thuê",
+      "maxBoardingHouses": 1000,
+      "maxBuildings": 2000,
+      "maxRooms": 20000,
+      "maxTenants": 50000,
+      "maxActiveContracts": 30000,
+      "pricePerMonth": 1299000.00,
+      "durationDays": 365,
+      "isActive": true
+    }
+  ]
+}

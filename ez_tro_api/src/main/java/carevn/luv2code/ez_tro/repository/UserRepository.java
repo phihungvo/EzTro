@@ -31,6 +31,8 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     boolean existsByUserName(String userName);
 
+    boolean existsByRoles_Name(String roleName);
+
     @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = 'OWNER'")
     List<User> findAllOwners();
 
