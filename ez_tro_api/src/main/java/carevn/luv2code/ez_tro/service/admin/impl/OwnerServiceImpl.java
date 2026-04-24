@@ -70,6 +70,7 @@ public class OwnerServiceImpl implements OwnerService {
         owner.setCredentialsNonExpired(true);
         owner.setAccountNonLocked(true);
         owner.setRoles(Set.of(getOwnerRole()));
+//        owner.setProfilePicture();
         return ownerMapper.toResponse(userRepository.save(owner));
     }
 
