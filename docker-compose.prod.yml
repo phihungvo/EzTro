@@ -6,8 +6,8 @@ services:
     container_name: ez_tro_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tevc_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ez_tro_dev}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -18,6 +18,25 @@ services:
     networks:
       - tevc_net
 
+  minio:
+    image: minio/minio:latest
+    container_name: ez_tro_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tevc_net
+
   backend:
     image: ${DOCKER_USERNAME}/ez_tro_api:${BACKEND_IMAGE_TAG}
     container_name: ez_tro_backend
@@ -25,6 +44,34 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-ez_tro_dev}
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-360000000}
+      FILE_UPLOAD_DIR: ${FILE_UPLOAD_DIR:-/uploads}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      MINIO_URL: ${MINIO_URL:-http://minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ez-tro}
+      MINIO_BASE_PATH: ${MINIO_BASE_PATH:-/uploads}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_DEBUG: ${MAIL_DEBUG:-false}
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-true}
+      APP_SEED_RBAC_RESOURCE: ${APP_SEED_RBAC_RESOURCE:-classpath:seeds/rbac-seed.json}
+      APP_SEED_SUBSCRIPTION_PLANS_RESOURCE: ${APP_SEED_SUBSCRIPTION_PLANS_RESOURCE:-classpath:seeds/subscription-plans-seed.json}
+      APP_SEED_DEFAULT_PLAN_CODE: ${APP_SEED_DEFAULT_PLAN_CODE:-DEFAULT}
+      APP_SEED_ADMIN_USERNAME: ${APP_SEED_ADMIN_USERNAME:-admin}
+      APP_SEED_ADMIN_EMAIL: ${APP_SEED_ADMIN_EMAIL:-admin@example.com}
+      APP_SEED_ADMIN_PASSWORD: ${APP_SEED_ADMIN_PASSWORD:-admin123}
+      APP_SEED_ADMIN_ROLE_NAME: ${APP_SEED_ADMIN_ROLE_NAME:-ADMIN}
     networks:
       - tevc_net
 
@@ -44,6 +91,7 @@ services:
 volumes:
   mysql_data:
   tevc_cms_uploads:
+  minio_data:
 
 networks:
   tevc_net:

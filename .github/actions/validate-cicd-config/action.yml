@@ -26,6 +26,39 @@ inputs:
   react_app_minio_url:
     description: Frontend MinIO URL
     required: true
+  mysql_database:
+    description: MySQL database name
+    required: true
+  mysql_root_password:
+    description: MySQL root password
+    required: true
+  jwt_secret:
+    description: JWT secret
+    required: true
+  minio_url:
+    description: Backend MinIO endpoint
+    required: true
+  minio_access_key:
+    description: MinIO access key
+    required: true
+  minio_secret_key:
+    description: MinIO secret key
+    required: true
+  app_seed_enabled:
+    description: Seed enable flag
+    required: true
+  app_seed_admin_username:
+    description: Seed admin username
+    required: true
+  app_seed_admin_email:
+    description: Seed admin email
+    required: true
+  app_seed_admin_password:
+    description: Seed admin password
+    required: true
+  app_seed_admin_role_name:
+    description: Seed admin role name
+    required: true
 
 runs:
   using: composite
@@ -41,6 +74,17 @@ runs:
         REACT_APP_API_URL: ${{ inputs.react_app_api_url }}
         REACT_APP_WS_URL: ${{ inputs.react_app_ws_url }}
         REACT_APP_MINIO_URL: ${{ inputs.react_app_minio_url }}
+        MYSQL_DATABASE: ${{ inputs.mysql_database }}
+        MYSQL_ROOT_PASSWORD: ${{ inputs.mysql_root_password }}
+        JWT_SECRET: ${{ inputs.jwt_secret }}
+        MINIO_URL: ${{ inputs.minio_url }}
+        MINIO_ACCESS_KEY: ${{ inputs.minio_access_key }}
+        MINIO_SECRET_KEY: ${{ inputs.minio_secret_key }}
+        APP_SEED_ENABLED: ${{ inputs.app_seed_enabled }}
+        APP_SEED_ADMIN_USERNAME: ${{ inputs.app_seed_admin_username }}
+        APP_SEED_ADMIN_EMAIL: ${{ inputs.app_seed_admin_email }}
+        APP_SEED_ADMIN_PASSWORD: ${{ inputs.app_seed_admin_password }}
+        APP_SEED_ADMIN_ROLE_NAME: ${{ inputs.app_seed_admin_role_name }}
       run: |
         missing=()
 
@@ -52,7 +96,18 @@ runs:
           VPS_PASSWORD \
           REACT_APP_API_URL \
           REACT_APP_WS_URL \
-          REACT_APP_MINIO_URL
+          REACT_APP_MINIO_URL \
+          MYSQL_DATABASE \
+          MYSQL_ROOT_PASSWORD \
+          JWT_SECRET \
+          MINIO_URL \
+          MINIO_ACCESS_KEY \
+          MINIO_SECRET_KEY \
+          APP_SEED_ENABLED \
+          APP_SEED_ADMIN_USERNAME \
+          APP_SEED_ADMIN_EMAIL \
+          APP_SEED_ADMIN_PASSWORD \
+          APP_SEED_ADMIN_ROLE_NAME
         do
           if [ -z "${!name}" ]; then
             missing+=("$name")
