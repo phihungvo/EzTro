@@ -73,7 +73,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_TAG: ${{ inputs.backend_tag }}
           FRONTEND_TAG: ${{ inputs.frontend_tag }}
-          MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE || 'ez_tro_dev' }}
+          MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE || 'ez_tro_prod' }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION || '360000000' }}

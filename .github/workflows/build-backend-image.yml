@@ -60,4 +60,4 @@ jobs:
           file: ./docker/backend/Dockerfile
           push: ${{ inputs.push }}
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/ez_tro_api:${{ inputs.image_tag }}
+            ${{ secrets.DOCKER_USERNAME || 'local' }}/ez_tro_api:${{ inputs.image_tag }}

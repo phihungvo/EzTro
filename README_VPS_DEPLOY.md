@@ -19,6 +19,7 @@ Tài liệu này là checklist deploy production ngắn cho stack hiện tại:
 - `ci.yml` sẽ gọi lại cùng reusable build workflows với `push: false`.
 - GitHub Actions build backend và frontend trên runner.
 - Workflow `cd.yml` sẽ validate secrets/variables trước khi build với push/main hoặc manual dispatch.
+- Production dùng `frontend` để phục vụ SPA và `nginx` để route `/`, `/api`, `/ws`, `/minio`, `/uploads`.
 - Frontend sẽ chạy test tự động nếu có test file.
 - Docker image được push lên Docker Hub.
 - VPS không cần giữ `.env` thủ công. Workflow deploy sẽ truyền biến môi trường tạm thời qua SSH rồi chạy `docker compose`.
@@ -113,6 +114,15 @@ Tất cả cấu hình deploy nên đặt trong `Settings` -> `Secrets and varia
 - `REACT_APP_WS_URL`
 - `REACT_APP_MINIO_URL`
 
+### Default có sẵn nếu chưa cấu hình
+
+- `MYSQL_DATABASE`: `ez_tro_prod`
+- `MINIO_URL`: `http://minio:9000`
+- `APP_SEED_ENABLED`: `true`
+- `APP_SEED_ADMIN_USERNAME`: `admin`
+- `APP_SEED_ADMIN_EMAIL`: `admin@example.com`
+- `APP_SEED_ADMIN_ROLE_NAME`: `ADMIN`
+
 ## 6. Chạy production trên VPS
 
 ```bash
@@ -174,6 +184,7 @@ Vào repo GitHub, mở `Settings` -> `Secrets and variables` -> `Actions`.
 - `http://your-domain.com` mở được frontend
 - `http://your-domain.com/api/...` trả API
 - WebSocket `/ws` kết nối được
+- `http://your-domain.com/uploads/...` hoạt động nếu có file upload local cần public
 - Database dữ liệu vẫn còn sau restart container
 
 ## 10. Lưu ý quan trọng
