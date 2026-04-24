@@ -1,0 +1,2043 @@
+{
+  "roles": [
+    {
+      "name": "USER",
+      "description": "Basic user role"
+    },
+    {
+      "name": "ADMIN",
+      "description": "Administrator role"
+    },
+    {
+      "name": "OWNER",
+      "description": "Chủ nhà trọ - quản lý nhà trọ của mình"
+    }
+  ],
+  "permissions": [
+    {
+      "key": "perm_1",
+      "name": "USER_READ",
+      "description": "Read user profile",
+      "apiEndpoint": "/api/user/**",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_2",
+      "name": "USER_WRITE",
+      "description": "Update user profile",
+      "apiEndpoint": "/api/user/**",
+      "httpMethod": "PUT",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_3",
+      "name": "ADMIN_READ",
+      "description": "Admin read access",
+      "apiEndpoint": "/api/admin/**",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_4",
+      "name": "READ_ROLE",
+      "description": null,
+      "apiEndpoint": "/api/roles/noPaging/**",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_5",
+      "name": "READ_ALL_ROLE",
+      "description": null,
+      "apiEndpoint": "/api/roles/**",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_6",
+      "name": "PERMISSION_READ",
+      "description": null,
+      "apiEndpoint": "/api/permissions",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/permissions/**"
+    },
+    {
+      "key": "perm_7",
+      "name": "PERMISSION_READ_PAGINATED",
+      "description": null,
+      "apiEndpoint": "/api/permissions",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/permissions/**"
+    },
+    {
+      "key": "perm_32",
+      "name": "READ_BILLS",
+      "description": null,
+      "apiEndpoint": "/api/bills/**",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/**"
+    },
+    {
+      "key": "perm_33",
+      "name": "READ_BILL_BY_ID",
+      "description": null,
+      "apiEndpoint": "/api/bills/**",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/**"
+    },
+    {
+      "key": "perm_34",
+      "name": "READ_ROOMS",
+      "description": null,
+      "apiEndpoint": "/api/rooms",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/**"
+    },
+    {
+      "key": "perm_35",
+      "name": "GET_ALL_BUILDINGS",
+      "description": "Lấy danh sách tất cả các tòa nhà",
+      "apiEndpoint": "/api/buildings",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/buildings"
+    },
+    {
+      "key": "perm_36",
+      "name": "GET_BUILDING_BY_ID",
+      "description": "Xem chi tiết tòa nhà",
+      "apiEndpoint": "/api/buildings/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/buildings/{id}"
+    },
+    {
+      "key": "perm_37",
+      "name": "CREATE_BUILDING",
+      "description": "Tạo mới tòa nhà",
+      "apiEndpoint": "/api/buildings",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/buildings"
+    },
+    {
+      "key": "perm_38",
+      "name": "UPDATE_BUILDING",
+      "description": "Cập nhật thông tin tòa nhà",
+      "apiEndpoint": "/api/buildings/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/buildings/{id}"
+    },
+    {
+      "key": "perm_39",
+      "name": "DELETE_BUILDING",
+      "description": "Xóa tòa nhà",
+      "apiEndpoint": "/api/buildings/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/buildings/{id}"
+    },
+    {
+      "key": "perm_40",
+      "name": "GET_PAGED_BUILDINGS",
+      "description": "Lấy danh sách tòa nhà có phân trang",
+      "apiEndpoint": "/api/buildings/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/buildings/paged"
+    },
+    {
+      "key": "perm_41",
+      "name": "GET_PAGED_ROOMS",
+      "description": "Lấy danh sách phòng có phân trang",
+      "apiEndpoint": "/api/rooms/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/paged"
+    },
+    {
+      "key": "perm_42",
+      "name": "GET_PAGED_TENANTS",
+      "description": "Lấy danh sách người thuê có phân trang",
+      "apiEndpoint": "/api/tenants/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/tenants/paged"
+    },
+    {
+      "key": "perm_43",
+      "name": "VIEW_TENANT_DETAIL",
+      "description": "Xem thông tin chi tiết người thuê trọ theo ID",
+      "apiEndpoint": "/api/tenants/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/tenants/*"
+    },
+    {
+      "key": "perm_44",
+      "name": "GET_BOARDING_HOUSE",
+      "description": null,
+      "apiEndpoint": "/api/boarding-houses",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/boarding-houses"
+    },
+    {
+      "key": "perm_45",
+      "name": "GET_BOARDING_HOUSE_PAGED",
+      "description": null,
+      "apiEndpoint": "/api/boarding-houses/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/boarding-houses/paged"
+    },
+    {
+      "key": "perm_46",
+      "name": "CREATE_BOARDING_HOUSE",
+      "description": null,
+      "apiEndpoint": "/api/boarding-houses",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/boarding-houses"
+    },
+    {
+      "key": "perm_47",
+      "name": "GET_ALL_USERS",
+      "description": "Lấy danh sách tất cả người dùng (phân trang)",
+      "apiEndpoint": "/api/user/getAll",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/getAll"
+    },
+    {
+      "key": "perm_48",
+      "name": "GET_ALL_USER_BASIC_INFO",
+      "description": "Lấy danh sách thông tin cơ bản của tất cả user",
+      "apiEndpoint": "/api/users/basic-info",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/users/basic-info"
+    },
+    {
+      "key": "perm_49",
+      "name": "GET_ALL_OWNER_USERS",
+      "description": "Lấy danh sách user có role OWNER",
+      "apiEndpoint": "/api/users/owners",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/users/owners"
+    },
+    {
+      "key": "perm_50",
+      "name": "UPDATE_BOARDING_HOUSE",
+      "description": "Cập nhật thông tin khu nhà trọ",
+      "apiEndpoint": "/api/boarding-houses/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/boarding-houses/*"
+    },
+    {
+      "key": "perm_51",
+      "name": "DELETE_BOARDING_HOUSE",
+      "description": "Xóa nhà trọ theo ID",
+      "apiEndpoint": "/api/boarding-houses/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/boarding-houses/*"
+    },
+    {
+      "key": "perm_53",
+      "name": "EXPORT_EXCEL",
+      "description": "Quyền xuất dữ liệu sang file Excel",
+      "apiEndpoint": "/api/export/excel",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/export/**"
+    },
+    {
+      "key": "perm_54",
+      "name": "GET_CONTRACT",
+      "description": null,
+      "apiEndpoint": "/api/contracts",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/contracts"
+    },
+    {
+      "key": "perm_55",
+      "name": "CREATE_CONTRACT",
+      "description": null,
+      "apiEndpoint": "/api/contracts",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts"
+    },
+    {
+      "key": "perm_56",
+      "name": "UPDATE_CONTRACT",
+      "description": null,
+      "apiEndpoint": "/api/contracts/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/contracts/**"
+    },
+    {
+      "key": "perm_57",
+      "name": "GET_CONTRACT_PAGED",
+      "description": null,
+      "apiEndpoint": "/api/contracts/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/contracts/paged"
+    },
+    {
+      "key": "perm_58",
+      "name": "GET_ALL_TENANTS",
+      "description": null,
+      "apiEndpoint": "/api/tenants",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/tenants"
+    },
+    {
+      "key": "perm_59",
+      "name": "DELETE_CONTRACT",
+      "description": null,
+      "apiEndpoint": "/api/contracts/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/contracts/**"
+    },
+    {
+      "key": "perm_60",
+      "name": "CREATE_AMENITY",
+      "description": null,
+      "apiEndpoint": "/api/amenities",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/amenities"
+    },
+    {
+      "key": "perm_61",
+      "name": "UPDATE_AMENITY",
+      "description": null,
+      "apiEndpoint": "/api/amenities/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/amenities/**"
+    },
+    {
+      "key": "perm_62",
+      "name": "DELETE_AMENITY",
+      "description": null,
+      "apiEndpoint": "/api/amenities/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/amenities/**"
+    },
+    {
+      "key": "perm_63",
+      "name": "GET_ALL",
+      "description": null,
+      "apiEndpoint": "/api/amenities",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/amenities"
+    },
+    {
+      "key": "perm_64",
+      "name": "GET_BY_BOARDING_HOUSE",
+      "description": null,
+      "apiEndpoint": "/api/amenities/boarding-house/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/amenities/**"
+    },
+    {
+      "key": "perm_65",
+      "name": "GET_AMENITY_PAGED",
+      "description": null,
+      "apiEndpoint": "/api/amenities/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/amenities/**"
+    },
+    {
+      "key": "perm_66",
+      "name": "VIEW_ROOM_AMENITIES_BY_BOARDING_HOUSE",
+      "description": "Xem danh sách RoomAmenity theo khu nhà",
+      "apiEndpoint": "/api/room-amenities/boarding-house/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-amenities/boarding-house/*"
+    },
+    {
+      "key": "perm_67",
+      "name": "GET_USER_BILLS",
+      "description": "Lấy danh sách hóa đơn của người dùng theo ID",
+      "apiEndpoint": "/api/user/bills",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/bills"
+    },
+    {
+      "key": "perm_68",
+      "name": "CREATE_BILL",
+      "description": null,
+      "apiEndpoint": "/api/bills",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/bills/**"
+    },
+    {
+      "key": "perm_70",
+      "name": "GET_BILL_SUMMARY",
+      "description": null,
+      "apiEndpoint": "/api/user/dashboard/current",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/dashboard/current"
+    },
+    {
+      "key": "perm_71",
+      "name": "BILL_VIEW_PAGED",
+      "description": "Xem danh sách hóa đơn có phân trang của người dùng",
+      "apiEndpoint": "/api/user/bills/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/bills/paged*"
+    },
+    {
+      "key": "perm_72",
+      "name": "GET_ACTIVE_CONTRACT",
+      "description": null,
+      "apiEndpoint": "/api/contracts/active",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/contracts/active"
+    },
+    {
+      "key": "perm_73",
+      "name": "MANUAL_GENERATE_BILLS",
+      "description": "Quyền thực hiện tạo hóa đơn thủ công qua cron job (dành cho admin/owner)",
+      "apiEndpoint": "/api/cron-jobs/generate-bills/manual",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/cron-jobs/generate-bills/manual"
+    },
+    {
+      "key": "perm_74",
+      "name": "UPLOAD_CONTRACT_FILES",
+      "description": "Upload one or more files for a contract",
+      "apiEndpoint": "/api/files/upload/contract/{contractId}",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/files/**"
+    },
+    {
+      "key": "perm_75",
+      "name": "FILE_GET_PRESIGNED_URL",
+      "description": "Tạo liên kết tạm thời (Presigned URL) để xem hoặc tải xuống file",
+      "apiEndpoint": "/api/files/{fileId}/presigned-url",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/files/*/presigned-url"
+    },
+    {
+      "key": "perm_76",
+      "name": "FILE_DOWNLOAD",
+      "description": "Tải xuống file theo ID",
+      "apiEndpoint": "/api/files/{fileId}/download",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/files/*/download"
+    },
+    {
+      "key": "perm_77",
+      "name": "FILE_DELETE",
+      "description": "Xóa mềm file theo ID",
+      "apiEndpoint": "/api/files/{fileId}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/files/*"
+    },
+    {
+      "key": "perm_78",
+      "name": "FILE_LIST",
+      "description": "Lấy danh sách tất cả file trong hệ thống lưu trữ",
+      "apiEndpoint": "/api/files/list",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/files/list"
+    },
+    {
+      "key": "perm_79",
+      "name": "FILE_EXISTS",
+      "description": "Kiểm tra file có tồn tại trong hệ thống lưu trữ hay không",
+      "apiEndpoint": "/api/files/exists/{fileName}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/files/exists/*"
+    },
+    {
+      "key": "perm_80",
+      "name": "FILE_METADATA",
+      "description": "Lấy thông tin chi tiết (metadata) của file",
+      "apiEndpoint": "/api/files/metadata/{fileName}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/files/metadata/*"
+    },
+    {
+      "key": "perm_81",
+      "name": "FILE_COPY",
+      "description": "Sao chép file trong kho lưu trữ MinIO",
+      "apiEndpoint": "/api/files/copy",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/files/copy"
+    },
+    {
+      "key": "perm_82",
+      "name": "FILE_MOVE",
+      "description": "Di chuyển file trong kho lưu trữ MinIO",
+      "apiEndpoint": "/api/files/move",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/files/move"
+    },
+    {
+      "key": "perm_83",
+      "name": "CONTRACT_GET_FILES",
+      "description": "Lấy danh sách file đính kèm theo hợp đồng",
+      "apiEndpoint": "/api/contracts/files/{contractId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/contracts/files/*"
+    },
+    {
+      "key": "perm_84",
+      "name": "FILTER_CONTRACTS",
+      "description": "Lọc hợp đồng theo tên, ngày và trạng thái",
+      "apiEndpoint": "/api/contracts/filter",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/contracts/*"
+    },
+    {
+      "key": "perm_85",
+      "name": "ROOM_VIEW_BY_BOARDING_HOUSE",
+      "description": "View rooms by boarding house",
+      "apiEndpoint": "/api/rooms/by-boarding-house/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/by-boarding-house/*"
+    },
+    {
+      "key": "perm_86",
+      "name": "TENANT_CURRENT_RENTAL_VIEW",
+      "description": "Xem thông tin thuê trọ hiện tại của người thuê",
+      "apiEndpoint": "/api/tenants/{id}/current-rental",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/tenants/*/current-rental"
+    },
+    {
+      "key": "perm_87",
+      "name": "UPLOAD_CONTRACT_USER",
+      "description": "Upload one files for a user",
+      "apiEndpoint": "/api/user/upload/{userId}",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/user/**"
+    },
+    {
+      "key": "perm_88",
+      "name": "CREATE_UTILITY",
+      "description": "Tạo tiện ích mới",
+      "apiEndpoint": "/api/utilities",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/utilities"
+    },
+    {
+      "key": "perm_89",
+      "name": "UPDATE_UTILITY",
+      "description": "Cập nhật tiện ích theo ID",
+      "apiEndpoint": "/api/utilities/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/utilities/{id}"
+    },
+    {
+      "key": "perm_90",
+      "name": "DELETE_UTILITY",
+      "description": "Xóa tiện ích theo ID",
+      "apiEndpoint": "/api/utilities/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/utilities/{id}"
+    },
+    {
+      "key": "perm_91",
+      "name": "GET_UTILITY_BY_ID",
+      "description": "Lấy thông tin tiện ích theo ID",
+      "apiEndpoint": "/api/utilities/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/utilities/{id}"
+    },
+    {
+      "key": "perm_92",
+      "name": "GET_ALL_UTILITIES",
+      "description": "Lấy tất cả tiện ích",
+      "apiEndpoint": "/api/utilities",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/utilities"
+    },
+    {
+      "key": "perm_93",
+      "name": "GET_UTILITIES_PAGED",
+      "description": "Lấy tiện ích phân trang",
+      "apiEndpoint": "/api/utilities/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/utilities/paged"
+    },
+    {
+      "key": "perm_94",
+      "name": "GET_UTILITIES_BY_BOARDING_HOUSE",
+      "description": "Lấy tiện ích theo khu nhà trọ",
+      "apiEndpoint": "/api/utilities/boarding/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/utilities/boarding/{boardingHouseId}"
+    },
+    {
+      "key": "perm_95",
+      "name": "GET_ACTIVE_UTILITIES_BY_BOARDING_HOUSE",
+      "description": "Lấy tiện ích active theo khu nhà trọ",
+      "apiEndpoint": "/api/utilities/active/boarding/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/utilities/active/boarding/{boardingHouseId}"
+    },
+    {
+      "key": "perm_96",
+      "name": "CREATE_ROOM_UTILITY",
+      "description": "Đăng ký tiện ích cho phòng",
+      "apiEndpoint": "/api/room-utilities",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/room-utilities"
+    },
+    {
+      "key": "perm_97",
+      "name": "UPDATE_ROOM_UTILITY",
+      "description": "Cập nhật đăng ký tiện ích phòng",
+      "apiEndpoint": "/api/room-utilities/{roomId}/{utilityId}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/room-utilities/{roomId}/{utilityId}"
+    },
+    {
+      "key": "perm_98",
+      "name": "DELETE_ROOM_UTILITY",
+      "description": "Hủy đăng ký tiện ích phòng",
+      "apiEndpoint": "/api/room-utilities/{roomId}/{utilityId}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/room-utilities/{roomId}/{utilityId}"
+    },
+    {
+      "key": "perm_99",
+      "name": "GET_ROOM_UTILITY_DETAIL",
+      "description": "Xem chi tiết đăng ký tiện ích phòng",
+      "apiEndpoint": "/api/room-utilities/{roomId}/{utilityId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/{roomId}/{utilityId}"
+    },
+    {
+      "key": "perm_100",
+      "name": "GET_ROOM_UTILITIES_BY_ROOM",
+      "description": "Lấy danh sách tiện ích của phòng",
+      "apiEndpoint": "/api/room-utilities/room/{roomId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/room/{roomId}"
+    },
+    {
+      "key": "perm_101",
+      "name": "GET_ACTIVE_ROOM_UTILITIES_BY_ROOM",
+      "description": "Lấy tiện ích đang hoạt động của phòng",
+      "apiEndpoint": "/api/room-utilities/room/{roomId}/active",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/room/{roomId}/active"
+    },
+    {
+      "key": "perm_102",
+      "name": "GET_ROOMS_BY_UTILITY",
+      "description": "Lấy danh sách phòng đăng ký tiện ích",
+      "apiEndpoint": "/api/room-utilities/utility/{utilityId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/utility/{utilityId}"
+    },
+    {
+      "key": "perm_103",
+      "name": "GET_ROOM_UTILITIES_BY_ROOM_PAGED",
+      "description": "Lấy tiện ích phòng có phân trang",
+      "apiEndpoint": "/api/room-utilities/room/{roomId}/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/room/{roomId}/paged"
+    },
+    {
+      "key": "perm_112",
+      "name": "ROOM_UTILITY_GET_ALL_PAGED",
+      "description": "Lấy tất cả đăng ký dịch vụ phân trang",
+      "apiEndpoint": "/api/room-utilities/all-paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/all-paged"
+    },
+    {
+      "key": "perm_113",
+      "name": "GET_ROOM_AVAILABILITY",
+      "description": "Lấy danh sách phòng trống",
+      "apiEndpoint": "/api/rooms/available",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/available"
+    },
+    {
+      "key": "perm_114",
+      "name": "FILTER_TENANTS",
+      "description": "Lọc người thuê theo tên, ngày và trạng thái",
+      "apiEndpoint": "/api/tenants/filter",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/tenants/*"
+    },
+    {
+      "key": "perm_115",
+      "name": "BOARDING_HOUSE_UTILITY_VIEW",
+      "description": "Xem danh sách tiện ích của nhà trọ",
+      "apiEndpoint": "/api/boarding-houses/{id}/utilities",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/boarding-houses/*/utilities"
+    },
+    {
+      "key": "perm_116",
+      "name": "CREATE_ROOM",
+      "description": "Tạo mới phòng",
+      "apiEndpoint": "/api/rooms",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/rooms"
+    },
+    {
+      "key": "perm_117",
+      "name": "GET_BUILDINGS_BY_BOARDING_HOUSE",
+      "description": "Lấy danh sách building theo boarding house",
+      "apiEndpoint": "/api/buildings/boarding-house/{boardingHouseId}",
+      "httpMethod": "GET",
+      "resourcePattern": "BUILDING"
+    },
+    {
+      "key": "perm_118",
+      "name": "TENANT_INCIDENT_REPORT_LIST",
+      "description": "Xem danh sách báo cáo sự cố của chính mình",
+      "apiEndpoint": "/api/user/incident-reports",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/incident-reports"
+    },
+    {
+      "key": "perm_119",
+      "name": "TENANT_CREATE_INCIDENT_REPORT",
+      "description": "Người thuê trọ tạo báo cáo sự cố mới",
+      "apiEndpoint": "/api/user/incident-reports",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/user/incident-reports"
+    },
+    {
+      "key": "perm_120",
+      "name": "UPDATE_INCIDENT_REPORT",
+      "description": "Cập nhật báo cáo sự cố của người dùng",
+      "apiEndpoint": "/api/user/incident-reports/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/user/incident-reports/*"
+    },
+    {
+      "key": "perm_121",
+      "name": "DELETE_INCIDENT_REPORT",
+      "description": "Xóa báo cáo sự cố của người dùng",
+      "apiEndpoint": "/api/user/incident-reports/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/user/incident-reports/*"
+    },
+    {
+      "key": "perm_122",
+      "name": "ADMIN_CREATE_INCIDENT_REPORT",
+      "description": "Tạo báo cáo sự cố (Admin)",
+      "apiEndpoint": "/api/incident-reports",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/incident-reports"
+    },
+    {
+      "key": "perm_123",
+      "name": "ADMIN_VIEW_INCIDENT_REPORTS_PAGED",
+      "description": "Xem danh sách báo cáo sự cố phân trang (Admin)",
+      "apiEndpoint": "/api/incident-reports/paged",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/incident-reports/paged"
+    },
+    {
+      "key": "perm_124",
+      "name": "ADMIN_VIEW_INCIDENT_REPORT_BY_ROOM",
+      "description": "Xem báo cáo sự cố theo phòng (Admin)",
+      "apiEndpoint": "/api/incident-reports/room/{roomId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/incident-reports/room/*"
+    },
+    {
+      "key": "perm_125",
+      "name": "ADMIN_VIEW_INCIDENT_REPORT_BY_TENANT",
+      "description": "Xem báo cáo sự cố theo người thuê (Admin)",
+      "apiEndpoint": "/api/incident-reports/tenant/{tenantId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/incident-reports/tenant/*"
+    },
+    {
+      "key": "perm_126",
+      "name": "GET_ALL_BUILDINGS_BY_ROLE",
+      "description": null,
+      "apiEndpoint": "/api/buildings/paged-by-role",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/buildings/paged-by-role"
+    },
+    {
+      "key": "perm_127",
+      "name": "UPDATE_ROLE",
+      "description": "Cập nhật thông tin vai trò (role)",
+      "apiEndpoint": "/api/roles/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/roles/*"
+    },
+    {
+      "key": "perm_129",
+      "name": "UPDATE_ROOM",
+      "description": "Cập nhật thông tin phòng",
+      "apiEndpoint": "/api/rooms/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/rooms/*"
+    },
+    {
+      "key": "perm_130",
+      "name": "DELETE_ROOM",
+      "description": "Xóa phòng trọ",
+      "apiEndpoint": "/api/rooms/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/rooms/*"
+    },
+    {
+      "key": "perm_131",
+      "name": "BILL_FILTER",
+      "description": "Lọc hóa đơn",
+      "apiEndpoint": "/api/bills/filter",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/filter"
+    },
+    {
+      "key": "perm_134",
+      "name": "OWNER_VIEW_ALL",
+      "description": "Xem danh sách chủ trọ",
+      "apiEndpoint": "/api/owners",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/owners"
+    },
+    {
+      "key": "perm_135",
+      "name": "OWNER_VIEW_DETAIL",
+      "description": "Xem chi tiết chủ trọ",
+      "apiEndpoint": "/api/owners/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/owners/*"
+    },
+    {
+      "key": "perm_136",
+      "name": "OWNER_VIEW_SELF",
+      "description": "Xem thông tin cá nhân chủ trọ",
+      "apiEndpoint": "/api/owners/me",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/owners/me"
+    },
+    {
+      "key": "perm_137",
+      "name": "OWNER_CREATE",
+      "description": "Tạo mới chủ trọ",
+      "apiEndpoint": "/api/owners",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/owners"
+    },
+    {
+      "key": "perm_138",
+      "name": "OWNER_UPDATE",
+      "description": "Cập nhật thông tin chủ trọ",
+      "apiEndpoint": "/api/owners/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/owners/*"
+    },
+    {
+      "key": "perm_139",
+      "name": "OWNER_DELETE",
+      "description": "Xóa chủ trọ",
+      "apiEndpoint": "/api/owners/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/owners/*"
+    },
+    {
+      "key": "perm_140",
+      "name": "GET_MY_NOTIFICATIONS",
+      "description": "Lấy danh sách thông báo của người dùng",
+      "apiEndpoint": "/api/notifications/me",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/notifications/me"
+    },
+    {
+      "key": "perm_141",
+      "name": "COUNT_UNREAD_NOTIFICATIONS",
+      "description": "Đếm số lượng thông báo chưa đọc",
+      "apiEndpoint": "/api/notifications/unread-count",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/notifications/unread-count"
+    },
+    {
+      "key": "perm_142",
+      "name": "MARK_NOTIFICATION_AS_READ",
+      "description": "Đánh dấu thông báo là đã đọc",
+      "apiEndpoint": "/api/notifications/read/{id}",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/read/{id}"
+    },
+    {
+      "key": "perm_143",
+      "name": "NOTIFICATION_BROADCAST",
+      "description": "Gửi thông báo broadcast toàn hệ thống",
+      "apiEndpoint": "/api/notifications/broadcast",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/broadcast"
+    },
+    {
+      "key": "perm_144",
+      "name": "NOTIFICATION_SEND_TO_TENANTS",
+      "description": "Gửi thông báo cho tất cả khách thuê của chủ trọ",
+      "apiEndpoint": "/api/notifications/tenants",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/tenants"
+    },
+    {
+      "key": "perm_145",
+      "name": "NOTIFICATION_MARK_ALL_READ",
+      "description": "Đánh dấu tất cả thông báo đã đọc",
+      "apiEndpoint": "/api/notifications/read-all",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/read-all"
+    },
+    {
+      "key": "perm_146",
+      "name": "CREATE_ELECTRIC_WATER_RECORD",
+      "description": "Ghi chỉ số điện nước",
+      "apiEndpoint": "/api/electric-water-records",
+      "httpMethod": "POST",
+      "resourcePattern": "electric-water-records:create"
+    },
+    {
+      "key": "perm_147",
+      "name": "UPDATE_ELECTRIC_WATER_RECORD",
+      "description": "Cập nhật chỉ số điện nước",
+      "apiEndpoint": "/api/electric-water-records/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "electric-water-records:update"
+    },
+    {
+      "key": "perm_148",
+      "name": "DELETE_ELECTRIC_WATER_RECORD",
+      "description": "Xoá chỉ số điện nước",
+      "apiEndpoint": "/api/electric-water-records/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "electric-water-records:delete"
+    },
+    {
+      "key": "perm_149",
+      "name": "GET_ELECTRIC_WATER_RECORD_BY_ID",
+      "description": "Lấy chỉ số điện nước theo ID",
+      "apiEndpoint": "/api/electric-water-records/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "electric-water-records:get-by-id"
+    },
+    {
+      "key": "perm_150",
+      "name": "GET_ALL_ELECTRIC_WATER_RECORDS",
+      "description": "Lấy tất cả chỉ số điện nước",
+      "apiEndpoint": "/api/electric-water-records",
+      "httpMethod": "GET",
+      "resourcePattern": "electric-water-records:get-all"
+    },
+    {
+      "key": "perm_151",
+      "name": "FILTER_ELECTRIC_WATER_RECORDS",
+      "description": "Lọc chỉ số điện nước",
+      "apiEndpoint": "/api/electric-water-records/filter",
+      "httpMethod": "GET",
+      "resourcePattern": "electric-water-records:filter"
+    },
+    {
+      "key": "perm_152",
+      "name": "GET_ELECTRIC_WATER_RECORDS_BY_ROOM",
+      "description": "Lấy chỉ số điện nước của 1 phòng",
+      "apiEndpoint": "/api/electric-water-records/room/{roomId}",
+      "httpMethod": "GET",
+      "resourcePattern": "electric-water-records:get-by-room"
+    },
+    {
+      "key": "perm_153",
+      "name": "GET_ELECTRIC_WATER_PERIODS",
+      "description": "Lấy danh sách kỳ ghi điện nước",
+      "apiEndpoint": "/api/electric-water-records/periods",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/electric-water-records/periods"
+    },
+    {
+      "key": "perm_154",
+      "name": "GET_ELECTRIC_WATER_PERIOD_DETAIL",
+      "description": "Lấy chi tiết kỳ ghi điện nước",
+      "apiEndpoint": "/api/electric-water-records/periods/{periodId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/electric-water-records/periods/*"
+    },
+    {
+      "key": "perm_155",
+      "name": "CREATE_METER_READING",
+      "description": "Ghi chỉ số điện nước cho phòng",
+      "apiEndpoint": "/api/meter-readings",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/meter-readings"
+    },
+    {
+      "key": "perm_156",
+      "name": "VIEW_METER_READING_BY_PERIOD",
+      "description": "Xem chỉ số điện nước của phòng theo kỳ",
+      "apiEndpoint": "/api/meter-readings/room/{roomId}/period/{periodId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/meter-readings/room/*/period/*"
+    },
+    {
+      "key": "perm_159",
+      "name": "CREATE_METER_PERIOD",
+      "description": "Tạo kỳ ghi chỉ số điện nước",
+      "apiEndpoint": "/api/meter-periods",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/meter-periods"
+    },
+    {
+      "key": "perm_160",
+      "name": "VIEW_METER_PERIOD_LIST",
+      "description": "Xem danh sách các kỳ ghi chỉ số",
+      "apiEndpoint": "/api/meter-periods",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/meter-periods"
+    },
+    {
+      "key": "perm_161",
+      "name": "CONFIRM_METER_PERIOD",
+      "description": "Xác nhận kỳ ghi chỉ số (CONFIRMED)",
+      "apiEndpoint": "/api/meter-periods/{id}/confirm",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/meter-periods/*/confirm"
+    },
+    {
+      "key": "perm_162",
+      "name": "LOCK_METER_PERIOD",
+      "description": "Khóa kỳ ghi chỉ số (LOCKED)",
+      "apiEndpoint": "/api/meter-periods/{id}/lock",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/meter-periods/*/lock"
+    },
+    {
+      "key": "perm_163",
+      "name": "GET_METER_READING_HISTORY_BY_ROOM",
+      "description": "Lấy lịch sử chỉ số điện nước theo phòng",
+      "apiEndpoint": "/api/meter-readings/room/*/history",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/meter-readings/room/{roomId}/history"
+    },
+    {
+      "key": "perm_164",
+      "name": "GET_METER_READING_BY_PERIOD",
+      "description": "Lấy tất cả chỉ số điện nước theo kỳ",
+      "apiEndpoint": "/api/meter-readings/period/{periodId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/meter-readings/period/*"
+    },
+    {
+      "key": "perm_165",
+      "name": "VIEW_ROOM_UTILITY_BY_UTILITY_TYPE",
+      "description": "Xem danh sách tiện ích/dịch vụ của phòng theo loại tiện ích",
+      "apiEndpoint": "/api/room-utilities/rooms/*/utilities",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/room-utilities/rooms/{roomId}/utilities"
+    },
+    {
+      "key": "perm_166",
+      "name": "CREATE_NEW_TENANT",
+      "description": "Thêm người thuê mới",
+      "apiEndpoint": "/api/tenants",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/tenents"
+    },
+    {
+      "key": "perm_167",
+      "name": "CREATE_SUBSCRIPTION_PLAN",
+      "description": "Tạo gói dịch vụ",
+      "apiEndpoint": "/api/subscriptions/plans",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/subscriptions/plans"
+    },
+    {
+      "key": "perm_168",
+      "name": "VIEW_SUBSCRIPTION_PLANS",
+      "description": "Xem danh sách gói dịch vụ",
+      "apiEndpoint": "/api/subscriptions/plans",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/subscriptions/plans"
+    },
+    {
+      "key": "perm_169",
+      "name": "VIEW_SUBSCRIPTION_PLAN_DETAIL",
+      "description": "Xem chi tiết gói dịch vụ",
+      "apiEndpoint": "/api/subscriptions/plans/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/subscriptions/plans/*"
+    },
+    {
+      "key": "perm_170",
+      "name": "UPDATE_SUBSCRIPTION_PLAN",
+      "description": "Cập nhật gói dịch vụ",
+      "apiEndpoint": "/api/subscriptions/plans/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/subscriptions/plans/*"
+    },
+    {
+      "key": "perm_171",
+      "name": "DELETE_SUBSCRIPTION_PLAN",
+      "description": "Xóa gói dịch vụ",
+      "apiEndpoint": "/api/subscriptions/plans/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/subscriptions/plans/*"
+    },
+    {
+      "key": "perm_172",
+      "name": "ASSIGN_SUBSCRIPTION",
+      "description": "Gán gói dịch vụ cho owner",
+      "apiEndpoint": "/api/subscriptions/assign",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/subscriptions/assign"
+    },
+    {
+      "key": "perm_173",
+      "name": "OVERRIDE_SUBSCRIPTION_LIMITS",
+      "description": "Override giới hạn subscription",
+      "apiEndpoint": "/api/subscriptions/{subscriptionId}/override",
+      "httpMethod": "PATCH",
+      "resourcePattern": "/api/subscriptions/*/override"
+    },
+    {
+      "key": "perm_174",
+      "name": "VIEW_MY_LIMITS",
+      "description": "Owner xem giới hạn của mình",
+      "apiEndpoint": "/api/subscriptions/my-limits",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/subscriptions/my-limits"
+    },
+    {
+      "key": "perm_175",
+      "name": "VIEW_OWNER_LIMITS",
+      "description": "Admin xem giới hạn owner",
+      "apiEndpoint": "/api/subscriptions/owner/{ownerId}/limits",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/subscriptions/owner/*/limits"
+    },
+    {
+      "key": "perm_176",
+      "name": "FILTER_ROOMS",
+      "description": "Tìm kiếm và lọc phòng",
+      "apiEndpoint": "/api/rooms/filter",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/filter"
+    },
+    {
+      "key": "perm_177",
+      "name": "VIEW_ROOM_PERIOD_SUMMARY_REPORT",
+      "description": "Xem báo cáo tổng hợp phòng theo kỳ của boarding house",
+      "apiEndpoint": "/api/rooms/boarding-houses/{boardingHouseId}/rooms-period-summary",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/boarding-houses/*/rooms-period-summary"
+    },
+    {
+      "key": "perm_178",
+      "name": "LOGIN_WITH_GOOGLE",
+      "description": "Login with google",
+      "apiEndpoint": "/api/auth/google",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/auth/google"
+    },
+    {
+      "key": "perm_179",
+      "name": "GET_CREATOR_BILL_CONTEXT",
+      "description": "Lấy dữ liệu tạo hóa đơn cho phòng",
+      "apiEndpoint": "/api/rooms/{roomId}/creator-bill-context",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/*/creator-bill-context"
+    },
+    {
+      "key": "perm_180",
+      "name": "METER_READING_UPSERT",
+      "description": "Upsert meter reading",
+      "apiEndpoint": "/api/meter-readings/upsert",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/meter-readings/**"
+    },
+    {
+      "key": "perm_181",
+      "name": "GET_ROOM_AVAILABILITY_BY_BOARDING_HOUSE",
+      "description": "Get all room available with boarding house",
+      "apiEndpoint": "/api/rooms/{boardingHouseId}/available",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/rooms/*/available"
+    },
+    {
+      "key": "perm_182",
+      "name": "UPDATE_TENANT",
+      "description": "Cập nhật người thuê trọ",
+      "apiEndpoint": "/api/tenants/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/tenants/*"
+    },
+    {
+      "key": "perm_183",
+      "name": "CREATE_PROPERTY_ASSET",
+      "description": "Tạo tài sản",
+      "apiEndpoint": "/api/property-assets",
+      "httpMethod": "POST",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_184",
+      "name": "UPDATE_PROPERTY_ASSET",
+      "description": "Cập nhật tài sản",
+      "apiEndpoint": "/api/property-assets/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_185",
+      "name": "DELETE_PROPERTY_ASSET",
+      "description": "Xóa tài sản",
+      "apiEndpoint": "/api/property-assets/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_186",
+      "name": "GET_PROPERTY_ASSET_BY_ID",
+      "description": "Xem chi tiết tài sản",
+      "apiEndpoint": "/api/property-assets/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_187",
+      "name": "GET_ALL_PROPERTY_ASSETS",
+      "description": "Xem danh sách tài sản",
+      "apiEndpoint": "/api/property-assets",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_188",
+      "name": "GET_PROPERTY_ASSETS_BY_ROOM",
+      "description": "Xem tài sản theo phòng",
+      "apiEndpoint": "/api/property-assets/room/{roomId}",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_189",
+      "name": "FILTER_PROPERTY_ASSETS",
+      "description": "Lọc tài sản",
+      "apiEndpoint": "/api/property-assets/filter",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_190",
+      "name": "GET_BOARDING_HOUSE_BY_ID",
+      "description": "Lấy thông tin khu nhà trọ bằng ID",
+      "apiEndpoint": "/api/boarding-houses/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/boarding-houses/*"
+    },
+    {
+      "key": "perm_191",
+      "name": "GET_CONTRACT_CURRENT_VERSION",
+      "description": "Lấy version hiện tại của hợp đồng",
+      "apiEndpoint": "/api/contracts/{id}/current-version",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_192",
+      "name": "GET_CONTRACT_SNAPSHOT",
+      "description": "Lấy snapshot hợp đồng tại thời điểm",
+      "apiEndpoint": "/api/contracts/{id}/snapshot",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_193",
+      "name": "BACKFILL_CONTRACT_FOUNDATION",
+      "description": "Backfill dữ liệu nền tảng hợp đồng",
+      "apiEndpoint": "/api/contracts/foundation/backfill",
+      "httpMethod": "POST",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_197",
+      "name": "GET_CURRENT_USER_CONTRACT",
+      "description": "Lấy thông tin hợp đồng hiện tại của người dùng",
+      "apiEndpoint": "/api/user/room/current-contract",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_198",
+      "name": "CREATE_CONTRACT_AMENDMENT",
+      "description": "Tạo phụ lục hợp đồng",
+      "apiEndpoint": "/api/contracts/{id}/amendments",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/amendments"
+    },
+    {
+      "key": "perm_199",
+      "name": "CREATE_CONTRACT_BILLING_RULE",
+      "description": "Tạo quy tắc tính phí cho hợp đồng",
+      "apiEndpoint": "/api/contracts/{id}/billing-rules",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/billing-rules"
+    },
+    {
+      "key": "perm_200",
+      "name": "DEACTIVATE_CONTRACT_BILLING_RULE",
+      "description": "Vô hiệu hóa quy tắc tính phí",
+      "apiEndpoint": "/api/contracts/{id}/billing-rules/{id}/deactivate",
+      "httpMethod": "PATCH",
+      "resourcePattern": "/api/contracts/*/billing-rules/*/deactivate"
+    },
+    {
+      "key": "perm_201",
+      "name": "CREATE_DEPOSIT_TRANSACTION",
+      "description": "Tạo giao dịch tiền cọc",
+      "apiEndpoint": "/api/contracts/{id}/deposit-transactions",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/deposit-transactions"
+    },
+    {
+      "key": "perm_202",
+      "name": "REVISE_CONTRACT_AMENDMENT",
+      "description": "Chỉnh sửa (revise) phụ lục hợp đồng",
+      "apiEndpoint": "/api/contracts/{contractId}/amendments/{amendmentId}/revise",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/amendments/*/revise"
+    },
+    {
+      "key": "perm_203",
+      "name": "REVISE_CONTRACT_BILLING_RULE",
+      "description": "Chỉnh sửa (revise) quy tắc tính phí",
+      "apiEndpoint": "/api/contracts/{contractId}/billing-rules/{billingRuleId}/revise",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/billing-rules/*/revise"
+    },
+    {
+      "key": "perm_204",
+      "name": "FINALIZE_CONTRACT_SETTLEMENT",
+      "description": "Chốt quyết toán hợp đồng (trả phòng)",
+      "apiEndpoint": "/api/contracts/{contractId}/settlement/finalize",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/settlement/finalize"
+    },
+    {
+      "key": "perm_205",
+      "name": "TERMINATE_CONTRACT",
+      "description": "Kết thúc hợp đồng",
+      "apiEndpoint": "/api/contracts/{contractId}/terminate",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/terminate"
+    },
+    {
+      "key": "perm_206",
+      "name": "TRANSFER_CONTRACT_ROOM",
+      "description": "Chuyển phòng cho hợp đồng",
+      "apiEndpoint": "/api/contracts/{contractId}/transfer-room",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/transfer-room"
+    },
+    {
+      "key": "perm_207",
+      "name": "RENEW_CONTRACT",
+      "description": "Gia hạn hợp đồng",
+      "apiEndpoint": "/api/contracts/{contractId}/renew",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/renew"
+    },
+    {
+      "key": "perm_208",
+      "name": "MARK_CONTRACT_VIOLATED",
+      "description": "Đánh dấu hợp đồng vi phạm",
+      "apiEndpoint": "/api/contracts/{contractId}/mark-violated",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/contracts/*/mark-violated"
+    },
+    {
+      "key": "perm_209",
+      "name": "MANUAL_CONTRACT_AUTO_RENEW",
+      "description": "Chạy thủ công job tự động gia hạn hợp đồng",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/cron-jobs/contracts/auto-renew/manual"
+    },
+    {
+      "key": "perm_211",
+      "name": "PREVIEW_INVOICE",
+      "description": "Xem trước hóa đơn theo hợp đồng và kỳ tính",
+      "apiEndpoint": "/api/billing/preview",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/billing/preview"
+    },
+    {
+      "key": "perm_212",
+      "name": "VIEW_RECONCILIATION_REPORT",
+      "description": "Xem báo cáo đối soát theo hợp đồng",
+      "apiEndpoint": "/api/reconciliation/contracts/{contractId}",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/reconciliation/contracts/*"
+    },
+    {
+      "key": "perm_214",
+      "name": "GET_DEBT_AGING_REPORT",
+      "description": "Xem báo cáo tuổi nợ (aging) của hợp đồng",
+      "apiEndpoint": "/api/reconciliation/aging",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/reconciliation/aging"
+    },
+    {
+      "key": "perm_215",
+      "name": "GET_CREDIT_LEDGER_REPORT",
+      "description": "Xem sổ credit (credit ledger) của hợp đồng",
+      "apiEndpoint": "/api/reconciliation/credit-ledger",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/reconciliation/credit-ledger"
+    },
+    {
+      "key": "perm_216",
+      "name": "RECEIVE_PAYMENT",
+      "description": "Ghi nhận thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/payments"
+    },
+    {
+      "key": "perm_217",
+      "name": "FILTER_PAYMENTS",
+      "description": "Lọc danh sách thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/payments"
+    },
+    {
+      "key": "perm_218",
+      "name": "GET_PAYMENT_DETAIL",
+      "description": "Xem chi tiết thanh toán",
+      "apiEndpoint": "/api/payments/*",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/payments/*"
+    },
+    {
+      "key": "perm_219",
+      "name": "CONFIRM_PAYMENT",
+      "description": "Xác nhận thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/payments/*/confirm"
+    },
+    {
+      "key": "perm_220",
+      "name": "ALLOCATE_PAYMENT",
+      "description": "Phân bổ thanh toán vào hóa đơn",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/payments/*/allocate"
+    },
+    {
+      "key": "perm_221",
+      "name": "REVERSE_PAYMENT",
+      "description": "Đảo thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/payments/*/reverse"
+    },
+    {
+      "key": "perm_222",
+      "name": "GET_BILLING_AUDIT_LOGS",
+      "description": "Xem lịch sử audit billing (billing operation logs)",
+      "apiEndpoint": "/api/billing-audit/*",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/billing-audit"
+    },
+    {
+      "key": "perm_227",
+      "name": "SEND_BILL",
+      "description": "Gửi hóa đơn",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/bills/*/send"
+    },
+    {
+      "key": "perm_228",
+      "name": "GET_BILL_DETAIL",
+      "description": "Xem chi tiết hóa đơn",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/*/detail"
+    },
+    {
+      "key": "perm_229",
+      "name": "USER_GET_OWN_BILL_DETAIL",
+      "description": "User xem chi tiết hóa đơn của chính mình",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/bills/*"
+    },
+    {
+      "key": "perm_230",
+      "name": "FINALIZE_INVOICE",
+      "description": "Chốt và tạo hóa đơn",
+      "apiEndpoint": "/api/billing/finalize",
+      "httpMethod": "POST",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_231",
+      "name": "DOWNLOAD_BILL_DOCUMENT",
+      "description": "Tải file hóa đơn",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/*/document"
+    },
+    {
+      "key": "perm_232",
+      "name": "DOWNLOAD_BILL_RECEIPT",
+      "description": "Tải biên lai hóa đơn",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/bills/*/receipt"
+    },
+    {
+      "key": "perm_233",
+      "name": "USER_DOWNLOAD_BILL_DOCUMENT",
+      "description": "User tải hóa đơn của mình",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/bills/*/document"
+    },
+    {
+      "key": "perm_234",
+      "name": "USER_DOWNLOAD_BILL_RECEIPT",
+      "description": "User tải biên lai của mình",
+      "apiEndpoint": null,
+      "httpMethod": "GET",
+      "resourcePattern": "/api/user/bills/*/receipt"
+    },
+    {
+      "key": "perm_235",
+      "name": "USER_UPLOAD_PAYMENT_PROOF",
+      "description": "User tải lên chứng từ thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/user/bills/*/proof-file"
+    },
+    {
+      "key": "perm_236",
+      "name": "USER_SUBMIT_PAYMENT",
+      "description": "User gửi xác nhận thanh toán",
+      "apiEndpoint": null,
+      "httpMethod": "POST",
+      "resourcePattern": "/api/user/bills/*/payments"
+    },
+    {
+      "key": "perm_237",
+      "name": "UPDATE_INCIDENT_REPORT",
+      "description": "Cập nhật báo cáo sự cố",
+      "apiEndpoint": "/api/incident-reports/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/incident-reports/*"
+    },
+    {
+      "key": "perm_238",
+      "name": "DELETE_INCIDENT_REPORT",
+      "description": "Xóa báo cáo sự cố",
+      "apiEndpoint": "/api/incident-reports/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": "/api/incident-reports/*"
+    },
+    {
+      "key": "perm_239",
+      "name": "ARCHIVE_NOTIFICATION",
+      "description": "Lưu trữ thông báo",
+      "apiEndpoint": "/api/notifications/archive/{id}",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/archive/*"
+    },
+    {
+      "key": "perm_240",
+      "name": "PREVIEW_NOTIFICATION_ANNOUNCEMENT",
+      "description": "Preview danh sách người nhận thông báo",
+      "apiEndpoint": "/api/notifications/announcements/preview",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/announcements/preview"
+    },
+    {
+      "key": "perm_241",
+      "name": "SEND_NOTIFICATION_ANNOUNCEMENT",
+      "description": "Gửi thông báo hàng loạt",
+      "apiEndpoint": "/api/notifications/announcements",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/announcements"
+    },
+    {
+      "key": "perm_242",
+      "name": "GET_MY_NOTIFICATION_PREFERENCES",
+      "description": "Lấy cài đặt thông báo của bản thân",
+      "apiEndpoint": "/api/notifications/preferences/me",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/notifications/preferences/me"
+    },
+    {
+      "key": "perm_243",
+      "name": "UPDATE_MY_NOTIFICATION_PREFERENCES",
+      "description": "Cập nhật cài đặt thông báo của bản thân",
+      "apiEndpoint": "/api/notifications/preferences/me",
+      "httpMethod": "PUT",
+      "resourcePattern": "/api/notifications/preferences/me"
+    },
+    {
+      "key": "perm_244",
+      "name": "GET_NOTIFICATION_DELIVERY_LOGS",
+      "description": "Lấy danh sách log gửi notification",
+      "apiEndpoint": "/api/notifications/delivery-logs",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/notifications/delivery-logs"
+    },
+    {
+      "key": "perm_245",
+      "name": "PROCESS_PENDING_NOTIFICATION_DELIVERIES",
+      "description": "Xử lý hàng đợi notification",
+      "apiEndpoint": "/api/notifications/delivery-logs/process-pending",
+      "httpMethod": "POST",
+      "resourcePattern": "/api/notifications/delivery-logs/process-pending"
+    },
+    {
+      "key": "perm_246",
+      "name": "CREATE_SYSTEM_CONFIG",
+      "description": "Tạo mới system config",
+      "apiEndpoint": "/api/system-configs",
+      "httpMethod": "POST",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_247",
+      "name": "GET_ALL_SYSTEM_CONFIG",
+      "description": "Lấy danh sách system config",
+      "apiEndpoint": "/api/system-configs",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_248",
+      "name": "GET_SYSTEM_CONFIG_BY_ID",
+      "description": "Lấy system config theo id",
+      "apiEndpoint": "/api/system-configs/{id}",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_249",
+      "name": "GET_SYSTEM_CONFIG_BY_ID",
+      "description": "Lấy system config theo key",
+      "apiEndpoint": "/api/system-configs/key/{key}",
+      "httpMethod": "GET",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_250",
+      "name": "UPDATE_SYSTEM_CONFIG",
+      "description": "Cập nhật system config",
+      "apiEndpoint": "/api/system-configs/{id}",
+      "httpMethod": "PUT",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_251",
+      "name": "DELETE_SYSTEM_CONFIG",
+      "description": "Xóa system config",
+      "apiEndpoint": "/api/system-configs/{id}",
+      "httpMethod": "DELETE",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_252",
+      "name": "Get Payment Allocations",
+      "description": "Lấy danh sách phân bổ thanh toán theo payment id",
+      "apiEndpoint": "/api/payments/{id}/allocations",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/payments/*/allocations"
+    },
+    {
+      "key": "perm_253",
+      "name": "Update Utility Status",
+      "description": "Bật/tắt trạng thái tiện ích",
+      "apiEndpoint": "/api/utilities/{id}/status",
+      "httpMethod": "PATCH",
+      "resourcePattern": null
+    },
+    {
+      "key": "perm_254",
+      "name": "OWNER_DASHBOARD_VIEW",
+      "description": "Xem dashboard tổng quan của chủ trọ",
+      "apiEndpoint": "/api/owner/dashboard/summary",
+      "httpMethod": "GET",
+      "resourcePattern": "/api/owner/dashboard/summary"
+    }
+  ],
+  "rolePermissions": [
+    {
+      "roleName": "ADMIN",
+      "permissionKeys": [
+        "perm_1",
+        "perm_2",
+        "perm_3",
+        "perm_4",
+        "perm_5",
+        "perm_6",
+        "perm_7",
+        "perm_32",
+        "perm_33",
+        "perm_34",
+        "perm_35",
+        "perm_36",
+        "perm_37",
+        "perm_38",
+        "perm_39",
+        "perm_40",
+        "perm_41",
+        "perm_42",
+        "perm_43",
+        "perm_44",
+        "perm_45",
+        "perm_46",
+        "perm_47",
+        "perm_48",
+        "perm_49",
+        "perm_50",
+        "perm_51",
+        "perm_53",
+        "perm_54",
+        "perm_55",
+        "perm_56",
+        "perm_57",
+        "perm_58",
+        "perm_59",
+        "perm_60",
+        "perm_61",
+        "perm_62",
+        "perm_63",
+        "perm_64",
+        "perm_65",
+        "perm_66",
+        "perm_67",
+        "perm_68",
+        "perm_70",
+        "perm_71",
+        "perm_72",
+        "perm_73",
+        "perm_74",
+        "perm_75",
+        "perm_76",
+        "perm_77",
+        "perm_78",
+        "perm_79",
+        "perm_80",
+        "perm_81",
+        "perm_82",
+        "perm_83",
+        "perm_84",
+        "perm_85",
+        "perm_86",
+        "perm_87",
+        "perm_88",
+        "perm_89",
+        "perm_90",
+        "perm_91",
+        "perm_92",
+        "perm_93",
+        "perm_94",
+        "perm_95",
+        "perm_96",
+        "perm_97",
+        "perm_98",
+        "perm_99",
+        "perm_100",
+        "perm_101",
+        "perm_102",
+        "perm_103",
+        "perm_112",
+        "perm_113",
+        "perm_114",
+        "perm_115",
+        "perm_116",
+        "perm_117",
+        "perm_120",
+        "perm_121",
+        "perm_122",
+        "perm_123",
+        "perm_124",
+        "perm_125",
+        "perm_126",
+        "perm_127",
+        "perm_129",
+        "perm_130",
+        "perm_131",
+        "perm_134",
+        "perm_135",
+        "perm_136",
+        "perm_137",
+        "perm_138",
+        "perm_139",
+        "perm_140",
+        "perm_141",
+        "perm_142",
+        "perm_143",
+        "perm_144",
+        "perm_145",
+        "perm_146",
+        "perm_147",
+        "perm_148",
+        "perm_149",
+        "perm_150",
+        "perm_151",
+        "perm_152",
+        "perm_153",
+        "perm_154",
+        "perm_155",
+        "perm_156",
+        "perm_159",
+        "perm_160",
+        "perm_161",
+        "perm_162",
+        "perm_163",
+        "perm_164",
+        "perm_165",
+        "perm_166",
+        "perm_167",
+        "perm_168",
+        "perm_169",
+        "perm_170",
+        "perm_171",
+        "perm_172",
+        "perm_173",
+        "perm_174",
+        "perm_175",
+        "perm_176",
+        "perm_177",
+        "perm_190",
+        "perm_202",
+        "perm_203",
+        "perm_204",
+        "perm_205",
+        "perm_206",
+        "perm_207",
+        "perm_208",
+        "perm_209",
+        "perm_211",
+        "perm_212",
+        "perm_214",
+        "perm_215",
+        "perm_216",
+        "perm_217",
+        "perm_218",
+        "perm_219",
+        "perm_220",
+        "perm_221",
+        "perm_222",
+        "perm_227",
+        "perm_228",
+        "perm_229",
+        "perm_230",
+        "perm_231",
+        "perm_232",
+        "perm_233",
+        "perm_234",
+        "perm_235",
+        "perm_236",
+        "perm_239",
+        "perm_240",
+        "perm_241",
+        "perm_242",
+        "perm_243",
+        "perm_244",
+        "perm_245",
+        "perm_246",
+        "perm_247",
+        "perm_248",
+        "perm_249",
+        "perm_250",
+        "perm_251",
+        "perm_252",
+        "perm_253",
+        "perm_254"
+      ]
+    },
+    {
+      "roleName": "OWNER",
+      "permissionKeys": [
+        "perm_1",
+        "perm_2",
+        "perm_4",
+        "perm_32",
+        "perm_33",
+        "perm_34",
+        "perm_37",
+        "perm_38",
+        "perm_39",
+        "perm_41",
+        "perm_42",
+        "perm_44",
+        "perm_45",
+        "perm_46",
+        "perm_50",
+        "perm_53",
+        "perm_55",
+        "perm_56",
+        "perm_58",
+        "perm_59",
+        "perm_66",
+        "perm_67",
+        "perm_68",
+        "perm_70",
+        "perm_71",
+        "perm_72",
+        "perm_73",
+        "perm_74",
+        "perm_75",
+        "perm_76",
+        "perm_77",
+        "perm_78",
+        "perm_79",
+        "perm_80",
+        "perm_81",
+        "perm_82",
+        "perm_83",
+        "perm_84",
+        "perm_85",
+        "perm_86",
+        "perm_87",
+        "perm_88",
+        "perm_89",
+        "perm_90",
+        "perm_91",
+        "perm_92",
+        "perm_93",
+        "perm_94",
+        "perm_95",
+        "perm_96",
+        "perm_97",
+        "perm_98",
+        "perm_99",
+        "perm_100",
+        "perm_101",
+        "perm_102",
+        "perm_103",
+        "perm_112",
+        "perm_113",
+        "perm_114",
+        "perm_115",
+        "perm_116",
+        "perm_117",
+        "perm_118",
+        "perm_119",
+        "perm_120",
+        "perm_121",
+        "perm_122",
+        "perm_123",
+        "perm_124",
+        "perm_125",
+        "perm_126",
+        "perm_127",
+        "perm_129",
+        "perm_130",
+        "perm_131",
+        "perm_134",
+        "perm_135",
+        "perm_136",
+        "perm_138",
+        "perm_140",
+        "perm_141",
+        "perm_142",
+        "perm_144",
+        "perm_145",
+        "perm_146",
+        "perm_147",
+        "perm_148",
+        "perm_149",
+        "perm_150",
+        "perm_151",
+        "perm_152",
+        "perm_154",
+        "perm_155",
+        "perm_156",
+        "perm_159",
+        "perm_166",
+        "perm_174",
+        "perm_176",
+        "perm_177",
+        "perm_179",
+        "perm_180",
+        "perm_181",
+        "perm_182",
+        "perm_183",
+        "perm_184",
+        "perm_185",
+        "perm_186",
+        "perm_187",
+        "perm_188",
+        "perm_189",
+        "perm_190",
+        "perm_191",
+        "perm_192",
+        "perm_193",
+        "perm_197",
+        "perm_198",
+        "perm_199",
+        "perm_200",
+        "perm_201",
+        "perm_202",
+        "perm_203",
+        "perm_204",
+        "perm_205",
+        "perm_206",
+        "perm_207",
+        "perm_208",
+        "perm_209",
+        "perm_211",
+        "perm_212",
+        "perm_214",
+        "perm_215",
+        "perm_216",
+        "perm_217",
+        "perm_218",
+        "perm_219",
+        "perm_220",
+        "perm_221",
+        "perm_222",
+        "perm_227",
+        "perm_228",
+        "perm_229",
+        "perm_230",
+        "perm_231",
+        "perm_232",
+        "perm_233",
+        "perm_234",
+        "perm_235",
+        "perm_236",
+        "perm_239",
+        "perm_240",
+        "perm_241",
+        "perm_242",
+        "perm_243",
+        "perm_244",
+        "perm_245",
+        "perm_246",
+        "perm_247",
+        "perm_248",
+        "perm_249",
+        "perm_250",
+        "perm_251",
+        "perm_252",
+        "perm_253",
+        "perm_254"
+      ]
+    },
+    {
+      "roleName": "USER",
+      "permissionKeys": [
+        "perm_1",
+        "perm_2",
+        "perm_118",
+        "perm_119",
+        "perm_120",
+        "perm_121",
+        "perm_140",
+        "perm_141",
+        "perm_142",
+        "perm_145",
+        "perm_239",
+        "perm_242",
+        "perm_243"
+      ]
+    }
+  ]
+}

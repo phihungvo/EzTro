@@ -2,7 +2,7 @@ import axios from 'axios';
 import { message } from 'antd';
 import apiClient from '~/service/api/api';
 import axiosInstance from '~/utils/axiosInstance';
-import API_ENDPOINTS from "~/constants/endpoints";
+import USER_ENDPOINTS from "~/constants/endpoints";
 
 export const login = async (username, password) => {
     try {
@@ -69,7 +69,7 @@ export const register = async (username, email, password) => {
 
 export const getAllUser = async ({ page = 0, pageSize = 5 }) => {
     try {
-        const response = await apiClient.get(API_ENDPOINTS.USER.GET_ALL, {
+        const response = await apiClient.get(USER_ENDPOINTS.USER.GET_ALL, {
             params: { page, pageSize },
         });
         return response.data;
@@ -84,7 +84,7 @@ export const getAllUser = async ({ page = 0, pageSize = 5 }) => {
 
 export const getAllUserNoPaged = async () => {
     try {
-        const response = await apiClient.get(API_ENDPOINTS.USER.BASIC_INFO);
+        const response = await apiClient.get(USER_ENDPOINTS.USER.BASIC_INFO);
         return response.data;
     } catch (error) {
         message.error(
@@ -96,7 +96,7 @@ export const getAllUserNoPaged = async () => {
 
 export const getAllOwners = async () => {
     try {
-        const response = await apiClient.get(API_ENDPOINTS.USER.GET_OWNERS);
+        const response = await apiClient.get(USER_ENDPOINTS.USER.GET_OWNERS);
         return response.data;
     } catch (error) {
         message.error(
@@ -119,7 +119,7 @@ export const createUser = async (formData) => {
         };
 
         const response = await apiClient.post(
-            API_ENDPOINTS.USER.CREATE, processedData);
+            USER_ENDPOINTS.USER.CREATE, processedData);
 
         if (response.status === 200) {
             message.success('User created successfully!');
@@ -141,7 +141,7 @@ export const updateUser = async (userId, formData) => {
 
         console.log('Update data: ', updateData);
         const response = await apiClient.put(
-            API_ENDPOINTS.USER.UPDATE(userId), updateData);
+            USER_ENDPOINTS.USER.UPDATE(userId), updateData);
 
         if (response.data) {
             message.success('Cập nhật người dùng thành công!');
@@ -156,7 +156,7 @@ export const updateUser = async (userId, formData) => {
 
 export const deleteUser = async (userIds) => {
     try {
-        const response = await apiClient.delete(API_ENDPOINTS.USER.DELETE, {data: userIds});
+        const response = await apiClient.delete(USER_ENDPOINTS.USER.DELETE, {data: userIds});
 
         if (response.data) {
             message.success('User deleted successfully!');
@@ -177,7 +177,7 @@ export const uploadFile = async (file, userId) => {
 
     try {
         const response = await apiClient.post(
-            API_ENDPOINTS.USER.UPLOAD_FILE(userId),
+            USER_ENDPOINTS.USER.UPLOAD_FILE(userId),
             formData,
             {
                 headers: {

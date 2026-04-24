@@ -11,8 +11,11 @@ inputs:
   vps_host:
     description: VPS host
     required: true
-  vps_ssh_key:
-    description: VPS SSH private key
+  vps_user:
+    description: VPS SSH user
+    required: true
+  vps_password:
+    description: VPS SSH password
     required: true
   react_app_api_url:
     description: Frontend API URL
@@ -33,7 +36,8 @@ runs:
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
         VPS_HOST: ${{ inputs.vps_host }}
-        VPS_SSH_KEY: ${{ inputs.vps_ssh_key }}
+        VPS_USER: ${{ inputs.vps_user }}
+        VPS_PASSWORD: ${{ inputs.vps_password }}
         REACT_APP_API_URL: ${{ inputs.react_app_api_url }}
         REACT_APP_WS_URL: ${{ inputs.react_app_ws_url }}
         REACT_APP_MINIO_URL: ${{ inputs.react_app_minio_url }}
@@ -44,7 +48,8 @@ runs:
           DOCKER_USERNAME \
           DOCKER_PASSWORD \
           VPS_HOST \
-          VPS_SSH_KEY \
+          VPS_USER \
+          VPS_PASSWORD \
           REACT_APP_API_URL \
           REACT_APP_WS_URL \
           REACT_APP_MINIO_URL

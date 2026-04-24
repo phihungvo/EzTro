@@ -10,4 +10,6 @@ import carevn.luv2code.ez_tro.entity.SubscriptionPlan;
 public interface SubscriptionPlanRepository
         extends JpaRepository<SubscriptionPlan, Integer>, JpaSpecificationExecutor<SubscriptionPlan> {
     Optional<SubscriptionPlan> findByCode(String code);
+
+    Optional<SubscriptionPlan> findFirstByIsActiveTrueOrderByIdAsc();
 }

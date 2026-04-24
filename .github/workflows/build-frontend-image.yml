@@ -63,6 +63,7 @@ jobs:
       - name: Build frontend
         working-directory: ez_tro_app
         env:
+          CI: false
           REACT_APP_API_URL: ${{ inputs.react_app_api_url }}
           REACT_APP_WS_URL: ${{ inputs.react_app_ws_url }}
           REACT_APP_MINIO_URL: ${{ inputs.react_app_minio_url }}

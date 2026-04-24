@@ -20,6 +20,21 @@ public interface PermissionRepository extends JpaRepository<Permission, Integer>
 
     boolean existsByName(String name);
 
+    @Query(
+            """
+			SELECT p FROM Permission p
+			WHERE p.name = :name
+			AND ((:apiEndpoint IS NULL AND p.apiEndpoint IS NULL) OR p.apiEndpoint = :apiEndpoint)
+			AND p.httpMethod = :method
+			AND ((:resourcePattern IS NULL AND p.resourcePattern IS NULL) OR p.resourcePattern = :resourcePattern)
+			ORDER BY p.id ASC
+			""")
+    List<Permission> findBySeedSignature(
+            @Param("name") String name,
+            @Param("apiEndpoint") String apiEndpoint,
+            @Param("method") HttpMethod method,
+            @Param("resourcePattern") String resourcePattern);
+
     List<Permission> findByApiEndpointAndHttpMethod(String apiEndpoint, HttpMethod httpMethod);
 
     @Query("SELECT p FROM Permission p WHERE p.apiEndpoint = :endpoint AND p.httpMethod = :method")
