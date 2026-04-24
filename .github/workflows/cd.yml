@@ -40,10 +40,10 @@ jobs:
           vps_host: ${{ secrets.VPS_HOST }}
           vps_user: ${{ secrets.VPS_USER }}
           vps_password: ${{ secrets.VPS_PASSWORD }}
-          react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
-          react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
-          react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
-          mysql_database: ${{ vars.MYSQL_DATABASE || 'ez_tro_prod' }}
+          react_app_api_url: ${{ secrets.REACT_APP_API_URL || '/api' }}
+          react_app_ws_url: ${{ secrets.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+          react_app_minio_url: ${{ secrets.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
+          mysql_database: ${{ secrets.MYSQL_DATABASE || 'ez_tro_prod' }}
           mysql_root_password: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           jwt_secret: ${{ secrets.JWT_SECRET }}
           minio_url: ${{ vars.MINIO_URL || 'http://minio:9000' }}
@@ -73,8 +73,8 @@ jobs:
       - validate-config
     with:
       image_tag: sha-${{ github.sha }}
-      react_app_api_url: ${{ vars.REACT_APP_API_URL || '/api' }}
-      react_app_ws_url: ${{ vars.REACT_APP_WS_URL || 'ws://localhost/ws' }}
+      react_app_api_url: /api
+      react_app_ws_url: /ws
       react_app_minio_url: ${{ vars.REACT_APP_MINIO_URL || 'http://your-domain.com/minio' }}
       push: true
 

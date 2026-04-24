@@ -169,7 +169,7 @@ Vào repo GitHub, mở `Settings` -> `Secrets and variables` -> `Actions`.
 ### Giá trị gợi ý
 
 - `REACT_APP_API_URL`: `https://your-domain.com/api` hoặc `http://your-domain.com/api`
-- `REACT_APP_WS_URL`: `wss://your-domain.com/ws` hoặc `ws://your-domain.com/ws`
+- `REACT_APP_WS_URL`: `/ws` cho deploy cùng domain, hoặc `wss://your-domain.com/ws` nếu tách domain riêng
 - `REACT_APP_MINIO_URL`: `https://files.your-domain.com` hoặc `http://files.your-domain.com`
 - `MINIO_URL`: `http://minio:9000`
 
