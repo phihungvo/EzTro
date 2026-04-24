@@ -37,6 +37,21 @@ services:
     networks:
       - tevc_net
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: ez_tro_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tevc_net
+
   backend:
     image: ${DOCKER_USERNAME}/ez_tro_api:${BACKEND_IMAGE_TAG}
     container_name: ez_tro_backend
@@ -45,6 +60,8 @@ services:
       mysql:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-ez_tro_dev}
@@ -106,6 +123,7 @@ volumes:
   mysql_data:
   tevc_cms_uploads:
   minio_data:
+  redis_data:
 
 networks:
   tevc_net:

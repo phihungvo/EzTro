@@ -23,7 +23,7 @@ Tài liệu này là checklist deploy production ngắn cho stack hiện tại:
 - Frontend sẽ chạy test tự động nếu có test file.
 - Docker image được push lên Docker Hub.
 - VPS không cần giữ `.env` thủ công. Workflow deploy sẽ truyền biến môi trường tạm thời qua SSH rồi chạy `docker compose`.
-- Stack production gồm `backend`, `frontend`, `mysql`, `minio`, và `nginx` reverse proxy.
+- Stack production gồm `backend`, `frontend`, `mysql`, `redis`, `minio`, và `nginx` reverse proxy.
 - Backend và frontend chạy bằng image đã build sẵn, không build lại trên VPS.
 - Nginx public ra Internet qua port `80` và route `/api`, `/ws`, `/minio`, và `/` về đúng service.
 
@@ -118,6 +118,7 @@ Tất cả cấu hình deploy nên đặt trong `Settings` -> `Secrets and varia
 
 - `MYSQL_DATABASE`: `ez_tro_prod`
 - `MINIO_URL`: `http://minio:9000`
+- `REDIS_HOST`: `redis`
 - `APP_SEED_ENABLED`: `true`
 - `APP_SEED_ADMIN_USERNAME`: `admin`
 - `APP_SEED_ADMIN_EMAIL`: `admin@example.com`
