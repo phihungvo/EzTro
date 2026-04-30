@@ -337,6 +337,17 @@ export default function InvoiceCreator() {
         const periodStart = `${state.year}-${monthStr}-01`;
         const lastDay = new Date(state.year, state.month, 0).getDate();
         const periodEnd = `${state.year}-${monthStr}-${pad2(lastDay)}`;
+        const fixedServices = (state.fixedServices || [])
+            .filter((item) => item.checked)
+            .map((item) => ({
+                utilityId: item.utilityId || item.id || null,
+                utilityName: item.name || "",
+                type: item.type || null,
+                unit: item.unit || null,
+                unitPrice: Number(item.unitPrice || 0),
+                quantity: Math.max(1, Number(item.quantity || 1)),
+                checked: true,
+            }));
 
         return {
             contractId: state.contractId,
@@ -345,6 +356,7 @@ export default function InvoiceCreator() {
             billingPeriodEnd: periodEnd,
             dueDate: state.dueDate,
             invoiceType: "MANUAL",
+            fixedServices,
             extraAmount: extrasTotal,
             discountAmount: discount,
             discountReason: state.discountReason,
@@ -358,6 +370,7 @@ export default function InvoiceCreator() {
         state.month,
         state.year,
         state.dueDate,
+        state.fixedServices,
         state.discountReason,
         state.notePublic,
         state.noteInternal,

@@ -17,19 +17,23 @@ import org.springframework.stereotype.Component;
 import com.google.gson.Gson;
 
 import carevn.luv2code.ez_tro.dto.requests.InvoicePreviewRequest;
-import carevn.luv2code.ez_tro.dto.response.ContractBillingRuleSummaryResponse;
+import carevn.luv2code.ez_tro.dto.requests.InvoiceServiceRequest;
 import carevn.luv2code.ez_tro.dto.response.ContractSnapshotResponse;
 import carevn.luv2code.ez_tro.dto.response.ContractVersionSummaryResponse;
 import carevn.luv2code.ez_tro.entity.BillLine;
 import carevn.luv2code.ez_tro.entity.Contract;
 import carevn.luv2code.ez_tro.entity.ContractVersion;
 import carevn.luv2code.ez_tro.entity.MeterReading;
+import carevn.luv2code.ez_tro.entity.RoomUtility;
 import carevn.luv2code.ez_tro.enums.BillLineType;
 import carevn.luv2code.ez_tro.enums.BillingCycle;
 import carevn.luv2code.ez_tro.enums.InvoiceType;
 import carevn.luv2code.ez_tro.enums.ServiceType;
+import carevn.luv2code.ez_tro.exception.AppException;
+import carevn.luv2code.ez_tro.exception.ErrorCode;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.repository.MeterReadingRepository;
+import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.service.admin.billing.InvoiceLineBuildResult;
 import carevn.luv2code.ez_tro.service.admin.billing.InvoiceLineBuilder;
 import lombok.RequiredArgsConstructor;
@@ -50,9 +54,12 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
 
     private final MeterReadingRepository meterReadingRepository;
     private final ContractVersionRepository contractVersionRepository;
+    private final RoomUtilityRepository roomUtilityRepository;
     private final Gson gson = new Gson();
 
     private record RentBuildResult(List<BillLine> lines, BigDecimal totalAmount) {}
+
+    private record ServiceBuildResult(List<BillLine> lines, BigDecimal totalAmount, boolean hasMissingMeterReadings) {}
 
     /**
      * Dựng danh sách bill lines cho một kỳ billing.
@@ -87,33 +94,13 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         }
         BigDecimal rentAmount = rentBuildResult.totalAmount();
 
-        boolean hasMissingMeterReadings = false;
-        BigDecimal serviceAmount = BigDecimal.ZERO;
-
-        List<ContractBillingRuleSummaryResponse> rules = snapshot != null && snapshot.getActiveBillingRules() != null
-                ? snapshot.getActiveBillingRules()
-                : List.of();
-
-        for (ContractBillingRuleSummaryResponse rule : rules) {
-            if (rule == null) {
-                continue;
-            }
-            if (rule.getCycle() != null && rule.getCycle() != billingCycle) {
-                continue;
-            }
-
-            BillLine line = buildLineForRule(contract, billingPeriodStart, billingPeriodEnd, rule);
-            if (line == null) {
-                continue;
-            }
-
-            if (Boolean.TRUE.equals(Objects.equals("missing_meter_reading", extractFlag(line.getMetadataJson())))) {
-                hasMissingMeterReadings = true;
-            }
-
-            serviceAmount = serviceAmount.add(nullToZero(line.getAmount()));
-            lines.add(line);
+        ServiceBuildResult serviceBuildResult =
+                buildServiceLines(contract, billingPeriodStart, billingPeriodEnd, billingCycle, request);
+        if (serviceBuildResult.lines() != null && !serviceBuildResult.lines().isEmpty()) {
+            lines.addAll(serviceBuildResult.lines());
         }
+        boolean hasMissingMeterReadings = serviceBuildResult.hasMissingMeterReadings();
+        BigDecimal serviceAmount = serviceBuildResult.totalAmount();
 
         BigDecimal extraAmount = request != null ? nullToZero(request.getExtraAmount()) : BigDecimal.ZERO;
         if (extraAmount.signum() > 0) {
@@ -147,13 +134,15 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
             lines.add(discount);
         }
 
-        BigDecimal totalAmount = lines.stream()
-                .map(BillLine::getAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (BillLine line : lines) {
+            if (line != null && line.getAmount() != null) {
+                totalAmount = totalAmount.add(line.getAmount());
+            }
+        }
 
         return InvoiceLineBuildResult.builder()
-                .lines(lines)
+                .lines(new ArrayList<>(lines))
                 .totalAmount(totalAmount)
                 .rentAmount(rentAmount)
                 .serviceAmount(serviceAmount)
@@ -171,7 +160,7 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
             LocalDate billingPeriodEnd) {
 
         if (billingPeriodStart == null || billingPeriodEnd == null || billingPeriodEnd.isBefore(billingPeriodStart)) {
-            return new RentBuildResult(List.of(), BigDecimal.ZERO);
+            return new RentBuildResult(new ArrayList<>(), BigDecimal.ZERO);
         }
 
         LocalDate contractStart = contract.getStartDate() != null ? contract.getStartDate() : billingPeriodStart;
@@ -180,7 +169,7 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         LocalDate usageStart = contractStart.isAfter(billingPeriodStart) ? contractStart : billingPeriodStart;
         LocalDate usageEnd = contractEnd.isBefore(billingPeriodEnd) ? contractEnd : billingPeriodEnd;
         if (usageEnd.isBefore(usageStart)) {
-            return new RentBuildResult(List.of(), BigDecimal.ZERO);
+            return new RentBuildResult(new ArrayList<>(), BigDecimal.ZERO);
         }
 
         BigDecimal fallbackPrice = currentVersion != null && currentVersion.getPrice() != null
@@ -301,59 +290,191 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         return new RentBuildResult(rentLines, total);
     }
 
-    private BillLine buildLineForRule(
+    private record ServiceCandidate(
+            Integer utilityId,
+            String description,
+            ServiceType calculationType,
+            BigDecimal unitPrice,
+            BigDecimal quantity,
+            String unit,
+            boolean selected,
+            LocalDate effectiveFrom,
+            LocalDate effectiveTo) {}
+
+    private ServiceBuildResult buildServiceLines(
             Contract contract,
             LocalDate billingPeriodStart,
             LocalDate billingPeriodEnd,
-            ContractBillingRuleSummaryResponse rule) {
-        Integer ruleId = rule.getId();
-        String key = ruleId == null ? "RULE" : "RULE_" + ruleId;
-        String name = rule.getUtilityName() != null ? rule.getUtilityName() : "Dịch vụ";
+            BillingCycle billingCycle,
+            InvoicePreviewRequest request) {
 
-        ServiceType calculationType = rule.getCalculationType() != null ? rule.getCalculationType() : ServiceType.FIXED;
-
-        if (calculationType == ServiceType.USAGE_BASED && rule.getUtilityId() != null) {
-            return buildMeteredUtilityLine(contract, rule, key, name, billingPeriodStart, billingPeriodEnd);
+        if (billingPeriodStart == null || billingPeriodEnd == null || billingPeriodEnd.isBefore(billingPeriodStart)) {
+            return new ServiceBuildResult(new ArrayList<>(), BigDecimal.ZERO, false);
+        }
+        Integer roomId = contract.getRoom() != null ? contract.getRoom().getId() : null;
+        if (roomId == null) {
+            return new ServiceBuildResult(new ArrayList<>(), BigDecimal.ZERO, false);
         }
 
-        BigDecimal unitPrice = nullToZero(rule.getUnitPrice());
-        if (unitPrice.signum() == 0) {
+        Map<Integer, RoomUtility> activeRoomUtilities = roomUtilityRepository.findByRoomId(roomId).stream()
+                .filter(roomUtility -> roomUtility.getUtility() != null
+                        && roomUtility.getUtility().getId() != null)
+                .filter(roomUtility -> roomUtility.getUtility().getIsActive() == null
+                        || Boolean.TRUE.equals(roomUtility.getUtility().getIsActive()))
+                .filter(roomUtility -> overlaps(
+                        roomUtility.getStartDate(), roomUtility.getEndDate(), billingPeriodStart, billingPeriodEnd))
+                .collect(java.util.stream.Collectors.toMap(
+                        roomUtility -> roomUtility.getUtility().getId(),
+                        roomUtility -> roomUtility,
+                        (left, right) -> right,
+                        LinkedHashMap::new));
+
+        Map<Integer, InvoiceServiceRequest> explicitSelections = new LinkedHashMap<>();
+        boolean explicitSelectionProvided = request != null && request.getFixedServices() != null;
+        if (explicitSelectionProvided) {
+            for (InvoiceServiceRequest selection : request.getFixedServices()) {
+                if (selection == null || !Boolean.TRUE.equals(selection.getChecked())) {
+                    continue;
+                }
+                if (selection.getUtilityId() == null) {
+                    continue;
+                }
+                explicitSelections.put(selection.getUtilityId(), selection);
+            }
+        }
+
+        List<BillLine> lines = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        boolean hasMissingMeterReadings = false;
+
+        for (RoomUtility roomUtility : activeRoomUtilities.values()) {
+            if (roomUtility.getUtility() == null || roomUtility.getUtility().getType() == null) {
+                continue;
+            }
+
+            ServiceType calculationType = roomUtility.getUtility().getType();
+            if (calculationType == ServiceType.USAGE_BASED) {
+                ServiceCandidate candidate =
+                        buildServiceCandidate(roomUtility, null, billingPeriodStart, billingPeriodEnd);
+                BillLine line = buildUsageBasedServiceLine(contract, candidate, billingPeriodStart, billingPeriodEnd);
+                if (line == null) {
+                    continue;
+                }
+                if ("missing_meter_reading".equals(extractFlag(line.getMetadataJson()))) {
+                    hasMissingMeterReadings = true;
+                }
+                total = total.add(nullToZero(line.getAmount()));
+                lines.add(line);
+                continue;
+            }
+
+            InvoiceServiceRequest selection =
+                    explicitSelections.get(roomUtility.getUtility().getId());
+            if (explicitSelectionProvided && selection == null) {
+                continue;
+            }
+            ServiceCandidate candidate =
+                    buildServiceCandidate(roomUtility, selection, billingPeriodStart, billingPeriodEnd);
+            BillLine line = buildFixedServiceLine(candidate);
+            if (line == null) {
+                continue;
+            }
+            total = total.add(nullToZero(line.getAmount()));
+            lines.add(line);
+        }
+
+        if (explicitSelectionProvided) {
+            for (Integer selectedUtilityId : explicitSelections.keySet()) {
+                if (!activeRoomUtilities.containsKey(selectedUtilityId)) {
+                    throw new AppException(ErrorCode.BILL_SERVICE_SELECTION_INVALID);
+                }
+            }
+        }
+
+        return new ServiceBuildResult(lines, total, hasMissingMeterReadings);
+    }
+
+    private ServiceCandidate buildServiceCandidate(
+            RoomUtility roomUtility,
+            InvoiceServiceRequest selection,
+            LocalDate billingPeriodStart,
+            LocalDate billingPeriodEnd) {
+        if (roomUtility == null || roomUtility.getUtility() == null) {
             return null;
         }
 
-        BigDecimal quantity = resolveRuleQuantity(rule, calculationType);
+        Integer utilityId = roomUtility.getUtility().getId();
+        String description = selection != null
+                        && selection.getUtilityName() != null
+                        && !selection.getUtilityName().isBlank()
+                ? selection.getUtilityName().trim()
+                : roomUtility.getUtility().getName();
+        ServiceType calculationType = roomUtility.getUtility().getType() != null
+                ? roomUtility.getUtility().getType()
+                : ServiceType.FIXED;
+        BigDecimal unitPrice = selection != null && selection.getUnitPrice() != null
+                ? selection.getUnitPrice()
+                : roomUtility.getUtility().getUnitPrice();
+        BigDecimal quantity = selection != null && selection.getQuantity() != null
+                ? BigDecimal.valueOf(Math.max(1, selection.getQuantity().longValue()))
+                : BigDecimal.valueOf(Math.max(1, roomUtility.getQuantity() == null ? 1 : roomUtility.getQuantity()));
+        String unit = selection != null
+                        && selection.getUnit() != null
+                        && !selection.getUnit().isBlank()
+                ? selection.getUnit().trim()
+                : roomUtility.getUtility().getUnit();
+
+        return new ServiceCandidate(
+                utilityId,
+                description,
+                calculationType,
+                unitPrice,
+                quantity,
+                unit,
+                selection != null,
+                roomUtility.getStartDate(),
+                roomUtility.getEndDate());
+    }
+
+    private BillLine buildFixedServiceLine(ServiceCandidate candidate) {
+        if (candidate == null || candidate.utilityId() == null) {
+            return null;
+        }
+
+        BigDecimal unitPrice = nullToZero(candidate.unitPrice());
+        BigDecimal quantity =
+                candidate.quantity() != null && candidate.quantity().signum() > 0
+                        ? candidate.quantity()
+                        : BigDecimal.ONE;
         BigDecimal amount = unitPrice.multiply(quantity).setScale(2, RoundingMode.HALF_UP);
 
         return BillLine.builder()
                 .lineType(BillLineType.SERVICE)
-                .lineKey(key)
-                .description(name)
+                .lineKey("SERVICE_" + candidate.utilityId())
+                .description(candidate.description() != null ? candidate.description() : "Dịch vụ")
                 .quantity(quantity)
                 .unitPrice(unitPrice)
                 .amount(amount)
-                .utilityId(rule.getUtilityId())
+                .utilityId(candidate.utilityId())
                 .metadataJson(gson.toJson(Map.of(
-                        "billingRuleId", Objects.toString(ruleId, ""),
-                        "calculationType", Objects.toString(calculationType, ""),
-                        "configuredQuantity", quantity)))
+                        "utilityId", Objects.toString(candidate.utilityId(), ""),
+                        "calculationType", Objects.toString(candidate.calculationType(), ""),
+                        "quantity", quantity,
+                        "unitPrice", unitPrice,
+                        "source", candidate.selected() ? "manual_selection" : "room_utility",
+                        "effectiveFrom", Objects.toString(candidate.effectiveFrom(), ""),
+                        "effectiveTo", Objects.toString(candidate.effectiveTo(), ""))))
                 .build();
     }
 
-    private BillLine buildMeteredUtilityLine(
-            Contract contract,
-            ContractBillingRuleSummaryResponse rule,
-            String key,
-            String name,
-            LocalDate periodStart,
-            LocalDate periodEnd) {
-        Integer roomId = contract.getRoom() != null ? contract.getRoom().getId() : null;
-        Integer utilityId = rule.getUtilityId();
-
-        if (roomId == null) {
+    private BillLine buildUsageBasedServiceLine(
+            Contract contract, ServiceCandidate candidate, LocalDate periodStart, LocalDate periodEnd) {
+        if (candidate == null || candidate.utilityId() == null) {
             return null;
         }
 
-        if (periodStart == null || periodEnd == null || periodEnd.isBefore(periodStart)) {
+        Integer roomId = contract.getRoom() != null ? contract.getRoom().getId() : null;
+        if (roomId == null) {
             return null;
         }
 
@@ -361,18 +482,24 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         Date periodEndDate = toDate(periodEnd);
         MeterReading openingReading = meterReadingRepository
                 .findTopByRoomIdAndUtilityIdAndReadingDateBeforeOrderByReadingDateDescIdDesc(
-                        roomId, utilityId, periodStartDate)
+                        roomId, candidate.utilityId(), periodStartDate)
                 .orElse(null);
         MeterReading closingReading = meterReadingRepository
                 .findTopByRoomIdAndUtilityIdAndReadingDateLessThanEqualOrderByReadingDateDescIdDesc(
-                        roomId, utilityId, periodEndDate)
+                        roomId, candidate.utilityId(), periodEndDate)
                 .orElse(null);
 
         if (closingReading == null
                 || closingReading.getReadingDate() == null
                 || toLocalDate(closingReading.getReadingDate()).isBefore(periodStart)) {
             return buildMissingMeterLine(
-                    key, name, utilityId, periodStart, periodEnd, periodEnd.getMonthValue(), periodEnd.getYear());
+                    buildServiceLineKey(candidate.utilityId(), "METER"),
+                    candidate.description(),
+                    candidate.utilityId(),
+                    periodStart,
+                    periodEnd,
+                    periodEnd.getMonthValue(),
+                    periodEnd.getYear());
         }
 
         BigDecimal openingIndex = openingReading != null ? nullToZero(openingReading.getCurrentIndex()) : null;
@@ -381,17 +508,29 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         }
         if (openingIndex == null) {
             return buildMissingMeterLine(
-                    key, name, utilityId, periodStart, periodEnd, periodStart.getMonthValue(), periodStart.getYear());
+                    buildServiceLineKey(candidate.utilityId(), "METER"),
+                    candidate.description(),
+                    candidate.utilityId(),
+                    periodStart,
+                    periodEnd,
+                    periodStart.getMonthValue(),
+                    periodStart.getYear());
         }
 
         BigDecimal closingIndex = nullToZero(closingReading.getCurrentIndex());
         BigDecimal totalConsumption = closingIndex.subtract(openingIndex);
         if (totalConsumption.signum() < 0) {
             return buildMissingMeterLine(
-                    key, name, utilityId, periodStart, periodEnd, periodEnd.getMonthValue(), periodEnd.getYear());
+                    buildServiceLineKey(candidate.utilityId(), "METER"),
+                    candidate.description(),
+                    candidate.utilityId(),
+                    periodStart,
+                    periodEnd,
+                    periodEnd.getMonthValue(),
+                    periodEnd.getYear());
         }
 
-        BigDecimal unitPrice = rule.getUnitPrice() != null ? rule.getUnitPrice() : closingReading.getUnitPrice();
+        BigDecimal unitPrice = candidate.unitPrice() != null ? candidate.unitPrice() : closingReading.getUnitPrice();
         if (unitPrice == null) {
             unitPrice = closingReading.getUnitPrice();
         }
@@ -409,19 +548,31 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         metadata.put("closingIndex", closingIndex);
         metadata.put("consumption", totalConsumption);
         metadata.put("unitPrice", unitPrice);
-        metadata.put("utilityId", Objects.toString(utilityId, ""));
+        metadata.put("utilityId", Objects.toString(candidate.utilityId(), ""));
         metadata.put("periodStart", Objects.toString(periodStart, ""));
         metadata.put("periodEnd", Objects.toString(periodEnd, ""));
+        metadata.put("source", candidate.selected() ? "manual_selection" : "room_utility");
+
         return BillLine.builder()
                 .lineType(BillLineType.UTILITY_METERED)
-                .lineKey(key)
-                .description(name)
+                .lineKey(buildServiceLineKey(candidate.utilityId(), "METER"))
+                .description(candidate.description())
                 .quantity(totalConsumption.signum() == 0 ? null : totalConsumption)
                 .unitPrice(unitPrice)
                 .amount(totalAmount)
-                .utilityId(utilityId)
+                .utilityId(candidate.utilityId())
                 .metadataJson(gson.toJson(metadata))
                 .build();
+    }
+
+    private String buildServiceLineKey(Integer utilityId, String suffix) {
+        return (utilityId == null ? "SERVICE" : "SERVICE_" + utilityId) + "_" + suffix;
+    }
+
+    private boolean overlaps(LocalDate startA, LocalDate endA, LocalDate startB, LocalDate endB) {
+        LocalDate effectiveStartA = startA != null ? startA : LocalDate.MIN;
+        LocalDate effectiveEndA = endA != null ? endA : LocalDate.MAX;
+        return !effectiveStartA.isAfter(endB) && !effectiveEndA.isBefore(startB);
     }
 
     private BigDecimal calculateProratedRentForPeriod(
@@ -532,18 +683,6 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         return value != null ? value : BigDecimal.ZERO;
     }
 
-    private BigDecimal resolveRuleQuantity(ContractBillingRuleSummaryResponse rule, ServiceType calculationType) {
-        Integer configuredQuantity = rule.getQuantity();
-        if (configuredQuantity == null || configuredQuantity < 1) {
-            configuredQuantity = 1;
-        }
-
-        return switch (calculationType) {
-            case PER_PERSON, PER_VEHICLE -> BigDecimal.valueOf(configuredQuantity.longValue());
-            default -> BigDecimal.ONE;
-        };
-    }
-
     private List<YearMonth> resolveMonthsInRange(LocalDate start, LocalDate end) {
         if (start == null || end == null || end.isBefore(start)) {
             return List.of();
@@ -598,7 +737,9 @@ public class DefaultInvoiceLineBuilder implements InvoiceLineBuilder {
         if (date == null) {
             return null;
         }
-        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        return java.time.Instant.ofEpochMilli(date.getTime())
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate();
     }
 
     private String extractFlag(String metadataJson) {
