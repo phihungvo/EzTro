@@ -21,6 +21,7 @@ import carevn.luv2code.ez_tro.enums.BillingCycle;
 import carevn.luv2code.ez_tro.enums.InvoiceType;
 import carevn.luv2code.ez_tro.repository.ContractVersionRepository;
 import carevn.luv2code.ez_tro.repository.MeterReadingRepository;
+import carevn.luv2code.ez_tro.repository.RoomUtilityRepository;
 import carevn.luv2code.ez_tro.service.admin.billing.impl.DefaultInvoiceLineBuilder;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +32,9 @@ class DefaultInvoiceLineBuilderTest {
 
     @Mock
     ContractVersionRepository contractVersionRepository;
+
+    @Mock
+    RoomUtilityRepository roomUtilityRepository;
 
     @InjectMocks
     DefaultInvoiceLineBuilder builder;

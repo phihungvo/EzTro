@@ -14,6 +14,10 @@ export const getBillingUiErrorMessage = (error, fallback) => {
             return "Số tiền phân bổ phải lớn hơn 0.";
         case 1144:
             return "Kỳ billing này đã có hóa đơn rồi. Hãy mở hóa đơn hiện có để gửi lại, cập nhật hoặc xử lý thanh toán thay vì tạo trùng.";
+        case 1145:
+            return "Có dịch vụ trong bill không còn hiệu lực trong kỳ này. Hãy tải lại dữ liệu phòng và thử lại.";
+        case 9990:
+            return "Kỳ tính hoá đơn không hợp lệ. Hãy kiểm tra lại ngày bắt đầu và ngày kết thúc của kỳ.";
         default:
             return extractApiErrorMessage(error, fallback);
     }

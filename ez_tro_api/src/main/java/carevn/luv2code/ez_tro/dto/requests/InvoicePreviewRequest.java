@@ -2,6 +2,7 @@ package carevn.luv2code.ez_tro.dto.requests;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import carevn.luv2code.ez_tro.enums.InvoiceType;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +27,8 @@ public class InvoicePreviewRequest {
     LocalDate dueDate;
 
     InvoiceType invoiceType;
+
+    List<InvoiceServiceRequest> fixedServices;
 
     BigDecimal extraAmount;
 

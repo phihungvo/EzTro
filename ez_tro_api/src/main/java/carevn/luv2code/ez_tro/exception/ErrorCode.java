@@ -152,6 +152,8 @@ public enum ErrorCode {
             1115, "Số dư tiền đặt cọc không đủ cho giao dịch này", HttpStatus.BAD_REQUEST),
     BILL_SERVICE_AMOUNT_INVALID(1125, "Tổng phí dịch vụ phải lớn hơn hoặc bằng 0", HttpStatus.BAD_REQUEST),
     BILL_DUE_DATE_INVALID(1126, "Hạn thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
+    BILL_SERVICE_SELECTION_INVALID(
+            1145, "Dịch vụ được chọn không còn hiệu lực trong kỳ billing", HttpStatus.BAD_REQUEST),
     BILL_DELETE_NOT_ALLOWED(
             1129, "Không thể xóa hóa đơn đã phát hành hoặc đã có thanh toán/phân bổ", HttpStatus.BAD_REQUEST),
     BILL_CANCEL_NOT_ALLOWED(1130, "Không thể hủy hóa đơn đã thanh toán", HttpStatus.BAD_REQUEST),

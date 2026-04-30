@@ -153,7 +153,9 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 .discountAmount(buildResult.getDiscountAmount())
                 .penaltyAmount(buildResult.getPenaltyAmount())
                 .hasMissingMeterReadings(buildResult.isHasMissingMeterReadings())
-                .lines(buildResult.getLines().stream().map(this::toLinePreview).toList())
+                .lines(buildResult.getLines().stream()
+                        .map(this::toLinePreview)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)))
                 .build();
     }
 
@@ -462,6 +464,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 .billingPeriodEnd(request.getBillingPeriodEnd())
                 .dueDate(request.getDueDate())
                 .invoiceType(request.getInvoiceType())
+                .fixedServices(request.getFixedServices())
                 .extraAmount(request.getExtraAmount())
                 .discountAmount(request.getDiscountAmount())
                 .discountReason(request.getDiscountReason())
@@ -520,6 +523,10 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             ContractSnapshotResponse snapshot,
             InvoicePreviewRequest request,
             InvoiceType invoiceTypeOverride) {
+        if (request == null) {
+            throw new AppException(ErrorCode.INVALID_PERIOD);
+        }
+
         LocalDate asOfDate = request.getAsOfDate() != null ? request.getAsOfDate() : LocalDate.now();
 
         ContractVersionSummaryResponse version = snapshot != null ? snapshot.getCurrentVersion() : null;
@@ -529,6 +536,13 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
 
         LocalDate billingPeriodStart = request.getBillingPeriodStart();
         LocalDate billingPeriodEnd = request.getBillingPeriodEnd();
+
+        if ((billingPeriodStart == null) != (billingPeriodEnd == null)) {
+            throw new AppException(ErrorCode.INVALID_PERIOD);
+        }
+        if (billingPeriodStart != null && billingPeriodEnd.isBefore(billingPeriodStart)) {
+            throw new AppException(ErrorCode.INVALID_PERIOD);
+        }
 
         if (billingPeriodStart == null || billingPeriodEnd == null) {
             BillingPeriod period =
@@ -626,7 +640,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
             for (BillLine line : lines) {
                 line.setBill(bill);
             }
-            bill.setLines(lines);
+            bill.setLines(new java.util.ArrayList<>(lines));
         }
         BillingIntegrityUtils.validateBillAmountMatchesLines(bill.getAmount(), bill.getLines());
 
@@ -717,7 +731,7 @@ public class BillingOrchestratorServiceImpl implements BillingOrchestratorServic
                 line.setBill(existing);
             }
         }
-        existing.setLines(lines);
+        existing.setLines(lines != null ? new java.util.ArrayList<>(lines) : null);
         BillingIntegrityUtils.validateBillAmountMatchesLines(existing.getAmount(), existing.getLines());
 
         Bill saved = billRepository.save(existing);
